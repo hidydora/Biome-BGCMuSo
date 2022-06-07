@@ -3,10 +3,10 @@ bgc_constants.h
 Holds macro definitions for constants used in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -34,10 +34,6 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 /* ecosystem constants */
 #define RAD2PAR     0.45     /* (ratio) ratio PAR / SWtotal  */
 #define EPAR        4.55     /* (umol/J) PAR photon energy ratio */  
-#define SOIL1_CN    12.0     /* C:N for fast microbial recycling pool */
-#define SOIL2_CN    12.0     /* C:N for slow microbial recycling pool */
-#define SOIL3_CN    10.0     /* C:N for recalcitrant SOM pool (humus) */
-#define SOIL4_CN    10.0     /* C:N for recalcitrant SOM pool (humus) */
 #define GRPNOW      1.0      /* (prop) proportion of storage growth resp at fixation */
 #define PPFD50      75.0     /* (umol/m2/s) PPFD for 1/2 stomatal closure */
 #define Q10_VALUE	2.0      /* q10 value for respiration calculation */
@@ -46,14 +42,15 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 /* This constant determines the lower limit of state variables before they
 are set to 0.0 to control rounding and overflow errors */
 #define CRIT_PREC 1e-12
-#define CRIT_PREC_RIG 1e-20
+#define CRIT_PREC_RIG 1e-14
 
 /* spinup control */
 /* maximum allowable trend in slow soil carbon at steady-state (kgC/m2/yr) 0.005 */
-#define SPINUP_TOLERANCE 0.008 
+#define SPINUP_TOLERANCE_nw 0.005 
+#define SPINUP_TOLERANCE_w 0.0005 
 
 /* output control constants */
-#define NMAP 3200
+#define NMAP 4200
 
 /* contants for multilayer soil model calculation */
 #define HC_water			4200000.	/* (J/m3/K) heat capacity of water */
@@ -63,7 +60,7 @@ are set to 0.0 to control rounding and overflow errors */
 #define pF_hygroscopw		6.2			/* (dimless)  pF value at hygroscopic water point (dry air) */
 #define pF_wiltingpoint		4.2			/* (dimless)  pF value at wilting point */
 #define pF_fieldcapacity	2.5			/* (dimless)  pF value at field capacity */
-#define TP					2.65		/* (g/cm3) total porosity */
+#define PD					2.65		/* (g/cm3) particle density */
 
 /* contants for snow estimation in GSI calculation */
 #define sn_abs				0.6			/* absorptivity of snow */
@@ -71,7 +68,8 @@ are set to 0.0 to control rounding and overflow errors */
 #define lh_sub				2845.0		/* (kJ/kg) latent heal of sublimation */
 #define tcoef				0.65		/* (kg/m2/deg C/d) temp. snowmelt coef */
 
-#define NDAYS_OF_YEAR	    365	
+#define nDAYS_OF_YEAR	    365	
+#define nMONTHS_OF_YEAR	    12	
 #define NSEC_IN_DAY		    86400					/* (s/day)  calculation of daily value from second values */
 #define NHOUR_IN_DAY		24.						/* (hour/day)  calculation of daily value from hourly values */
 #define DATA_GAP			-9999
@@ -84,4 +82,7 @@ are set to 0.0 to control rounding and overflow errors */
 
 /* FILENAMESIZE */
 #define FILENAMESIZE        128
-#define STRINGSIZE         200
+#define STRINGSIZE          200
+
+/* NO3 mobilen proportion */
+#define NO3_mobilen_prop    1

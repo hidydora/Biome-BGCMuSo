@@ -2,10 +2,10 @@
 transfer one day of meteorological data from metarr struct to metv struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -25,7 +25,7 @@ int daymet(const metarr_struct* metarr, const epconst_struct* epc, const sitecon
 {
 	/* generates daily meteorological variables from the metarray struct */
 	double tmax,tmin,tavg,tavg11_ra,tavg30_ra,tavg10_ra,tday,tdiff, tsoil_top;
-	int errflag=0;
+	int errorCode=0;
 
 
 	/* convert prcp from cm --> kg/m2 */
@@ -37,6 +37,7 @@ int daymet(const metarr_struct* metarr, const epconst_struct* epc, const sitecon
 	metv->tavg		    = tavg  = metarr->tavg[metday];
 
 	metv->tday			= tday	= metarr->tday[metday];
+
 	metv->tnight		= (tday + tmin) / 2.0;
 	metv->tavg11_ra	= tavg11_ra = metarr->tavg11_ra[metday];
 	metv->tavg30_ra	= tavg30_ra = metarr->tavg30_ra[metday];
@@ -57,6 +58,7 @@ int daymet(const metarr_struct* metarr, const epconst_struct* epc, const sitecon
 		else
 			metv->tACCLIM = metv->tday; 
 		metv->tACCLIMpre = metv->tACCLIM;
+	
 	}
 
 	
@@ -107,5 +109,5 @@ int daymet(const metarr_struct* metarr, const epconst_struct* epc, const sitecon
 	metv->dayl = metarr->dayl[metday];
 
 
-	return (errflag);
+	return (errorCode);
 }

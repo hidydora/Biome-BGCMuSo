@@ -3,7 +3,7 @@ smooth.c
 functions that perform smoothing on vectors
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -27,27 +27,27 @@ int run_avg(const double *input, double *output, int n, int w, int w_flag)
     */
 
     register int i,j;
-    int errflag=0;
+    int errorCode=0;
     int *wt = 0;
     double total, sum;
 
     if (w>n)
     {
         printf("ERROR: averaging window longer than input array\n");
-        errflag=1;
+        errorCode=1;
     }
 
-    if (!errflag)
+    if (!errorCode)
     {
 		wt = (int*) malloc(w * sizeof(int));
 		if (!wt)
 		{
     		printf("Allocation error in boxcar_smooth... Exiting\n");
-    		errflag=1;
+    		errorCode=1;
 		}
     }
 
-    if (!errflag)
+    if (!errorCode)
     {
         if (w_flag)
             for (i=0 ; i<w ; i++)
@@ -82,7 +82,7 @@ int run_avg(const double *input, double *output, int n, int w, int w_flag)
         
         free(wt);
     }
-    return (errflag);
+    return (errorCode);
 }
 
 /* boxcar_smooth() performs a windowed smoothing on the input array, returns
@@ -92,41 +92,41 @@ w = windowing width, w_flag (0=flat boxcar, 1=ramped boxcar, e.g. [1 2 3 2 1])
 
 int boxcar_smooth(double* input, double* output, int n, int w, int w_flag)
 {
-	int errflag=0;
+	int errorCode=0;
     int tail = 0;
 	int i,j;
     int* wt = 0;
     double total,sum;
 
-    if (!errflag && (w > n/2))
+    if (!errorCode && (w > n/2))
     {
         printf("Boxcar window longer than 1/2 array length...\n");
         printf("Resize window and try again\n");
-        errflag=1;
+        errorCode=1;
     }
 
     /* establish the lengths of the boxcar tails */
-    if (!errflag)
+    if (!errorCode)
     {
 	    if (!(w % 2))
 	        w += 1;
 	    tail = w/2;
 	}
 	
-	 if (!errflag)
+	 if (!errorCode)
     {
 		wt = (int*) malloc(w * sizeof(int));
 		if (!wt)
 		{
     		printf("Allocation error in boxcar_smooth... Exiting\n");
-    		errflag=1;
+    		errorCode=1;
 		}
     }
 
     
     /* when w_flag != 0, use linear ramp to weight tails, 
     otherwise use constant weight */
-	if (!errflag)
+	if (!errorCode)
 	{
 	    if (w_flag)
 	    {
@@ -176,7 +176,7 @@ int boxcar_smooth(double* input, double* output, int n, int w, int w_flag)
 		
 	} /* end if ok */
 	
-	return (errflag);
+	return (errorCode);
 }   
 
 

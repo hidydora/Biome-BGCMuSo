@@ -3,8 +3,8 @@ ploughing_init.c
 read ploughing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -29,7 +29,7 @@ int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 	char PLG_filename[STRINGSIZE];
 	file PLG_file;
 
-	int errflag=0;
+	int errorCode=0;
 	int okFILE = 1;
 
 	int mgmread;
@@ -57,30 +57,30 @@ int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 	********************************************************************/
 	
 	/* header reading */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword, ploughing_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	/* header control */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword, ploughing_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	
 	/* number of management action */
-	if (!errflag && scan_value(init, &PLG->PLG_num, 'i'))
+	if (!errorCode && scan_value(init, &PLG->PLG_num, 'i'))
 	{
 		printf("ERROR reading number of ploughing in PLOUGHING section\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 
 	/* if PLG_num > 0 -> ploughing */
-	if (!errflag && PLG->PLG_num)
+	if (!errorCode && PLG->PLG_num)
 	{
 		/* allocate space for the temporary MGM array */
 		PLGyear_array         = (int*) malloc(maxPLG_num*sizeof(double));  
@@ -88,10 +88,10 @@ int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 		PLGday_array          = (int*) malloc(maxPLG_num*sizeof(double)); 
 		PLGdepths_array       = (double*) malloc(maxPLG_num*sizeof(double)); 
 		
-		if (!errflag && scan_value(init, PLG_filename, 's'))
+		if (!errorCode && scan_value(init, PLG_filename, 's'))
 		{
 			printf("ERROR reading ploughing calculating file\n");
-			errflag=1;
+			errorCode=1;
 		}
 		
 		strcpy(PLG_file.name, PLG_filename);
@@ -100,18 +100,18 @@ int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 		if (file_open(&PLG_file,'i',1))
 		{
 			printf("ERROR opening PLG_file, ploughing_int.c\n");
-			errflag=1;
+			errorCode=1;
 			okFILE=0;
 		}
 
-		if (!errflag && scan_value(PLG_file, header, 's'))
+		if (!errorCode && scan_value(PLG_file, header, 's'))
 		{
 			printf("ERROR reading header for PLOUGHING section in MANAGMENET file\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 	
-		while (!errflag && !(mgmread = scan_array (PLG_file, &p1, 'i', 0, 0)))
+		while (!errorCode && !(mgmread = scan_array (PLG_file, &p1, 'i', 0, 0)))
 		{
 			n_PLGparam = 5;
 
@@ -119,7 +119,7 @@ int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 			if (mgmread != n_PLGparam)
 			{
 				printf("ERROR reading PLOUGHING parameters from PLOUGHING file  file\n");
-				errflag=1;
+				errorCode=1;
 			}
 
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
@@ -161,10 +161,10 @@ int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 	else
 	{
 		/* reading the line of management file into a temporary variable */
-		if (!errflag && scan_value(init, header, 's'))
+		if (!errorCode && scan_value(init, header, 's'))
 		{
 			printf("ERROR reading line of management file (in case of no management)\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 
@@ -173,5 +173,5 @@ int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 
 	
 	
-	return (errflag);
+	return (errorCode);
 }

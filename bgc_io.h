@@ -4,10 +4,10 @@ header file to hold the structures used to communicate with bgc()
 also contains the function prototype for bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -47,6 +47,10 @@ typedef struct
 	file monavgout;         /* file containing monthly average output */
 	file annavgout;         /* file containing annual average output */
 	file annout;            /* file containing annual output */
+	file dayoutT;            /* file containing transient daily output */
+	file monavgoutT;         /* file containing transient monthly average output */
+	file annavgoutT;         /* file containing transient annual average output */
+	file annoutT;            /* file containing transient annual output */
 	double spinup_resid_trend; /* kgC/m2/yr remaining trend after spinup */
 	int spinup_years;       /* number of years before reaching steady-state */
 	file log_file;

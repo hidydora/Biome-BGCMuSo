@@ -4,10 +4,10 @@ daily allocation of carbon and nitrogen, as well as the final reconciliation
 of N immobilization by microbes (see decomp.c)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -91,10 +91,10 @@ the accumulation of soil mineral N.
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, const metvar_struct* metv, cstate_struct*cs,  nstate_struct* ns, 
-	                 cflux_struct* cf, nflux_struct* nf, epvar_struct* epv, ntemp_struct* nt, double naddfrac)
+int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const metvar_struct* metv, 
+	                 cstate_struct*cs,  nstate_struct* ns, cflux_struct* cf, nflux_struct* nf, epvar_struct* epv, ntemp_struct* nt, double naddfrac)
 {
-	int errflag=0;
+	int errorCode=0;
     double day_gpp;     /* daily gross production */
 	double day_mresp;   /* daily total maintenance respiration */
 	double avail_c;     /* total C available for new production */
@@ -110,24 +110,26 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 
 	int woody;
 	double c_allometry, n_allometry;
-	double plant_ndemand, sum_plant_nsupply, plant_remaining_ndemand,potential_immob_rootzone,sminn_rootzone,layer_prop;
+	double retrans_layer, plantNsupply_layer, plantNdemand_layer, plant_remaining_ndemand,IMMOBratio;
 	double plant_nalloc, plant_calloc;
     double excess_c, pnow_Tcoeff;
-	int n_limitation, layer;
+	int layer;
 	double cn_l1,cn_l2,cn_l4,cn_s1,cn_s2,cn_s3,cn_s4;
 	double rfl1s1, rfl2s2, rfl4s3, rfs1s2, rfs2s3, rfs3s4;
-	double daily_net_nmin, actual_immob;
-	double fpi, dif,sumdif;
-
+	double daily_net_nmin, daily_net_immob, actual_immob;
+	double Ndemand_total, ndemand, sminAVAIL,pot_immob, NdifSPIN, sminNH4_NdifSPIN, sminNO3_NdifSPIN;
 	double pnow = 0;			/* proportion of growth displayed on current day */ 
 
 	/* actual phenological phase */
 	int ap = (int) epv->n_actphen-1; 
 
-	excess_c=potential_immob_rootzone=sminn_rootzone=daily_net_nmin=sumdif=f1=f2=f3=f4=f5=f6=f7=f8=0;
+	IMMOBratio=Ndemand_total=excess_c=daily_net_nmin=daily_net_immob=f1=f2=f3=f4=f5=f6=f7=f8=0;
 	woody = epc->woody;
 
 	cn_l1=cn_l2=cn_l4=cn_s1=cn_s2=cn_s3=cn_s4=0;
+
+	epv->netMINER_total = 0;
+	epv->actIMMOB_total = 0;
 
 	/* respiration fractions for fluxes between compartments */
 	rfl1s1 = sprop->rfl1s1; //0.39;
@@ -137,13 +139,14 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	rfs2s3 = sprop->rfs2s3; //0.46;
 	rfs3s4 = sprop->rfs3s4; //0.55;
 
-	/* Assess the carbon availability on the basis of this day's
-	gross production and maintenance respiration costs */
+	/*-----------------------------------------------------------------------------------------------------------------*/
+	/* 1. Assess the carbon availability on the basis of this day's gross production and maintenance respiration costs */
 	day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
 	
 	day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->fruit_mr + cf->softstem_mr +
 			         cf->livestem_mr + cf->livecroot_mr;
 	avail_c = day_gpp - day_mresp;
+
 
 	
 	/* no allocation when the daily C balance is negative */
@@ -155,10 +158,11 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 
 		printf("\n");
 		printf("ERROR: negative cpool in daily_allocation\n");
-		errflag=1;
+		errorCode=1;
 	} /* end if negative cpool */
 	
-	/* assign local values for the allocation control parameters */
+	/*-----------------------------------------------------------------------------------------------------------------*/
+	/* 2. assign local values for the allocation control parameters */
 	if (ap >= 0)
 	{
 		f1 = epc->alloc_leafc[ap];
@@ -200,7 +204,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		{
 			printf("\n");
 			printf("FATAL ERROR in pnow calculation (daily_allocation.c)\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 		
@@ -208,9 +212,8 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	epv->pnow = pnow;
 	g1 = epc->GR_ratio;
 
-	/* given the available C, use constant allometric relationships to
-	determine how much N is required to meet this potential growth
-	demand */
+	/*-----------------------------------------------------------------------------------------------------------------*/
+	/* 3. given the available C, use constant allometric relationships to determine how much N is required to meet this potential growth demand */
 
 	c_allometry = (1.0+g1);
 	n_allometry = (f1/epc->leaf_cn + f2/epc->froot_cn);
@@ -221,148 +224,136 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	if (woody) n_allometry += (f5/epc->livewood_cn + f6/epc->deadwood_cn + f7/epc->livewood_cn + f8/epc->deadwood_cn);
 
 
-
-	/* MULTILAYER SOIL: calculation of soil in rootzone */ 
-	for (layer=epv->germ_layer; layer < epv->n_rootlayers; layer++)
-	{
-		potential_immob_rootzone += nt->potential_immob[layer];
-	    sminn_rootzone           += ns->sminNH4[layer] * sprop->NH4_mobilen_prop + ns->sminNO3[layer] * sprop->NO3_mobilen_prop;
-	}
-
-	/* now compare the combined decomposition immobilization and plant
-	growth N demands against the avsminNH4_totalailable soil mineral N pool. */
-
+ 	epv->plantNdemand  = avail_c * (n_allometry / c_allometry);
 	
-	plant_ndemand   = avail_c * (n_allometry / c_allometry);
 
-	ns->sum_ndemand     = plant_ndemand + potential_immob_rootzone;
 
-	/* ONLY IN SPINUP PHASE: add N to sminn to meet demand: naddfrac scales N additions from 1.0 to 0.0 */
-	if (naddfrac && sminn_rootzone)
+	/*-----------------------------------------------------------------------------------------------------------------*/
+	/* 4. calculation of spinup N-add and sminnAVAIL and potIMMOB */
+
+	ns->sminNavail_RZ = nf->sminn_to_npoolTOTAL = nf->retransn_to_npoolTOTAL = plant_nalloc = plant_calloc = 0;
+	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
-		/* The NH4+ pool is buffered to represent an exchangeable pool and a pool in solution that is available for plants, immobilization, nitrification, and leaching */
-		if (ns->sum_ndemand > sminn_rootzone)
+		ns->sminNH4avail[layer] = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;
+		ns->sminNO3avail[layer] = ns->sminNO3[layer] * NO3_mobilen_prop;
+		sminAVAIL				= (ns->sminNH4avail[layer] + ns->sminNO3avail[layer]);
+
+		plantNdemand_layer		= epv->plantNdemand * epv->rootlength_prop[layer];
+	
+		retrans_layer			= ns->retransn * epv->rootlength_prop[layer];
+		pot_immob				= nt->potential_immob[layer];
+		ndemand					= plantNdemand_layer + pot_immob;
+
+
+		/* Hidy 2020 - ONLY IN SPINUP PHASE: add N to sminn to meet demand layer by layer - naddfrac scales N additions from 1.0 to 0.0 */
+
+		if (naddfrac > 0)
 		{
-			for (layer = epv->germ_layer; layer < epv->n_rootlayers; layer++)
+			if (ndemand > sminAVAIL)
 			{
-				layer_prop = (ns->sminNH4[layer] * sprop->NH4_mobilen_prop + ns->sminNO3[layer] * sprop->NO3_mobilen_prop) /sminn_rootzone;
-				
-				dif = (ns->sum_ndemand - sminn_rootzone) * layer_prop;
-				sumdif += dif;
-				if (dif >= 0)
-				{
-					ns->sminNH4[layer]  += dif * naddfrac;
-					ns->SPINUPsrc	    += dif * naddfrac;
-				}
-				else
-				{
-					printf("\n");
-					printf("FATAL ERROR in sminn calculation (daily_allocation.c)\n");
-					errflag=1;
-				}
+				NdifSPIN = (ndemand - sminAVAIL)  * naddfrac;
+
+				sminNH4_NdifSPIN    =  (NdifSPIN * sitec->NdepNH4_coeff)     / sprop->NH4_mobilen_prop;
+				sminNO3_NdifSPIN    =  (NdifSPIN * (1-sitec->NdepNH4_coeff)) / NO3_mobilen_prop;
+			
+				ns->SPINUPsrc	         += (sminNH4_NdifSPIN + sminNO3_NdifSPIN);
+				ns->sminNH4[layer]       += sminNH4_NdifSPIN;
+				ns->sminNO3[layer]       += sminNO3_NdifSPIN;
+				ns->sminNH4avail[layer]  = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;
+				ns->sminNO3avail[layer]  = ns->sminNO3[layer] * NO3_mobilen_prop;
+				sminAVAIL				 = (ns->sminNH4avail[layer] + ns->sminNO3avail[layer]);
 			}
-			sminn_rootzone += sumdif * naddfrac;
 		}
-	}
 
-	if ((fabs(ns->sum_ndemand - sminn_rootzone) > 0) && (fabs(ns->sum_ndemand - sminn_rootzone) < CRIT_PREC)) 
-	{
-		sminn_rootzone = ns->sum_ndemand;
-	}
-	/* N availability is not limiting immobilization or plant uptake, and both can proceed at their potential rates */
 
-	if (ns->sum_ndemand <= sminn_rootzone)
-	{
-		n_limitation = 0;
-		actual_immob = potential_immob_rootzone;
 
-		/* Determine the split between retranslocation N and soil mineral N to meet the plant demand */
-		sum_plant_nsupply = ns->retransn + sminn_rootzone;
-	
-		if (sum_plant_nsupply)
+		/* N availability is not limiting immobilization or plant uptake, and both can proceed at their potential rates */
+		if (ndemand <= sminAVAIL)
 		{
-			nf->retransn_to_npool = plant_ndemand * (ns->retransn/sum_plant_nsupply);
+			actual_immob           = pot_immob;
+			epv->IMMOBratio[layer] = 1.0;
+	
+			/* Determine the split between retranslocation N and soil mineral N to meet the plant demand */
+			plantNsupply_layer = retrans_layer + sminAVAIL;
+	
+			if (plantNsupply_layer)
+				nf->retransn_to_npool[layer] = plantNdemand_layer * (retrans_layer/plantNsupply_layer);
+			else
+				nf->retransn_to_npool[layer] = 0;
+			
+			nf->sminn_to_npool[layer] = plantNdemand_layer- nf->retransn_to_npool[layer];
+
+			plant_nalloc       += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];
+			plant_calloc       += avail_c * epv->rootlength_prop[layer];
+	
 		}
 		else
 		{
-			nf->retransn_to_npool = 0.0;
-		}
-		nf->sminn_to_npool = plant_ndemand - nf->retransn_to_npool;
+			/* N availability can not satisfy the sum of immobiliation and plant growth demands, so these two demands compete for available soil mineral N */	
 
-		plant_nalloc       = nf->retransn_to_npool + nf->sminn_to_npool;
-		plant_calloc       = avail_c;
+			actual_immob = sminAVAIL * pot_immob/ndemand;
 	
-	}
-	else
-	{
-		/* N availability can not satisfy the sum of immobiliation and plant growth demands, 
-		so these two demands compete for available soil mineral N */
+			if (pot_immob)
+				epv->IMMOBratio[layer] = actual_immob/pot_immob;
+			else
+				epv->IMMOBratio[layer] = 0.0;
 
-		actual_immob = sminn_rootzone * potential_immob_rootzone/ns->sum_ndemand;
-		if (potential_immob_rootzone)
-		{
-			fpi = actual_immob/potential_immob_rootzone;
-		}
-		else
-		{
-			fpi = 0.0;
-		}
-		nf->sminn_to_npool      = sminn_rootzone - actual_immob;
-		if (fabs(nf->sminn_to_npool) < CRIT_PREC && nf->sminn_to_npool != 0) nf->sminn_to_npool = 0;
+			
+			nf->sminn_to_npool[layer] = sminAVAIL - actual_immob;
+			if (fabs(nf->sminn_to_npool[layer]) < CRIT_PREC && nf->sminn_to_npool[layer] != 0) nf->sminn_to_npool[layer] = 0;
 	
-		plant_remaining_ndemand = plant_ndemand - nf->sminn_to_npool;
+			plant_remaining_ndemand = plantNdemand_layer - nf->sminn_to_npool[layer];
 
-		/* the demand not satisfied by uptake from soil mineral N is now sought from the retranslocated N pool */
-		if (plant_remaining_ndemand <= ns->retransn)
-		{
-			/* there is enough N available in retranslocation pool to
-			satisfy the remaining plant N demand */
-			nf->retransn_to_npool   = plant_remaining_ndemand;
-			plant_nalloc            = nf->retransn_to_npool + nf->sminn_to_npool;
-			plant_calloc            = avail_c;
-
-			/* flag for nitrogen limitation type */
-			n_limitation = 1;	
-		}
-		else
-		{
-			/* there is not enough retranslocation N left to satisfy the
-			entire demand. In this case, all remaing retranslocation N is
-			used, and the remaining unsatisfied N demand is translated
-			back to a C excess, which is deducted proportionally from
-			the sun and shade photosynthesis source terms */
-			nf->retransn_to_npool    = ns->retransn;
-			plant_nalloc             = nf->retransn_to_npool + nf->sminn_to_npool;
-			plant_calloc             = plant_nalloc * (c_allometry / n_allometry);
-		
-			excess_c                 = avail_c - plant_calloc;
-			if (day_gpp > 0)
+			/* the demand not satisfied by uptake from soil mineral N is now sought from the retranslocated N pool */
+			if (plant_remaining_ndemand <= retrans_layer)
 			{
-				cf->psnsun_to_cpool   -= excess_c * cf->psnsun_to_cpool/day_gpp;
-				cf->psnshade_to_cpool -= excess_c * cf->psnshade_to_cpool/day_gpp;
-
-				day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
+				/* there is enough N available in retranslocation pool to satisfy the remaining plant N demand */
+				nf->retransn_to_npool[layer]   = plant_remaining_ndemand;
+				plant_nalloc                  += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];
 			}
 			else
 			{
-				printf("\n");
-				printf("ERROR: Negative GPP value (daily_allocation.c)\n");
-				errflag=1;
+				/* there is not enough retranslocation N left to satisfy the entire demand -> all remaing retranslocation N is used, and the remaining 
+				unsatisfied N demand is translated back to a C excess, which is deducted proportionally from the sun and shade photosynthesis source terms */
+		
+				nf->retransn_to_npool[layer]    = retrans_layer;
+				plant_nalloc                   += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];	
 			}
+			if (n_allometry)
+				plant_calloc       += plant_nalloc * (c_allometry / n_allometry);
+			else
+				plant_calloc       += avail_c * epv->rootlength_prop[layer];
 			
-			n_limitation = 2;		
+		}
+		nf->retransn_to_npoolTOTAL += nf->retransn_to_npool[layer] ;
+		nf->sminn_to_npoolTOTAL    += nf->sminn_to_npool[layer];
+	}
+	
+	epv->plant_calloc = plant_calloc; 
+	epv->plant_nalloc = plant_nalloc; 
+	
+	excess_c                 = avail_c - plant_calloc;
+	if (excess_c > 0)
+	{
+		if (day_gpp > 0)
+		{
+			cf->psnsun_to_cpool   -= excess_c * cf->psnsun_to_cpool/day_gpp;
+			cf->psnshade_to_cpool -= excess_c * cf->psnshade_to_cpool/day_gpp;
+
+			day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
+		}
+		else
+		{
+			printf("\n");
+			printf("ERROR: Negative GPP value (daily_allocation.c)\n");
+			errorCode=1;
 		}
 	}
 
-	epv->excess_c = excess_c;
 
-
-	/* calculate the amount of new leaf C dictated by these allocation
-	decisions, and figure the daily fluxes of C and N to current
-	growth and storage pools */
-	/* pnow is the proportion of this day's growth that is displayed now,
-	the remainder going into storage for display next year through the
-	transfer pools */
+	/*-----------------------------------------------------------------------------------------------------------------*/
+	/* 6. calculate the amount of new leaf C dictated by these allocation decisions, and figure the daily fluxes of C and N to current growth and storage pools */
+	/* pnow is the proportion of this day's growth that is displayed now, the remainder going into storage for display next year through the transfer pools */
 	/* daily C fluxes out of cpool and into new growth or storage */
 	
 	if (plant_calloc)
@@ -446,10 +437,10 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	
 	}
 	
-	epv->plant_calloc = plant_calloc; 
-	epv->plant_nalloc = plant_nalloc; 
+
 	
-	/* calculate the amount of carbon that needs to go into growth respiration storage to satisfy all of the storage growth demands. 
+	/*-----------------------------------------------------------------------------------------------------------------*/
+	/* 7. calculate the amount of carbon that needs to go into growth respiration storage to satisfy all of the storage growth demands. 
 	Note that in version 4.1, this function has been changed to allow for the fraction of growth respiration that is released at the
 	time of fixation, versus the remaining fraction that is stored forrelease at the time of display. Note that all the growth respiration
 	fluxes that get released on a given day are calculated in growth_resp(), but that the storage of C for growth resp during display of 
@@ -460,12 +451,35 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 						          cf->cpool_to_livecrootc_storage + cf->cpool_to_deadcrootc_storage) * g1 * (1.0-GRPNOW);
 	
 
-	
-	/* now use the N limitation information to assess the final decomposition fluxes. Mineralizing fluxes (pmnf* < 0.0) occur at the potential rate
+	/*-----------------------------------------------------------------------------------------------------------------*/
+	/* 8. now use the N limitation information to assess the final decomposition fluxes. Mineralizing fluxes (pmnf* < 0.0) occur at the potential rate
 	regardless of the competing N demands between microbial processes and plant uptake, but immobilizing fluxes are reduced when soil mineral N is limiting */
+
+
+	
+	nf->litr1n_to_soil1n_total      = 0;              
+	nf->litr2n_to_soil2n_total      = 0;             
+	nf->litr3n_to_litr2n_total      = 0;              
+	nf->litr4n_to_soil3n_total      = 0; 
+	nf->soil1n_to_soil2n_total      = 0;             
+	nf->soil2n_to_soil3n_total      = 0;             
+	nf->soil3n_to_soil4n_total      = 0;  
+	nf->soil4n_to_sminNH4_total     = 0;
+	nf->sminn_to_soil1n_l1_total    = 0;
+	nf->sminn_to_soil2n_l2_total    = 0;
+	nf->sminn_to_soil3n_l4_total    = 0;
+	nf->sminn_to_soil2n_s1_total    = 0;
+	nf->sminn_to_soil3n_s2_total    = 0;
+	nf->sminn_to_soil4n_s3_total    = 0;
+	nf->sminn_to_soil_SUM_total		= 0;  
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
+		
+		IMMOBratio = epv->IMMOBratio[layer];
+
+		daily_net_nmin=daily_net_immob=0;
+		
 		/* calculate litter and soil compartment C:N ratios */
 		if (ns->litr1n[layer] > 0.0) cn_l1 = cs->litr1c[layer]/ns->litr1n[layer];
 		if (ns->litr2n[layer] > 0.0) cn_l2 = cs->litr2c[layer]/ns->litr2n[layer];
@@ -476,15 +490,16 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		if (ns->soil3n[layer] > 0.0) cn_s3 = cs->soil3c[layer]/ns->soil3n[layer];
 		if (ns->soil4n[layer] > 0.0) cn_s4 = cs->soil4c[layer]/ns->soil4n[layer];
 
-	
 
+	
 		/* labile litter fluxes */
 		if (cs->litr1c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l1s1[layer] > 0.0)
+
+			if (IMMOBratio < 1 && nt->pmnf_l1s1[layer] > 0.0)
 			{
-				nt->plitr1c_loss[layer] *= fpi;
-				nt->pmnf_l1s1[layer]    *= fpi;
+				nt->plitr1c_loss[layer] *= IMMOBratio;
+				nt->pmnf_l1s1[layer]    *= IMMOBratio;
 			}
 			cf->litr1_hr[layer]         = rfl1s1 * nt->plitr1c_loss[layer];
 			cf->litr1c_to_soil1c[layer] = (1.0 - rfl1s1) * nt->plitr1c_loss[layer];
@@ -496,16 +511,15 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 				nf->litr1n_to_soil1n[layer] = 0.0;
 
 			nf->sminn_to_soil1n_l1[layer] = nt->pmnf_l1s1[layer];
-			daily_net_nmin               -= nt->pmnf_l1s1[layer];
 		}
 
 		/* cellulose litter fluxes */
 		if (cs->litr2c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l2s2[layer] > 0.0)
+			if (IMMOBratio < 1 && nt->pmnf_l2s2[layer] > 0.0)
 			{
-				nt->plitr2c_loss[layer] *= fpi;
-				nt->pmnf_l2s2[layer]    *= fpi;
+				nt->plitr2c_loss[layer] *= IMMOBratio;
+				nt->pmnf_l2s2[layer]    *= IMMOBratio;
 			}
 			cf->litr2_hr[layer]         = rfl2s2 * nt->plitr2c_loss[layer];
 			cf->litr2c_to_soil2c[layer] = (1.0 - rfl2s2) * nt->plitr2c_loss[layer];
@@ -516,17 +530,16 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 				nf->litr2n_to_soil2n[layer] = 0.0;
 
 			nf->sminn_to_soil2n_l2[layer] = nt->pmnf_l2s2[layer];
-			daily_net_nmin               -= nt->pmnf_l2s2[layer];
 		}
 
 		/* release of shielded cellulose litter, tied to the decay rate of
 		lignin litter */
 		if (cs->litr3c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l4s3[layer] > 0.0)
+			if (IMMOBratio < 1 && nt->pmnf_l4s3[layer] > 0.0)
 			{
-				cf->litr3c_to_litr2c[layer] = nt->kl4[layer] * cs->litr3c[layer] * fpi;
-				nf->litr3n_to_litr2n[layer] = nt->kl4[layer] * ns->litr3n[layer] * fpi;
+				cf->litr3c_to_litr2c[layer] = nt->kl4[layer] * cs->litr3c[layer] * IMMOBratio;
+				nf->litr3n_to_litr2n[layer] = nt->kl4[layer] * ns->litr3n[layer] * IMMOBratio;
 			}
 			else
 			{
@@ -538,10 +551,10 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* lignin litter fluxes */
 		if (cs->litr4c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l4s3[layer] > 0.0)
+			if (IMMOBratio < 1 && nt->pmnf_l4s3[layer] > 0.0)
 			{
-				nt->plitr4c_loss[layer] *= fpi;
-				nt->pmnf_l4s3[layer] *= fpi;
+				nt->plitr4c_loss[layer] *= IMMOBratio;
+				nt->pmnf_l4s3[layer]    *= IMMOBratio;
 			}
 			cf->litr4_hr[layer]         = rfl4s3 * nt->plitr4c_loss[layer];
 			cf->litr4c_to_soil3c[layer] = (1.0 - rfl4s3) * nt->plitr4c_loss[layer];
@@ -552,81 +565,106 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 				nf->litr4n_to_soil3n[layer] = 0.0;
 
 			nf->sminn_to_soil3n_l4[layer] = nt->pmnf_l4s3[layer];
-			daily_net_nmin               -= nt->pmnf_l4s3[layer];
 		}
 		
-		/* fast microbial recycling pool */
+		/* labile SOM pool */
 		if (cs->soil1c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_s1s2[layer] > 0.0)
+			if (IMMOBratio < 1 && nt->pmnf_s1s2[layer] > 0.0)
 			{
-				nt->psoil1c_loss[layer] *= fpi;
-				nt->pmnf_s1s2[layer] *= fpi;
+				nt->psoil1c_loss[layer] *= IMMOBratio;
+				nt->pmnf_s1s2[layer]    *= IMMOBratio;
 			}
 			cf->soil1_hr[layer]				= rfs1s2 * nt->psoil1c_loss[layer];
 			cf->soil1c_to_soil2c[layer]		= (1.0 - rfs1s2) * nt->psoil1c_loss[layer];
 			nf->soil1n_to_soil2n[layer]		= nt->psoil1c_loss[layer] / cn_s1;
-			if (ns->soil2n[layer] > 0)
-			{
-				nf->sminn_to_soil2n_s1[layer]   = nt->pmnf_s1s2[layer];
-				daily_net_nmin                 -= nt->pmnf_s1s2[layer];
-			}
+			
+			nf->sminn_to_soil2n_s1[layer]   = nt->pmnf_s1s2[layer];
 		}
 		
-		/* medium microbial recycling pool */
+		/* fast SOM pool  */
 		if (cs->soil2c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_s2s3[layer] > 0.0)
+			if (IMMOBratio < 1 && nt->pmnf_s2s3[layer] > 0.0)
 			{
-				nt->psoil2c_loss[layer] *= fpi;
-				nt->pmnf_s2s3[layer] *= fpi;
+				nt->psoil2c_loss[layer] *= IMMOBratio;
+				nt->pmnf_s2s3[layer] *= IMMOBratio;
 			}
 			cf->soil2_hr[layer]           = rfs2s3 * nt->psoil2c_loss[layer];
 			cf->soil2c_to_soil3c[layer]   = (1.0 - rfs2s3) * nt->psoil2c_loss[layer];
 			nf->soil2n_to_soil3n[layer]   = nt->psoil2c_loss[layer] / cn_s2;
-			if (ns->soil3n[layer] > 0)
-			{
-				nf->sminn_to_soil3n_s2[layer] = nt->pmnf_s2s3[layer];
-				daily_net_nmin               -= nt->pmnf_s2s3[layer];
-			}
+			
+			nf->sminn_to_soil3n_s2[layer] = nt->pmnf_s2s3[layer];
 		}
 
-		/* slow microbial recycling pool */
+		/* slow SOM pool */
 		if (cs->soil3c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_s3s4[layer] > 0.0)
+			if (IMMOBratio < 1 && nt->pmnf_s3s4[layer] > 0.0)
 			{
-				nt->psoil3c_loss[layer] *= fpi;
-				nt->pmnf_s3s4[layer] *= fpi;
+				nt->psoil3c_loss[layer] *= IMMOBratio;
+				nt->pmnf_s3s4[layer] *= IMMOBratio;
 			}
 			cf->soil3_hr[layer]           = rfs3s4 * nt->psoil3c_loss[layer];
 			cf->soil3c_to_soil4c[layer]   = (1.0 - rfs3s4) * nt->psoil3c_loss[layer];
 			nf->soil3n_to_soil4n[layer]   = nt->psoil3c_loss[layer] / cn_s3;
-			if (ns->soil4n[layer] > 0)
-			{
-				nf->sminn_to_soil4n_s3[layer] = nt->pmnf_s3s4[layer];
-				daily_net_nmin               -= nt->pmnf_s3s4[layer];
-			}
+			
+			nf->sminn_to_soil4n_s3[layer] = nt->pmnf_s3s4[layer];
+
 		}
 		
-		/* recalcitrant SOM pool (rf = 1.0, always mineralizing) */
+		/* stable SOM pool (rf = 1.0, always mineralizing) */
 		if (cs->soil4c[layer] > 0.0)
 		{
 			cf->soil4_hr[layer]           = nt->psoil4c_loss[layer];
 			if (ns->soil4n[layer] > 0)
 			{
-				nf->soil4n_to_sminNH4[layer]  = nt->psoil4c_loss[layer] / cn_s4;
-				daily_net_nmin                += nf->soil4n_to_sminNH4[layer];
+				nf->soil4n_to_sminNH4[layer]  = -nt->pmnf_s4[layer];
 			}
 		}
 		
+		if (nt->pmnf_l1s1[layer] > 0.0) daily_net_immob += nt->pmnf_l1s1[layer];
+		else daily_net_nmin += -nt->pmnf_l1s1[layer];
+		if (nt->pmnf_l2s2[layer] > 0.0) daily_net_immob += nt->pmnf_l2s2[layer];
+		else daily_net_nmin += -nt->pmnf_l2s2[layer];
+		if (nt->pmnf_l4s3[layer] > 0.0) daily_net_immob += nt->pmnf_l4s3[layer];
+		else daily_net_nmin += -nt->pmnf_l4s3[layer];
+		if (nt->pmnf_s1s2[layer] > 0.0) daily_net_immob += nt->pmnf_s1s2[layer];
+		else daily_net_nmin += -nt->pmnf_s1s2[layer];
+		if (nt->pmnf_s2s3[layer] > 0.0) daily_net_immob += nt->pmnf_s2s3[layer];
+		else daily_net_nmin += -nt->pmnf_s2s3[layer];
+		if (nt->pmnf_s3s4[layer] > 0.0) daily_net_immob += nt->pmnf_s3s4[layer];
+		else daily_net_nmin += -nt->pmnf_s3s4[layer];
+		daily_net_nmin += -nt->pmnf_s4[layer];
+
+		nf->sminn_to_soil_SUM[layer] = nf->sminn_to_soil1n_l1[layer]+nf->sminn_to_soil2n_l2[layer]+nf->sminn_to_soil3n_l4[layer] + 
+			                           nf->sminn_to_soil2n_s1[layer]+nf->sminn_to_soil3n_s2[layer]+nf->sminn_to_soil4n_s3[layer];
+
+		nf->litr1n_to_soil1n_total      += nf->litr1n_to_soil1n[layer];              
+		nf->litr2n_to_soil2n_total      += nf->litr2n_to_soil2n[layer];             
+		nf->litr3n_to_litr2n_total      += nf->litr3n_to_litr2n[layer];              
+		nf->litr4n_to_soil3n_total      += nf->litr4n_to_soil3n[layer]; 
+		nf->soil1n_to_soil2n_total      += nf->soil1n_to_soil2n[layer];             
+		nf->soil2n_to_soil3n_total      += nf->soil2n_to_soil3n[layer];             
+		nf->soil3n_to_soil4n_total      += nf->soil3n_to_soil4n[layer];  
+		nf->soil4n_to_sminNH4_total     += nf->soil4n_to_sminNH4[layer];
+		nf->sminn_to_soil1n_l1_total    += nf->sminn_to_soil1n_l1[layer];
+		nf->sminn_to_soil2n_l2_total    += nf->sminn_to_soil2n_l2[layer];
+		nf->sminn_to_soil3n_l4_total    += nf->sminn_to_soil3n_l4[layer];
+		nf->sminn_to_soil2n_s1_total    += nf->sminn_to_soil2n_s1[layer];
+		nf->sminn_to_soil3n_s2_total    += nf->sminn_to_soil3n_s2[layer];
+		nf->sminn_to_soil4n_s3_total    += nf->sminn_to_soil4n_s3[layer];
+		nf->sminn_to_soil_SUM_total		+= nf->sminn_to_soil_SUM[layer];  
+
 		/* store the day's net N mineralization */
-		epv->daily_net_nmin[layer]     = daily_net_nmin;
-		epv->daily_gross_nimmob[layer] = actual_immob;
-		epv->n_limitation[layer]       = n_limitation;
+		epv->netMINER[layer]   = daily_net_nmin;
+		epv->actIMMOB[layer]   = daily_net_immob;
+		epv->netMINER_total   += daily_net_nmin;
+		epv->actIMMOB_total   += daily_net_immob;
+
 
 	}
 		
-	return (errflag);
+	return (errorCode);
 }
 

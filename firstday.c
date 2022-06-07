@@ -4,10 +4,10 @@ Initializes the state variables for the first day of a simulation that
 is not using a restart file.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -25,27 +25,29 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 
 int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, 
-	         const cinit_struct* cinit, const planting_struct *PLT, phenology_struct* phen, epvar_struct* epv, 
+	         const planting_struct *PLT, cinit_struct* cinit, phenology_struct* phen, epvar_struct* epv, 
 			 cstate_struct* cs, nstate_struct* ns, metvar_struct* metv, psn_struct* psn_sun, psn_struct* psn_shade)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer, day, pp;
 	double prop_transfer, transfer, prop_litfall;
-	
+	double max_deadstemc, max_deadcrootc;
 	
 	/* *****************************************************************************- */
 	/* 1. Initialize ecophysiological variables */
 
 	epv->dsr = 0.0;
-	epv->dsws = 0.0;
+	epv->cumSWCstress = 0.0;
+	epv->cumNstress = 0.0;
+	epv->SWCstressLENGTH = 0.0;
 	epv->transfer_ratio = 0.0;
-	epv->leafdayARRAY[0] = -1;
-	epv->leafdayARRAY[1] = -1;
+	epv->leafday = -1;
 	epv->leafday_lastmort = -1;
+
 	epv->n_rootlayers = 0;
 	epv->n_maxrootlayers = 0;
 	epv->germ_layer = 0;
-	epv->germ_depth = 0;
+	epv->germ_depth = 0.05;
     epv->proj_lai = 0;
     epv->all_lai = 0;
 	epv->sla_avg = 0;
@@ -65,10 +67,20 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->plant_nalloc = 0;
 	epv->excess_c = 0;
 	epv->pnow = 0;
-	epv->NSC_limit_nw = 0;
-	epv->NSC_limit_w = 0;
+	epv->MRdeficit_nw = 0;
+	epv->MRdeficit_w = 0;
 	epv->NDVI = 0;
-	epv->rooting_depth = 0;
+
+	epv->rootlength = 0;
+	epv->rate_scalar_avg = 0;
+	epv->m_tmin = 0;
+	epv->m_co2 = 0;
+	epv->stomaCONDUCT_max = 0;
+	epv->albedo_LAI = 0;
+	epv->assim_Tcoeff = 1;
+	epv->assim_SScoeff = 1;
+	epv->mulch_coverage = 0;
+	epv->evapREDmulch = 1;
 
 	psn_sun->A      = 0;
 	psn_sun->Ci	    = 0;
@@ -97,54 +109,47 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	psn_shade->Aj	    = 0;
 
 
-	/* set the initial rates of litterfall and live wood turnover */
-	if (epc->evergreen)
-	{
-		/* leaf and fineroot litterfall rates */
-		epv->day_leafc_litfall_increment = cinit->max_leafc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-		epv->day_frootc_litfall_increment = cinit->max_frootc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-		epv->day_fruitc_litfall_increment = cinit->max_fruitc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-		epv->day_softstemc_litfall_increment = cinit->max_softstemc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-	}
-	else
-	{
-		/* deciduous: reset the litterfall rates to 0.0 for the start of the
-		next litterfall season */
-		epv->day_leafc_litfall_increment = 0.0;
-		epv->day_frootc_litfall_increment = 0.0;
-		epv->day_fruitc_litfall_increment = 0.0;
-		epv->day_softstemc_litfall_increment = 0.0;
-	}
-
-	epv->day_livestemc_turnover_increment = cs->livestemc * epc->woody_turnover / NDAYS_OF_YEAR;
-	epv->day_livecrootc_turnover_increment = cs->livecrootc * epc->woody_turnover / NDAYS_OF_YEAR;
-
+	
 
 	/* initialize multilayer variables (first approximation: field cap.) and multipliers for stomatal limitation calculation */
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		epv->vwc[layer]				    = sprop->vwc_fc[layer];
+		epv->WFPS[layer]	            = epv->vwc[layer] / sprop->vwc_sat[layer];	
 		epv->psi[layer]				    = sprop->psi_fc[layer];
-		epv->hydr_conduct_S[layer]	    = sprop->hydr_conduct_fc[layer];
-		epv->hydr_diffus_S[layer]	    = sprop->hydr_diffus_fc[layer];
-		epv->hydr_conduct_E[layer]	    = sprop->hydr_conduct_fc[layer];
-		epv->hydr_diffus_E[layer]	    = sprop->hydr_diffus_fc[layer];
+		epv->hydr_conductSTART[layer]	= sprop->hydr_conduct_fc[layer];
+		epv->hydr_diffusSTART[layer]	= sprop->hydr_diffus_fc[layer];
+		epv->hydr_conductEND[layer]	    = sprop->hydr_conduct_fc[layer];
+		epv->hydr_diffusEND[layer]	    = sprop->hydr_diffus_fc[layer];
 		epv->pF[layer]				    = log10(fabs(10000*sprop->psi_fc[layer]));	// dimension of psi: MPa to cm (10000 MPa = 1 cm)
-		epv->m_soilstress_layer[layer]  = 1;
+		epv->m_SWCstress_layer[layer]  = 1;
 	    epv->rootlength_prop[layer]     = 0;
-		
+		epv->rootlengthLandD_prop[layer]= 0;
+		ns->sminNH4avail[layer]         = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;
+		ns->sminNO3avail[layer]         = ns->sminNH4[layer] * NO3_mobilen_prop;
 	}
 
+    /* evergreen biome: root available also in the first day */
+	epv->rootdepth = 0;
+	if (epc->evergreen) 
+	{
+		epv->rootlength_prop[0] = 1;
+		epv->n_rootlayers = 1;
+		if (epc->woody) 
+			epv->rootdepth = epc->max_rootzone_depth;
+		else
+			epv->rootdepth = CRIT_PREC;
+	}
 	/* initialize genetical senescence variables */
-	epv->thermal_timeSUM_max = 0;
-	epv->thermal_time        = 0;
+
+	epv->thermal_time = 0;
 
 	epv->m_ppfd_sun = 1;
 	epv->m_ppfd_shade = 1;
 	epv->m_vpd = 1;
 	epv->m_final_sun = 1;
 	epv->m_final_shade = 1;
-	epv->m_dsws = 1;
+	epv->m_SWCstressLENGTH = 1;
 	epv->m_extremT = 1;
 	epv->gcorr = 0;
 	epv->gl_bl = 0;
@@ -157,23 +162,27 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->gc_sh = 0;
 	epv->gl_t_wv_sun = 0;
 	epv->gl_t_wv_shade = 0;
+	epv->gl_t_wv_sunPOT = 0;
+	epv->gl_t_wv_shadePOT = 0;
 
-	for (day = 0; day < NDAYS_OF_YEAR; day++)
+
+	for (day = 0; day < 2*nDAYS_OF_YEAR; day++)
 	{
-		epv->thermal_timeSUM[day]     = 0;
+		epv->thermal_timeARRAY[day]     = 0;
 		epv->cpool_to_leafcARRAY[day] = 0;
 		epv->npool_to_leafnARRAY[day] = 0;
+		epv->gpSNSC_phenARRAY[day] = 0;
 	}
-	
 	epv->vwc_avg		    = sprop->vwc_fc[0];
 	epv->vwc_RZ 		    = sprop->vwc_fc[0];  
 	epv->vwcSAT_RZ 		    = sprop->vwc_sat[0];  
 	epv->vwcFC_RZ 		    = sprop->vwc_fc[0];  
 	epv->vwcWP_RZ 		    = sprop->vwc_wp[0];  
 	epv->vwcHW_RZ 		    = sprop->vwc_hw[0];  
-	epv->psi_avg		    = sprop->psi_fc[0];
-	epv->m_soilstress	    = 1;
+	epv->psi_RZ		        = sprop->psi_fc[0];
+	epv->m_SWCstress	    = 1;
 	epv->SMSI               = 0;
+	epv->flower_date        = 0;
 	metv->tsoil_avg	   	    = sitec->tair_annavg;
 	metv->tsoil_surface_pre	= sitec->tair_annavg;	
 
@@ -185,10 +194,16 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	phen->yday_total     = 0;
 	phen->onday          = -1;
 	phen->offday         = -1;
+	phen->planttype      = 0;
 
 
-	/* initialize sum of leafC in a given phenophase */
-	for (pp = 0; pp < N_PHENPHASES; pp++) cs->leafcSUM_phenphase[pp] = 0;
+
+	/* initialize sum of leafC content and starting date of a given phenophase */
+	for (pp = 0; pp < N_PHENPHASES; pp++) 
+	{
+		cs->leafcSUM_phenphase[pp] = 0;
+		epv->phenphase_date[pp]=-1;
+	}
 
 
 	/* *****************************************************************************- */
@@ -241,59 +256,61 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
  		
 		if (epc->froot_cn)
 		{
-			cs->frootc_transfer       = cinit->max_frootc      * epc->nonwoody_turnover;
-			cs->frootc                = cinit->max_frootc      - cs->frootc_transfer;
-			ns->frootn_transfer = cs->frootc_transfer / epc->froot_cn;
-			ns->frootn = cs->frootc / epc->froot_cn;
+			cinit->max_frootc         = cinit->max_leafc    * (epc->alloc_frootc[0]/epc->alloc_leafc[0]);
+			cs->frootc_transfer       = cinit->max_frootc   * epc->nonwoody_turnover;
+			cs->frootc                = cinit->max_frootc   - cs->frootc_transfer;
+			ns->frootn_transfer       = cs->frootc_transfer / epc->froot_cn;
+			ns->frootn                 = cs->frootc         / epc->froot_cn;
 		}
 
 		if (epc->fruit_cn)
 		{
-			cs->fruitc_transfer       = cinit->max_fruitc      * epc->nonwoody_turnover;
-			cs->fruitc                = cinit->max_fruitc      - cs->fruitc_transfer;
-			ns->fruitn_transfer = cs->fruitc_transfer / epc->fruit_cn;
-			ns->fruitn = cs->fruitc / epc->fruit_cn;
+			cinit->max_fruitc         = cinit->max_leafc    * (epc->alloc_fruitc[0]/epc->alloc_leafc[0]);
+			cs->fruitc_transfer       = cinit->max_fruitc   * epc->nonwoody_turnover;
+			cs->fruitc                = cinit->max_fruitc   - cs->fruitc_transfer;
+			ns->fruitn_transfer       = cs->fruitc_transfer / epc->fruit_cn;
+			ns->fruitn                = cs->fruitc          / epc->fruit_cn;
 		}
 
 		if (epc->softstem_cn)
 		{
-			cs->softstemc_transfer       = cinit->max_softstemc      * epc->nonwoody_turnover;
-			cs->softstemc                = cinit->max_softstemc      - cs->softstemc_transfer;
-			ns->softstemn_transfer = cs->softstemc_transfer / epc->softstem_cn;
-			ns->softstemn = cs->softstemc / epc->softstem_cn;
+			cinit->max_softstemc         = cinit->max_leafc    * (epc->alloc_softstemc[0]/epc->alloc_leafc[0]);
+			cs->softstemc_transfer       = cinit->max_softstemc   * epc->nonwoody_turnover;
+			cs->softstemc                = cinit->max_softstemc   - cs->softstemc_transfer;
+			ns->softstemn_transfer       = cs->softstemc_transfer / epc->softstem_cn;
+			ns->softstemn                = cs->softstemc          / epc->softstem_cn;
 		}
 
 		
 		if (epc->livewood_cn)
 		{
+			cinit->max_livestemc     = cinit->max_leafc        * (epc->alloc_livestemc[0]/epc->alloc_leafc[0]);
 			cs->livestemc_transfer   = cinit->max_livestemc    * epc->woody_turnover;
 			cs->livestemc            = cinit->max_livestemc    - cs->livestemc_transfer;
-            ns->livestemn_transfer  = cs->livestemc_transfer / epc->livewood_cn;
-			ns->livestemn           = cs->livestemc / epc->livewood_cn;
+            ns->livestemn_transfer   = cs->livestemc_transfer  / epc->livewood_cn;
+			ns->livestemn            = cs->livestemc           / epc->livewood_cn;
 
+			cinit->max_livecrootc    = cinit->max_leafc        * (epc->alloc_livecrootc[0]/epc->alloc_leafc[0]);
 			cs->livecrootc_transfer  = cinit->max_livecrootc   * epc->woody_turnover;
 			cs->livecrootc           = cinit->max_livecrootc   - cs->livecrootc_transfer;
-			ns->livecrootn_transfer = cs->livecrootc_transfer / epc->livewood_cn;
-			ns->livecrootn          = cs->livecrootc / epc->livewood_cn;
+			ns->livecrootn_transfer  = cs->livecrootc_transfer / epc->livewood_cn;
+			ns->livecrootn           = cs->livecrootc          / epc->livewood_cn;
 		}
 	
 		if (epc->deadwood_cn)
 		{
-			if (epc->alloc_livestemc[0]) 
-			{
-				cs->deadstemc_transfer   = cs->livestemc_transfer  * (epc->alloc_deadstemc[0] / epc->alloc_livestemc[0]);
-				cs->deadstemc            = cs->livestemc           * (epc->alloc_deadstemc[0] / epc->alloc_livestemc[0]);
-			}
-			if (epc->alloc_livecrootc[0])
-			{
-				cs->deadcrootc_transfer  = cs->livecrootc_transfer * (epc->alloc_deadcrootc[0] / epc->alloc_livecrootc[0]);
-				cs->deadcrootc           = cs->livecrootc          * (epc->alloc_deadcrootc[0] / epc->alloc_livecrootc[0]);
-			}
+			max_deadstemc            = cinit->max_leafc        * (epc->alloc_deadstemc[0]/epc->alloc_leafc[0]);
+			cs->deadstemc_transfer   = max_deadstemc    * epc->woody_turnover;
+			cs->deadstemc            = max_deadstemc    - cs->deadstemc_transfer;
+            ns->deadstemn_transfer   = cs->deadstemc_transfer  / epc->deadwood_cn;
+			ns->deadstemn            = cs->deadstemc           / epc->deadwood_cn;
 
-			ns->deadstemn_transfer  = cs->deadstemc_transfer / epc->deadwood_cn;
-			ns->deadstemn           = cs->deadstemc / epc->deadwood_cn;
-			ns->deadcrootn_transfer = cs->deadcrootc_transfer / epc->deadwood_cn;
-			ns->deadcrootn          = cs->deadcrootc / epc->deadwood_cn;
+			max_deadcrootc           = cinit->max_leafc        * (epc->alloc_deadcrootc[0]/epc->alloc_leafc[0]);
+			cs->deadcrootc_transfer  = max_deadcrootc   * epc->woody_turnover;
+			cs->deadcrootc           = max_deadcrootc   - cs->deadcrootc_transfer;
+			ns->deadcrootn_transfer  = cs->deadcrootc_transfer / epc->deadwood_cn;
+			ns->deadcrootn           = cs->deadcrootc          / epc->deadwood_cn;
+
 		}
 
 		/* *****************************************************************************- */
@@ -396,7 +413,7 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 		cs->HRV_transportC += cs->STDBc_froot;
 		cs->HRV_transportC += cs->STDBc_fruit;
 		cs->HRV_transportC += cs->STDBc_softstem;
-		cs->HRV_transportC += cs->STDBc_transfer;
+		cs->HRV_transportC += cs->STDBc_nsc;
 
 		cs->leafc = 0;
 		cs->frootc = 0;
@@ -411,7 +428,7 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 		cs->STDBc_froot = 0;
 		cs->STDBc_fruit = 0;
 		cs->STDBc_softstem = 0;
-		cs->STDBc_transfer = 0;
+		cs->STDBc_nsc = 0;
 
 		ns->HRV_transportN += ns->leafn + ns->leafn_transfer;
 		ns->HRV_transportN += ns->frootn + ns->frootn_transfer;
@@ -422,7 +439,7 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 		ns->HRV_transportN += ns->STDBn_froot;
 		ns->HRV_transportN += ns->STDBn_fruit;
 		ns->HRV_transportN += ns->STDBn_softstem;
-		ns->HRV_transportN += ns->STDBn_transfer;
+		ns->HRV_transportN += ns->STDBn_nsc;
 
 		ns->leafn = 0;
 		ns->frootn = 0;
@@ -437,11 +454,42 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 		ns->STDBn_froot = 0;
 		ns->STDBn_fruit = 0;
 		ns->STDBn_softstem = 0;
-		ns->STDBn_transfer = 0;
-
-		epv->rooting_depth = 0;
+		ns->STDBn_nsc = 0;
 	}
 	
+	/* set the initial rates of litterfall and live wood turnover */
+	if (epc->evergreen)
+	{
+		/* leaf and fineroot litterfall rates */
+		if (ctrl->spinup != 0)
+		{
+			epv->day_leafc_litfall_increment = cinit->max_leafc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_frootc_litfall_increment = cinit->max_frootc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_fruitc_litfall_increment = cinit->max_fruitc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_softstemc_litfall_increment = cinit->max_softstemc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		}
+		else
+		{
+			epv->day_leafc_litfall_increment = epv->annmax_leafc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_frootc_litfall_increment = epv->annmax_frootc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_fruitc_litfall_increment = epv->annmax_fruitc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_softstemc_litfall_increment = epv->annmax_softstemc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		}
+	}
+	else
+	{
+		/* deciduous: reset the litterfall rates to 0.0 for the start of the
+		next litterfall season */
+		epv->day_leafc_litfall_increment = 0.0;
+		epv->day_frootc_litfall_increment = 0.0;
+		epv->day_fruitc_litfall_increment = 0.0;
+		epv->day_softstemc_litfall_increment = 0.0;
+	}
+
+	epv->day_livestemc_turnover_increment = cs->livestemc * epc->woody_turnover / nDAYS_OF_YEAR;
+	epv->day_livecrootc_turnover_increment = cs->livecrootc * epc->woody_turnover / nDAYS_OF_YEAR;
+
+
 	/* in case of land-use change: agroecosystem to natural vegetation */
 	if (!ctrl->spinup && !PLT->PLT_num)
 	{
@@ -451,14 +499,64 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 			ns->leafn_transfer = cs->leafc_transfer/ epc->leaf_cn;
 		}
 
-	/*	if (!cs->frootc_transfer)
+		if (!cs->frootc_transfer)
 		{
 			cs->frootc_transfer = 0.001;
 			ns->frootn_transfer = ns->frootn_transfer/ epc->leaf_cn;
 		}
-		*/
+		
 	}
 
-	
-	return (errflag);
+	/* in case of land-use change: non-woody to woody and woody to non-woody */
+	if (ctrl->spinup == 0)
+	{
+		if (epc->woody)
+		{
+			cs->softstemc = 0;
+			cs->softstemc_storage = 0;
+			cs->softstemc_transfer = 0;
+			cs->HRV_transportC += cs->softstemc + cs->softstemc_storage + cs->softstemc_transfer;
+			ns->softstemn = 0;
+			ns->softstemn_storage = 0;
+			ns->softstemn_transfer = 0;
+			ns->HRV_transportN += ns->softstemn + ns->softstemn_storage + ns->softstemn_transfer;
+		}
+		else
+		{
+			cs->livestemc = 0;
+			cs->livestemc_storage = 0;
+			cs->livestemc_transfer = 0;
+			cs->livecrootc = 0;
+			cs->livecrootc_storage = 0;
+			cs->livecrootc_transfer = 0;
+			cs->deadstemc = 0;
+			cs->deadstemc_storage = 0;
+			cs->deadstemc_transfer = 0;
+			cs->deadcrootc = 0;
+			cs->deadcrootc_storage = 0;
+			cs->deadcrootc_transfer = 0;
+			cs->HRV_transportC += cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer +
+				                  cs->livecrootc + cs->livecrootc_storage + cs->livecrootc_transfer +
+								  cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer +
+				                  cs->deadcrootc + cs->deadcrootc_storage + cs->deadcrootc_transfer;
+			ns->livestemn = 0;
+			ns->livestemn_storage = 0;
+			ns->livestemn_transfer = 0;
+			ns->livecrootn = 0;
+			ns->livecrootn_storage = 0;
+			ns->livecrootn_transfer = 0;
+			ns->deadstemn = 0;
+			ns->deadstemn_storage = 0;
+			ns->deadstemn_transfer = 0;
+			ns->deadcrootn = 0;
+			ns->deadcrootn_storage = 0;
+			ns->deadcrootn_transfer = 0;
+			ns->HRV_transportN += ns->livestemn + ns->livestemn_storage + ns->livestemn_transfer +
+				                  ns->livecrootn + ns->livecrootn_storage + ns->livecrootn_transfer +
+								  ns->deadstemn + ns->deadstemn_storage + ns->deadstemn_transfer +
+				                  ns->deadcrootn + ns->deadcrootn_storage + ns->deadcrootn_transfer;
+		}
+
+	}
+	return (errorCode);
 }

@@ -3,10 +3,10 @@ state_update.c
 Resolve the fluxes in bgc() daily loop to update state variables
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -30,7 +30,7 @@ int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws)
 {
 	/* daily update of the water state variables */
 	 
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 	
 	/* precipitation fluxes */
@@ -66,7 +66,7 @@ int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws)
 	ws->runoff_snk	   += wf->prcp_to_runoff;
 
 	/* deep percolation: percolation of the bottom layer is net loss for the sytem*/
-	ws->deeppercolation_snk += wf->soilw_percolated[N_SOILLAYERS-2] + wf->soilw_diffused[N_SOILLAYERS-2];
+	ws->deeppercolation_snk += wf->soilw_percolated[N_SOILLAYERS-1] + wf->soilw_diffused[N_SOILLAYERS-1];
 	
 	/* groundwater */	
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
@@ -78,18 +78,19 @@ int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws)
 	/* irrigating */
 	ws->IRGsrc_W += wf->IRG_to_prcp;
 	
-	return (errflag);
+	return (errorCode);
 }
 
-int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns, 
-	                      int alloc, int woody, int evergreen)
+int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* epc, control_struct* ctrl, epvar_struct* epv, 
+	                      cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns, int alloc, int woody, int evergreen)
 {
 	/* daily update of the carbon state variables */
 	
-	int errflag=0;
+	int errorCode=0;
 	int layer, pp;
 	double leafc_to_litr, leafn_to_litr, frootc_to_litr, frootn_to_litr, fruitc_to_litr, fruitn_to_litr, softstemc_to_litr, softstemn_to_litr;
-
+	double propLAYER0, propLAYER1, propLAYER2;
+	
 	/* C state variables are updated below in the order of the relevant fluxes in the daily model loop */
 	
 	/* NOTE: Mortality fluxes are all accounted for in a separate routine, which is to be called after this routine.  
@@ -98,7 +99,7 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	
 
 	/* 1. Phenology fluxes */
-	if (!errflag && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, cf->leafc_transfer_to_leafc, nf->leafn_transfer_to_leafn, 0)) 
+	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, cf->leafc_transfer_to_leafc, nf->leafn_transfer_to_leafn, 0)) 
 	{
 		cs->leafc               += cf->leafc_transfer_to_leafc;
 		cs->leafc_transfer      -= cf->leafc_transfer_to_leafc;
@@ -107,11 +108,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->leaf_cn)		
 	{
-		if (!errflag) printf("ERROR in leaf CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in leaf CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, cf->frootc_transfer_to_frootc, nf->frootn_transfer_to_frootn, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, cf->frootc_transfer_to_frootc, nf->frootn_transfer_to_frootn, 0)) 
 	{
 		cs->frootc               += cf->frootc_transfer_to_frootc;
 		cs->frootc_transfer      -= cf->frootc_transfer_to_frootc;
@@ -120,11 +121,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->froot_cn)		
 	{
-		if (!errflag) printf("ERROR in froot CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in froot CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->fruitc_transfer_to_fruitc, nf->fruitn_transfer_to_fruitn, 0)) 
+	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->fruitc_transfer_to_fruitc, nf->fruitn_transfer_to_fruitn, 0)) 
 	{
 		cs->fruitc               += cf->fruitc_transfer_to_fruitc;
 		cs->fruitc_transfer      -= cf->fruitc_transfer_to_fruitc;
@@ -133,11 +134,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->fruit_cn)	
 	{	
-		if (!errflag) printf("ERROR in fruit CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in fruit CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->softstemc_transfer_to_softstemc, nf->softstemn_transfer_to_softstemn, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->softstemc_transfer_to_softstemc, nf->softstemn_transfer_to_softstemn, 0)) 
 	{
 		cs->softstemc               += cf->softstemc_transfer_to_softstemc;
 		cs->softstemc_transfer      -= cf->softstemc_transfer_to_softstemc;
@@ -146,11 +147,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->softstem_cn)		
 	{
-		if (!errflag) printf("ERROR in softstem CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in softstem CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 	
-	if (!errflag && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->livestemc_transfer_to_livestemc, nf->livestemn_transfer_to_livestemn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->livestemc_transfer_to_livestemc, nf->livestemn_transfer_to_livestemn, 0)) 
 	{
 		cs->livestemc               += cf->livestemc_transfer_to_livestemc;
 		cs->livestemc_transfer      -= cf->livestemc_transfer_to_livestemc;
@@ -159,11 +160,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->livewood_cn)		
 	{
-		if (!errflag) printf("ERROR in livestem CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in livestem CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->livecrootc_transfer_to_livecrootc, nf->livecrootn_transfer_to_livecrootn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->livecrootc_transfer_to_livecrootc, nf->livecrootn_transfer_to_livecrootn, 0)) 
 	{
 		cs->livecrootc               += cf->livecrootc_transfer_to_livecrootc;
 		cs->livecrootc_transfer      -= cf->livecrootc_transfer_to_livecrootc;
@@ -172,11 +173,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->livewood_cn)		
 	{
-		if (!errflag) printf("ERROR in livecroot CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in livecroot CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->deadstemc_transfer_to_deadstemc, nf->deadstemn_transfer_to_deadstemn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->deadstemc_transfer_to_deadstemc, nf->deadstemn_transfer_to_deadstemn, 0)) 
 	{
 		cs->deadstemc               += cf->deadstemc_transfer_to_deadstemc;
 		cs->deadstemc_transfer      -= cf->deadstemc_transfer_to_deadstemc;
@@ -185,11 +186,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->deadwood_cn)		
 	{
-		if (!errflag) printf("ERROR in deadstem CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in deadstem CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->deadcrootc_transfer_to_deadcrootc, nf->deadcrootn_transfer_to_deadcrootn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->deadcrootc_transfer_to_deadcrootc, nf->deadcrootn_transfer_to_deadcrootn, 0)) 
 	{
 		cs->deadcrootc               += cf->deadcrootc_transfer_to_deadcrootc;
 		cs->deadcrootc_transfer      -= cf->deadcrootc_transfer_to_deadcrootc;
@@ -198,26 +199,56 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->deadwood_cn)		
 	{
-		if (!errflag) printf("ERROR in deadcroot CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in deadcroot CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
 	
 	/* 2. Aboveground pool litterfall and retranslocation to the first soil layer */
 	leafc_to_litr = cf->leafc_to_litr1c + cf->leafc_to_litr2c + cf->leafc_to_litr3c + cf->leafc_to_litr4c;
 	leafn_to_litr = nf->leafn_to_litr1n + nf->leafn_to_litr2n + nf->leafn_to_litr3n + nf->leafn_to_litr4n;
-	if (!errflag && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, leafc_to_litr, leafn_to_litr, epc->leaflitr_cn)) 
+		
+	/* new feature: litter turns into the first AND the second soil layer */
+	propLAYER0 = sitec->soillayer_thickness[0]/sitec->soillayer_depth[2];
+	propLAYER1 = sitec->soillayer_thickness[1]/sitec->soillayer_depth[2];
+	propLAYER2 = sitec->soillayer_thickness[2]/sitec->soillayer_depth[2];
+
+	
+
+	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, leafc_to_litr, leafn_to_litr, epc->leaflitr_cn)) 
 	{
-		cs->litr1c[0]  += (cf->leafc_to_litr1c);
-		cs->litr2c[0]  += (cf->leafc_to_litr2c);
-		cs->litr3c[0]  += (cf->leafc_to_litr3c);
-		cs->litr4c[0]  += (cf->leafc_to_litr4c);
+		cs->litr1c[0]  += (cf->leafc_to_litr1c) * propLAYER0;
+		cs->litr2c[0]  += (cf->leafc_to_litr2c) * propLAYER0;
+		cs->litr3c[0]  += (cf->leafc_to_litr3c) * propLAYER0;
+		cs->litr4c[0]  += (cf->leafc_to_litr4c) * propLAYER0;
+
+		cs->litr1c[1]  += (cf->leafc_to_litr1c) * propLAYER1;
+		cs->litr2c[1]  += (cf->leafc_to_litr2c) * propLAYER1;
+		cs->litr3c[1]  += (cf->leafc_to_litr3c) * propLAYER1;
+		cs->litr4c[1]  += (cf->leafc_to_litr4c) * propLAYER1;
+
+		cs->litr1c[2]  += (cf->leafc_to_litr1c) * propLAYER2;
+		cs->litr2c[2]  += (cf->leafc_to_litr2c) * propLAYER2;
+		cs->litr3c[2]  += (cf->leafc_to_litr3c) * propLAYER2;
+		cs->litr4c[2]  += (cf->leafc_to_litr4c) * propLAYER2;
+		
 		cs->leafc      -= (cf->leafc_to_litr1c + cf->leafc_to_litr2c + cf->leafc_to_litr3c + cf->leafc_to_litr4c);
 
-		ns->litr1n[0]  += (nf->leafn_to_litr1n);
-		ns->litr2n[0]  += (nf->leafn_to_litr2n);
-		ns->litr3n[0]  += (nf->leafn_to_litr3n);
-		ns->litr4n[0]  += (nf->leafn_to_litr4n);
+		ns->litr1n[0]  += (nf->leafn_to_litr1n) * propLAYER0;
+		ns->litr2n[0]  += (nf->leafn_to_litr2n) * propLAYER0;
+		ns->litr3n[0]  += (nf->leafn_to_litr3n) * propLAYER0;
+		ns->litr4n[0]  += (nf->leafn_to_litr4n) * propLAYER0;
+
+		ns->litr1n[1]  += (nf->leafn_to_litr1n) * propLAYER1;
+		ns->litr2n[1]  += (nf->leafn_to_litr2n) * propLAYER1;
+		ns->litr3n[1]  += (nf->leafn_to_litr3n) * propLAYER1;
+		ns->litr4n[1]  += (nf->leafn_to_litr4n) * propLAYER1;
+		
+		ns->litr1n[2]  += (nf->leafn_to_litr1n) * propLAYER2;
+		ns->litr2n[2]  += (nf->leafn_to_litr2n) * propLAYER2;
+		ns->litr3n[2]  += (nf->leafn_to_litr3n) * propLAYER2;
+		ns->litr4n[2]  += (nf->leafn_to_litr4n) * propLAYER2;
+
 		ns->leafn       = cs->leafc / epc->leaf_cn;
 
 		ns->retransn   += nf->leafn_to_retransn;   
@@ -226,59 +257,102 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->leaflitr_cn || epc->leaf_cn)		
 	{
-		if (!errflag) printf("ERROR in leaf_to_litr CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in leaf_to_litr CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 	
 	fruitc_to_litr = cf->fruitc_to_litr1c + cf->fruitc_to_litr2c + cf->fruitc_to_litr3c + cf->fruitc_to_litr4c;
 	fruitn_to_litr = nf->fruitn_to_litr1n + nf->fruitn_to_litr2n + nf->fruitn_to_litr3n + nf->fruitn_to_litr4n;
-	if (!errflag && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, fruitc_to_litr, fruitn_to_litr, 0)) 
+	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, fruitc_to_litr, fruitn_to_litr, 0)) 
 	{
-		cs->litr1c[0]  += (cf->fruitc_to_litr1c);
-		cs->litr2c[0]  += (cf->fruitc_to_litr2c);
-		cs->litr3c[0]  += (cf->fruitc_to_litr3c);
-		cs->litr4c[0]  += (cf->fruitc_to_litr4c);
+		cs->litr1c[0]  += (cf->fruitc_to_litr1c) * propLAYER0;
+		cs->litr2c[0]  += (cf->fruitc_to_litr2c) * propLAYER0;
+		cs->litr3c[0]  += (cf->fruitc_to_litr3c) * propLAYER0;
+		cs->litr4c[0]  += (cf->fruitc_to_litr4c) * propLAYER0;
+
+		cs->litr1c[1]  += (cf->fruitc_to_litr1c) * propLAYER1;
+		cs->litr2c[1]  += (cf->fruitc_to_litr2c) * propLAYER1;
+		cs->litr3c[1]  += (cf->fruitc_to_litr3c) * propLAYER1;
+		cs->litr4c[1]  += (cf->fruitc_to_litr4c) * propLAYER1;
+
+		cs->litr1c[2]  += (cf->fruitc_to_litr1c) * propLAYER2;
+		cs->litr2c[2]  += (cf->fruitc_to_litr2c) * propLAYER2;
+		cs->litr3c[2]  += (cf->fruitc_to_litr3c) * propLAYER2;
+		cs->litr4c[2]  += (cf->fruitc_to_litr4c) * propLAYER2;
+
 		cs->fruitc      -= (cf->fruitc_to_litr1c + cf->fruitc_to_litr2c + cf->fruitc_to_litr3c + cf->fruitc_to_litr4c);
 
-		ns->litr1n[0]  += (nf->fruitn_to_litr1n);
-		ns->litr2n[0]  += (nf->fruitn_to_litr2n);
-		ns->litr3n[0]  += (nf->fruitn_to_litr3n);
-		ns->litr4n[0]  += (nf->fruitn_to_litr4n);
+		ns->litr1n[0]  += (nf->fruitn_to_litr1n) * propLAYER0;
+		ns->litr2n[0]  += (nf->fruitn_to_litr2n) * propLAYER0;
+		ns->litr3n[0]  += (nf->fruitn_to_litr3n) * propLAYER0;
+		ns->litr4n[0]  += (nf->fruitn_to_litr4n) * propLAYER0;
+
+		ns->litr1n[1]  += (nf->fruitn_to_litr1n) * propLAYER1;
+		ns->litr2n[1]  += (nf->fruitn_to_litr2n) * propLAYER1;
+		ns->litr3n[1]  += (nf->fruitn_to_litr3n) * propLAYER1;
+		ns->litr4n[1]  += (nf->fruitn_to_litr4n) * propLAYER1;	
+
+		ns->litr1n[2]  += (nf->fruitn_to_litr1n) * propLAYER2;
+		ns->litr2n[2]  += (nf->fruitn_to_litr2n) * propLAYER2;
+		ns->litr3n[2]  += (nf->fruitn_to_litr3n) * propLAYER2;
+		ns->litr4n[2]  += (nf->fruitn_to_litr4n) * propLAYER2;	
+
 		ns->fruitn      = cs->fruitc / epc->fruit_cn;
 	}
 	else if (epc->fruit_cn)		
 	{
-		if (!errflag) printf("ERROR in fruit_to_litr CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in fruit_to_litr CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
 	softstemc_to_litr = cf->softstemc_to_litr1c + cf->softstemc_to_litr2c + cf->softstemc_to_litr3c + cf->softstemc_to_litr4c;
 	softstemn_to_litr = nf->softstemn_to_litr1n + nf->softstemn_to_litr2n + nf->softstemn_to_litr3n + nf->softstemn_to_litr4n;
-	if (!errflag && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, softstemc_to_litr, softstemn_to_litr, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, softstemc_to_litr, softstemn_to_litr, 0)) 
 	{
-		cs->litr1c[0]  += (cf->softstemc_to_litr1c);
-		cs->litr2c[0]  += (cf->softstemc_to_litr2c);
-		cs->litr3c[0]  += (cf->softstemc_to_litr3c);
-		cs->litr4c[0]  += (cf->softstemc_to_litr4c);
-		cs->softstemc      -= (cf->softstemc_to_litr1c + cf->softstemc_to_litr2c + cf->softstemc_to_litr3c + cf->softstemc_to_litr4c);
+		cs->litr1c[0]  += (cf->softstemc_to_litr1c) * propLAYER0;
+		cs->litr2c[0]  += (cf->softstemc_to_litr2c) * propLAYER0;
+		cs->litr3c[0]  += (cf->softstemc_to_litr3c) * propLAYER0;
+		cs->litr4c[0]  += (cf->softstemc_to_litr4c) * propLAYER0;
+				
+		cs->litr1c[1]  += (cf->softstemc_to_litr1c) * propLAYER1;
+		cs->litr2c[1]  += (cf->softstemc_to_litr2c) * propLAYER1;
+		cs->litr3c[1]  += (cf->softstemc_to_litr3c) * propLAYER1;
+		cs->litr4c[1]  += (cf->softstemc_to_litr4c) * propLAYER1;
 
-		ns->litr1n[0]  += (nf->softstemn_to_litr1n);
-		ns->litr2n[0]  += (nf->softstemn_to_litr2n);
-		ns->litr3n[0]  += (nf->softstemn_to_litr3n);
-		ns->litr4n[0]  += (nf->softstemn_to_litr4n);
+		cs->litr1c[2]  += (cf->softstemc_to_litr1c) * propLAYER2;
+		cs->litr2c[2]  += (cf->softstemc_to_litr2c) * propLAYER2;
+		cs->litr3c[2]  += (cf->softstemc_to_litr3c) * propLAYER2;
+		cs->litr4c[2]  += (cf->softstemc_to_litr4c) * propLAYER2;
+		cs->softstemc  -= (cf->softstemc_to_litr1c + cf->softstemc_to_litr2c + cf->softstemc_to_litr3c + cf->softstemc_to_litr4c);
+
+		ns->litr1n[0]  += (nf->softstemn_to_litr1n) * propLAYER0;
+		ns->litr2n[0]  += (nf->softstemn_to_litr2n) * propLAYER0;
+		ns->litr3n[0]  += (nf->softstemn_to_litr3n) * propLAYER0;
+		ns->litr4n[0]  += (nf->softstemn_to_litr4n) * propLAYER0;
+		
+		ns->litr1n[1]  += (nf->softstemn_to_litr1n) * propLAYER1;
+		ns->litr2n[1]  += (nf->softstemn_to_litr2n) * propLAYER1;
+		ns->litr3n[1]  += (nf->softstemn_to_litr3n) * propLAYER1;
+		ns->litr4n[1]  += (nf->softstemn_to_litr4n) * propLAYER1;
+
+		ns->litr1n[2]  += (nf->softstemn_to_litr1n) * propLAYER2;
+		ns->litr2n[2]  += (nf->softstemn_to_litr2n) * propLAYER2;
+		ns->litr3n[2]  += (nf->softstemn_to_litr3n) * propLAYER2;
+		ns->litr4n[2]  += (nf->softstemn_to_litr4n) * propLAYER2;
+
 		ns->softstemn   = cs->softstemc / epc->softstem_cn;
 	}
 	else if (epc->softstem_cn)		
 	{
-		if (!errflag) printf("ERROR in softstem_to_litr CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in softstem_to_litr CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 	
 	/* 3. Belowground litterfall is distributed between the different soil layers */
 	
 	frootc_to_litr = cf->frootc_to_litr1c + cf->frootc_to_litr2c + cf->frootc_to_litr3c + cf->frootc_to_litr4c;
 	frootn_to_litr = nf->frootn_to_litr1n + nf->frootn_to_litr2n + nf->frootn_to_litr3n + nf->frootn_to_litr4n;
-	if (!errflag && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, frootc_to_litr, frootn_to_litr, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, frootc_to_litr, frootn_to_litr, 0)) 
 	{
 		for (layer = 0; layer < N_SOILLAYERS; layer++)
 		{
@@ -297,8 +371,8 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->froot_cn)		
 	{
-		if (!errflag) printf("ERROR in froot_to_litr CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in froot_to_litr CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
 	 /* 4. Livewood turnover fluxes */
@@ -324,8 +398,8 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	cs->cpool        += (cf->psnsun_to_cpool + cf->psnshade_to_cpool);
 
 	/* 7. Plant allocation flux, from N retrans pool */
-	ns->npool		    += nf->retransn_to_npool;
-	ns->retransn        -= nf->retransn_to_npool;
+	ns->npool		    += nf->retransn_to_npoolTOTAL;
+	ns->retransn        -= nf->retransn_to_npoolTOTAL;
 
 	
 	/* 8. Litter decomposition fluxes - MULTILAYER SOIL */
@@ -406,7 +480,7 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	/* 9. Daily allocation fluxes */
 	/* daily leaf allocation fluxes */
 	
-	if (!errflag && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, cf->cpool_to_leafc, nf->npool_to_leafn, 0)) 
+	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, cf->cpool_to_leafc, nf->npool_to_leafn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_leafc;
 		cs->leafc          += cf->cpool_to_leafc;
@@ -416,11 +490,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->leaf_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_leafc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_leafc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc_storage, ns->leafn_storage, cf->cpool_to_leafc_storage, nf->npool_to_leafn_storage, 0)) 
+	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc_storage, ns->leafn_storage, cf->cpool_to_leafc_storage, nf->npool_to_leafn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_leafc_storage;
 		cs->leafc_storage  += cf->cpool_to_leafc_storage;
@@ -430,12 +504,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->leaf_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_leafc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_leafc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
 	/* Daily fine root allocation fluxes */
-	if (!errflag && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, cf->cpool_to_frootc, nf->npool_to_frootn, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, cf->cpool_to_frootc, nf->npool_to_frootn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_frootc;
 		cs->frootc         += cf->cpool_to_frootc;
@@ -445,11 +519,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->froot_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_frootc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_frootc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc_storage, ns->frootn_storage, cf->cpool_to_frootc_storage, nf->npool_to_frootn_storage, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc_storage, ns->frootn_storage, cf->cpool_to_frootc_storage, nf->npool_to_frootn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_frootc_storage;
 		cs->frootc_storage += cf->cpool_to_frootc_storage;
@@ -459,12 +533,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->froot_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_frootc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_frootc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
 	/* Daily fruit allocation fluxes + EXTRA: effect of heat stress during flowering in grain filling phenophase */
-	if (!errflag && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->cpool_to_fruitc, nf->npool_to_fruitn, 0)) 
+	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->cpool_to_fruitc, nf->npool_to_fruitn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_fruitc;
 		cs->fruitc         += cf->cpool_to_fruitc;
@@ -482,17 +556,17 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 		if ((cf->fruitc_to_flowHS > 0 && nf->fruitn_to_flowHS > 0 && epv->n_actphen != epc->n_flowHS_phenophase + 1) || 
 			(cs->fruitc < 0 && fabs(cs->fruitc) > CRIT_PREC)  || (ns->fruitn < 0 && fabs(ns->fruitn) > CRIT_PREC)  )
 		{
-			if (!errflag) printf("ERROR in flowering heat stress calculation in state_update.c\n");
-			errflag=1;
+			if (!errorCode) printf("ERROR in flowering heat stress calculation in state_update.c\n");
+			errorCode=1;
 		}
 	}
 	else if (epc->fruit_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_fruitc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_fruitc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc_storage, ns->fruitn_storage, cf->cpool_to_fruitc_storage, nf->npool_to_fruitn_storage, 0)) 
+	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc_storage, ns->fruitn_storage, cf->cpool_to_fruitc_storage, nf->npool_to_fruitn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_fruitc_storage;
 		cs->fruitc_storage += cf->cpool_to_fruitc_storage;
@@ -502,12 +576,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->fruit_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_fruitc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_fruitc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 	
 	/* Daily sofstem allocation fluxes */
-	if (!errflag && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->cpool_to_softstemc, nf->npool_to_softstemn, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->cpool_to_softstemc, nf->npool_to_softstemn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_softstemc;
 		cs->softstemc       += cf->cpool_to_softstemc;
@@ -517,11 +591,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->softstem_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_softstemc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_softstemc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc_storage, ns->softstemn_storage, cf->cpool_to_softstemc_storage, nf->npool_to_softstemn_storage, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc_storage, ns->softstemn_storage, cf->cpool_to_softstemc_storage, nf->npool_to_softstemn_storage, 0)) 
 	{
 		cs->cpool              -= cf->cpool_to_softstemc_storage;
 		cs->softstemc_storage  += cf->cpool_to_softstemc_storage;
@@ -531,12 +605,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->softstem_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_softstemc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_softstemc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}			
 
 	/* Daily live stem wood allocation fluxes */
-	if (!errflag && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->cpool_to_livestemc, nf->npool_to_livestemn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->cpool_to_livestemc, nf->npool_to_livestemn, 0)) 
 	{
 		cs->cpool      -= cf->cpool_to_livestemc;
 		cs->livestemc  += cf->cpool_to_livestemc;
@@ -546,11 +620,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->livewood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_livestemc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_livestemc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc_storage, ns->livestemn_storage, cf->cpool_to_livestemc_storage, nf->npool_to_livestemn_storage, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc_storage, ns->livestemn_storage, cf->cpool_to_livestemc_storage, nf->npool_to_livestemn_storage, 0)) 
 	{
 		cs->cpool              -= cf->cpool_to_livestemc_storage;
 		cs->livestemc_storage  += cf->cpool_to_livestemc_storage;
@@ -560,12 +634,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->livewood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_livestemc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_livestemc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 	
 	/* Daily dead stem wood allocation fluxes */
-	if (!errflag && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->cpool_to_deadstemc, nf->npool_to_deadstemn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->cpool_to_deadstemc, nf->npool_to_deadstemn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadstemc;
 		cs->deadstemc          += cf->cpool_to_deadstemc;
@@ -575,11 +649,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->deadwood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_deadstemc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_deadstemc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc_storage, ns->deadstemn_storage, cf->cpool_to_deadstemc_storage, nf->npool_to_deadstemn_storage, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc_storage, ns->deadstemn_storage, cf->cpool_to_deadstemc_storage, nf->npool_to_deadstemn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadstemc_storage;
 		cs->deadstemc_storage  += cf->cpool_to_deadstemc_storage;
@@ -589,12 +663,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->deadwood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_deadstemc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_deadstemc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 	
 	/* Daily live coarse root wood allocation fluxes */
-	if (!errflag && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->cpool_to_livecrootc, nf->npool_to_livecrootn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->cpool_to_livecrootc, nf->npool_to_livecrootn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_livecrootc;
 		cs->livecrootc          += cf->cpool_to_livecrootc;
@@ -604,11 +678,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->livewood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_livecrootc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_livecrootc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc_storage, ns->livecrootn_storage, cf->cpool_to_livecrootc_storage, nf->npool_to_livecrootn_storage, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc_storage, ns->livecrootn_storage, cf->cpool_to_livecrootc_storage, nf->npool_to_livecrootn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_livecrootc_storage;
 		cs->livecrootc_storage  += cf->cpool_to_livecrootc_storage;
@@ -618,12 +692,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->livewood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_livecrootc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_livecrootc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
 	/* Daily dead coarse root wood allocation fluxes */
-	if (!errflag && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->cpool_to_deadcrootc, nf->npool_to_deadcrootn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->cpool_to_deadcrootc, nf->npool_to_deadcrootn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadcrootc;
 		cs->deadcrootc          += cf->cpool_to_deadcrootc;
@@ -633,11 +707,11 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->deadwood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_deadcrootc CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_deadcrootc CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 
-	if (!errflag && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc_storage, ns->deadcrootn_storage, cf->cpool_to_deadcrootc_storage, nf->npool_to_deadcrootn_storage, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc_storage, ns->deadcrootn_storage, cf->cpool_to_deadcrootc_storage, nf->npool_to_deadcrootn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadcrootc_storage;
 		cs->deadcrootc_storage  += cf->cpool_to_deadcrootc_storage;
@@ -647,8 +721,8 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 	}
 	else if (epc->deadwood_cn)		
 	{
-		if (!errflag) printf("ERROR in cpool_to_deadcrootc_storage CN calculation in state_update.c\n");
-		errflag=1;
+		if (!errorCode) printf("ERROR in cpool_to_deadcrootc_storage CN calculation in state_update.c\n");
+		errorCode=1;
 	}
 	
 
@@ -723,10 +797,10 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 
 	/* 11. Maintanance respiration fluxes
 	       covering of maintananance respiration fluxes from NSC (non-structural carbohydrate), namely storage and transfer pools*/
-	if (!errflag && nsc_maintresp(epc, ctrl, epv, cf, nf, cs, ns))
+	if (!errorCode && nsc_maintresp(epc, ctrl, epv, cf, nf, cs, ns))
 	{
-		errflag=1;
-		if (!errflag) printf("ERROR in nsc_maintresp() from bgc()\n");
+		errorCode=1;
+		if (!errorCode) printf("ERROR in nsc_maintresp() from bgc()\n");
 	}
 	
 	
@@ -808,14 +882,14 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 			if (-cs->leafc > CRIT_PREC || -cs->frootc > CRIT_PREC || -cs->fruitc > CRIT_PREC || -cs->softstemc > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errflag) printf("ERROR: negative plant carbon pool in state_update.c\n");
-				errflag=1;
+				if (!errorCode) printf("ERROR: negative plant carbon pool in state_update.c\n");
+				errorCode=1;
 			}
 			if (-ns->leafn > CRIT_PREC || -ns->frootn > CRIT_PREC || -ns->fruitn > CRIT_PREC || -ns->softstemn > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errflag) printf("ERROR: negative plant nitrogen pool in state_update.c\n");
-				errflag=1;
+				if (!errorCode) printf("ERROR: negative plant nitrogen pool in state_update.c\n");
+				errorCode=1;
 			}
 			if (cs->leafc < CRIT_PREC || ns->leafn  < CRIT_PREC) 
 			{
@@ -841,12 +915,12 @@ int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar
 		}
 	} /* end if allocation day */
 
-	return (errflag);
+	return (errorCode);
 }			
 
 int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double npool, double cflux, double nflux, double CNratio_flux)
 {
-	int errflag = 0;
+	int errorCode = 0;
 	double CNdiff = 0;
 
 	if (CNratio_flux == 0) CNratio_flux = CNratio;
@@ -854,8 +928,8 @@ int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double n
 	/* control for leaf C:N ratio of pools */
 	if ((npool ==0 && cpool > CRIT_PREC ) || (npool > CRIT_PREC  && cpool == 0))
 	{
-		if (!errflag) printf("ERROR: CNratio_control in daily_CN_state_update.c\n");
-		errflag = 1;
+		if (!errorCode) printf("ERROR: CNratio_control in daily_CN_state_update.c\n");
+		errorCode = 1;
 	}
 	
 	if(npool > 0 && cpool > 0) CNdiff = cpool/npool - CNratio;
@@ -877,8 +951,8 @@ int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double n
 	/* control for leaf C:N ratio of fluxes */
 	if ((nflux == 0 && cflux > CRIT_PREC ) || (nflux > CRIT_PREC  && cflux == 0))
 	{
-		if (!errflag) printf("ERROR: CNratio_control in daily_CN_state_update.c\n");
-		errflag = 1;
+		if (!errorCode) printf("ERROR: CNratio_control in daily_CN_state_update.c\n");
+		errorCode = 1;
 	}
 
 	if(nflux > 0 && cflux > 0) CNdiff = cflux/nflux - CNratio_flux;
@@ -893,15 +967,15 @@ int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double n
 
 	}
 	
-	return (!errflag);
+	return (!errorCode);
 }
 
 int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns)
 {	
 	/* Covering of maintananance respiration fluxes from storage pools */
 	
-	int errflag=0;
-	double mresp_nw, mresp_w, nsc_nw, nsc_w, sc_nw, sc_w, nsc_crit, diff_total, diff_total_nw, diff_total_w, diff, day_mr_ratio, excess;
+	int errorCode=0;
+	double mresp_nw, mresp_w, nsc_nw, nsc_w, sc_nw, sc_w, nsc_crit, diff_total, diff_total_nw, diff_total_w, diff, day_mr_ratio, excess, nsc_avail;
 	
 	diff_total_nw = diff_total_w = day_mr_ratio = excess = 0;
 	
@@ -945,30 +1019,29 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 		/* 1.1. calculation the difference between NSC and diff (based on available amount) */
 		if (diff_total_nw > CRIT_PREC)
 		{
-			/* critical NSC value: fixed ratio of theroretical maximum os NSC value */
-			nsc_crit = epc->NSC_avail_prop * (sc_nw * epc->NSC_SC_prop);
-		
-			/* NSC_limit_nw = 0: nsc_nw is greater then critical (non-available) value and diff (cpool deficit)
-			   NSC_limit_nw = 1: */
-			if (nsc_nw < nsc_crit)
+			/* critical NSC value: NSC pool = fixed ratio of theroretical maximum of NSC value -> but not all is available */
+			nsc_crit  = epc->NSC_avail_prop * (sc_nw * epc->NSC_SC_prop);
+			nsc_avail = nsc_nw - nsc_crit;
+			if (nsc_avail < 0) 
 			{
-				diff = 0;
-				epv->NSC_limit_nw = 2;
+				nsc_avail = 0;
+			}
+		
+			/* MRdeficit_nw = 1: diff_total_nw < nsc_avail
+			   MRdeficit_nw = 2: diff_total_nw > nsc_avail */
+			 
+			if (diff_total_nw < nsc_avail)
+			{
+				diff = diff_total_nw;
+				epv->MRdeficit_nw = 1;
 			}
 			else
 			{
-				if ((nsc_nw - diff_total_nw) > nsc_crit)
-				{
-					diff = diff_total_nw;
-					epv->NSC_limit_nw = 0;
-				}
-
-				else
-				{
-					diff = nsc_nw - nsc_crit;
-					epv->NSC_limit_nw = 1;
-				}
+				diff = nsc_avail;
+				epv->MRdeficit_nw = 2;
 			}
+			
+
 
 			/* 1.2. calculation of flxues from nsc pools */
 			if (nsc_nw && diff)
@@ -1111,6 +1184,7 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 				{
 					if (cs->softstemc > CRIT_PREC)
 					{
+						cf->softstemc_to_maintresp = diff * (cf->softstem_mr / mresp_nw); 
 						if (cf->softstemc_to_maintresp > cs->softstemc)
 						{
 							cf->softstemc_to_maintresp = cs->softstemc;
@@ -1165,28 +1239,28 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 		/* 2.1. calculation the difference between NSC and diff (based on available amount) */
 		if (diff_total_w > CRIT_PREC)
 		{
-			/* critical NSC value: fixed proportion of theroretical maximum os NSC value */
-			nsc_crit = epc->NSC_avail_prop * (sc_w * epc->NSC_SC_prop);
-		
-			if (nsc_w < nsc_crit)
+			/* critical NSC value: NSC pool = fixed ratio of theroretical maximum of NSC value -> but not all is available */
+			nsc_crit  = epc->NSC_avail_prop * (sc_w * epc->NSC_SC_prop);
+			nsc_avail = nsc_w - nsc_crit;
+			if (nsc_avail < 0) 
 			{
-				diff = 0;
-				epv->NSC_limit_w = 2;
+				nsc_avail = 0;
+			}
+		
+			/* MRdeficit_w = 1: diff_total_w < nsc_avail
+			   MRdeficit_w = 2: diff_total_w > nsc_avail */
+			 
+			if (diff_total_w < nsc_avail)
+			{
+				diff = diff_total_w;
+				epv->MRdeficit_w = 1;
 			}
 			else
 			{
-				if ((nsc_w - diff_total_w) > nsc_crit)
-				{
-					diff = diff_total_w;
-					epv->NSC_limit_w = 0;
-				}
-
-				else
-				{
-					diff = nsc_crit - (nsc_w - diff_total_w);
-					epv->NSC_limit_w = 1;
-				}
+				diff = nsc_avail;
+				epv->MRdeficit_w = 2;
 			}
+
 
 			/* 2.2. calculation of flxues from nsc pools */
 			if (nsc_w && diff)
@@ -1308,7 +1382,7 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 	if (cs->cpool < 0 && fabs(cs->cpool) > CRIT_PREC)
 	{
 		cf->leaf_day_mr   += cs->cpool * cf->leaf_day_mr   / mresp_nw;
-		cf->leaf_night_mr += cs->cpool * cf->leaf_night_mr / mresp_nw;
+ 		cf->leaf_night_mr += cs->cpool * cf->leaf_night_mr / mresp_nw;
 		cf->froot_mr      += cs->cpool * cf->froot_mr / mresp_nw;
 		cf->fruit_mr      += cs->cpool * cf->fruit_mr / mresp_nw;
 		cf->softstem_mr   += cs->cpool * cf->softstem_mr / mresp_nw;
@@ -1342,6 +1416,6 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 
 	cs->sc_w = cs->livestemc  + cs->livecrootc  + cs->deadstemc  + cs->deadcrootc;
 
-	return (errflag);
+	return (errorCode);
 }			
 

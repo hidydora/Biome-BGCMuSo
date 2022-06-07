@@ -4,8 +4,8 @@ calcultion of soil water potential, hydr. conductivity and hydr. diffusivity as 
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -56,7 +56,7 @@ int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* si
 
 	*/
 
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 
 
@@ -70,8 +70,8 @@ int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* si
 		/* convert kg/m2 --> m3/m2 --> m3/m3 */
 		epv->vwc[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 		
-
-	   
+		epv->WFPS[layer]	            = epv->vwc[layer] / sprop->vwc_sat[layer];	
+   
 		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
 		epv->psi[layer]  = sprop->psi_sat[layer] * pow( (epv->vwc[layer] /sprop->vwc_sat[layer]), -1* sprop->soil_b[layer]);
 		
@@ -88,7 +88,7 @@ int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* si
 			{
 				printf("\n");
 				printf("ERROR: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
-				errflag=1;	
+				errorCode=1;	
 			}
 			else
 			{
@@ -104,6 +104,6 @@ int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* si
 
 	 
 
-	return(errflag);
+	return(errorCode);
 }
 

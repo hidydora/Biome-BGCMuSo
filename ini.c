@@ -3,10 +3,10 @@ ini.c
 Rudimentary file I/O functions
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -29,14 +29,14 @@ int file_open (file *target, char mode, int errormessage)
     'o' for write ascii
 */
 {
-	int errflag=0;
+	int errorCode=0;
 	switch (mode)
 	{
         case 'r':
             if ((target->ptr = fopen(target->name,"rb")) == NULL)
             {
                 if (errormessage) printf("Can't open %s for binary read\n",target->name);
-                errflag=1;
+                errorCode=1;
             }
             break;
 
@@ -44,13 +44,13 @@ int file_open (file *target, char mode, int errormessage)
             if ((target->ptr = fopen(target->name,"r")) == NULL)
             {
                 if (errormessage) printf("Can't open %s for ascii read\n",target->name);
-                errflag=1;
+                errorCode=1;
             }
             break;
 		case 'j':
             if ((target->ptr = fopen(target->name,"r")) == NULL)
             {
-                errflag=1;
+                errorCode=1;
             }
             break;
 
@@ -58,7 +58,7 @@ int file_open (file *target, char mode, int errormessage)
             if ((target->ptr = fopen(target->name,"wb")) == NULL)
             {
                 if (errormessage) printf("Can't open %s for binary write\n",target->name);
-                errflag=1;
+                errorCode=1;
             }
             break;
 
@@ -66,15 +66,15 @@ int file_open (file *target, char mode, int errormessage)
             if ((target->ptr = fopen(target->name,"w")) == NULL)
             {
                 if (errormessage) printf("Can't open %s for ascii write\n",target->name);
-                errflag=1;
+                errorCode=1;
             }
             break;
 
         default:
             printf("Invalid mode specification for file_open ... Exiting\n");
-            errflag=1;
+            errorCode=1;
     }
-    return(errflag);
+    return(errorCode);
 }
 
 /* scan_value is the generic ascii input function for use with text
@@ -90,7 +90,7 @@ int scan_array (file ini, void *var, char type, int nl, int errormessage)
 
 {
     int ok_scan;
-    int errflag=0;
+    int errorCode=0;
 
     switch (type)
     {
@@ -101,7 +101,7 @@ int scan_array (file ini, void *var, char type, int nl, int errormessage)
             if (ok_scan == 0 || ok_scan == EOF) 
 			{
 				if (errormessage) printf("ERROR reading int value from %s \n",ini.name);
-				errflag=1;
+				errorCode=1;
 			}
             break;
 
@@ -112,7 +112,7 @@ int scan_array (file ini, void *var, char type, int nl, int errormessage)
             if (ok_scan == 0 || ok_scan == EOF)
 			{
 				if (errormessage) printf("ERROR reading double value from %s\n",ini.name);
-				errflag=1;
+				errorCode=1;
 			}
             break;
 
@@ -123,15 +123,15 @@ int scan_array (file ini, void *var, char type, int nl, int errormessage)
             if (ok_scan == 0 || ok_scan == EOF) 
 			{
 				if (errormessage) printf("ERROR reading string value from %s\n",ini.name);
-				errflag=1;
+				errorCode=1;
 			}
             break;
 
         default:
             printf("Invalid type specifier for scan_value ... Exiting\n");
-            errflag=1;
+            errorCode=1;
     }
-    return(errflag);
+    return(errorCode);
 }
 
 
@@ -150,20 +150,20 @@ int scan_open (file ini,file *target,char mode, int errormessage)
 	'o' for write ascii
 */
 {	
-	int errflag=0;
+	int errorCode=0;
 
 	if (scan_value(ini,target->name,'s'))
 	{
 		printf("ERROR reading filename from %s... Exiting\n",ini.name);
-		errflag=1;
+		errorCode=1;
 	}
-	if (!errflag)
+	if (!errorCode)
 	{
 		if (file_open(target,mode,errormessage))
 		{
-			errflag=1;
+			errorCode=1;
 		}
 	}
-	return(errflag);
+	return(errorCode);
 }
 

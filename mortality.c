@@ -3,10 +3,10 @@ mortality.c
 daily mortality fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -32,303 +32,377 @@ The deadstem material that is not wilted (95%) is sent to CWD pools. CWD that is
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar_struct* epv, const phenology_struct* phen, 
-	          cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, int simyr)
+int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, const phenology_struct* phen, 
+	          epvar_struct* epv, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, int simyr)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 	double mort, flux_from_carbon;
-
+	double propLAYER0, propLAYER1, propLAYER2;
 	
+	/* dead stem and coarse woody biomass combustion proportion */
+	double dscp = 0.2;
+	double cwcp = 0.3;
 	/******************************************************************/
 	/* I. Non-fire mortality: these fluxes all enter litter or CWD pools */
 	/******************************************************************/
 
 
-	/* 1. if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * NDAYS_OF_YEAR */
+	/* 1. if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * nDAYS_OF_YEAR */
 
-	if (phen->n_growthday > 1)
+	if (ctrl->varWPM_flag)
 	{
-		if (ctrl->varWPM_flag)
+		mort = epc->wpm_array[simyr]/nDAYS_OF_YEAR;
+	}
+	else
+	{
+		mort = epc->wholeplant_mortality/nDAYS_OF_YEAR;	
+	}
+
+	epv->wpm_act = mort;
+	
+	/* 2. daily fluxes due to mortality */
+
+	if (mort)
+	{
+		/* in order to save the C:N ratio: N-fluxes are calculated from C-fluxes using C:N ratio parameters */
+		if (epc->leaf_cn)
 		{
-			mort = epc->wpm_array[simyr]/phen->n_growthday;
+			cf->m_leafc_to_litr1c  = mort * cs->leafc * epc->leaflitr_flab;  	 
+			cf->m_leafc_to_litr2c  = mort * cs->leafc * epc->leaflitr_fucel;
+			cf->m_leafc_to_litr3c  = mort * cs->leafc * epc->leaflitr_fscel;  	 
+			cf->m_leafc_to_litr4c  = mort * cs->leafc * epc->leaflitr_flig;  	 
+
+			nf->m_leafn_to_litr1n  = cf->m_leafc_to_litr1c / epc->leaf_cn;  	
+			nf->m_leafn_to_litr2n  = cf->m_leafc_to_litr2c / epc->leaf_cn;  	
+			nf->m_leafn_to_litr3n  = cf->m_leafc_to_litr3c / epc->leaf_cn;  	
+			nf->m_leafn_to_litr4n  = cf->m_leafc_to_litr4c / epc->leaf_cn;  
+
+			cf->m_leafc_storage_to_litr1c	= mort * cs->leafc_storage;
+			cf->m_leafc_transfer_to_litr1c  = mort * cs->leafc_transfer;
+		
+			nf->m_leafn_storage_to_litr1n	= cf->m_leafc_storage_to_litr1c / epc->leaf_cn;
+			nf->m_leafn_transfer_to_litr1n	= cf->m_leafc_transfer_to_litr1c / epc->leaf_cn;
+	
+		}
+	
+		if (epc->froot_cn)
+		{
+			cf->m_frootc_to_litr1c = mort * cs->frootc * epc->frootlitr_flab; 	 
+			cf->m_frootc_to_litr2c = mort * cs->frootc * epc->frootlitr_fucel;
+			cf->m_frootc_to_litr3c = mort * cs->frootc * epc->frootlitr_fscel; 	 
+			cf->m_frootc_to_litr4c = mort * cs->frootc * epc->frootlitr_flig;
+
+			nf->m_frootn_to_litr1n = cf->m_frootc_to_litr1c / epc->froot_cn; 	
+			nf->m_frootn_to_litr2n = cf->m_frootc_to_litr2c / epc->froot_cn; 	
+			nf->m_frootn_to_litr3n = cf->m_frootc_to_litr3c / epc->froot_cn; 	
+			nf->m_frootn_to_litr4n = cf->m_frootc_to_litr4c / epc->froot_cn;
+
+			cf->m_frootc_storage_to_litr1c	= mort * cs->frootc_storage;
+			cf->m_frootc_transfer_to_litr1c	= mort * cs->frootc_transfer;
+			nf->m_frootn_storage_to_litr1n	= cf->m_frootc_storage_to_litr1c / epc->froot_cn;
+			nf->m_frootn_transfer_to_litr1n	= cf->m_frootc_transfer_to_litr1c / epc->froot_cn;
+
+		}
+	
+		if (epc->fruit_cn)
+		{
+			cf->m_fruitc_to_litr1c = mort * cs->fruitc * epc->fruitlitr_flab;  	 
+			cf->m_fruitc_to_litr2c = mort * cs->fruitc * epc->fruitlitr_fucel;
+			cf->m_fruitc_to_litr3c = mort * cs->fruitc * epc->fruitlitr_fscel;  	 
+			cf->m_fruitc_to_litr4c = mort * cs->fruitc * epc->fruitlitr_flig;  	
+
+			nf->m_fruitn_to_litr1n = cf->m_fruitc_to_litr1c / epc->fruit_cn;  	
+			nf->m_fruitn_to_litr2n = cf->m_fruitc_to_litr2c / epc->fruit_cn;  	
+			nf->m_fruitn_to_litr3n = cf->m_fruitc_to_litr3c / epc->fruit_cn;  	
+			nf->m_fruitn_to_litr4n = cf->m_fruitc_to_litr4c / epc->fruit_cn;  	
+
+			cf->m_fruitc_storage_to_litr1c	= mort * cs->fruitc_storage;
+			cf->m_fruitc_transfer_to_litr1c	= mort * cs->fruitc_transfer;
+		
+			nf->m_fruitn_storage_to_litr1n	= cf->m_fruitc_storage_to_litr1c / epc->fruit_cn;
+			nf->m_fruitn_transfer_to_litr1n	= cf->m_fruitc_transfer_to_litr1c / epc->fruit_cn;
+	
+		}
+
+		if (epc->softstem_cn)
+		{
+			cf->m_softstemc_to_litr1c = mort * cs->softstemc * epc->softstemlitr_flab;  	 
+			cf->m_softstemc_to_litr2c = mort * cs->softstemc * epc->softstemlitr_fucel;
+			cf->m_softstemc_to_litr3c = mort * cs->softstemc * epc->softstemlitr_fscel;  	 
+			cf->m_softstemc_to_litr4c = mort * cs->softstemc * epc->softstemlitr_flig;  	
+
+			nf->m_softstemn_to_litr1n = cf->m_softstemc_to_litr1c / epc->softstem_cn;  	
+			nf->m_softstemn_to_litr2n = cf->m_softstemc_to_litr2c / epc->softstem_cn;  	
+			nf->m_softstemn_to_litr3n = cf->m_softstemc_to_litr3c / epc->softstem_cn;  	
+			nf->m_softstemn_to_litr4n = cf->m_softstemc_to_litr4c / epc->softstem_cn;  	
+
+			cf->m_softstemc_storage_to_litr1c	= mort * cs->softstemc_storage;
+			cf->m_softstemc_transfer_to_litr1c	= mort * cs->softstemc_transfer;
+		
+			nf->m_softstemn_storage_to_litr1n	= cf->m_softstemc_storage_to_litr1c / epc->softstem_cn;
+			nf->m_softstemn_transfer_to_litr1n	= cf->m_softstemc_transfer_to_litr1c / epc->softstem_cn;
+	
+		}
+	
+		cf->m_gresp_storage_to_litr1c		= mort * cs->gresp_storage;
+		cf->m_gresp_transfer_to_litr1c		= mort * cs->gresp_transfer;	
+
+		nf->m_retransn_to_litr1n			= mort * ns->retransn;
+
+
+		/* woody biomass */
+		if (epc->deadwood_cn)
+		{
+			/* stem */
+			cf->m_livestemc_to_cwdc    = mort * cs->livestemc;	
+			nf->m_livestemn_to_cwdn    = cf->m_livestemc_to_cwdc  / epc->deadwood_cn;	
+			nf->m_livestemn_to_litr1n  = (mort * ns->livestemn) - nf->m_livestemn_to_cwdn;
+			
+			cf->m_livestemc_storage_to_litr1c	= mort * cs->livestemc_storage;
+			cf->m_livestemc_transfer_to_litr1c	= mort * cs->livestemc_transfer;
+
+			nf->m_livestemn_storage_to_litr1n	= cf->m_livestemc_storage_to_litr1c   / epc->livewood_cn;
+			nf->m_livestemn_transfer_to_litr1n	= cf->m_livestemc_transfer_to_litr1c  / epc->livewood_cn;
+
+			/* root */
+			cf->m_livecrootc_to_cwdc   = mort * cs->livecrootc;   
+			nf->m_livecrootn_to_cwdn   = cf->m_livecrootc_to_cwdc / epc->deadwood_cn;  
+			nf->m_livecrootn_to_litr1n = (mort * ns->livecrootn) - nf->m_livecrootn_to_cwdn;
+
+			cf->m_livecrootc_storage_to_litr1c  = mort * cs->livecrootc_storage;
+			cf->m_livecrootc_transfer_to_litr1c = mort * cs->livecrootc_transfer;
+		
+			nf->m_livecrootn_storage_to_litr1n  = cf->m_livecrootc_storage_to_litr1c  / epc->livewood_cn;
+			nf->m_livecrootn_transfer_to_litr1n = cf->m_livecrootc_transfer_to_litr1c / epc->livewood_cn;
+			
+
+			/* deadwood */
+			cf->m_deadstemc_to_cwdc    = (mort + (1.0-dscp)*epc->daily_fire_turnover) * cs->deadstemc;	 
+			cf->m_deadcrootc_to_cwdc   = (mort + (1.0-dscp)*epc->daily_fire_turnover) * cs->deadcrootc;   
+
+			nf->m_deadstemn_to_cwdn    = cf->m_deadstemc_to_cwdc  / epc->deadwood_cn;	
+			nf->m_deadcrootn_to_cwdn   = cf->m_deadcrootc_to_cwdc / epc->deadwood_cn;  
+
+			cf->m_deadstemc_storage_to_litr1c	= mort * cs->deadstemc_storage;
+			cf->m_deadstemc_transfer_to_litr1c	= mort * cs->deadstemc_transfer;
+		
+			nf->m_deadstemn_storage_to_litr1n	= cf->m_deadstemc_storage_to_litr1c   / epc->deadwood_cn;
+			nf->m_deadstemn_transfer_to_litr1n	= cf->m_deadstemc_transfer_to_litr1c  / epc->deadwood_cn;
+
+			cf->m_deadcrootc_storage_to_litr1c  = mort * cs->deadcrootc_storage;
+			cf->m_deadcrootc_transfer_to_litr1c = mort * cs->deadcrootc_transfer;
+		
+			nf->m_deadcrootn_storage_to_litr1n  = cf->m_deadcrootc_storage_to_litr1c  / epc->deadwood_cn;
+			nf->m_deadcrootn_transfer_to_litr1n = cf->m_deadcrootc_transfer_to_litr1c / epc->deadwood_cn;
+			
+		}
+	
+	
+		/* 3. UPDATE STATE VARIALBES */
+
+		/* Mortality is taken care of last and given special treatment for state update so that it doesn't interfere
+		with the other fluxes that are based on proportions of state variables, especially the phenological fluxes */
+
+		/* 3.1 ABOVEGROUND BIOMASS  - into the first layer in multilayer soil */
+		cs->leafc       -= (cf->m_leafc_to_litr1c     + cf->m_leafc_to_litr2c     + cf->m_leafc_to_litr3c     + cf->m_leafc_to_litr4c);
+		cs->fruitc      -= (cf->m_fruitc_to_litr1c    + cf->m_fruitc_to_litr2c    + cf->m_fruitc_to_litr3c    + cf->m_fruitc_to_litr4c);
+		cs->softstemc   -= (cf->m_softstemc_to_litr1c + cf->m_softstemc_to_litr2c + cf->m_softstemc_to_litr3c + cf->m_softstemc_to_litr4c);
+		cs->livestemc	-= cf->m_livestemc_to_cwdc;
+		cs->deadstemc	-= cf->m_deadstemc_to_cwdc;
+
+		/* new feature: litter turns into the first AND the second soil layer */
+		propLAYER0 = sitec->soillayer_thickness[0]/sitec->soillayer_depth[2];
+		propLAYER1 = sitec->soillayer_thickness[1]/sitec->soillayer_depth[2];
+		propLAYER2 = sitec->soillayer_thickness[2]/sitec->soillayer_depth[2];
+
+
+
+		cs->litr1c[0]   += (cf->m_leafc_to_litr1c     + cf->m_fruitc_to_litr1c    + cf->m_softstemc_to_litr1c) * propLAYER0;
+		cs->litr2c[0]   += (cf->m_leafc_to_litr2c     + cf->m_fruitc_to_litr2c    + cf->m_softstemc_to_litr2c) * propLAYER0;
+		cs->litr3c[0]   += (cf->m_leafc_to_litr3c     + cf->m_fruitc_to_litr3c    + cf->m_softstemc_to_litr3c) * propLAYER0;
+		cs->litr4c[0]   += (cf->m_leafc_to_litr4c     + cf->m_fruitc_to_litr4c    + cf->m_softstemc_to_litr4c) * propLAYER0;
+		cs->cwdc[0]     += (cf->m_livestemc_to_cwdc   + cf->m_deadstemc_to_cwdc) * propLAYER0;
+
+		cs->litr1c[1]   += (cf->m_leafc_to_litr1c     + cf->m_fruitc_to_litr1c    + cf->m_softstemc_to_litr1c) * propLAYER1;
+		cs->litr2c[1]   += (cf->m_leafc_to_litr2c     + cf->m_fruitc_to_litr2c    + cf->m_softstemc_to_litr2c) * propLAYER1;
+		cs->litr3c[1]   += (cf->m_leafc_to_litr3c     + cf->m_fruitc_to_litr3c    + cf->m_softstemc_to_litr3c) * propLAYER1;
+		cs->litr4c[1]   += (cf->m_leafc_to_litr4c     + cf->m_fruitc_to_litr4c    + cf->m_softstemc_to_litr4c) * propLAYER1;
+		cs->cwdc[1]     += (cf->m_livestemc_to_cwdc   + cf->m_deadstemc_to_cwdc) * propLAYER1;
+
+		cs->litr1c[2]   += (cf->m_leafc_to_litr1c     + cf->m_fruitc_to_litr1c    + cf->m_softstemc_to_litr1c) * propLAYER2;
+		cs->litr2c[2]   += (cf->m_leafc_to_litr2c     + cf->m_fruitc_to_litr2c    + cf->m_softstemc_to_litr2c) * propLAYER2;
+		cs->litr3c[2]   += (cf->m_leafc_to_litr3c     + cf->m_fruitc_to_litr3c    + cf->m_softstemc_to_litr3c) * propLAYER2;
+		cs->litr4c[2]   += (cf->m_leafc_to_litr4c     + cf->m_fruitc_to_litr4c    + cf->m_softstemc_to_litr4c) * propLAYER2;
+		cs->cwdc[2]     += (cf->m_livestemc_to_cwdc   + cf->m_deadstemc_to_cwdc) * propLAYER2;
+
+	
+		ns->leafn       -= (nf->m_leafn_to_litr1n     + nf->m_leafn_to_litr2n     + nf->m_leafn_to_litr3n     + nf->m_leafn_to_litr4n);
+		ns->fruitn      -= (nf->m_fruitn_to_litr1n    + nf->m_fruitn_to_litr2n    + nf->m_fruitn_to_litr3n    + nf->m_fruitn_to_litr4n);
+		ns->softstemn   -= (nf->m_softstemn_to_litr1n + nf->m_softstemn_to_litr2n + nf->m_softstemn_to_litr3n + nf->m_softstemn_to_litr4n);
+		ns->livestemn	-= nf->m_livestemn_to_cwdn;
+		ns->deadstemn	-= nf->m_deadstemn_to_cwdn;
+
+		ns->litr1n[0]   += (nf->m_leafn_to_litr1n     + nf->m_fruitn_to_litr1n    + nf->m_softstemn_to_litr1n) * propLAYER0;
+		ns->litr2n[0]   += (nf->m_leafn_to_litr2n     + nf->m_fruitn_to_litr2n    + nf->m_softstemn_to_litr2n) * propLAYER0;
+		ns->litr3n[0]   += (nf->m_leafn_to_litr3n     + nf->m_fruitn_to_litr3n    + nf->m_softstemn_to_litr3n) * propLAYER0;
+		ns->litr4n[0]   += (nf->m_leafn_to_litr4n     + nf->m_fruitn_to_litr4n    + nf->m_softstemn_to_litr4n) * propLAYER0;
+		ns->cwdn[0]     += (nf->m_livestemn_to_cwdn   + nf->m_deadstemn_to_cwdn) * propLAYER0;
+
+		ns->litr1n[1]   += (nf->m_leafn_to_litr1n     + nf->m_fruitn_to_litr1n    + nf->m_softstemn_to_litr1n) * propLAYER1;
+		ns->litr2n[1]   += (nf->m_leafn_to_litr2n     + nf->m_fruitn_to_litr2n    + nf->m_softstemn_to_litr2n) * propLAYER1;
+		ns->litr3n[1]   += (nf->m_leafn_to_litr3n     + nf->m_fruitn_to_litr3n    + nf->m_softstemn_to_litr3n) * propLAYER1;
+		ns->litr4n[1]   += (nf->m_leafn_to_litr4n     + nf->m_fruitn_to_litr4n    + nf->m_softstemn_to_litr4n) * propLAYER1;
+		ns->cwdn[1]     += (nf->m_livestemn_to_cwdn   + nf->m_deadstemn_to_cwdn) * propLAYER1;
+
+		ns->litr1n[2]   += (nf->m_leafn_to_litr1n     + nf->m_fruitn_to_litr1n    + nf->m_softstemn_to_litr1n) * propLAYER2;
+		ns->litr2n[2]   += (nf->m_leafn_to_litr2n     + nf->m_fruitn_to_litr2n    + nf->m_softstemn_to_litr2n) * propLAYER2;
+		ns->litr3n[2]   += (nf->m_leafn_to_litr3n     + nf->m_fruitn_to_litr3n    + nf->m_softstemn_to_litr3n) * propLAYER2;
+		ns->litr4n[2]   += (nf->m_leafn_to_litr4n     + nf->m_fruitn_to_litr4n    + nf->m_softstemn_to_litr4n) * propLAYER2;
+		ns->cwdn[2]     += (nf->m_livestemn_to_cwdn   + nf->m_deadstemn_to_cwdn) * propLAYER2;
+
+	
+		/* special N-flux: live woody biomass to litter  */
+		ns->livestemn  -= nf->m_livestemn_to_litr1n;
+		ns->litr1n[0]  += nf->m_livestemn_to_litr1n * propLAYER0;
+		ns->litr1n[1]  += nf->m_livestemn_to_litr1n * propLAYER1;
+		ns->litr1n[2]  += nf->m_livestemn_to_litr1n * propLAYER2;
+
+		ns->livecrootn -= nf->m_livecrootn_to_litr1n;
+		ns->litr1n[0]  += nf->m_livecrootn_to_litr1n * propLAYER0;
+		ns->litr1n[1]  += nf->m_livecrootn_to_litr1n * propLAYER1;
+		ns->litr1n[2]  += nf->m_livecrootn_to_litr1n * propLAYER2;
+	
+		/* 3.2 NON-STRUCTURED (transfer, storage, retrans  - into the first, labile layer in multilayer soil */
+		
+		cs->litr1c[0]   += (cf->m_leafc_storage_to_litr1c      + cf->m_frootc_storage_to_litr1c     + cf->m_fruitc_storage_to_litr1c      + cf->m_softstemc_storage_to_litr1c +
+							cf->m_livestemc_storage_to_litr1c  + cf->m_deadstemc_storage_to_litr1c  + cf->m_livecrootc_storage_to_litr1c  + cf->m_deadcrootc_storage_to_litr1c + 
+							cf->m_leafc_transfer_to_litr1c     + cf->m_frootc_transfer_to_litr1c    + cf->m_fruitc_transfer_to_litr1c     + cf->m_softstemc_transfer_to_litr1c +
+							cf->m_livestemc_transfer_to_litr1c + cf->m_deadstemc_transfer_to_litr1c + cf->m_livecrootc_transfer_to_litr1c + cf->m_deadcrootc_transfer_to_litr1c +
+							cf->m_gresp_storage_to_litr1c      + cf->m_gresp_transfer_to_litr1c) * propLAYER0;
+
+		cs->litr1c[1]   += (cf->m_leafc_storage_to_litr1c      + cf->m_frootc_storage_to_litr1c     + cf->m_fruitc_storage_to_litr1c      + cf->m_softstemc_storage_to_litr1c +
+							cf->m_livestemc_storage_to_litr1c  + cf->m_deadstemc_storage_to_litr1c  + cf->m_livecrootc_storage_to_litr1c  + cf->m_deadcrootc_storage_to_litr1c + 
+							cf->m_leafc_transfer_to_litr1c     + cf->m_frootc_transfer_to_litr1c    + cf->m_fruitc_transfer_to_litr1c     + cf->m_softstemc_transfer_to_litr1c +
+							cf->m_livestemc_transfer_to_litr1c + cf->m_deadstemc_transfer_to_litr1c + cf->m_livecrootc_transfer_to_litr1c + cf->m_deadcrootc_transfer_to_litr1c +
+							cf->m_gresp_storage_to_litr1c      + cf->m_gresp_transfer_to_litr1c) * propLAYER1;
+
+		cs->litr1c[2]   += (cf->m_leafc_storage_to_litr1c      + cf->m_frootc_storage_to_litr1c     + cf->m_fruitc_storage_to_litr1c      + cf->m_softstemc_storage_to_litr1c +
+							cf->m_livestemc_storage_to_litr1c  + cf->m_deadstemc_storage_to_litr1c  + cf->m_livecrootc_storage_to_litr1c  + cf->m_deadcrootc_storage_to_litr1c + 
+							cf->m_leafc_transfer_to_litr1c     + cf->m_frootc_transfer_to_litr1c    + cf->m_fruitc_transfer_to_litr1c     + cf->m_softstemc_transfer_to_litr1c +
+							cf->m_livestemc_transfer_to_litr1c + cf->m_deadstemc_transfer_to_litr1c + cf->m_livecrootc_transfer_to_litr1c + cf->m_deadcrootc_transfer_to_litr1c +
+							cf->m_gresp_storage_to_litr1c      + cf->m_gresp_transfer_to_litr1c) * propLAYER2;
+
+		
+		ns->litr1n[0]   += (nf->m_leafn_storage_to_litr1n      + nf->m_frootn_storage_to_litr1n     + nf->m_fruitn_storage_to_litr1n      + nf->m_softstemn_storage_to_litr1n  + 
+							nf->m_livestemn_storage_to_litr1n  + nf->m_deadstemn_storage_to_litr1n  + nf->m_livecrootn_storage_to_litr1n  + nf->m_deadcrootn_storage_to_litr1n + 
+							nf->m_leafn_transfer_to_litr1n     + nf->m_frootn_transfer_to_litr1n    + nf->m_fruitn_transfer_to_litr1n     + nf->m_softstemn_transfer_to_litr1n + 
+							nf->m_livestemn_transfer_to_litr1n + nf->m_deadstemn_transfer_to_litr1n + nf->m_livecrootn_transfer_to_litr1n + nf->m_deadcrootn_transfer_to_litr1n +
+							nf->m_retransn_to_litr1n) * propLAYER0;
+
+		ns->litr1n[1]   += (nf->m_leafn_storage_to_litr1n      + nf->m_frootn_storage_to_litr1n     + nf->m_fruitn_storage_to_litr1n      + nf->m_softstemn_storage_to_litr1n  + 
+							nf->m_livestemn_storage_to_litr1n  + nf->m_deadstemn_storage_to_litr1n  + nf->m_livecrootn_storage_to_litr1n  + nf->m_deadcrootn_storage_to_litr1n + 
+							nf->m_leafn_transfer_to_litr1n     + nf->m_frootn_transfer_to_litr1n    + nf->m_fruitn_transfer_to_litr1n     + nf->m_softstemn_transfer_to_litr1n + 
+							nf->m_livestemn_transfer_to_litr1n + nf->m_deadstemn_transfer_to_litr1n + nf->m_livecrootn_transfer_to_litr1n + nf->m_deadcrootn_transfer_to_litr1n +
+							nf->m_retransn_to_litr1n) * propLAYER1;
+
+		ns->litr1n[2]   += (nf->m_leafn_storage_to_litr1n      + nf->m_frootn_storage_to_litr1n     + nf->m_fruitn_storage_to_litr1n      + nf->m_softstemn_storage_to_litr1n  + 
+							nf->m_livestemn_storage_to_litr1n  + nf->m_deadstemn_storage_to_litr1n  + nf->m_livecrootn_storage_to_litr1n  + nf->m_deadcrootn_storage_to_litr1n + 
+							nf->m_leafn_transfer_to_litr1n     + nf->m_frootn_transfer_to_litr1n    + nf->m_fruitn_transfer_to_litr1n     + nf->m_softstemn_transfer_to_litr1n + 
+							nf->m_livestemn_transfer_to_litr1n + nf->m_deadstemn_transfer_to_litr1n + nf->m_livecrootn_transfer_to_litr1n + nf->m_deadcrootn_transfer_to_litr1n +
+							nf->m_retransn_to_litr1n) * propLAYER2;
+
+
+	
+		cs->leafc_storage       -= cf->m_leafc_storage_to_litr1c;
+		cs->frootc_storage      -= cf->m_frootc_storage_to_litr1c;
+		cs->fruitc_storage      -= cf->m_fruitc_storage_to_litr1c;
+		cs->softstemc_storage   -= cf->m_softstemc_storage_to_litr1c;
+		cs->livestemc_storage   -= cf->m_livestemc_storage_to_litr1c;
+		cs->deadstemc_storage   -= cf->m_deadstemc_storage_to_litr1c;
+		cs->livecrootc_storage  -= cf->m_livecrootc_storage_to_litr1c;
+		cs->deadcrootc_storage  -= cf->m_deadcrootc_storage_to_litr1c;
+	
+		cs->leafc_transfer      -= cf->m_leafc_transfer_to_litr1c;
+		cs->frootc_transfer     -= cf->m_frootc_transfer_to_litr1c;
+		cs->fruitc_transfer     -= cf->m_fruitc_transfer_to_litr1c;
+		cs->softstemc_transfer  -= cf->m_softstemc_transfer_to_litr1c;
+		cs->livestemc_transfer  -= cf->m_livestemc_transfer_to_litr1c;
+		cs->deadstemc_transfer  -= cf->m_deadstemc_transfer_to_litr1c;
+		cs->livecrootc_transfer -= cf->m_livecrootc_transfer_to_litr1c;
+		cs->deadcrootc_transfer -= cf->m_deadcrootc_transfer_to_litr1c;
+	
+		cs->gresp_storage       -= cf->m_gresp_storage_to_litr1c;
+		cs->gresp_transfer      -= cf->m_gresp_transfer_to_litr1c;
+
+		ns->leafn_storage       -= nf->m_leafn_storage_to_litr1n;
+		ns->frootn_storage      -= nf->m_frootn_storage_to_litr1n;
+		ns->fruitn_storage      -= nf->m_fruitn_storage_to_litr1n;
+		ns->softstemn_storage   -= nf->m_softstemn_storage_to_litr1n;
+		ns->livestemn_storage   -= nf->m_livestemn_storage_to_litr1n;
+		ns->deadstemn_storage   -= nf->m_deadstemn_storage_to_litr1n;
+		ns->livecrootn_storage  -= nf->m_livecrootn_storage_to_litr1n;
+		ns->deadcrootn_storage  -= nf->m_deadcrootn_storage_to_litr1n;
+	
+		ns->leafn_transfer      -= nf->m_leafn_transfer_to_litr1n;
+		ns->frootn_transfer     -= nf->m_frootn_transfer_to_litr1n;
+		ns->fruitn_transfer     -= nf->m_fruitn_transfer_to_litr1n;
+		ns->softstemn_transfer  -= nf->m_softstemn_transfer_to_litr1n;
+		ns->livestemn_transfer  -= nf->m_livestemn_transfer_to_litr1n;
+		ns->deadstemn_transfer  -= nf->m_deadstemn_transfer_to_litr1n;
+		ns->livecrootn_transfer -= nf->m_livecrootn_transfer_to_litr1n;
+		ns->deadcrootn_transfer -= nf->m_deadcrootn_transfer_to_litr1n;
+			
+		ns->retransn       -= nf->m_retransn_to_litr1n;
+	
+		/* 3.3 BELOWGROUND BIOMASS  - DIVIDED BETWEEN THE DIFFERENT SOIL LAYERS in multilayer soil  */
+	
+		cs->frootc      -= (cf->m_frootc_to_litr1c    + cf->m_frootc_to_litr2c    + cf->m_frootc_to_litr3c    + cf->m_frootc_to_litr4c);
+		cs->livecrootc	-=  cf->m_livecrootc_to_cwdc;
+		cs->deadcrootc	-=  cf->m_deadcrootc_to_cwdc;
+		
+		ns->frootn     -= (nf->m_frootn_to_litr1n    + nf->m_frootn_to_litr2n    + nf->m_frootn_to_litr3n    + nf->m_frootn_to_litr4n);
+		ns->livecrootn -=  nf->m_livecrootn_to_cwdn;
+		ns->deadcrootn -=  nf->m_deadcrootn_to_cwdn;
+
+		if (epv->rootdepth > CRIT_PREC)
+		{
+			for (layer = 0; layer < N_SOILLAYERS; layer++)
+			{
+				cs->litr1c[layer]  += (cf->m_frootc_to_litr1c) * epv->rootlength_prop[layer];	
+				cs->litr2c[layer]  += (cf->m_frootc_to_litr2c) * epv->rootlength_prop[layer];	
+				cs->litr3c[layer]  += (cf->m_frootc_to_litr3c) * epv->rootlength_prop[layer];	
+				cs->litr4c[layer]  += (cf->m_frootc_to_litr4c) * epv->rootlength_prop[layer];
+				cs->cwdc[layer]    += (cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc) * epv->rootlength_prop[layer];
+
+				ns->litr1n[layer]  += (nf->m_frootn_to_litr1n) * epv->rootlength_prop[layer];	
+				ns->litr2n[layer]  += (nf->m_frootn_to_litr2n) * epv->rootlength_prop[layer];	
+				ns->litr3n[layer]  += (nf->m_frootn_to_litr3n) * epv->rootlength_prop[layer];	
+				ns->litr4n[layer]  += (nf->m_frootn_to_litr4n) * epv->rootlength_prop[layer];
+				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlength_prop[layer];	
+			}
 		}
 		else
 		{
-			mort = epc->wholeplant_mortality/phen->n_growthday;	
-		}
-
-	
-		/* 2. daily fluxes due to mortality */
-
-		if (mort)
-		{
-			/* in order to save the C:N ratio: N-fluxes are calculated from C-fluxes using C:N ratio parameters */
-			if (epc->leaf_cn)
-			{
-				cf->m_leafc_to_litr1c  = mort * cs->leafc * epc->leaflitr_flab;  	 
-				cf->m_leafc_to_litr2c  = mort * cs->leafc * epc->leaflitr_fucel;
-				cf->m_leafc_to_litr3c  = mort * cs->leafc * epc->leaflitr_fscel;  	 
-				cf->m_leafc_to_litr4c  = mort * cs->leafc * epc->leaflitr_flig;  	 
-
-				nf->m_leafn_to_litr1n  = cf->m_leafc_to_litr1c / epc->leaf_cn;  	
-				nf->m_leafn_to_litr2n  = cf->m_leafc_to_litr2c / epc->leaf_cn;  	
-				nf->m_leafn_to_litr3n  = cf->m_leafc_to_litr3c / epc->leaf_cn;  	
-				nf->m_leafn_to_litr4n  = cf->m_leafc_to_litr4c / epc->leaf_cn;  
-
-				cf->m_leafc_storage_to_litr1c	= mort * cs->leafc_storage;
-				cf->m_leafc_transfer_to_litr1c  = mort * cs->leafc_transfer;
-		
-				nf->m_leafn_storage_to_litr1n	= cf->m_leafc_storage_to_litr1c / epc->leaf_cn;
-				nf->m_leafn_transfer_to_litr1n	= cf->m_leafc_transfer_to_litr1c / epc->leaf_cn;
-	
-			}
-	
-			if (epc->froot_cn)
-			{
-				cf->m_frootc_to_litr1c = mort * cs->frootc * epc->frootlitr_flab; 	 
-				cf->m_frootc_to_litr2c = mort * cs->frootc * epc->frootlitr_fucel;
-				cf->m_frootc_to_litr3c = mort * cs->frootc * epc->frootlitr_fscel; 	 
-				cf->m_frootc_to_litr4c = mort * cs->frootc * epc->frootlitr_flig;
-
-				nf->m_frootn_to_litr1n = cf->m_frootc_to_litr1c / epc->froot_cn; 	
-				nf->m_frootn_to_litr2n = cf->m_frootc_to_litr2c / epc->froot_cn; 	
-				nf->m_frootn_to_litr3n = cf->m_frootc_to_litr3c / epc->froot_cn; 	
-				nf->m_frootn_to_litr4n = cf->m_frootc_to_litr4c / epc->froot_cn;
-
-				cf->m_frootc_storage_to_litr1c	= mort * cs->frootc_storage;
-				cf->m_frootc_transfer_to_litr1c	= mort * cs->frootc_transfer;
-				nf->m_frootn_storage_to_litr1n	= cf->m_frootc_storage_to_litr1c / epc->froot_cn;
-				nf->m_frootn_transfer_to_litr1n	= cf->m_frootc_transfer_to_litr1c / epc->froot_cn;
-
-			}
-	
-			if (epc->fruit_cn)
-			{
-				cf->m_fruitc_to_litr1c = mort * cs->fruitc * epc->fruitlitr_flab;  	 
-				cf->m_fruitc_to_litr2c = mort * cs->fruitc * epc->fruitlitr_fucel;
-				cf->m_fruitc_to_litr3c = mort * cs->fruitc * epc->fruitlitr_fscel;  	 
-				cf->m_fruitc_to_litr4c = mort * cs->fruitc * epc->fruitlitr_flig;  	
-
-				nf->m_fruitn_to_litr1n = cf->m_fruitc_to_litr1c / epc->fruit_cn;  	
-				nf->m_fruitn_to_litr2n = cf->m_fruitc_to_litr2c / epc->fruit_cn;  	
-				nf->m_fruitn_to_litr3n = cf->m_fruitc_to_litr3c / epc->fruit_cn;  	
-				nf->m_fruitn_to_litr4n = cf->m_fruitc_to_litr4c / epc->fruit_cn;  	
-
-				cf->m_fruitc_storage_to_litr1c	= mort * cs->fruitc_storage;
-				cf->m_fruitc_transfer_to_litr1c	= mort * cs->fruitc_transfer;
-		
-				nf->m_fruitn_storage_to_litr1n	= cf->m_fruitc_storage_to_litr1c / epc->fruit_cn;
-				nf->m_fruitn_transfer_to_litr1n	= cf->m_fruitc_transfer_to_litr1c / epc->fruit_cn;
-	
-			}
-
-			if (epc->softstem_cn)
-			{
-				cf->m_softstemc_to_litr1c = mort * cs->softstemc * epc->softstemlitr_flab;  	 
-				cf->m_softstemc_to_litr2c = mort * cs->softstemc * epc->softstemlitr_fucel;
-				cf->m_softstemc_to_litr3c = mort * cs->softstemc * epc->softstemlitr_fscel;  	 
-				cf->m_softstemc_to_litr4c = mort * cs->softstemc * epc->softstemlitr_flig;  	
-
-				nf->m_softstemn_to_litr1n = cf->m_softstemc_to_litr1c / epc->softstem_cn;  	
-				nf->m_softstemn_to_litr2n = cf->m_softstemc_to_litr2c / epc->softstem_cn;  	
-				nf->m_softstemn_to_litr3n = cf->m_softstemc_to_litr3c / epc->softstem_cn;  	
-				nf->m_softstemn_to_litr4n = cf->m_softstemc_to_litr4c / epc->softstem_cn;  	
-
-				cf->m_softstemc_storage_to_litr1c	= mort * cs->softstemc_storage;
-				cf->m_softstemc_transfer_to_litr1c	= mort * cs->softstemc_transfer;
-		
-				nf->m_softstemn_storage_to_litr1n	= cf->m_softstemc_storage_to_litr1c / epc->softstem_cn;
-				nf->m_softstemn_transfer_to_litr1n	= cf->m_softstemc_transfer_to_litr1c / epc->softstem_cn;
-	
-			}
-	
-			cf->m_gresp_storage_to_litr1c		= mort * cs->gresp_storage;
-			cf->m_gresp_transfer_to_litr1c		= mort * cs->gresp_transfer;	
-
-			nf->m_retransn_to_litr1n			= mort * ns->retransn;
-
-
-			/* livewood */
-			if (epc->livewood_cn)
-			{
-				cf->m_livestemc_to_cwdc    = mort * cs->livestemc;	 
-				cf->m_livecrootc_to_cwdc   = mort * cs->livecrootc;   
-
-				nf->m_livestemn_to_cwdn    = cf->m_livestemc_to_cwdc  / epc->livewood_cn;	
-				nf->m_livecrootn_to_cwdn   = cf->m_livecrootc_to_cwdc / epc->livewood_cn;  
-
-				cf->m_livestemc_storage_to_litr1c	= mort * cs->livestemc_storage;
-				cf->m_livestemc_transfer_to_litr1c	= mort * cs->livestemc_transfer;
-		
-				nf->m_livestemn_storage_to_litr1n	= cf->m_livestemc_storage_to_litr1c   / epc->livewood_cn;
-				nf->m_livestemn_transfer_to_litr1n	= cf->m_livestemc_transfer_to_litr1c  / epc->livewood_cn;
-
-				cf->m_livecrootc_storage_to_litr1c  = mort * cs->livecrootc_storage;
-				cf->m_livecrootc_transfer_to_litr1c = mort * cs->livecrootc_transfer;
-		
-				nf->m_livecrootn_storage_to_litr1n  = cf->m_livecrootc_storage_to_litr1c  / epc->livewood_cn;
-				nf->m_livecrootn_transfer_to_litr1n = cf->m_livecrootc_transfer_to_litr1c / epc->livewood_cn;
-
-				nf->m_livestemn_to_litr1n  = (mort * ns->livestemn) - nf->m_livestemn_to_cwdn;
-				nf->m_livecrootn_to_litr1n = (mort * ns->livecrootn) - nf->m_livecrootn_to_cwdn;
-			
-			}
-
-			/* deadwood */
-			if (epc->deadwood_cn)
-			{
-				cf->m_deadstemc_to_cwdc    = mort * cs->deadstemc;	 
-				cf->m_deadcrootc_to_cwdc   = mort * cs->deadcrootc;   
-
-				nf->m_deadstemn_to_cwdn    = cf->m_deadstemc_to_cwdc  / epc->deadwood_cn;	
-				nf->m_deadcrootn_to_cwdn   = cf->m_deadcrootc_to_cwdc / epc->deadwood_cn;  
-
-				cf->m_deadstemc_storage_to_litr1c	= mort * cs->deadstemc_storage;
-				cf->m_deadstemc_transfer_to_litr1c	= mort * cs->deadstemc_transfer;
-		
-				nf->m_deadstemn_storage_to_litr1n	= cf->m_deadstemc_storage_to_litr1c   / epc->deadwood_cn;
-				nf->m_deadstemn_transfer_to_litr1n	= cf->m_deadstemc_transfer_to_litr1c  / epc->deadwood_cn;
-
-				cf->m_deadcrootc_storage_to_litr1c  = mort * cs->deadcrootc_storage;
-				cf->m_deadcrootc_transfer_to_litr1c = mort * cs->deadcrootc_transfer;
-		
-				nf->m_deadcrootn_storage_to_litr1n  = cf->m_deadcrootc_storage_to_litr1c  / epc->deadwood_cn;
-				nf->m_deadcrootn_transfer_to_litr1n = cf->m_deadcrootc_transfer_to_litr1c / epc->deadwood_cn;
-			
-			}
-	
-	
-	
-			/* 3. UPDATE STATE VARIALBES */
-
-			/* Mortality is taken care of last and given special treatment for state update so that it doesn't interfere
-			with the other fluxes that are based on proportions of state variables, especially the phenological fluxes */
-
-			/* 3.1 ABOVEGROUND BIOMASS  - into the first layer in multilayer soil */
-			cs->leafc       -= (cf->m_leafc_to_litr1c     + cf->m_leafc_to_litr2c     + cf->m_leafc_to_litr3c     + cf->m_leafc_to_litr4c);
-			cs->fruitc      -= (cf->m_fruitc_to_litr1c    + cf->m_fruitc_to_litr2c    + cf->m_fruitc_to_litr3c    + cf->m_fruitc_to_litr4c);
-			cs->softstemc   -= (cf->m_softstemc_to_litr1c + cf->m_softstemc_to_litr2c + cf->m_softstemc_to_litr3c + cf->m_softstemc_to_litr4c);
-			cs->livestemc	-= cf->m_livestemc_to_cwdc;
-			cs->deadstemc	-= cf->m_deadstemc_to_cwdc;
-
-			cs->litr1c[0]   += (cf->m_leafc_to_litr1c     + cf->m_fruitc_to_litr1c    + cf->m_softstemc_to_litr1c);
-			cs->litr2c[0]   += (cf->m_leafc_to_litr2c     + cf->m_fruitc_to_litr2c    + cf->m_softstemc_to_litr2c);
-			cs->litr3c[0]   += (cf->m_leafc_to_litr3c     + cf->m_fruitc_to_litr3c    + cf->m_softstemc_to_litr3c);
-			cs->litr4c[0]   += (cf->m_leafc_to_litr4c     + cf->m_fruitc_to_litr4c    + cf->m_softstemc_to_litr4c);
-			cs->cwdc[0]     += (cf->m_livestemc_to_cwdc   + cf->m_deadstemc_to_cwdc);
-	
-			ns->leafn       -= (nf->m_leafn_to_litr1n     + nf->m_leafn_to_litr2n     + nf->m_leafn_to_litr3n     + nf->m_leafn_to_litr4n);
-			ns->fruitn      -= (nf->m_fruitn_to_litr1n    + nf->m_fruitn_to_litr2n    + nf->m_fruitn_to_litr3n    + nf->m_fruitn_to_litr4n);
-			ns->softstemn   -= (nf->m_softstemn_to_litr1n + nf->m_softstemn_to_litr2n + nf->m_softstemn_to_litr3n + nf->m_softstemn_to_litr4n);
-			ns->livestemn	-= nf->m_livestemn_to_cwdn;
-			ns->deadstemn	-= nf->m_deadstemn_to_cwdn;
-
-			ns->litr1n[0]   += (nf->m_leafn_to_litr1n     + nf->m_fruitn_to_litr1n    + nf->m_softstemn_to_litr1n);
-			ns->litr2n[0]   += (nf->m_leafn_to_litr2n     + nf->m_fruitn_to_litr2n    + nf->m_softstemn_to_litr2n);
-			ns->litr3n[0]   += (nf->m_leafn_to_litr3n     + nf->m_fruitn_to_litr3n    + nf->m_softstemn_to_litr3n);
-			ns->litr4n[0]   += (nf->m_leafn_to_litr4n     + nf->m_fruitn_to_litr4n    + nf->m_softstemn_to_litr4n);
-			ns->cwdn[0]     += (nf->m_livestemn_to_cwdn   + nf->m_deadstemn_to_cwdn);
-	
-			/* special N-flux: live woody biomass to litter  */
-			ns->livestemn  -= nf->m_livestemn_to_litr1n;
-			ns->litr1n[0]  += nf->m_livestemn_to_litr1n;
-
-			ns->livecrootn -= nf->m_livecrootn_to_litr1n;
-			ns->litr1n[0]  += nf->m_livecrootn_to_litr1n;
-
-	
-			/* 3.2 BELOWGROUND BIOMASS  - DIVIDED BETWEEN THE DIFFERENT SOIL LAYERS in multilayer soil  */
-	
-			cs->frootc      -= (cf->m_frootc_to_litr1c    + cf->m_frootc_to_litr2c    + cf->m_frootc_to_litr3c    + cf->m_frootc_to_litr4c);
-			cs->livecrootc	-=  cf->m_livecrootc_to_cwdc;
-			cs->deadcrootc	-=  cf->m_deadcrootc_to_cwdc;
-
-			cs->leafc_storage       -= cf->m_leafc_storage_to_litr1c;
-			cs->frootc_storage      -= cf->m_frootc_storage_to_litr1c;
-			cs->fruitc_storage      -= cf->m_fruitc_storage_to_litr1c;
-			cs->softstemc_storage   -= cf->m_softstemc_storage_to_litr1c;
-			cs->livestemc_storage   -= cf->m_livestemc_storage_to_litr1c;
-			cs->deadstemc_storage   -= cf->m_deadstemc_storage_to_litr1c;
-			cs->livecrootc_storage  -= cf->m_livecrootc_storage_to_litr1c;
-			cs->deadcrootc_storage  -= cf->m_deadcrootc_storage_to_litr1c;
-	
-			cs->leafc_transfer      -= cf->m_leafc_transfer_to_litr1c;
-			cs->frootc_transfer     -= cf->m_frootc_transfer_to_litr1c;
-			cs->fruitc_transfer     -= cf->m_fruitc_transfer_to_litr1c;
-			cs->softstemc_transfer  -= cf->m_softstemc_transfer_to_litr1c;
-			cs->livestemc_transfer  -= cf->m_livestemc_transfer_to_litr1c;
-			cs->deadstemc_transfer  -= cf->m_deadstemc_transfer_to_litr1c;
-			cs->livecrootc_transfer -= cf->m_livecrootc_transfer_to_litr1c;
-			cs->deadcrootc_transfer -= cf->m_deadcrootc_transfer_to_litr1c;
-	
-			cs->gresp_storage       -= cf->m_gresp_storage_to_litr1c;
-			cs->gresp_transfer      -= cf->m_gresp_transfer_to_litr1c;
-	
-
 			for (layer = 0; layer < N_SOILLAYERS; layer++)
 			{
-				cs->litr1c[layer]  += (cf->m_frootc_to_litr1c + 
-									   cf->m_leafc_storage_to_litr1c      + cf->m_frootc_storage_to_litr1c     + cf->m_fruitc_storage_to_litr1c      + cf->m_softstemc_storage_to_litr1c +
-									   cf->m_livestemc_storage_to_litr1c  + cf->m_deadstemc_storage_to_litr1c  + cf->m_livecrootc_storage_to_litr1c  + cf->m_deadcrootc_storage_to_litr1c + 
-									   cf->m_leafc_transfer_to_litr1c     + cf->m_frootc_transfer_to_litr1c    + cf->m_fruitc_transfer_to_litr1c     + cf->m_softstemc_transfer_to_litr1c +
-									   cf->m_livestemc_transfer_to_litr1c + cf->m_deadstemc_transfer_to_litr1c + cf->m_livecrootc_transfer_to_litr1c + cf->m_deadcrootc_transfer_to_litr1c +
-									   cf->m_gresp_storage_to_litr1c      + cf->m_gresp_transfer_to_litr1c) * epv->rootlength_prop[layer];	
-		
-				cs->litr2c[layer]  += (cf->m_frootc_to_litr2c) * epv->rootlength_prop[layer];	
-		
-				cs->litr3c[layer]  += (cf->m_frootc_to_litr3c) * epv->rootlength_prop[layer];	
-		
-				cs->litr4c[layer]  += (cf->m_frootc_to_litr4c) * epv->rootlength_prop[layer];	
-
+				cs->litr1c[layer]  += (cf->m_frootc_to_litr1c) * epv->rootlengthLandD_prop[layer];	
+				cs->litr2c[layer]  += (cf->m_frootc_to_litr2c) * epv->rootlengthLandD_prop[layer];	
+				cs->litr3c[layer]  += (cf->m_frootc_to_litr3c) * epv->rootlengthLandD_prop[layer];	
+				cs->litr4c[layer]  += (cf->m_frootc_to_litr4c) * epv->rootlengthLandD_prop[layer];
 				cs->cwdc[layer]    += (cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc) * epv->rootlength_prop[layer];
-		
-			}
-		
-			ns->frootn     -= (nf->m_frootn_to_litr1n    + nf->m_frootn_to_litr2n    + nf->m_frootn_to_litr3n    + nf->m_frootn_to_litr4n);
-			ns->livecrootn -=  nf->m_livecrootn_to_cwdn;
-			ns->deadcrootn -=  nf->m_deadcrootn_to_cwdn;
 
-			ns->leafn_storage       -= nf->m_leafn_storage_to_litr1n;
-			ns->frootn_storage      -= nf->m_frootn_storage_to_litr1n;
-			ns->fruitn_storage      -= nf->m_fruitn_storage_to_litr1n;
-			ns->softstemn_storage   -= nf->m_softstemn_storage_to_litr1n;
-			ns->livestemn_storage   -= nf->m_livestemn_storage_to_litr1n;
-			ns->deadstemn_storage   -= nf->m_deadstemn_storage_to_litr1n;
-			ns->livecrootn_storage  -= nf->m_livecrootn_storage_to_litr1n;
-			ns->deadcrootn_storage  -= nf->m_deadcrootn_storage_to_litr1n;
-	
-			ns->leafn_transfer      -= nf->m_leafn_transfer_to_litr1n;
-			ns->frootn_transfer     -= nf->m_frootn_transfer_to_litr1n;
-			ns->fruitn_transfer     -= nf->m_fruitn_transfer_to_litr1n;
-			ns->softstemn_transfer  -= nf->m_softstemn_transfer_to_litr1n;
-			ns->livestemn_transfer  -= nf->m_livestemn_transfer_to_litr1n;
-			ns->deadstemn_transfer  -= nf->m_deadstemn_transfer_to_litr1n;
-			ns->livecrootn_transfer -= nf->m_livecrootn_transfer_to_litr1n;
-			ns->deadcrootn_transfer -= nf->m_deadcrootn_transfer_to_litr1n;
-	
-			ns->retransn       -= nf->m_retransn_to_litr1n;
-
-			for (layer = 0; layer < N_SOILLAYERS; layer++)
-			{
-				ns->litr1n[layer]  += (nf->m_frootn_to_litr1n + 
-									   nf->m_leafn_storage_to_litr1n      + nf->m_frootn_storage_to_litr1n     + nf->m_fruitn_storage_to_litr1n      + nf->m_softstemn_storage_to_litr1n  + 
-									   nf->m_livestemn_storage_to_litr1n  + nf->m_deadstemn_storage_to_litr1n  + nf->m_livecrootn_storage_to_litr1n  + nf->m_deadcrootn_storage_to_litr1n + 
-									   nf->m_leafn_transfer_to_litr1n     + nf->m_frootn_transfer_to_litr1n    + nf->m_fruitn_transfer_to_litr1n     + nf->m_softstemn_transfer_to_litr1n + 
-									   nf->m_livestemn_transfer_to_litr1n + nf->m_deadstemn_transfer_to_litr1n + nf->m_livecrootn_transfer_to_litr1n + nf->m_deadcrootn_transfer_to_litr1n +
-									   nf->m_retransn_to_litr1n) * epv->rootlength_prop[layer];	
-		
-				ns->litr2n[layer]  += (nf->m_frootn_to_litr2n) * epv->rootlength_prop[layer];	
-		
-				ns->litr3n[layer]  += (nf->m_frootn_to_litr3n) * epv->rootlength_prop[layer];	
-		
-				ns->litr4n[layer]  += (nf->m_frootn_to_litr4n) * epv->rootlength_prop[layer];	
-
-				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlength_prop[layer];
-		
+				ns->litr1n[layer]  += (nf->m_frootn_to_litr1n) * epv->rootlengthLandD_prop[layer];	
+				ns->litr2n[layer]  += (nf->m_frootn_to_litr2n) * epv->rootlengthLandD_prop[layer];	
+				ns->litr3n[layer]  += (nf->m_frootn_to_litr3n) * epv->rootlengthLandD_prop[layer];	
+				ns->litr4n[layer]  += (nf->m_frootn_to_litr4n) * epv->rootlengthLandD_prop[layer];
+				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlength_prop[layer];	
 			}
 		}
-	}
+		
+
+		}
+
 
 	
 	/************************************************************/
@@ -351,7 +425,8 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 		
 			nf->m_leafn_to_fire	          = cf->m_leafc_to_fire          / epc->leaf_cn;  
 			nf->m_leafn_storage_to_fire	  = cf->m_leafc_storage_to_fire  / epc->leaf_cn; 
-			nf->m_leafn_transfer_to_fire  = cf->m_leafc_transfer_to_fire / epc->leaf_cn; 
+			nf->m_leafn_transfer_to_fire  = cf->m_leafc_transfer_to_fire / epc->leaf_cn;
+
 		}
 	
 		if (epc->froot_cn)
@@ -363,6 +438,7 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 			nf->m_frootn_to_fire	       = cf->m_frootc_to_fire          / epc->froot_cn;  
 			nf->m_frootn_storage_to_fire   = cf->m_frootc_storage_to_fire  / epc->froot_cn; 
 			nf->m_frootn_transfer_to_fire  = cf->m_frootc_transfer_to_fire / epc->froot_cn; 
+
 		}
 
 		if (epc->fruit_cn)
@@ -374,6 +450,7 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 			nf->m_fruitn_to_fire	      = cf->m_fruitc_to_fire          / epc->fruit_cn;  
 			nf->m_fruitn_storage_to_fire  = cf->m_fruitc_storage_to_fire  / epc->fruit_cn; 
 			nf->m_fruitn_transfer_to_fire = cf->m_fruitc_transfer_to_fire / epc->fruit_cn; 
+
 		}
 
 		if (epc->softstem_cn)
@@ -385,6 +462,7 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 			nf->m_softstemn_to_fire	          = cf->m_softstemc_to_fire          / epc->softstem_cn;  
 			nf->m_softstemn_storage_to_fire	  = cf->m_softstemc_storage_to_fire  / epc->softstem_cn; 
 			nf->m_softstemn_transfer_to_fire  = cf->m_softstemc_transfer_to_fire / epc->softstem_cn; 
+
 		}
 
 		/* 1.2 woody pools */
@@ -392,34 +470,55 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 		{
 			cf->m_livestemc_to_fire           = mort * cs->livestemc;	
 			cf->m_livestemc_storage_to_fire   = mort * cs->livestemc_storage;	
-			cf->m_livestemc_transfer_to_fire  = mort * cs->livestemc_transfer;	 
+			cf->m_livestemc_transfer_to_fire  = mort * cs->livestemc_transfer;
+
 			cf->m_livecrootc_to_fire          = mort * cs->livecrootc;   
 			cf->m_livecrootc_storage_to_fire  = mort * cs->livecrootc_storage;	
 			cf->m_livecrootc_transfer_to_fire = mort * cs->livecrootc_transfer;	 
 
-			nf->m_livestemn_to_fire           = cf->m_livestemc_to_fire           / epc->livewood_cn;	
+		    nf->m_livestemn_to_fire           = cf->m_livestemc_to_fire           / epc->livewood_cn;	
 			nf->m_livestemn_storage_to_fire   = cf->m_livestemc_storage_to_fire   / epc->livewood_cn;		
-			nf->m_livestemn_transfer_to_fire  = cf->m_livestemc_transfer_to_fire  / epc->livewood_cn;		 
+			nf->m_livestemn_transfer_to_fire  = cf->m_livestemc_transfer_to_fire  / epc->livewood_cn;		
+			
 			nf->m_livecrootn_to_fire          = cf->m_livecrootc_to_fire          / epc->livewood_cn;	   
 			nf->m_livecrootn_storage_to_fire  = cf->m_livecrootc_storage_to_fire  / epc->livewood_cn;		
-			nf->m_livecrootn_transfer_to_fire = cf->m_livecrootc_transfer_to_fire / epc->livewood_cn;		 
+			nf->m_livecrootn_transfer_to_fire = cf->m_livecrootc_transfer_to_fire / epc->livewood_cn;	 
+
+			/*nf->m_livestemn_to_fire             = mort * ns->livestemn;	
+			nf->m_livestemn_storage_to_fire     = mort * ns->livestemn_storage;
+			nf->m_livestemn_transfer_to_fire    = mort * ns->livestemn_transfer;
+			
+			nf->m_livecrootn_to_fire            = mort * ns->livecrootn;
+			nf->m_livecrootn_transfer_to_fire   = mort * ns->livecrootn_transfer;
+			nf->m_livecrootn_storage_to_fire    = mort * ns->livecrootn_storage;*/	
+			 
 		}
 
 		if (epc->deadwood_cn)
 		{
-			cf->m_deadstemc_to_fire           = mort * cs->deadstemc;	
+			cf->m_deadstemc_to_fire           = mort * cs->deadstemc * dscp;	
 			cf->m_deadstemc_storage_to_fire   = mort * cs->deadstemc_storage;	
 			cf->m_deadstemc_transfer_to_fire  = mort * cs->deadstemc_transfer;	 
-			cf->m_deadcrootc_to_fire          = mort * cs->deadcrootc;   
+			cf->m_deadcrootc_to_fire          = mort * cs->deadcrootc * dscp;   
 			cf->m_deadcrootc_storage_to_fire  = mort * cs->deadcrootc_storage;	
 			cf->m_deadcrootc_transfer_to_fire = mort * cs->deadcrootc_transfer;	 
 
-			nf->m_deadstemn_to_fire           = cf->m_deadstemc_to_fire           / epc->deadwood_cn;	
+		 nf->m_deadstemn_to_fire           = cf->m_deadstemc_to_fire           / epc->deadwood_cn;	
 			nf->m_deadstemn_storage_to_fire   = cf->m_deadstemc_storage_to_fire   / epc->deadwood_cn;		
 			nf->m_deadstemn_transfer_to_fire  = cf->m_deadstemc_transfer_to_fire  / epc->deadwood_cn;		 
 			nf->m_deadcrootn_to_fire          = cf->m_deadcrootc_to_fire          / epc->deadwood_cn;	   
 			nf->m_deadcrootn_storage_to_fire  = cf->m_deadcrootc_storage_to_fire  / epc->deadwood_cn;		
-			nf->m_deadcrootn_transfer_to_fire = cf->m_deadcrootc_transfer_to_fire / epc->deadwood_cn;		 
+			nf->m_deadcrootn_transfer_to_fire = cf->m_deadcrootc_transfer_to_fire / epc->deadwood_cn;	
+
+			
+			/* nf->m_deadstemn_to_fire           = dscp * mort * ns->deadstemn;
+			nf->m_deadstemn_storage_to_fire   = mort * ns->deadstemn_storage;
+			nf->m_deadstemn_transfer_to_fire  = mort * ns->deadstemn_transfer;
+			
+			nf->m_deadcrootn_to_fire          = dscp * mort * ns->deadcrootn;
+			nf->m_deadcrootn_transfer_to_fire = mort * ns->deadcrootn_transfer;
+			nf->m_deadcrootn_storage_to_fire  = mort * ns->deadcrootn_storage;*/
+
 		}
 	
 	
@@ -431,41 +530,60 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 
 
 		/* 1.4 standing and cut-down dead biomass simulation */
-		cf->m_STDBc_to_fire = mort * (cs->STDBc_leaf + cs->STDBc_froot + cs->STDBc_fruit + cs->STDBc_softstem + cs->STDBc_transfer);
-		cf->m_CTDBc_to_fire = mort * (cs->CTDBc_leaf + cs->CTDBc_froot + cs->CTDBc_fruit + cs->CTDBc_softstem + cs->CTDBc_transfer + cs->CTDBc_cstem + cs->CTDBc_croot);
+		cf->m_STDBc_to_fire = mort * (cs->STDBc_leaf + cs->STDBc_froot + cs->STDBc_fruit + cs->STDBc_softstem + cs->STDBc_nsc);
+		cf->m_CTDBc_to_fire = mort * (cs->CTDBc_leaf + cs->CTDBc_froot + cs->CTDBc_fruit + cs->CTDBc_softstem + cs->CTDBc_nsc + cs->CTDBc_cstem + cs->CTDBc_croot);
 	
-		nf->m_STDBn_to_fire = mort * (ns->STDBn_leaf + ns->STDBn_froot + ns->STDBn_fruit + ns->STDBn_softstem + ns->STDBn_transfer);
-		nf->m_CTDBn_to_fire = mort * (ns->CTDBn_leaf + ns->CTDBn_froot + ns->CTDBn_fruit + ns->CTDBn_softstem + ns->CTDBn_transfer + ns->CTDBn_cstem + ns->CTDBn_croot);
+		nf->m_STDBn_to_fire = mort * (ns->STDBn_leaf + ns->STDBn_froot + ns->STDBn_fruit + ns->STDBn_softstem + ns->STDBn_nsc);
+		nf->m_CTDBn_to_fire = mort * (ns->CTDBn_leaf + ns->CTDBn_froot + ns->CTDBn_fruit + ns->CTDBn_softstem + ns->CTDBn_nsc + ns->CTDBn_cstem + ns->CTDBn_croot);
 	
 	
 	
-		/* 1.5 litter and CWD fire fluxes: fire affects only the top layer */
-		cf->m_litr1c_to_fire = mort * cs->litr1c[0];
-		cf->m_litr2c_to_fire = mort * cs->litr2c[0];
-		cf->m_litr3c_to_fire = mort * cs->litr3c[0];
-		cf->m_litr4c_to_fire = mort * cs->litr4c[0];
-		cf->m_cwdc_to_fire	 = mort * cs->cwdc[0];
-	
+		/* 1.5 litter and CWD fire fluxes: fire affects only the rootzone layers */
 
-		nf->m_litr1n_to_fire = mort * ns->litr1n[0];
-		flux_from_carbon = cf->m_litr1c_to_fire * (cs->litr1c[0] / ns->litr1n[0]);
-		if (nf->m_litr1n_to_fire > flux_from_carbon) nf->m_litr1n_to_fire = flux_from_carbon;
-
-		nf->m_litr2n_to_fire = mort * ns->litr2n[0];
-		flux_from_carbon = cf->m_litr2c_to_fire * (cs->litr2c[0] / ns->litr2n[0]);
-		if (nf->m_litr2n_to_fire > flux_from_carbon) nf->m_litr2n_to_fire = flux_from_carbon;
+		cf->m_litr1c_to_fireTOTAL=cf->m_litr2c_to_fireTOTAL=cf->m_litr3c_to_fireTOTAL=cf->m_litr4c_to_fireTOTAL=0;
+		nf->m_litr1n_to_fireTOTAL=nf->m_litr2n_to_fireTOTAL=nf->m_litr3n_to_fireTOTAL=nf->m_litr4n_to_fireTOTAL=nf->m_cwdn_to_fireTOTAL=0;
 		
-		nf->m_litr3n_to_fire = mort * ns->litr3n[0];
-		flux_from_carbon = cf->m_litr3c_to_fire * (cs->litr3c[0] / ns->litr3n[0]);
-		if (nf->m_litr3n_to_fire > flux_from_carbon) nf->m_litr3n_to_fire = flux_from_carbon;
-		
-		nf->m_litr4n_to_fire = mort * ns->litr4n[0];
-		flux_from_carbon = cf->m_litr4c_to_fire * (cs->litr4c[0] / ns->litr4n[0]);
-		if (nf->m_litr4n_to_fire > flux_from_carbon) nf->m_litr4n_to_fire = flux_from_carbon;
+		for (layer = 0; layer < epv->n_rootlayers; layer++)
+		{
+			cf->m_litr1c_to_fire[layer] = mort * cs->litr1c[layer];
+			cf->m_litr2c_to_fire[layer] = mort * cs->litr2c[layer];
+			cf->m_litr3c_to_fire[layer] = mort * cs->litr3c[layer];
+			cf->m_litr4c_to_fire[layer] = mort * cs->litr4c[layer];
+			cf->m_cwdc_to_fire[layer]   = cwcp * mort * cs->cwdc[layer];
 
-		nf->m_cwdn_to_fire = mort * ns->cwdn[0];
-		flux_from_carbon = cf->m_cwdc_to_fire * (cs->cwdc[0] / ns->cwdn[0]);
-		if (nf->m_cwdn_to_fire > flux_from_carbon) nf->m_cwdn_to_fire = flux_from_carbon;
+			nf->m_litr1n_to_fire[layer] =  mort * ns->litr1n[layer];
+			nf->m_litr2n_to_fire[layer] =  mort * ns->litr2n[layer];
+			nf->m_litr3n_to_fire[layer] =  mort * ns->litr3n[layer];
+			nf->m_litr4n_to_fire[layer] =  mort * ns->litr4n[layer];
+			nf->m_cwdn_to_fire[layer]   =  cwcp * mort * ns->cwdn[layer];
+
+			
+			flux_from_carbon = cf->m_litr1c_to_fire[layer] * (cs->litr1c[layer] / ns->litr1n[layer]);
+			if (nf->m_litr1n_to_fire[layer] > flux_from_carbon) nf->m_litr1n_to_fire[layer] = flux_from_carbon;
+			flux_from_carbon = cf->m_litr2c_to_fire[layer] * (cs->litr2c[layer] / ns->litr2n[layer]);
+			if (nf->m_litr2n_to_fire[layer] > flux_from_carbon) nf->m_litr2n_to_fire[layer] = flux_from_carbon;
+			flux_from_carbon = cf->m_litr3c_to_fire[layer] * (cs->litr3c[layer] / ns->litr3n[layer]);
+			if (nf->m_litr3n_to_fire[layer] > flux_from_carbon) nf->m_litr3n_to_fire[layer] = flux_from_carbon;
+			flux_from_carbon = cf->m_litr4c_to_fire[layer] * (cs->litr4c[layer] / ns->litr4n[layer]);
+			if (nf->m_litr4n_to_fire[layer] > flux_from_carbon) nf->m_litr4n_to_fire[layer] = flux_from_carbon;
+			flux_from_carbon = cf->m_cwdc_to_fire[layer] * (cs->cwdc[layer] / ns->cwdn[layer]);
+			if (nf->m_cwdn_to_fire[layer] > flux_from_carbon) nf->m_cwdn_to_fire[layer] = flux_from_carbon;
+
+			cf->m_litr1c_to_fireTOTAL  += cf->m_litr1c_to_fire[layer];
+			cf->m_litr2c_to_fireTOTAL  += cf->m_litr2c_to_fire[layer];
+			cf->m_litr3c_to_fireTOTAL  += cf->m_litr3c_to_fire[layer];
+			cf->m_litr4c_to_fireTOTAL  += cf->m_litr4c_to_fire[layer];
+			cf->m_cwdc_to_fireTOTAL    += cf->m_cwdc_to_fire[layer];
+	
+			nf->m_litr1n_to_fireTOTAL  += nf->m_litr1n_to_fire[layer];
+			nf->m_litr2n_to_fireTOTAL  += nf->m_litr2n_to_fire[layer];
+			nf->m_litr3n_to_fireTOTAL  += nf->m_litr3n_to_fire[layer];
+			nf->m_litr4n_to_fireTOTAL  += nf->m_litr4n_to_fire[layer];
+			nf->m_cwdn_to_fireTOTAL    += nf->m_cwdn_to_fire[layer];
+
+
+			
+		}
 
 	
 		/* 2. update state variables for fire fluxes */
@@ -559,7 +677,7 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 		cs->STDBc_froot    -= mort * cs->STDBc_froot;
 		cs->STDBc_fruit    -= mort * cs->STDBc_fruit;
 		cs->STDBc_softstem -= mort * cs->STDBc_softstem;
-		cs->STDBc_transfer -= mort * cs->STDBc_transfer;
+		cs->STDBc_nsc -= mort * cs->STDBc_nsc;
 	
 		cs->FIREsnk_C     += cf->m_STDBc_to_fire;
 
@@ -567,7 +685,7 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 		ns->STDBn_froot    -= mort * ns->STDBn_froot;
 		ns->STDBn_fruit    -= mort * ns->STDBn_fruit;
 		ns->STDBn_softstem -= mort * ns->STDBn_softstem;
-		ns->STDBn_transfer -= mort * ns->STDBn_transfer;
+		ns->STDBn_nsc -= mort * ns->STDBn_nsc;
 
 		ns->FIREsnk_N     += nf->m_STDBn_to_fire;
 
@@ -575,9 +693,9 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 		cs->CTDBc_froot    -= mort * cs->CTDBc_froot;
 		cs->CTDBc_fruit    -= mort * cs->CTDBc_fruit;
 		cs->CTDBc_softstem -= mort * cs->CTDBc_softstem;
-		cs->CTDBc_transfer -= mort * cs->CTDBc_transfer;
-		cs->CTDBc_cstem    -= mort * cs->CTDBc_transfer;
-		cs->CTDBc_croot    -= mort * cs->CTDBc_cstem;
+		cs->CTDBc_nsc      -= mort * cs->CTDBc_nsc;
+		cs->CTDBc_cstem    -= mort * cs->CTDBc_cstem;
+		cs->CTDBc_croot    -= mort * cs->CTDBc_croot;
 	
 		cs->FIREsnk_C     += cf->m_CTDBc_to_fire;
 
@@ -585,31 +703,35 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 		ns->CTDBn_froot    -= mort * ns->CTDBn_froot;
 		ns->CTDBn_fruit    -= mort * ns->CTDBn_fruit;
 		ns->CTDBn_softstem -= mort * ns->CTDBn_softstem;
-		ns->CTDBn_transfer -= mort * ns->CTDBn_transfer;
-		ns->CTDBn_cstem    -= mort * ns->CTDBn_transfer;
-		ns->CTDBn_croot    -= mort * ns->CTDBn_cstem;
+		ns->CTDBn_nsc      -= mort * ns->CTDBn_nsc;
+		ns->CTDBn_cstem    -= mort * ns->CTDBn_cstem;
+		ns->CTDBn_croot    -= mort * ns->CTDBn_croot;
 
 		ns->FIREsnk_N     += nf->m_CTDBn_to_fire;
 
-		/* 2.4 litter and CWD carbon state updates: fire addects only top soil layer */
-		cs->litr1c[0]   -= cf->m_litr1c_to_fire;
-		cs->litr2c[0]   -= cf->m_litr2c_to_fire;
-		cs->litr3c[0]   -= cf->m_litr3c_to_fire;
-		cs->litr4c[0]   -= cf->m_litr4c_to_fire;
-		cs->cwdc[0]		-= cf->m_cwdc_to_fire;
+		/* 2.4 litter and CWD carbon state updates: fire affects only rootzone layer */
 
-		cs->FIREsnk_C	+= cf->m_litr1c_to_fire + cf->m_litr2c_to_fire + cf->m_litr3c_to_fire + cf->m_litr4c_to_fire + cf->m_cwdc_to_fire;
+		for (layer = 0; layer < epv->n_rootlayers; layer++)
+		{
+			cs->litr1c[layer]   -= cf->m_litr1c_to_fire[layer];
+			cs->litr2c[layer]   -= cf->m_litr2c_to_fire[layer];
+			cs->litr3c[layer]   -= cf->m_litr3c_to_fire[layer];
+			cs->litr4c[layer]   -= cf->m_litr4c_to_fire[layer];
+			cs->cwdc[layer] 	-= cf->m_cwdc_to_fire[layer] ;
 
-		ns->litr1n[0]   -= nf->m_litr1n_to_fire;
-		ns->litr2n[0]   -= nf->m_litr2n_to_fire;
-		ns->litr3n[0]   -= nf->m_litr3n_to_fire;
-		ns->litr4n[0]   -= nf->m_litr4n_to_fire;
-		ns->cwdn[0]		-= nf->m_cwdn_to_fire;
+			cs->FIREsnk_C += cf->m_litr1c_to_fire[layer]  + cf->m_litr2c_to_fire[layer]  + cf->m_litr3c_to_fire[layer]  + cf->m_litr4c_to_fire[layer]  + cf->m_cwdc_to_fire[layer] ;
 
-		ns->FIREsnk_N	+= nf->m_litr1n_to_fire + nf->m_litr2n_to_fire + nf->m_litr3n_to_fire + nf->m_litr4n_to_fire + nf->m_cwdn_to_fire;
+			ns->litr1n[layer]    -= nf->m_litr1n_to_fire[layer];
+			ns->litr2n[layer]    -= nf->m_litr2n_to_fire[layer];
+			ns->litr3n[layer]    -= nf->m_litr3n_to_fire[layer];
+			ns->litr4n[layer]    -= nf->m_litr4n_to_fire[layer];
+			ns->cwdn[layer]      -= nf->m_cwdn_to_fire[layer];
+
+			ns->FIREsnk_N += nf->m_litr1n_to_fire[layer]  + nf->m_litr2n_to_fire[layer]  + nf->m_litr3n_to_fire[layer]  + nf->m_litr4n_to_fire[layer]  + nf->m_cwdn_to_fire[layer] ;
 	
 		}
+	}
 	
-	return (errflag);
+	return (errorCode);
 }
 

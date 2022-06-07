@@ -3,10 +3,10 @@ pointbgc_struct.h
 for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -58,6 +58,10 @@ typedef struct
 	file monavgout;				/* monthly average output file */
 	file annavgout;				/* annual average output file */
     file annout;				/* annual output file */
+	file dayoutT;				/* transient daily output file */
+	file monavgoutT;			/* transient monthly average output file */
+	file annavgoutT;			/* transient annual average output file */
+    file annoutT;				/* transient annual output file */
 	file log_file;				/* main information about model run */
 } output_struct;
 

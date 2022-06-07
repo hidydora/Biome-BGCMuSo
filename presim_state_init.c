@@ -4,10 +4,10 @@ Initialize water, carbon, and nitrogen state variables to 0.0 before
 each simulation.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019 D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020 D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -25,7 +25,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, cinit_struct* cinit)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 	
 
@@ -37,6 +37,9 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cinit->max_livecrootc = 0.0;
 	
 	ws->soilw_SUM = 0;
+	ws->soilw_RZ = 0;
+	ws->soilw_RZ_avail=0;
+	ws->soilw_2m = 0;
 	ws->pond_water = 0;
 	ws->snoww = 0;
 	ws->canopyw = 0;
@@ -60,6 +63,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->inW = 0;
 	ws->outW = 0;
 	ws->storeW = 0;
+	ws->soil_evapCUM1 = 0.0;
+	ws->soil_evapCUM2 = 0.0;
 	cs->leafc = 0;
 	cs->leafc_storage = 0;
 	cs->leafc_transfer = 0;
@@ -95,14 +100,14 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->STDBc_froot = 0;
 	cs->STDBc_fruit = 0;
 	cs->STDBc_softstem = 0;
-	cs->STDBc_transfer = 0;
+	cs->STDBc_nsc = 0;
 	cs->STDBc_above = 0;
 	cs->STDBc_below = 0;
 	cs->CTDBc_leaf = 0;
 	cs->CTDBc_froot = 0;
 	cs->CTDBc_fruit = 0;
 	cs->CTDBc_softstem = 0;
-	cs->CTDBc_transfer = 0;
+	cs->CTDBc_nsc = 0;
 	cs->CTDBc_cstem = 0;
 	cs->CTDBc_croot = 0;
 	cs->CTDBc_above = 0;
@@ -110,7 +115,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->soil1c_total = 0;
 	cs->soil2c_total = 0;
 	cs->soil3c_total = 0;
-	cs->soil4c_total = 0;
+	cs->soil4c_total = 0;			
 	cs->cpool = 0;
 	cs->psnsun_src = 0;
 	cs->psnshade_src = 0;
@@ -137,6 +142,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->soil2_hr_snk = 0;
 	cs->soil3_hr_snk = 0;
 	cs->soil4_hr_snk = 0;
+	cs->Cdeepleach_snk = 0;
 	cs->FIREsnk_C = 0;
 	cs->SNSCsnk_C = 0;
 	cs->PLTsrc_C = 0;
@@ -186,14 +192,14 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->STDBn_froot = 0;
 	ns->STDBn_fruit = 0;
 	ns->STDBn_softstem = 0;
-	ns->STDBn_transfer = 0;
+	ns->STDBn_nsc = 0;
 	ns->STDBn_above = 0;
 	ns->STDBn_below = 0;
 	ns->CTDBn_leaf = 0;
 	ns->CTDBn_froot = 0;
 	ns->CTDBn_fruit = 0;
 	ns->CTDBn_softstem = 0;
-	ns->CTDBn_transfer = 0;
+	ns->CTDBn_nsc = 0;
 	ns->CTDBn_cstem = 0;
 	ns->CTDBn_croot = 0;
 	ns->CTDBn_above = 0;
@@ -205,12 +211,13 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->retransn = 0;
 	ns->sminNH4_total = 0;
 	ns->sminNO3_total = 0;
-	ns->nfix_src = 0;
-	ns->ndep_src = 0;
-	ns->nleached_snk = 0;
-	ns->nvol_snk = 0;
+
+	ns->Nfix_src = 0;
+	ns->Ndep_src = 0;
+	ns->Ndeepleach_snk = 0;
+	ns->Nvol_snk = 0;
+	ns->Nprec_snk = 0;
 	ns->FIREsnk_N = 0;
-	ns->ndiffused_snk = 0;
 	ns->SNSCsnk_N = 0;
 	ns->FRZsrc_N = 0;
 	ns->PLTsrc_N = 0;
@@ -220,7 +227,6 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->GRZsnk_N = 0;
 	ns->GRZsrc_N = 0;
 	ns->SPINUPsrc = 0;
-	ns->sum_ndemand = 0;
 	ns->NbalanceERR = 0;
 	ns->inN = 0;
 	ns->outN = 0;
@@ -230,6 +236,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		ws->soilw[layer] = 0;
+		ws->soilw_avail[layer] = 0;
 		cs->cwdc[layer] = 0;
 		cs->litr1c[layer] = 0;
 		cs->litr2c[layer] = 0;
@@ -266,6 +273,6 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 		ns->sminNO3[layer] = 0;
 	}
 
-	return(errflag);
+	return(errorCode);
 }
 	

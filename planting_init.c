@@ -3,8 +3,8 @@ planting_init.c
 read planting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -32,7 +32,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 
 	int maxlen=STRINGSIZE;
 
-	int errflag=0;
+	int errorCode=0;
 	int okFILE = 1;
 
 	
@@ -67,30 +67,30 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 	********************************************************************/
 	
 	/* header reading */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading header, planting_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 	
 
 	/* keyword control */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading header, planting_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 	
 	/* number of management action */
-	if (!errflag && scan_value(init, &PLT->PLT_num, 'i'))
+	if (!errorCode && scan_value(init, &PLT->PLT_num, 'i'))
 	{
 		printf("ERROR reading number of planting in PLANTING section\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 
 	/* if PLT_num = 1 -> planting */
-	if (!errflag && PLT->PLT_num)
+	if (!errorCode && PLT->PLT_num)
 	{
 		/* allocate space for the MGM array */
 		PLTyear_array         = (int*) malloc(maxPLT_num*sizeof(int));  
@@ -102,10 +102,10 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 		seed_carbon_array     = (double*) malloc(maxPLT_num*sizeof(double)); 
 		filename_array        = (char**) malloc(maxPLT_num * sizeof(char*));
 		
-		if (!errflag && scan_value(init, PLT_filename, 's'))
+		if (!errorCode && scan_value(init, PLT_filename, 's'))
 		{
 			printf("ERROR reading planting calculating file\n");
-			errflag=1;
+			errorCode=1;
 		}
 		
 		strcpy(PLT_file.name, PLT_filename);
@@ -114,18 +114,18 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 		if (file_open(&PLT_file,'i',1))
 		{
 			printf("ERROR opening PLT_file, planting_int.c\n");
-			errflag=1;
+			errorCode=1;
 			okFILE=0;
 		}
 
-		if (!errflag && scan_value(PLT_file, header, 's'))
+		if (!errorCode && scan_value(PLT_file, header, 's'))
 		{
 			printf("ERROR reading header for PLANTING section in MANAGMENET file\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 	
-		while (!errflag && !(mgmread = scan_array (PLT_file, &p1, 'i', 0, 0)))
+		while (!errorCode && !(mgmread = scan_array (PLT_file, &p1, 'i', 0, 0)))
 		{
 			filename_array[nmgm] = (char*) malloc(STRINGSIZE * sizeof(char));
 
@@ -136,12 +136,12 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 			if (mgmread != n_PLTparam)
 			{
 				printf("ERROR reading PLANTING parameters from PLANTING file\n");
-				errflag=1;
+				errorCode=1;
 			}
 			if (sizeof(cropfile) > maxlen)
 			{
 				printf("ERROR reading length of filename in planting file (lenght must be in the range 1-100)\n");
-				errflag=1;
+				errorCode=1;
 			}
 
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
@@ -204,24 +204,24 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 	else
 	{
 		/* reading the line of management file into a temporary variable */
-		if (!errflag && scan_value(init, header, 's'))
+		if (!errorCode && scan_value(init, header, 's'))
 		{
 			printf("ERROR reading line of management file (in case of no management)\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 
 
 	/* conrtol */
-	if (!errflag && PLT->PLT_num && epc->n_germ_phenophase == 0)
+	if (!errorCode && PLT->PLT_num && epc->n_germ_phenophase == 0)
 	{
 		printf("ERROR in phenophase parametrization: if PLANTING is defined -> n_germ_phenophase must be specified in EPC file\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	
 	PLT->mgmdPLT = 0;
 
 	
-	return (errflag);
+	return (errorCode);
  }

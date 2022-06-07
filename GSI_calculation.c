@@ -5,8 +5,8 @@ based on literure (Jolly et al, 2005) and own method. The goal is to replace pre
 of the model-defined onset and offset day does not work correctly
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -29,7 +29,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 					phenarray_struct* phenarr, control_struct* ctrl)
 
 {
-	int errflag=0;
+	int errorCode=0;
 	int ny, yday, back;
 
 	int firstdayLP = 240;		/* theoretically first day of litterfall */
@@ -40,7 +40,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	int onday = 0;
 	int offday = 0;
 	int nyears = ctrl->simyears;
-	int n_yday = NDAYS_OF_YEAR;
+	int n_yday = nDAYS_OF_YEAR;
 	
 	/*  enviromental conditions taken account to calculate onset and offset days */
 	double tmax_act, tmin_act, tavg_act, vpd_act, dayl_act, heatsum_act;	
@@ -72,7 +72,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	/* at the presence of snow cover no vegetation period (calculating snow cover from precipitation, Tavg and srad) */
 	double snowcover, snowcover_limit, prcp_act, srad_act;
 	double rn, tmelt, rmelt, melt, snow_loss, snow_plus, rsub;
-	double albedo_sw = sitec->sw_alb;
+	double albedo_sw = sitec->albedo_sw;
 	
 	/* to calculate moving average from total index values */
 	double epc_index_SUM = 0;
@@ -89,7 +89,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////allocate memory for arrays containing ondays and offdays /////////////////////////////////////
-	if (!errflag) 
+	if (!errorCode) 
 	{
 		/* allocate space for the onday_arr and offday_arr: first column - year, second column: day*/
 		phenarr->onday_arr  = (int**) malloc(nyears*sizeof(int*));  
@@ -107,14 +107,14 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 		{
 			printf("\n");
 			printf("ERROR allocating for onday_arr, prephenology()\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 		if (!phenarr->offday_arr)
 		{
 			printf("\n");
 			printf("ERROR allocating for offday_arr, prephenology()\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 	
@@ -126,7 +126,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 
 
 
-		for (yday=0; yday<NDAYS_OF_YEAR; yday++)	
+		for (yday=0; yday<nDAYS_OF_YEAR; yday++)	
 		{
 		/* ******************************************************************* */
 		/* 1. calculation of snow loss and plus*/
@@ -305,7 +305,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 		
 		
 			/* if vegetation period has not ended until the last day of year, the offday is equal to the last day of year */
-			if (yday == NDAYS_OF_YEAR-1 && offday == 0)
+			if (yday == nDAYS_OF_YEAR-1 && offday == 0)
 			{	/* if vegetation period has not began */
 				if (onday_flag == 0) 
 				{	
@@ -333,7 +333,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 
 
 
-	return (errflag);
+	return (errorCode);
 
 } /* end - subroutine */
 

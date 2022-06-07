@@ -4,10 +4,10 @@ Detects very low values in state variable structures, and forces them to
 0.0, in order to avoid rounding and overflow errors.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -27,7 +27,7 @@ Updated:
 
 int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 	
 	/* CARBON AND NITROGEN STATE VARIABLES */
@@ -314,12 +314,12 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->STDBn_fruit = 0.0;
 	}
 
-	if ((fabs(cs->STDBc_transfer) < CRIT_PREC && fabs(cs->STDBc_transfer) != 0) || (fabs(ns->STDBn_transfer) < CRIT_PREC && fabs(ns->STDBn_transfer) != 0))
+	if ((fabs(cs->STDBc_nsc) < CRIT_PREC && fabs(cs->STDBc_nsc) != 0) || (fabs(ns->STDBn_nsc) < CRIT_PREC && fabs(ns->STDBn_nsc) != 0))
 	{
-		cs->litr1c[0] += cs->STDBc_transfer;
-		ns->litr1n[0] += ns->STDBn_transfer;
-		cs->STDBc_transfer = 0.0;
-		ns->STDBn_transfer = 0.0;
+		cs->litr1c[0] += cs->STDBc_nsc;
+		ns->litr1n[0] += ns->STDBn_nsc;
+		cs->STDBc_nsc = 0.0;
+		ns->STDBn_nsc = 0.0;
 	}
 
 	/************************/
@@ -355,12 +355,12 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->CTDBn_fruit = 0.0;
 	}
 
-	if ((fabs(cs->CTDBc_transfer) < CRIT_PREC && fabs(cs->CTDBc_transfer) != 0) || (fabs(ns->CTDBn_transfer) < CRIT_PREC && fabs(ns->CTDBn_transfer) != 0))
+	if ((fabs(cs->CTDBc_nsc) < CRIT_PREC && fabs(cs->CTDBc_nsc) != 0) || (fabs(ns->CTDBn_nsc) < CRIT_PREC && fabs(ns->CTDBn_nsc) != 0))
 	{
-		cs->litr1c[0] += cs->CTDBc_transfer;
-		ns->litr1n[0] += ns->CTDBn_transfer;
-		cs->CTDBc_transfer = 0.0;
-		ns->CTDBn_transfer = 0.0;
+		cs->litr1c[0] += cs->CTDBc_nsc;
+		ns->litr1n[0] += ns->CTDBn_nsc;
+		cs->CTDBc_nsc = 0.0;
+		ns->CTDBn_nsc = 0.0;
 	}
 
 	/************************/	
@@ -372,28 +372,28 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		if ((cs->soil1c[layer] != 0 && fabs(cs->soil1c[layer]) < CRIT_PREC) || (ns->soil1n[layer] != 0 && fabs(ns->soil1n[layer])  < CRIT_PREC))
 		{
 			cs->soil1_hr_snk  += cs->soil1c[layer];
-			ns->nvol_snk      += ns->soil1n[layer];
+			ns->Nprec_snk      += ns->soil1n[layer];
 			cs->soil1c[layer] = 0.0;
 			ns->soil1n[layer] = 0.0;
 		}
 		if ((cs->soil2c[layer] != 0 && fabs(cs->soil2c[layer]) < CRIT_PREC) || (ns->soil2n[layer] != 0 && fabs(ns->soil2n[layer])  < CRIT_PREC))
 		{
 			cs->soil2_hr_snk  += cs->soil2c[layer];
-			ns->nvol_snk      += ns->soil2n[layer];
+			ns->Nprec_snk      += ns->soil2n[layer];
 			cs->soil2c[layer] = 0.0;
 			ns->soil2n[layer] = 0.0;
 		}
 		if ((cs->soil3c[layer] != 0 && fabs(cs->soil3c[layer]) < CRIT_PREC) || (ns->soil3n[layer] != 0 && fabs(ns->soil3n[layer])  < CRIT_PREC))
 		{
 			cs->soil3_hr_snk  += cs->soil3c[layer];
-			ns->nvol_snk      += ns->soil3n[layer];
+			ns->Nprec_snk      += ns->soil3n[layer];
 			cs->soil3c[layer] = 0.0;
 			ns->soil3n[layer] = 0.0;
 		}
 		if ((cs->soil4c[layer] != 0 && fabs(cs->soil4c[layer]) < CRIT_PREC) || (ns->soil4n[layer] != 0 && fabs(ns->soil4n[layer])  < CRIT_PREC))
 		{
 			cs->soil4_hr_snk  += cs->soil4c[layer];
-			ns->nvol_snk      += ns->soil4n[layer];
+			ns->Nprec_snk      += ns->soil4n[layer];
 			cs->soil4c[layer] = 0.0;
 			ns->soil4n[layer] = 0.0;
 		}
@@ -402,38 +402,70 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		if ((cs->litr1c[layer] != 0 && fabs(cs->litr1c[layer]) < CRIT_PREC) || (ns->litr1n[layer] != 0 && fabs(ns->litr1n[layer])  < CRIT_PREC))
 		{
 			cs->litr1_hr_snk += cs->litr1c[layer];
-			ns->nvol_snk += ns->litr1n[layer];
+			ns->Nprec_snk += ns->litr1n[layer];
 			cs->litr1c[layer] = 0.0;
 			ns->litr1n[layer] = 0.0;
 		}
 		if ((cs->litr2c[layer] != 0 && fabs(cs->litr2c[layer]) < CRIT_PREC) || (ns->litr2n[layer] != 0 && fabs(ns->litr2n[layer])  < CRIT_PREC))
 		{
 			cs->litr2_hr_snk += cs->litr2c[layer];
-			ns->nvol_snk += ns->litr2n[layer];
+			ns->Nprec_snk += ns->litr2n[layer];
 			cs->litr2c[layer] = 0.0;
 			ns->litr2n[layer] = 0.0;
 		}
 		if ((cs->litr3c[layer] != 0 && fabs(cs->litr3c[layer]) < CRIT_PREC) || (ns->litr3n[layer] != 0 && ns->litr3n[layer] < 0 && fabs(ns->litr3n[layer])  < CRIT_PREC))
 		{
 			cs->litr4_hr_snk += cs->litr3c[layer]; /* NO LITR3C HR SINK */
-			ns->nvol_snk += ns->litr3n[layer];
+			ns->Nprec_snk += ns->litr3n[layer];
 			cs->litr3c[layer] = 0.0;
 			ns->litr3n[layer] = 0.0;
 		}
 		if ((cs->litr4c[layer] != 0 && fabs(cs->litr4c[layer]) < CRIT_PREC) || (ns->litr4n[layer] != 0 && fabs(ns->litr4n[layer])  < CRIT_PREC))
 		{
 			cs->litr4_hr_snk += cs->litr4c[layer];
-			ns->nvol_snk += ns->litr4n[layer];
+			ns->Nprec_snk += ns->litr4n[layer];
 			cs->litr4c[layer] = 0.0;
 			ns->litr4n[layer] = 0.0;
 		}	
+
+		if ((cs->soil1_DOC[layer] != 0 && fabs(cs->soil1_DOC[layer]) < CRIT_PREC) || (ns->soil1_DON[layer] != 0 && fabs(ns->soil1_DON[layer])  < CRIT_PREC))
+		{
+			cs->soil1_hr_snk += cs->soil1_DOC[layer];
+			ns->Nprec_snk += ns->soil1_DON[layer];
+			cs->soil1_DOC[layer] = 0.0;
+			ns->soil1_DON[layer] = 0.0;
+		}
+
+		if ((cs->soil2_DOC[layer] != 0 && fabs(cs->soil2_DOC[layer]) < CRIT_PREC) || (ns->soil2_DON[layer] != 0 && fabs(ns->soil2_DON[layer])  < CRIT_PREC))
+		{
+			cs->soil2_hr_snk += cs->soil2_DOC[layer];
+			ns->Nprec_snk += ns->soil2_DON[layer];
+			cs->soil2_DOC[layer] = 0.0;
+			ns->soil2_DON[layer] = 0.0;
+		}
+
+		if ((cs->soil3_DOC[layer] != 0 && fabs(cs->soil3_DOC[layer]) < CRIT_PREC) || (ns->soil3_DON[layer] != 0 && fabs(ns->soil3_DON[layer])  < CRIT_PREC))
+		{
+			cs->soil3_hr_snk += cs->soil3_DOC[layer];
+			ns->Nprec_snk += ns->soil3_DON[layer];
+			cs->soil3_DOC[layer] = 0.0;
+			ns->soil3_DON[layer] = 0.0;
+		}
+
+		if ((cs->soil4_DOC[layer] != 0 && fabs(cs->soil4_DOC[layer]) < CRIT_PREC) || (ns->soil4_DON[layer] != 0 && fabs(ns->soil4_DON[layer])  < CRIT_PREC))
+		{
+			cs->soil4_hr_snk += cs->soil4_DOC[layer];
+			ns->Nprec_snk += ns->soil4_DON[layer];
+			cs->soil4_DOC[layer] = 0.0;
+			ns->soil4_DON[layer] = 0.0;
+		}
 		
 	}
 
 
 	if (fabs(ns->retransn) < CRIT_PREC && ns->retransn != 0)
 	{
-		ns->nvol_snk        += ns->retransn;
+		ns->Nprec_snk        += ns->retransn;
 		ns->retransn        = 0.0;
 	}
 	/* additional tests for soil mineral N */
@@ -442,13 +474,13 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 	{
 		if (fabs(ns->sminNH4[layer]) < CRIT_PREC_RIG && ns->sminNH4[layer] != 0)
 		{
-			ns->nvol_snk         += ns->sminNH4[layer];
+			ns->Nprec_snk         += ns->sminNH4[layer];
 			ns->sminNH4[layer] = 0.0;
 		}
 
 		if (fabs(ns->sminNO3[layer]) < CRIT_PREC_RIG && ns->sminNO3[layer] != 0)
 		{
-			ns->nvol_snk         += ns->sminNO3[layer];
+			ns->Nprec_snk         += ns->sminNO3[layer];
 			ns->sminNO3[layer] = 0.0;
 		}
 	
@@ -487,5 +519,5 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ws->pond_water = 0.0;
 	}
 	
-	return(errflag);
+	return(errorCode);
 }	

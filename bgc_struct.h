@@ -1,9 +1,9 @@
    /*
-bgc_struct.h putty
+bgc_struct.h 
 header file for structure definitions
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
@@ -16,7 +16,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #define N_MGMDAYS 7		    /*  number of type of management events in a single year */
 #define N_SOILLAYERS 10		/*  number of type of soil layers in multilayer soil module */
 #define N_PHENPHASES 7		/*  number of phenological phases */
-#define NDAYS_OF_YEAR 365    /* number of days in a year */
+#define nDAYS_OF_YEAR 365    /* number of days in a year */
 
 /* VAR ctrl: simulation control variables */
 typedef struct
@@ -24,7 +24,7 @@ typedef struct
     int simyears;				/* (n) years of simulation */
     int simstartyear;			/* (year) first year of simulation */
 	int spinup;					/* (flag) 1=spinup run, 0=normal run */
-	int maxspinyears;			/* (n) maximum number of years for spinup run */
+	int maxspincycles;			/* (n) maximum number of spinup cycles for spinup run */
 	int dodaily;				/* (flag)  for daily output */
 	int domonavg;				/* (flag)  for monthly average of daily outputs */
 	int doannavg;				/* (flag)  for annual average of daily outputs */
@@ -70,8 +70,10 @@ typedef struct
 	int prephen2_flag;          /* (flag) for warnings into logfile */	
 	int bareground_flag;        /* (flag) for warnings into logfile */	
 	int vegper_flag;            /* (flag) for warnings into logfile */	
-
-
+	int south_shift;            /* (int) shifting of meteo data for southern hemisphere */
+	char* planttypeName;        /* (string) name of the plant tpye in the header of EPC file */
+	int NaddSPINUP_flag;        /* (flag) for using artificial N-addition during spinup phase */
+	int soiltype;               /* (flag) soiltype */
 } control_struct;
 /* endVAR */
 
@@ -124,6 +126,7 @@ typedef struct
 	double GDD_emergEND;	        /* (Celsius) end of emergence period */
 	double onday;					/* (doy) first day of vegetation period */
 	double offday;					/* (doy) last day of vegetation period */
+	double planttype;				/* (dimless) type of the plant (fallow:0, maize:1, wheat:2, barley:3, sunflower:4, canola:5, grass:6, unknown:-1) */
 } phenology_struct;
 /* endOUT  */
 /* VAR metarr: meteorological variable arrays */
@@ -202,6 +205,9 @@ typedef struct
 {
     double soilw[N_SOILLAYERS];		 /* water stored in the soil layers */
 	double soilw_SUM;				 /* water stored in soil */
+	double soilw_2m;				 /* water stored in 0-200 cm */
+	double soilw_RZ;				 /* water stored in rootzone */
+	double soilw_RZ_avail;		     /* water stored in rootzone available for plants */
 	double pond_water;				 /* water stored on surface because of saturation */
     double snoww;					 /* water stored in snowpack */
     double canopyw;					 /* water stored on canopy */
@@ -215,12 +221,15 @@ typedef struct
 	double deeppercolation_snk;		 /* SUM of percolated water out of the system */
 	double groundwater_src;			 /* SUM of water plus from goundwater */
 	double canopyw_THNsnk;			 /* SUM of water stored on canopy is disappered because of thinning*/
-	double canopyw_MOWsnk;		     /* SUM of water stored on canopy is disappered because of mowing*/
-	double canopyw_HRVsnk;           /* SUM of water stored on canopy is disappered because of harvesting*/
-	double canopyw_PLGsnk;		     /* SUM of water stored on canopy is disappered because of ploughing*/
-	double canopyw_GRZsnk;			 /* SUM of water stored on canopy is disappered because of grazing*/
+	double canopyw_MOWsnk;		     /* SUM of water stored on canopy is disappered because of mowing */
+	double canopyw_HRVsnk;           /* SUM of water stored on canopy is disappered because of harvesting */
+	double canopyw_PLGsnk;		     /* SUM of water stored on canopy is disappered because of ploughing */
+	double canopyw_GRZsnk;			 /* SUM of water stored on canopy is disappered because of grazing */
     double IRGsrc_W;			     /* SUM of water from irrigating */
-	double FRZsrc_W;				/* SUM of water from fertilization */
+	double FRZsrc_W;				 /* SUM of water from fertilization */
+	double soil_evapCUM1;            /* cumulated soil evaporation in first evaporation phase (no limit) */
+	double soil_evapCUM2;            /* cumulated soil evaporation in second evaporation phase (dsr limit) */
+	double soilw_avail[N_SOILLAYERS];/* transpiration lack in a given layer */
     double WbalanceERR;              /* SUM of water balance error  */
 	double inW;						 /* SUM of nitrogen input */
 	double outW;					 /* SUM of nitrogen output */
@@ -242,15 +251,19 @@ typedef struct
 	double snoww_subl;								/* sublimation from snowpack */
     double snoww_to_soilw;							/* melt from snowpack  */
     double soilw_evap;								/* evaporation from soil */
+	double soilw_transPOT;					        /* potential transpiration (no SWC-limit) */
+	double soilw_transDEMAND[N_SOILLAYERS];			/* transpiration demand from the soil layers */
+	double soilw_transDEMAND_SUM;					/* sum of transpiration demand */
     double soilw_trans[N_SOILLAYERS];				/* transpiration from the soil layers */
     double soilw_trans_SUM;	                        /* SUM of transpiration from the soil layers */
 	double evapotransp;								/* evapotranspiration (evap+trans+subl) */
+	double PET;								        /* potential evapotranspiration (evap+trans) */
 	double pondw_to_soilw;                          /* water flux from pond to soil */
 	double soilw_to_pondw;                          /* water flux from soil to pond */
 	double soilw_percolated[N_SOILLAYERS];		    /* percolation fluxes between soil layers */
 	double soilw_diffused[N_SOILLAYERS];			/* diffusion flux between the soil layers */
 	double soilw_from_GW[N_SOILLAYERS];				/* soil water plus from ground water */
-	double soilw_rootzone_leach;					/* soil water leached from rootzone (percol+diffus) */
+	double soilw_leached_RZ;				     	/* soil water leached from rootzone (percol+diffus) */
 	double canopyw_to_THN;							/* water stored on canopy is disappered because of thinning */
 	double canopyw_to_MOW;							/* water stored on canopy is disappered because of mowing */
 	double canopyw_to_HRV;							/* water stored on canopy is disappered because of harvesting */
@@ -258,7 +271,8 @@ typedef struct
 	double canopyw_to_GRZ;							/* water stored on canopy is disappered because of grazing */
 	double IRG_to_prcp;								/* irrigatied water amount */	
 	double FRZ_to_soilw;                            /* water flux from fertilization */
-	double pot_evap;                                /* potential evaporation to calcualte pond evaporation */
+	double evapPOT;                                /* potential evaporation to calcualte pond evaporation */
+	double infiltPOT;                              /* infiltrated water: prcp_to_soilw+snoww_to_soilw+canopyw_to_soilw+IRG_to_prcp+pond_water */
 } wflux_struct;
 /* endOUT */
 
@@ -324,32 +338,32 @@ typedef struct
 	double STDBc_froot;							/*  wilted froot biomass  */
 	double STDBc_fruit;							/*  wilted fruit biomass  */
 	double STDBc_softstem;						/*  wilted sofstem biomass  */
-	double STDBc_transfer;						/*  wilted transfer biomass  */
+	double STDBc_nsc;						    /*  wilted non-stuctured carbohydrate biomass  */
 	double STDBc_above;             			/*  wilted aboveground plant biomass  */
 	double STDBc_below;             			/*  wilted belowground plant biomass  */
 	double CTDBc_leaf;							/*  cut-down leaf biomass  */
 	double CTDBc_froot;							/*  cut-down froot biomass  */
 	double CTDBc_fruit;							/*  cut-down fruit biomass  */
 	double CTDBc_softstem;						/*  cut-down sofstem biomass  */
-	double CTDBc_transfer;						/*  cut-down transfer biomass  */
+	double CTDBc_nsc;						    /*  cut-down non-stuctured biomass  */
 	double CTDBc_cstem;			    			/*  cut-down coarse stem biomass  */
 	double CTDBc_croot;			    			/*  cut-down coarse root biomass  */
 	double CTDBc_above;             			/*  cut-down aboveground plant biomass  */
 	double CTDBc_below;             			/*  cut-down belowground plant biomass  */
-    double soil1c[N_SOILLAYERS];		/* microbial recycling pool C (fast) */
-    double soil2c[N_SOILLAYERS];		/* microbial recycling pool C (medium) */
-    double soil3c[N_SOILLAYERS];		/* microbial recycling pool C (slow) */
-    double soil4c[N_SOILLAYERS];		/* recalcitrant SOM C (humus, slowest) */
-	double soilC[N_SOILLAYERS];	        /* soil total C */
-	double soil1_DOC[N_SOILLAYERS];		/* dissolved part of microbial recycling pool C (fast) */
-    double soil2_DOC[N_SOILLAYERS];		/* dissolved part of microbial recycling pool C (medium) */
-    double soil3_DOC[N_SOILLAYERS];		/* dissolved part of microbial recycling pool C (slow) */
-    double soil4_DOC[N_SOILLAYERS];		/* dissolved part of recalcitrant SOM C (humus, slowest) */
+    double soil1c[N_SOILLAYERS];		        /* carbon content of labile SOM */
+    double soil2c[N_SOILLAYERS];				/* carbon content of fast decomposing SOM */
+    double soil3c[N_SOILLAYERS];				/* carbon content of slowly decomposing SOM */
+    double soil4c[N_SOILLAYERS];				/* carbon content of stable SOM */
+	double soilC[N_SOILLAYERS];					/* soil total C */
+	double soil1_DOC[N_SOILLAYERS];		/* dissolved part of carbon content of labile SOM */
+    double soil2_DOC[N_SOILLAYERS];		/* dissolved part of carbon content of fast decomposing SOM */
+    double soil3_DOC[N_SOILLAYERS];		/* dissolved part of carbon content of slowly decomposing SOM */
+    double soil4_DOC[N_SOILLAYERS];		/* dissolved part of carbon content of stable SOM */
 	double soil_DOC[N_SOILLAYERS];	    /* dissolved part of soil total C */
-	double soil1c_total;				/* SUM of microbial recycling pool C (fast) */
-    double soil2c_total;				/* SUM of microbial recycling pool C (medium) */
-    double soil3c_total;				/* SUM of microbial recycling pool C (slow) */
-    double soil4c_total;				/* SUM of recalcitrant SOM C (humus, slowest) */
+	double soil1c_total;				/* SUM of carbon content of labile SOM */
+    double soil2c_total;				/* SUM of carbon content of fast decomposing SOM */
+    double soil3c_total;				/* SUM of carbon content of slowly decomposing SOM */
+    double soil4c_total;				/* SUM of carbon content of stable SOM */
 	double cpool;						/* temporary photosynthate C pool */
     double psnsun_src;					/* SUM of gross PSN from sulit canopy */
     double psnshade_src;				/* SUM of gross PSN from shaded canopy */
@@ -372,13 +386,14 @@ typedef struct
     double litr1_hr_snk;				/* SUM of labile litr microbial resp */
     double litr2_hr_snk;				/* SUM of cellulose litr microbial resp */
     double litr4_hr_snk;				/* SUM of lignin litr microbial resp */
-    double soil1_hr_snk;				/* SUM of fast microbial respiration */
-    double soil2_hr_snk;				/* SUM of medium microbial respiration */
-    double soil3_hr_snk;				/* SUM of slow microbial respiration */
-    double soil4_hr_snk;				/* SUM of recalcitrant SOM respiration */
+    double soil1_hr_snk;				/* SUM of labile SOM respiration */
+    double soil2_hr_snk;				/* SUM of fast SOM respiration */
+    double soil3_hr_snk;				/* SUM of slow SOM respiration */
+    double soil4_hr_snk;				/* SUM of stable SOM respiration */
 	double FIREsnk_C;					/* SUM of fire losses */
 	double SNSCsnk_C;					/* SUM of senescence losses */
     double PLTsrc_C;					/* SUM of C content of planted plant material */
+	double Cdeepleach_snk;				/* SUM of C deep leaching */
 	double THN_transportC;				/* SUM of C content of thinned and transported plant material*/
 	double HRV_transportC;				/* SUM of C content of harvested and transported plant material*/
 	double MOW_transportC;              /* SUM of mowed and transported plant material (C content)  */
@@ -386,7 +401,7 @@ typedef struct
 	double GRZsrc_C;					/* SUM of added carbon from fertilizer */
 	double FRZsrc_C;					/* SUM of carbon content of fertilizer return to the litter pool */
 	double fruitC_HRV;                  /* SUM of carbon content of havested fruit */
-	double vegC_HRV;                   /* SUM of carbon content of havested leaf, stem and fruit */
+	double vegC_HRV;                    /* SUM of carbon content of havested leaf, stem and fruit */
 	double CbalanceERR;					/* SUM of carbon balance error */
 	double inC;							/* SUM of carbon input */
 	double outC;						/* SUM of carbon output */
@@ -466,11 +481,16 @@ typedef struct
 	double m_deadcrootc_to_fire;           
 	double m_gresp_storage_to_fire;        
 	double m_gresp_transfer_to_fire;       
-	double m_litr1c_to_fire;               
-	double m_litr2c_to_fire;               
-	double m_litr3c_to_fire;               
-	double m_litr4c_to_fire;               
-	double m_cwdc_to_fire;                 
+	double m_litr1c_to_fireTOTAL;               
+	double m_litr2c_to_fireTOTAL;               
+	double m_litr3c_to_fireTOTAL;               
+	double m_litr4c_to_fireTOTAL;               
+	double m_cwdc_to_fireTOTAL;    
+	double m_litr1c_to_fire[N_SOILLAYERS];               
+	double m_litr2c_to_fire[N_SOILLAYERS];               
+	double m_litr3c_to_fire[N_SOILLAYERS];               
+	double m_litr4c_to_fire[N_SOILLAYERS];               
+	double m_cwdc_to_fire[N_SOILLAYERS];    
 	/* group: senescence fluxes */
 	double m_vegc_to_SNSC;                
 	double m_leafc_to_SNSC; 
@@ -508,14 +528,14 @@ typedef struct
 	double STDBc_froot_to_litr;
 	double STDBc_fruit_to_litr;
 	double STDBc_softstem_to_litr;	
-	double STDBc_transfer_to_litr;
+	double STDBc_nsc_to_litr;
 	double STDBc_to_litr;
 	/* group: cut-dowc dead biomass to litter pool */
 	double CTDBc_leaf_to_litr;
 	double CTDBc_froot_to_litr;
 	double CTDBc_fruit_to_litr;
 	double CTDBc_softstem_to_litr;	
-	double CTDBc_transfer_to_litr;
+	double CTDBc_nsc_to_litr;
 	double CTDBc_cstem_to_cwd;			   
 	double CTDBc_croot_to_cwd;			    
 	double CTDBc_to_litr;  
@@ -573,17 +593,31 @@ typedef struct
 	double soil2c_to_soil3c[N_SOILLAYERS];	
 	double soil3_hr[N_SOILLAYERS];			
 	double soil3c_to_soil4c[N_SOILLAYERS];	
-	double soil4_hr[N_SOILLAYERS];		
+	double soil4_hr[N_SOILLAYERS];	
+	double litr1_hr_total;					
+	double litr2_hr_total;	
+	double litr4_hr_total;		
+	double soil1_hr_total;					
+	double soil2_hr_total;	
+	double soil3_hr_total;	
+	double soil4_hr_total;		
+	double litr1c_to_soil1c_total;								
+	double litr2c_to_soil2c_total;										
+	double litr3c_to_litr2c_total;					
+	double litr4c_to_soil3c_total;									
+	double cwdc_to_litr2c_total;					
+	double cwdc_to_litr3c_total;					
+	double cwdc_to_litr4c_total;	
 	/* group: SOIL components leaching*/
-	double soil1_DOC_leached[N_SOILLAYERS]; 
-	double soil2_DOC_leached[N_SOILLAYERS]; 
-	double soil3_DOC_leached[N_SOILLAYERS]; 
-	double soil4_DOC_leached[N_SOILLAYERS]; 
-	double soil1_DOC_diffused[N_SOILLAYERS]; 
-	double soil2_DOC_diffused[N_SOILLAYERS]; 
-	double soil3_DOC_diffused[N_SOILLAYERS];
-	double soil4_DOC_diffused[N_SOILLAYERS];
-	double DOC_rootzone_leach;
+	double soil1_DOC_percol[N_SOILLAYERS]; 
+	double soil2_DOC_percol[N_SOILLAYERS]; 
+	double soil3_DOC_percol[N_SOILLAYERS]; 
+	double soil4_DOC_percol[N_SOILLAYERS]; 
+	double soil1_DOC_diffus[N_SOILLAYERS]; 
+	double soil2_DOC_diffus[N_SOILLAYERS]; 
+	double soil3_DOC_diffus[N_SOILLAYERS];
+	double soil4_DOC_diffus[N_SOILLAYERS];
+	double DOC_leached_RZ;
 	/* group: daily allocation fluxes from current GPP */
 	double cpool_to_leafc;               
 	double cpool_to_leafc_storage;       
@@ -689,11 +723,11 @@ typedef struct
 	double gresp_transfer_to_THN;        
 	double THN_to_CTDBc_leaf;				  
 	double THN_to_CTDBc_fruit;				 
-	double THN_to_CTDBc_transfer;				 
+	double THN_to_CTDBc_nsc;				 
 	double THN_to_CTDBc_cstem;			     		 			    	 
 	double STDBc_leaf_to_THN;				 			 
 	double STDBc_fruit_to_THN;				 
-	double STDBc_transfer_to_THN;	
+	double STDBc_nsc_to_THN;	
 	/* group: mowing fluxes */
 	double leafc_to_MOW;				 
 	double leafc_storage_to_MOW;         
@@ -709,11 +743,11 @@ typedef struct
 	double MOW_to_CTDBc_leaf;				 		 
 	double MOW_to_CTDBc_fruit;
 	double MOW_to_CTDBc_softstem;	
-	double MOW_to_CTDBc_transfer;				 		 			    	 
+	double MOW_to_CTDBc_nsc;				 		 			    	 
 	double STDBc_leaf_to_MOW;				 			 
 	double STDBc_fruit_to_MOW;	
 	double STDBc_softstem_to_MOW;	
-	double STDBc_transfer_to_MOW;	
+	double STDBc_nsc_to_MOW;	
 	/* group: harvesting fluxes */
 	double leafc_to_HRV;				 
 	double leafc_storage_to_HRV;         
@@ -729,11 +763,11 @@ typedef struct
 	double HRV_to_CTDBc_leaf;				 			 
 	double HRV_to_CTDBc_fruit;
 	double HRV_to_CTDBc_softstem;	
-	double HRV_to_CTDBc_transfer;				 		 			    	 
+	double HRV_to_CTDBc_nsc;				 		 			    	 
 	double STDBc_leaf_to_HRV;				 			 
 	double STDBc_fruit_to_HRV;	
 	double STDBc_softstem_to_HRV;	
-	double STDBc_transfer_to_HRV;	
+	double STDBc_nsc_to_HRV;	
 	/* group: ploughing fluxes */		 
 	double leafc_to_PLG;					 
 	double leafc_storage_to_PLG;			
@@ -753,7 +787,7 @@ typedef struct
 	double STDBc_froot_to_PLG;
 	double STDBc_fruit_to_PLG;
 	double STDBc_softstem_to_PLG;
-	double STDBc_transfer_to_PLG;
+	double STDBc_nsc_to_PLG;
 	double CTDBc_leaf_to_PLG;
 	double CTDBc_fruit_to_PLG;
 	double CTDBc_softstem_to_PLG;
@@ -772,7 +806,7 @@ typedef struct
 	double STDBc_leaf_to_GRZ;
 	double STDBc_fruit_to_GRZ;
 	double STDBc_softstem_to_GRZ;
-	double STDBc_transfer_to_GRZ;
+	double STDBc_nsc_to_GRZ;
 	double GRZ_to_litr1c;				 
 	double GRZ_to_litr2c;				 
 	double GRZ_to_litr3c;				 
@@ -785,8 +819,7 @@ typedef struct
 	/* group: CH4 flux based on empirical estimation */
 	double CH4_flux_soil;			
 	double CH4_flux_MANURE;			
-	double CH4_flux_FERMENT;
-
+	double CH4_flux_ANIMAL;
 
 } cflux_struct;
 /* endOUT */
@@ -835,43 +868,48 @@ typedef struct
 	double STDBn_froot;				/*  wilted froot biomass  */
 	double STDBn_fruit;				/*  wilted fruit biomass  */
 	double STDBn_softstem;			/*  wilted sofstem biomass  */
-	double STDBn_transfer;			/*  wilted transfer biomass  */
+	double STDBn_nsc;			    /*  wilted non-structured carbohydrate biomass  */
 	double STDBn_above;             /*  wilted aboveground plant biomass  */
 	double STDBn_below;             /*  wilted belowground plant biomass  */
 	double CTDBn_leaf;				/*  cut-down leaf biomass  */
 	double CTDBn_froot;				/*  cut-down froot biomass  */
 	double CTDBn_fruit;				/*  cut-down fruit biomass  */
 	double CTDBn_softstem;			/*  cut-down sofstem biomass  */
-	double CTDBn_transfer;			/*  cut-down transfer biomass  */
+	double CTDBn_nsc;			    /*  cut-down non-structured biomass  */
 	double CTDBn_cstem;			    /*  cut-down coarse stem biomass  */
 	double CTDBn_croot;			    /*  cut-down coarse root biomass  */
 	double CTDBn_above;             /*  cut-down aboveground plant biomass  */
 	double CTDBn_below;             /*  cut-down belowground plant biomass  */
-    double soil1n[N_SOILLAYERS];		/* microbial recycling pool N (fast) */
-    double soil2n[N_SOILLAYERS];		/* microbial recycling pool N (medium) */
-    double soil3n[N_SOILLAYERS];		/* microbial recycling pool N (slow) */
-    double soil4n[N_SOILLAYERS];		/* recalcitrant SOM N (humus, slowest) */
-	double soilN[N_SOILLAYERS];	        /* soil total N */
-	double soil1_DON[N_SOILLAYERS];		/* microbial recycling pool N (fast) */
-    double soil2_DON[N_SOILLAYERS];		/* microbial recycling pool N (medium) */
-    double soil3_DON[N_SOILLAYERS];		/* microbial recycling pool N (slow) */
-    double soil4_DON[N_SOILLAYERS];		/* recalcitrant SOM N (humus, slowest) */
+    double soil1n[N_SOILLAYERS];		/* Nitrogen content of labile SOM */
+    double soil2n[N_SOILLAYERS];		/* Nitrogen content of fast decomposing SOM */
+    double soil3n[N_SOILLAYERS];		/* Nitrogen content of slowly decomposing SOM */
+    double soil4n[N_SOILLAYERS];		/* Nitrogen content of stable SOM */
+	double soilN[N_SOILLAYERS];	        /* Nitrogen content of total SOM */
+	double soil1_DON[N_SOILLAYERS];		/* Dissolved Nitrogen content of labile SOM */
+    double soil2_DON[N_SOILLAYERS];		/* Dissolved Nitrogen content of fast decomposing SOM */
+    double soil3_DON[N_SOILLAYERS];		/* Dissolved Nitrogen content of slowly decomposing SOM */
+    double soil4_DON[N_SOILLAYERS];		/* Dissolved Nitrogen content of stable SOM */
 	double soil_DON[N_SOILLAYERS];	    /* soil total N */
-	double soil1n_total;				/* SUM of microbial recycling pool N (fast) in the total soil */
-    double soil2n_total;				/* SUM of microbial recycling pool N (medium) in the total soil */
-    double soil3n_total;				/* SUM of microbial recycling pool N (slow) in the total soil */
-    double soil4n_total;				/* SUM of recalcitrant SOM C (humus, slowest) in the total soil */
+	double soil1n_total;				/* SUM of Nitrogen content of labile SOM */
+    double soil2n_total;				/* SUM of Nitrogen content of fast decomposing SOM */
+    double soil3n_total;				/* SUM of Nitrogen content of slowly decomposing SOM */
+    double soil4n_total;				/* SUM of Nitrogen content of total SOM */
 	double retransn;					/* plant pool of retranslocated N */
     double sminNH4[N_SOILLAYERS];		/* soil mineral N in multilayer soil */
 	double sminNO3[N_SOILLAYERS];		/* soil mineral N in multilayer soil */
 	double sminNH4_total;               /* SUM of the soil mineral N in the total soil */
 	double sminNO3_total;               /* SUM of the soil mineral N in the total soil */
-    double nfix_src;					/* SUM of biological N fixation */
-    double ndep_src;					/* SUM of N deposition inputs */
-    double nleached_snk;				/* SUM of N leached */
-    double nvol_snk;					/* SUM of N lost to volatilization */
+	double sminNH4avail[N_SOILLAYERS];	/* Available soil mineral N in multilayer soil */
+	double sminNO3avail[N_SOILLAYERS];	/* Available soil mineral N in multilayer soil */
+	double sminNH4avail_total;          /* SUM of the available soil mineral N in the total soil */
+	double sminNO3avail_total;          /* SUM of the available soil mineral N in the total soil */
+	double sminNavail_RZ;
+    double Nfix_src;					/* SUM of biological N fixation */
+    double Ndep_src;					/* SUM of N deposition inputs */
+    double Ndeepleach_snk;				/* SUM of N deep leaching */
+    double Nvol_snk;					/* SUM of N lost to volatilization */
+	double Nprec_snk;					/* SUM of N lost to precision control */
 	double FIREsnk_N;					/* SUM of N lost to fire */
-	double ndiffused_snk;				/* SUM of N leached */
 	double SNSCsnk_N;					/* SUM of senescence losses */
 	double FRZsrc_N;					/* SUM of N fertilization inputs */	
     double PLTsrc_N;					/* SUM of planted leaf N */
@@ -881,7 +919,6 @@ typedef struct
 	double GRZsnk_N;					/* SUM of grazed leaf N */
 	double GRZsrc_N;					/* SUM of leaf N from fertilizer*/
 	double SPINUPsrc;					/* SUM of leaf N from spinup correction*/
-	double sum_ndemand;					/* SUM of leaf N from fertilizer*/
     double NbalanceERR;                 /* SUM of nitrogen balance error */
 	double inN;							/* SUM of nitrogen input */
 	double outN;						/* SUM of nitrogen output */
@@ -968,14 +1005,14 @@ typedef struct
 	double STDBn_froot_to_litr;
 	double STDBn_fruit_to_litr;
 	double STDBn_softstem_to_litr;	
-	double STDBn_transfer_to_litr;
+	double STDBn_nsc_to_litr;
 	double STDBn_to_litr;
 	/* group: cut-down dead biomass to litter pool */
 	double CTDBn_leaf_to_litr;
 	double CTDBn_froot_to_litr;
 	double CTDBn_fruit_to_litr;
 	double CTDBn_softstem_to_litr;	
-	double CTDBn_transfer_to_litr;
+	double CTDBn_nsc_to_litr;
 	double CTDBn_cstem_to_cwd;			   
 	double CTDBn_croot_to_cwd;			    
 	double CTDBn_to_litr;  
@@ -1007,11 +1044,16 @@ typedef struct
 	double m_livecrootn_to_fire;           
 	double m_deadcrootn_to_fire;           
 	double m_retransn_to_fire;             
-	double m_litr1n_to_fire;               
-	double m_litr2n_to_fire;               
-	double m_litr3n_to_fire;               
-	double m_litr4n_to_fire;               
-	double m_cwdn_to_fire;                 
+	double m_litr1n_to_fireTOTAL;               
+	double m_litr2n_to_fireTOTAL;               
+	double m_litr3n_to_fireTOTAL;               
+	double m_litr4n_to_fireTOTAL;               
+	double m_cwdn_to_fireTOTAL;    
+	double m_litr1n_to_fire[N_SOILLAYERS];               
+	double m_litr2n_to_fire[N_SOILLAYERS];               
+	double m_litr3n_to_fire[N_SOILLAYERS];               
+	double m_litr4n_to_fire[N_SOILLAYERS];               
+	double m_cwdn_to_fire[N_SOILLAYERS];                 
 	/* group: phenology fluxes from transfer pool */
 	double leafn_transfer_to_leafn;           
 	double frootn_transfer_to_frootn;    
@@ -1040,8 +1082,11 @@ typedef struct
 	double softstemn_to_litr3n;               
 	double softstemn_to_litr4n;               
 	/* group: N input flux */
-	double ndep_to_sminn;                 
-	double nfix_to_sminn;                 
+	double ndep_to_sminNH4[N_SOILLAYERS];      
+	double ndep_to_sminNO3[N_SOILLAYERS];  
+	double nfix_to_sminNH4[N_SOILLAYERS]; 
+	double ndep_to_sminnTOTAL;                 
+	double nfix_to_sminnTOTAL;      
 	/* group: litter and soil decomposition fluxes  */
 	double cwdn_to_litr2n[N_SOILLAYERS];                
 	double cwdn_to_litr3n[N_SOILLAYERS];                
@@ -1053,6 +1098,16 @@ typedef struct
 	double soil1n_to_soil2n[N_SOILLAYERS];              
 	double soil2n_to_soil3n[N_SOILLAYERS];              
 	double soil3n_to_soil4n[N_SOILLAYERS];   
+	double cwdn_to_litr2n_total;                
+	double cwdn_to_litr3n_total;                
+	double cwdn_to_litr4n_total;                
+	double litr1n_to_soil1n_total;              
+	double litr2n_to_soil2n_total;              
+	double litr3n_to_litr2n_total;              
+	double litr4n_to_soil3n_total; 
+	double soil1n_to_soil2n_total;              
+	double soil2n_to_soil3n_total;              
+	double soil3n_to_soil4n_total;   
 	/* group: mineralization fluxes  */
 	double soil4n_to_sminNH4[N_SOILLAYERS];    
 	double soil4n_to_sminNH4_total;    
@@ -1066,9 +1121,16 @@ typedef struct
 	double sminn_to_soil2n_s1[N_SOILLAYERS];            
 	double sminn_to_soil3n_s2[N_SOILLAYERS];            
 	double sminn_to_soil4n_s3[N_SOILLAYERS]; 
-	double sminn_to_soil_SUM_total;             
+
+	double sminn_to_soil_SUM_total; 
 	double sminNH4_to_soil_SUM_total;           
 	double sminNO3_to_soil_SUM_total; 
+	double sminn_to_soil1n_l1_total;
+	double sminn_to_soil2n_l2_total;
+	double sminn_to_soil3n_l4_total;
+	double sminn_to_soil2n_s1_total;
+	double sminn_to_soil3n_s2_total;
+	double sminn_to_soil4n_s3_total;
 	/* group: nitrification and denitrification fluxes */
 	double sminNO3_to_denitr[N_SOILLAYERS];
 	double sminNH4_to_nitrif[N_SOILLAYERS];
@@ -1082,27 +1144,29 @@ typedef struct
 	double N2O_flux_DENITR_total;	
 	/* group: SMINN change caused by soil process */
 	double sminNH4_to_npool[N_SOILLAYERS];                 
-	double sminNO3_to_npool[N_SOILLAYERS];  
-	double sminNH4_to_npool_total;          
-	double sminNO3_to_npool_total;			
-	double sminn_to_npool;
+	double sminNO3_to_npool[N_SOILLAYERS]; 
+	double sminn_to_npool[N_SOILLAYERS];
+	double sminNH4_to_npoolTOTAL;          
+	double sminNO3_to_npoolTOTAL;			
+	double sminn_to_npoolTOTAL;
 	/* group: SOIL components leaching*/
-	double sminNH4_leached[N_SOILLAYERS];    
-	double sminNH4_diffused[N_SOILLAYERS];   
-	double sminNO3_leached[N_SOILLAYERS];    
-	double sminNO3_diffused[N_SOILLAYERS];
-	double sminN_rootzone_leach;
-	double soil1_DON_leached[N_SOILLAYERS]; 
-	double soil2_DON_leached[N_SOILLAYERS]; 
-	double soil3_DON_leached[N_SOILLAYERS]; 
-	double soil4_DON_leached[N_SOILLAYERS]; 
-	double soil1_DON_diffused[N_SOILLAYERS]; 
-	double soil2_DON_diffused[N_SOILLAYERS]; 
-	double soil3_DON_diffused[N_SOILLAYERS]; 
-	double soil4_DON_diffused[N_SOILLAYERS]; 
-	double DON_rootzone_leach;
+	double sminNH4_percol[N_SOILLAYERS];    
+	double sminNH4_diffus[N_SOILLAYERS];   
+	double sminNO3_percol[N_SOILLAYERS];    
+	double sminNO3_diffus[N_SOILLAYERS];
+	double sminN_leached_RZ;
+	double soil1_DON_percol[N_SOILLAYERS]; 
+	double soil2_DON_percol[N_SOILLAYERS]; 
+	double soil3_DON_percol[N_SOILLAYERS]; 
+	double soil4_DON_percol[N_SOILLAYERS]; 
+	double soil1_DON_diffus[N_SOILLAYERS]; 
+	double soil2_DON_diffus[N_SOILLAYERS]; 
+	double soil3_DON_diffus[N_SOILLAYERS]; 
+	double soil4_DON_diffus[N_SOILLAYERS]; 
+	double DON_leached_RZ;
 	/* group: daily allocation fluxes */
-	double retransn_to_npool;             
+	double retransn_to_npool[N_SOILLAYERS];   
+	double retransn_to_npoolTOTAL; 
 	double npool_to_leafn;                
 	double npool_to_leafn_storage;  
 	double npool_to_frootn;               
@@ -1181,11 +1245,11 @@ typedef struct
 	double retransn_to_THN;
 	double THN_to_CTDBn_leaf;				 			 
 	double THN_to_CTDBn_fruit;				 
-	double THN_to_CTDBn_transfer;				 
+	double THN_to_CTDBn_nsc;				 
 	double THN_to_CTDBn_cstem;			     		 			    	 
 	double STDBn_leaf_to_THN;				  
 	double STDBn_fruit_to_THN;				 
-	double STDBn_transfer_to_THN;	
+	double STDBn_nsc_to_THN;	
 	/* group: mowing fluxes */
 	double leafn_to_MOW;                 
 	double leafn_storage_to_MOW;         
@@ -1200,11 +1264,11 @@ typedef struct
 	double MOW_to_CTDBn_leaf;				 			 
 	double MOW_to_CTDBn_fruit;
 	double MOW_to_CTDBn_softstem;	
-	double MOW_to_CTDBn_transfer;				 		 			    	 
+	double MOW_to_CTDBn_nsc;				 		 			    	 
 	double STDBn_leaf_to_MOW;				 			 
 	double STDBn_fruit_to_MOW;	
 	double STDBn_softstem_to_MOW;	
-	double STDBn_transfer_to_MOW;	
+	double STDBn_nsc_to_MOW;	
 	/* group: harvesting fluxes */
 	double leafn_to_HRV;                 
 	double leafn_storage_to_HRV;         
@@ -1219,11 +1283,11 @@ typedef struct
 	double HRV_to_CTDBn_leaf;				 
 	double HRV_to_CTDBn_fruit;
 	double HRV_to_CTDBn_softstem;	
-	double HRV_to_CTDBn_transfer;				 		 			    	 
+	double HRV_to_CTDBn_nsc;				 		 			    	 
 	double STDBn_leaf_to_HRV;				 	 
 	double STDBn_fruit_to_HRV;	
 	double STDBn_softstem_to_HRV;	
-	double STDBn_transfer_to_HRV;		  
+	double STDBn_nsc_to_HRV;		  
 	/* group: ploughing fluxes  */
 	double leafn_to_PLG;					 
 	double leafn_storage_to_PLG;			
@@ -1242,7 +1306,7 @@ typedef struct
 	double STDBn_froot_to_PLG;
 	double STDBn_fruit_to_PLG;
 	double STDBn_softstem_to_PLG;
-	double STDBn_transfer_to_PLG;
+	double STDBn_nsc_to_PLG;
 	double CTDBn_leaf_to_PLG;
 	double CTDBn_fruit_to_PLG;
 	double CTDBn_softstem_to_PLG;
@@ -1259,7 +1323,7 @@ typedef struct
 	double STDBn_leaf_to_GRZ;
 	double STDBn_fruit_to_GRZ;
 	double STDBn_softstem_to_GRZ;
-	double STDBn_transfer_to_GRZ;
+	double STDBn_nsc_to_GRZ;
 	double retransn_to_GRZ;
 	double GRZ_to_litr1n;				 
 	double GRZ_to_litr2n;				 
@@ -1292,13 +1356,14 @@ typedef struct
 	double pmnf_l2s2[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of cellulose litter */
 	double plitr4c_loss[N_SOILLAYERS];	  /* (kgN/m2/d) potential loss of lignin litter */
 	double pmnf_l4s3[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of lignin litter */
-	double psoil1c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of microbial recycling pool */
-	double pmnf_s1s2[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of microbial recycling pool */
-	double psoil2c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of microbial recycling pool */
-	double pmnf_s2s3[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of microbial recycling pool */
-	double psoil3c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of microbial recycling pool */
-	double pmnf_s3s4[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of hummus pool */
-	double psoil4c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of hummus pool */
+	double psoil1c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of labile SOM pool */
+	double pmnf_s1s2[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of labile SOM pool */
+	double psoil2c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of fast SOM pool */
+	double pmnf_s2s3[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of fast SOM pool */
+	double psoil3c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of slow SOM pool */
+	double pmnf_s3s4[N_SOILLAYERS];       /* (kgN/m2/d) mineralized nitrogen flux of slow SOM pool */
+	double psoil4c_loss[N_SOILLAYERS];    /* (kgN/m2/d) potential loss of stable SOM pool */
+	double pmnf_s4[N_SOILLAYERS];         /* (kgN/m2/d) mineralized nitrogen flux of stable SOM pool */
 	double kl4[N_SOILLAYERS];             /* (1/day) corrected rate constants from the rate scalar */
 } ntemp_struct;
 /* endVAR */
@@ -1311,14 +1376,14 @@ typedef struct
 	int n_maxrootlayers;						/* (n) maximum number of soil layers in which root can be found  */
 	int germ_layer;								/* (n) number of germination layer */
 	double germ_depth;                          /* (m) actual germination depth*/
-	double thermal_timeSUM[NDAYS_OF_YEAR*2];		/* (Celsius) sum of thermal time */
-	double cpool_to_leafcARRAY[NDAYS_OF_YEAR*2];   /* (kgC/m2/day) array of carbon from cpool to leafC */                 
-	double npool_to_leafnARRAY[NDAYS_OF_YEAR*2];   /* (kgN/m2/day) array of nitrogen from npool to leafN */  
-	double leafdayARRAY[2];                     /* (n) counter array for days and phenpase of year when leaves are on*/
+	double cpool_to_leafcARRAY[nDAYS_OF_YEAR*2];   /* (kgC/m2/day) array of carbon from cpool to leafC */                 
+	double npool_to_leafnARRAY[nDAYS_OF_YEAR*2];   /* (kgN/m2/day) array of nitrogen from npool to leafN */
+	double thermal_timeARRAY[nDAYS_OF_YEAR*2];	   /* (Celsius) actual thermal_timeSUM */
+	int    gpSNSC_phenARRAY[nDAYS_OF_YEAR*2];	   /* (dimless) array of phenophase of genprog senescence */  
+	double leafday;                             /* (n) counter array for days of year when leaves are on*/
+	double leafday_lastmort;                    /* (n) last day of genetically senescence*/
 	double thermal_time;			            /* (Celsius) difference between tavg and base temperature */
-	double leafday_lastmort;                    /* (n) counter for last genetical mortality day */
 	double n_actphen;							/* (n) number of the actual phenophase (from 1 to 7)*/
-	double thermal_timeSUM_max;		            /* (Celsius) maximal thermal_timeSUM */
 	double flowHS_mort;                         /* (prop.) mortality coefficient of flwoering heat stress */
 	double transfer_ratio;                      /* (prop) transfer proportion on actual day  */ 
 	double day_leafc_litfall_increment;			/* (kgC/m2/d) rate leaf litfall */
@@ -1334,7 +1399,9 @@ typedef struct
 	double annmax_livestemc;					/* (kgC/m2) annual maximum daily livestem C */
 	double annmax_livecrootc;					/* (kgC/m2) annual maximum daily livecroot C */
 	double dsr;									/* (n) number of days since rain, for soil evap */
-	double dsws;								/* (n) number of days since soil water stress */
+	double SWCstressLENGTH;                     /* (dimless) lenght of the soil water stress */
+	double cumSWCstress;						/* (dimless) cumulative water stress */
+	double cumNstress;							/* (dimless) cumulative nitrogen stress */
     double proj_lai;							/* (m2/m2) live projected leaf area index */
     double all_lai;								/* (m2/m2) live all-sided leaf area index */
 	double sla_avg;                             /* (m2/m2) canopy average proj. SLA */
@@ -1344,48 +1411,63 @@ typedef struct
     double shade_proj_sla;						/* (m2/kgC) shaded projected SLA */
 	double plant_height;                        /* (m) height of plant (based on stemw and LAI)*/
 	double NDVI;                                /* (ratio) normalized difference vegetation index */
-	double rootlength_prop[N_SOILLAYERS];		    /* (prop) proportion of total root lenght in the given soil layer  */
+	double rootlength_prop[N_SOILLAYERS];		    /* (prop) proportion of root lenght in the given soil layer  */
+	double rootlengthLandD_prop[N_SOILLAYERS];		/* (prop) proportion of dead+live root lenght in the given soil layer  */
 	double psi[N_SOILLAYERS];						/* (MPa) water potential of soil and leaves   */
 	double pF[N_SOILLAYERS];						/* (cm) soil water suction derived from log(soil water potential)  */
-	double hydr_conduct_S[N_SOILLAYERS];			/* (m/s) hydraulic conductivity at the beginning of the day  */
-	double hydr_diffus_S[N_SOILLAYERS];				/* (m2/s) hydraulic diffusivity at the beginning of the day   */
-	double hydr_conduct_E[N_SOILLAYERS];			/* (m/s) hydraulic conductivity at the end of the day   */
-	double hydr_diffus_E[N_SOILLAYERS];				/* (m2/s) hydraulic diffusivity at the end of the day  */
+	double hydr_conductSTART[N_SOILLAYERS];			/* (m/s) hydraulic conductivity at the beginning of the day  */
+	double hydr_diffusSTART[N_SOILLAYERS];				/* (m2/s) hydraulic diffusivity at the beginning of the day   */
+	double hydr_conductEND[N_SOILLAYERS];			/* (m/s) hydraulic conductivity at the end of the day   */
+	double hydr_diffusEND[N_SOILLAYERS];				/* (m2/s) hydraulic diffusivity at the end of the day  */
 	double vwcSAT_RZ;								    /* (m3/m3) average value of VWC saturation (max.soil.depth) */
 	double vwcFC_RZ;								    /* (m3/m3) average value of VWC field capacity (max.soil.depth) */
 	double vwcWP_RZ;								    /* (m3/m3) average value of VWC wilting point (max.soil.depth) */
 	double vwcHW_RZ;								    /* (m3/m3) average value of VWC wilting point (max.soil.depth) */
     double vwc[N_SOILLAYERS];						/* (m3/m3) volumetric water content  */
-    double vwc_crit1[N_SOILLAYERS];					/* (ratio) volumetric water content at start of conductance reduction */
-	double vwc_crit2[N_SOILLAYERS];					/* (ratio) volumetric water content at stomatal closure */
+    double vwc_crit1[N_SOILLAYERS];					/* (m3/m3) volumetric water content at start of conductance reduction */
+	double vwc_crit2[N_SOILLAYERS];					/* (m3/m3) volumetric water content at stomatal closure */
+	double WFPS[N_SOILLAYERS];						/* (prop) water filled pore space */
     double vwc_avg;									/* (m3/m3) average volumetric water content in active layers */
 	double vwc_RZ;									/* (m3/m3) average volumetric water content in rootzone (max.soil.depth) */
-	double psi_avg;									/* (MPa) average water potential of soil and leaves */
-	double rooting_depth;							/* (m) actual depth of the rooting zone */
+	double psi_RZ;									/* (MPa) average water potential of soil and leaves */
+	double rootdepth;			     				/* (m) actual depth of the root and rooting zone */
+	double rootlength;			     				/* (m) actual length of the root and rooting zone (rootdpeth - germination depth */
 	double dlmr_area_sun;							/* (umolC/m2projected leaf area/s) sunlit leaf MR */
     double dlmr_area_shade;				  			/* (umolC/m2projected leaf area/s) shaded leaf MR */
     double gl_t_wv_sun;								/* (m/s) leaf-scale conductance to transpired water */
     double gl_t_wv_shade;							/* (m/s) leaf-scale conductance to transpired water */
+	double gl_t_wv_sunPOT;						/* (m/s) leaf-scale conductance to transpired water without SWC-limitation */
+    double gl_t_wv_shadePOT;					/* (m/s) leaf-scale conductance to transpired water without SWC-limitation  */
     double assim_sun;								/* (umol/m2/s) sunlit assimilation per unit pLAI */
     double assim_shade;								/* (umol/m2/s) shaded assimilation per unit pLAI */
-    double t_scalar[N_SOILLAYERS];					/* (dimless) decomp temperature scalar */
-    double w_scalar[N_SOILLAYERS];					/* (dimless) decomp water scalar */
-    double rate_scalar[N_SOILLAYERS];				/* (dimless) decomp combined scalar */
-	double rate_scalar_avg;							/* (dimless) decomp combined and averaged scalar */
-	double daily_gross_nmin[N_SOILLAYERS];			/* (kgN/m2/d) daily gross N mineralization */
-	double daily_gross_nimmob[N_SOILLAYERS];		/* (kgN/m2/d) daily gross N immobilization */ 
-	double daily_net_nmin[N_SOILLAYERS];			/* (kgN/m2/d) daily net N mineralization */
-	double max_conduct;								/* (m/s) stomatal conductance with atmospheric [CO2] multiplier */
+	double wfps_scalar[N_SOILLAYERS];				/* (dimless) water filled pore space lscalar function for nitrification */
+	double pH_scalar[N_SOILLAYERS];				    /* (dimless) pH scalar function for nitrification */
+    double t_scalar[N_SOILLAYERS];					/* (dimless) decomp temperature scalar  */
+    double w_scalar[N_SOILLAYERS];					/* (dimless) decomp water scalar  */
+    double rate_scalar[N_SOILLAYERS];				/* (dimless) decomp combined scalar  */
+	double rate_scalar_avg;							/* (dimless) decomp combined and averaged scalar  */
+	double grossMINER[N_SOILLAYERS];			    /* (kgN/m2/d) daily gross N mineralization layer by layer */
+	double potIMMOB[N_SOILLAYERS];			        /* (kgN/m2/d) daily potential immobilization layer by layer */
+	double netMINER[N_SOILLAYERS];					/* (kgN/m2/d) daily net N mineralization layer by layer */
+	double actIMMOB[N_SOILLAYERS];		            /* (kgN/m2/d) daily actual N immobilization layer by layer */ 
+	double potIMMOB_total;							/* (kgN/m2/d) total daily potential immobilization */
+	double grossMINER_total;						/* (kgN/m2/d) total daily gross mineralization */
+	double netMINER_total;							/* (kgN/m2/d) total net N mineralization */
+	double actIMMOB_total;							/* (kgN/m2/d) total actual N immobilization */ 
+	double stomaCONDUCT_max;						/* (m/s) maximum stomatal conductance */
 	double m_tmin;									/* (dimless) freezing night temperature multiplier */
-	double m_soilstress_layer[N_SOILLAYERS];		/* (dimless) soil water stress multiplier */
-	double m_soilstress;							/* (dimless) soil water properties  multiplier */
+	double m_SWCstress_layer[N_SOILLAYERS];		    /* (dimless) soil water stress multiplier */
+	double m_SWCstress;							    /* (dimless) soil water stress  multiplier */
 	double m_ppfd_sun;								/* (dimless) PAR flux density multiplier */
 	double m_ppfd_shade;							/* (dimless) PAR flux density multiplier */
 	double m_vpd;									/* (dimless) vapor pressure deficit multiplier */
 	double m_final_sun;								/* (dimless) product of all other multipliers */
 	double m_final_shade;							/* (dimless) product of all other multipliers */
-	double m_dsws;									/* (dimless) day since water stress multiplier */
+	double m_SWCstressLENGTH;						/* (dimless) soil water stress length multiplier */
 	double m_extremT;								/* (dimless) extem temp. multiplier */
+	double m_co2;                                   /* (dimless) CO2 concentration multiplier */
+	double assim_Tcoeff;                            /* (dimless) Tmax limitation factor of photosynthesis */
+	double assim_SScoeff;                           /* (dimless) Soilstress limitation factor of photosynthesis */
 	double SMSI;									/* (prop.) soil moisture stress index */
 	double gcorr;									/* (dimless) temperature and pressure correction factor for conductances */
 	double gl_bl;									/* (m/s) leaf boundary layer conductance */
@@ -1397,13 +1479,22 @@ typedef struct
     double gc_e_wv;									/* (m/s) canopy conductance to evaporated water */
     double gc_sh;									/* (m/s) canopy conductance to sensible heat */
 	double annmax_lai;								/* (m2/m2) year-to-date maximum projected LAI */
-	double n_limitation[N_SOILLAYERS];				/* (flag) for nitrogen limitation in multilayer soil */
+	double annmax_rootDepth;						/* (m2/m2) year-to-date maximum projected rooting depth */
+	double annmax_plantHeight;	                    /* (m2/m2) year-to-date maximum projected plant height */
+	double IMMOBratio[N_SOILLAYERS];				/* (prop) ratio of actual and potential immobilization layer by layer */
 	double plant_calloc;							/* (kgC/m2) amount of C allocated */
 	double plant_nalloc;							/* (kgN/m2) amount of N allocated */
 	double excess_c;								/* (kgC/m2) difference between available and allocated C */
 	double pnow;									/* (prop) proportion of growth displayed on current day */ 
-	double NSC_limit_nw;							/* (flag) for NSC-limitation in maint.resp.calculation for nw-biomass */
-	double NSC_limit_w;								/* (flag) for NSC-limitation in maint.resp.calculation for nw-biomass */
+	double MRdeficit_nw;							/* (flag) of maint.resp.calculation deficit for nw-biomass */
+	double MRdeficit_w;								/* (flag) of maint.resp.calculation deficit for nw-biomass */
+	double albedo_LAI;                              /* (dimless) LAI dependent albedo */
+	double phenphase_date[N_PHENPHASES];			/* (DOY) date of phenphase's start */
+	double flower_date;								/* (DOY) date of flowering phenphase's start */
+	double wpm_act;                                 /* (prop) whole plant mortality value on actual day */
+	double mulch_coverage;                          /* (%) percent of mulch coverage */
+	double evapREDmulch;                            /* (prop) evaporation reduction effect of mulch (soil cover) */
+	double plantNdemand;							/* (kgN/m2/d) N demand of plant */ 
 } epvar_struct;
 /* endOUT */
 
@@ -1415,8 +1506,8 @@ typedef struct
 	double tair_annrange;					            /* (Celsius) mean annual air temperature range  */
     double elev;								        /* (m) site elevation */
     double lat;				 					        /* (degrees) site latitude (negative for south) */
-    double sw_alb;								        /* (dimless) surface shortwave albedo */
-	 double soillayer_depth[N_SOILLAYERS];			    /* (m) contains the soil layer depths (positive values)*/
+    double albedo_sw;								    /* (dimless) surface shortwave albedo */
+	double soillayer_depth[N_SOILLAYERS];			    /* (m) contains the soil layer depths (positive values)*/
 	double soillayer_thickness[N_SOILLAYERS];		    /* (m) contains the soil layer thicknesses (positive values) */
 	double soillayer_midpoint[N_SOILLAYERS];			/* (m) contains the depths of the middle layers (positive values)*/
 	double* gwd_array;									/* (m) ARRAY of depth of the groundwater */	
@@ -1439,7 +1530,7 @@ typedef struct
 	int discretlevel_Richards;  /* (int) discretization level of VWC calculation */
 	int STCM_flag;			    /* (flag) soil temperature calculation method (0:Zheng, 1:DSSAT) */
 	int photosynt_flag;         /* (flag) photosynthesis calculation method (0: Farquhar, 1: DSSAT) */
-    int evapotransp_flag;	    /* (flag) evapotranspiration calculation method (0: Penman-Montieth, 1: Priestly-Taylor) */
+    int evapotransp_flag;	    /* (flag) evapotranspiration calculation method (0: Penman-Montieth, 1: Priestley-Taylor) */
     int radiation_flag;	        /* (flag) radiation calculation method (0: SWabs, 1: Rn) */
 	int soilstress_flag;	    /* (flag) soilstress calculation method (0: based on VWC, 1: based on transp.demand) */
 	int onday;                  /* (doy) yearday leaves on */
@@ -1512,8 +1603,8 @@ typedef struct
 	double GR_ratio;				/*  (ratio) growth resp per unit of C grown */
 	double nfix;					/*  (kgN/m2/yr) symbiotic+asymbiotic fixation of N */
 	double tau;						/*	(day) time delay for temperature in photosynthesis acclimation */
-	double rootlenght_par1;			/*  (kgC/m2) rootlenght parameter 1 (maximal weight) */
-	double rootlenght_par2;			/*  (dimless) rootlenght parameter 1 (slope) */
+	double rootlength_par1;			/*  (kgC/m2) rootlengh parameter 1 (maximal weight) */
+	double rootlength_par2;			/*  (dimless) rootlenght parameter 1 (slope) */
 	double max_plant_height;        /* (m) maximum plant height */
 	double plantheight_par1;        /* (kgC/m2) plantheight parameter 1 (stem weight at which maximum height attended)  */
 	double plantheight_par2;        /* (dimless) plantheight parameter 1 (slope of plantheight function) */
@@ -1531,7 +1622,8 @@ typedef struct
     double mort_SNSC_to_litter;		/*  (prop) turnover rate of wilted standing biomass to litter*/
 	double mort_CnW_to_litter;		/*  (prop) turnover rate of cut-down non-woody biomass to litter*/
 	double mort_CW_to_litter;		/*  (prop) turnover rate of cut-down woody biomass to litter*/
-	double dsws_crit;				/*  (nday) critical value of soilstress days */
+	double SWCstressLENGTH_crit;	/*  (nday) critical value of SWC-length limitation */
+	double photoSTRESSeffect;		/*  (dimless) effect of soil moisture stress on photosynthesis */
 	int n_germ_phenophase;	        /* (DIM) number of phenophase when emergence occurs */
 	int n_emerg_phenophase;	        /* (DIM) number of phenophase when emergence occurs */
 	int n_phpsl_phenophase;	        /* (DIM) number of phenophase when photoperiodic slowing effect occurs  */
@@ -1585,17 +1677,26 @@ typedef struct
 typedef struct
 {
 	double denitr_coeff;			/*  (prop) denitrification coefficient - multilayer_sminn.c */
-	double nitrif_coeff1;			/*  (prop) denitrification coefficient - multilayer_sminn.c */
-	double nitrif_coeff2;			/*  (prop) denitrification coefficient - multilayer_sminn.c */
+	double netMiner_to_nitrif;		/*  (prop) proportion of net mineralization that is nitrified */
+	double maxNitrif_rate;			/*  (1/day) maxmimum nitrification rate (max. fraction of NH4 nitrified) */
 	double N2Ocoeff_nitrif;			/*  (prop) coefficient of N2O emission of nitrification */
 	double NH4_mobilen_prop;		/*  (prop) fraction mineral N avail for plant.soil processes and leaching */
-	double NO3_mobilen_prop;		/*  (prop) fraction mineral N avail for lant.soil processes and leaching */
+	double critWFPS_denitr;		    /*  (prop) critical WFPS value for denitrification */
+	double texDEP_N2Oratio;         /*  (dimless) texture dependence of N2O:N2 ratio */
 	double efolding_depth;          /* (m) e-folding depth of decomposition rate's depth scalar (Koven et al. 2013) */
 	double SOIL1_dissolv_prop;      /* (prop) fraction of dissolved part of SOIL1 organic matter */
 	double SOIL2_dissolv_prop;      /* (prop) fraction of dissolved part of SOIL2 organic matter  */
 	double SOIL3_dissolv_prop;      /* (prop) fraction of dissolved part of SOIL3 organic matter */
 	double SOIL4_dissolv_prop;      /* (prop) fraction of dissolved part of SOIL4 organic matter */
-	double BSE_PE_prop;             /* (prop) ratio of bare soil evaporation and pot.evaporation */
+	double minWFPS;				    /* (prop) minimum WFPS for scalar function of nitrification calculation */
+	double opt1WFPS;                /* (prop) lower optimum WFPS for scalar function of nitrification calculation */
+	double opt2WFPS;                /* (prop) higher optimum  WFPS for scalar function of nitrification calculation */
+	double WFPSscalar_min;          /* (prop) minimum value for saturated WFPS scalar of nitrification calculation */
+	double soil1_CN;				/* (prop) C:N for labile SOM pool   */
+	double soil2_CN;				/* (prop) C:N for fast decomposing SOM pool   */
+	double soil3_CN;				/* (prop) C:N for slowdecomposing SOM pool   */
+	double soil4_CN;				/* (prop) C:N for stable SOM pool   */
+	double soilevapLIM;             /* (mm) limitation of soil evaporation (Joe Ritchie-method) */
 	double rfl1s1;                  /* (prop) respiration fractions for fluxes between compartments  */
 	double rfl2s2;                  /* (prop) respiration fractions for fluxes between compartments  */
 	double rfl4s3;                  /* (prop) respiration fractions for fluxes between compartments  */
@@ -1619,11 +1720,13 @@ typedef struct
 	double C_pTS;                   /* (dimless) soil temperature parameter of empirical CH4 modeling */
 	double soildepth;               /* (m) soil depth */
 	double pondmax;								        /* (m) maximum of pond water */
+	double q_soilstress;								/* (dimless) curvature of soil stress function */
 	double sand[N_SOILLAYERS];							/* (%) sand content of soil in the given soil layer */	
 	double silt[N_SOILLAYERS];							/* (%) silt content of soil in the given soil layer */	
 	double clay[N_SOILLAYERS];							/* (%) clay content of soil in the given soil layer */
 	double pH[N_SOILLAYERS];							/* (%) soil pH in the given soil layer */
 	double RCN_mes;								        /* (m) measured runoff curve number */
+	double aerodyn_resist;					     		/* (s/m)  aerodynamic resistance (Wallace and Holwill, 1997) */
 	double BD_mes[N_SOILLAYERS];					    /* (g/cm3)  measured bulk density */
 	double vwc_sat_mes[N_SOILLAYERS];					/* (m3/m3)  measured soil water content at saturation*/
 	double vwc_fc_mes[N_SOILLAYERS];					/* (m3/m3)  measured soil water content at field capacity*/
@@ -1674,8 +1777,8 @@ typedef struct
 	int* THNyear_array;							/* (int) ARRAY of thinning year */
 	int* THNmonth_array;						/* (int) ARRAY of thinning month */
 	int* THNday_array;							/* (int)  ARRAY of thinning days*/
-	double* thinningrate_w_array;				/* (prop) ARRAY of proportion of the thinned woody plant biomass */
-	double* thinningrate_nw_array;				/* (prop) ARRAY of proportion of the thinned non-woody plant biomass */
+	double* thinningrate_w_array;				/* (%) ARRAY of proportion of the thinned woody plant biomass */
+	double* thinningrate_nw_array;				/* (%) ARRAY of proportion of the thinned non-woody plant biomass */
 	double* transpcoeff_w_array;				/* (%) ARRAY of rate of the transported woody matter */
 	double* transpcoeff_nw_array;				/* (%) ARRAY of rate of the transported non woody matter */
 } thinning_struct;
@@ -1713,15 +1816,15 @@ typedef struct
 	double* weight_LSU;							/* (kg/LSU)) ARRAY of weight equivalent of an averaged animal */
 	double* stocking_rate_array;				/* (LSU/ha) ARRAY of animal stocking rate: Livestock Units per hectare */
 	double* DMintake_array;						/* (kgDM/m2/d) ARRAY of pasture forgage dry matter intake */
-	double* prop_DMintake2excr_array;			/* (%) ARRAY of ratio of the dry matter intake formed excrement */
-	double* prop_excr2litter_array;				/* (%) ARRAY of ratio of excrement return to litter */ 
+	double* DMintake2excr_array;			    /* (%) ARRAY of ratio of the dry matter intake formed excrement */
+	double* excr2litter_array;				    /* (%) ARRAY of ratio of excrement return to litter */ 
 	double* DM_Ccontent_array;					/* (%) ARRAY of carbon content of dry matter*/
 	double* EXCR_Ncontent_array;				/* (%) ARRAY of nitrogen content of the fertilizer */
 	double* EXCR_Ccontent_array;				/* (%) ARRAY of carbon content of the fertilizer */
-	double* Nexrate;                           /* (kgN/1000 kg animal mass/day) ARRAY of default N excretion rate */
+	double* Nexrate;                            /* (kgN/1000 kg animal mass/day) ARRAY of default N excretion rate */
 	double* EFman_N2O;							/* (kgN2O-N:kgN) ARRAY of manure emission factor for N2O emission	 */
 	double* EFman_CH4;							/* (kgCH4/LSU/yr) ARRAY of manure emission factor for CH4 emission */
-	double* EFfer_CH4;							/* (kgCH4/LSU/yr) ARRAY of fermentation emission factor for CH4 emission */
+	double* EFfer_CH4;							/* (kgCH4/LSU/yr) ARRAY of animal emission factor for CH4 emission */
 	double trampleff_act;						/* (%) actual b (standing dead biomass to litter) */
 } grazing_struct;
 /* endVAR */
@@ -1762,7 +1865,7 @@ typedef struct
 	int* FRZmonth_array;						/* (int) ARRAY of the fertilizing month */
 	int* FRZday_array;							/* (int) ARRAY of fertilizing days */
 	double* FRZdepth_array;						/* (doy) ARRAY of contains the fertilizing depth */
-	double* fertilizer_array;					/* (kg fertilizer/m2/d) ARRAY of amount of fertilizer on the fertilizing days */
+	double* fertilizer_array;					/* (kg fertilizer/ha) ARRAY of amount of fertilizer on the fertilizing days */
 	double* DM_array;				            /* (%) ARRAY of dry matter of fertilizer */
 	double* NO3content_array;					/* (kgN/kg fertilizerDM) ARRAY of nitrate content of fertilizerDM */
  	double* NH4content_array;					/* (kgN/kg fertilizerDM) ARRAY of ammonium content of fertilizerDM */
@@ -1839,13 +1942,15 @@ typedef struct
 {
 	double annprcp;                     /* (mm/yr) annual total precipitation */
 	double anntavg;                     /* (Celsius) annual average air temperature */
-	double annrunoff;                   /* (kgH2O/m2/yr) annual SUM of runoff */
-	double annoutflow;                  /* (kgH2O/m2/yr) annual SUM of outflow */
+	double cum_runoff;                  /* (kgH2O/m2) cumulative  SUM of runoff */
+	double cum_WleachRZ;                /* (kgH2O/m2) cumulative SUM of water leaching from rootzone */
+	double cum_NleachRZ;                /* (kgN/m2/yr) cumulative SUM of nitrogenleaching from rootzone */
 	double daily_n2o;                   /* (kgN/m2/day)  daily N2O flux */
 	double daily_nep;					/* (kgC/m2/day)  NPP - Rheretotrop */
 	double daily_npp;					/* (kgC/m2/day)  GPP - Rmaint - Rgrowth */
 	double daily_nee;					/* (kgC/m2/day)  GPP - Rmaint - Rgrowth - Rheretotrop - fire losses */
 	double daily_nbp;					/* (kgC/m2/day)  GPP - Rmaint - Rgrowth - Rheretotrop - disturb_emission - fire losses*/
+	double daily_ngb;					/* (kgC/m2/day)  NBP - N2Oflux(Ceq) - CH4(Ceq)*/
 	double daily_gpp;					/* (kgC/m2/day)  gross PSN source */
 	double daily_mr;					/* (kgC/m2/day)  maintenance respiration */
 	double daily_gr;					/* (kgC/m2/day)  growth respiration */
@@ -1863,10 +1968,12 @@ typedef struct
 	double cum_nep;						/* (kgC/m2)  cumulative SUM of NEP */
 	double cum_nee;						/* (kgC/m2)  cumulative SUM of NEE */
 	double cum_gpp;						/* (kgC/m2)  cumulative SUM of GPP */
+	double cum_ngb;					    /* (kgC/m2)  cumulative SUM of NGB */
 	double cum_mr;						/* (kgC/m2)  cumulative SUM of MR */
 	double cum_gr;						/* (kgC/m2)  cumulative SUM of GR */
 	double cum_hr;						/* (kgC/m2)  cumulative SUM of HR */
 	double cum_tr;					    /* (kgC/m2)  cumulative SUM of total ecosystem respiration */
+	double cum_sr;					    /* (kgC/m2)  cumulative SUM of soil respiration */
 	double cum_n2o;						/* (kgN/m2)  cumulative SUM N2O flux */
 	double cum_Closs_MGM;				/* (kgC/m2)  cumulative SUM of management carbon loss  */
 	double cum_Cplus_MGM;				/* (kgC/m2)  cumulative SUM of management carbon plus  */
@@ -1888,38 +1995,75 @@ typedef struct
 	double cum_evap;					/* (kgH2O/m2) cumulative SUM of evaporation over a year */
 	double cum_transp;					/* (kgH2O/m2) cumulative SUM of transpiration over a year */
 	double cum_ET;						/* (kgH2O/m2) cumulative SUM of evapotranspiration over a year */
-	double leaf_DM;						/* (kgDM/m2) dry matter carbon content of leaves */
-	double leaflitr_DM;					/* (kgDM/m2)  dry matter carbon content of  for leaf litter */
-    double froot_DM;				    /* (kgDM/m2) dry matter carbon content of fine roots */
-	double fruit_DM;					/* (kgDM/m2) dry matter carbon content of fruits */
-    double softstem_DM;					/* (kgDM/m2) dry matter carbon content of softstems */
-    double livewood_DM;					/* (kgDM/m2) dry matter carbon content of live wood */
-	double deadwood_DM;					/* (kgDM/m2) dry matter carbon content of dead wood */
-	double vegc;						/* (kgC/m2)  total vegetation C */
-	double abgc;						/* (kgC/m2)  total abovegound biomass C */
-	double litrc;						/* (kgC/m2)  total litter C */
-	double soilc;						/* (kgC/m2)  total soil C */
-	double soiln;						/* (kgC/m2)  total soil N */
-	double sminn;						/* (kgC/m2)  total soil mineralized N */
-	double totalc;						/* (kgC/m2)  total of vegc, litrc, and soilc */
-	double humusC_top30;				/* (%)  humus C content in 0-30 cm */
-	double SOM_C_top30;					/* (%)  soil organic matter C content in 0-30 cm [carbon/soil] */
+	double leafDM;						/* (kgDM/m2) dry matter carbon content of leaves */
+	double leaflitrDM;					/* (kgDM/m2)  dry matter carbon content of  for leaf litter */
+    double frootDM;						/* (kgDM/m2) dry matter content of fine roots */
+	double fruitDM;						/* (kgDM/m2) dry matter content of fruits */
+    double softstemDM;					/* (kgDM/m2) dry matter content of softstems */
+    double livewoodDM;					/* (kgDM/m2) dry matter content of live wood */
+	double deadwoodDM;					/* (kgDM/m2) dry matter content of dead wood */
+	double grainDM_HRV;                 /* (kgDM/m2) dry matter content of grain at harvest */
+	double vegC;						/* (kgC/m2)  total vegetation C */
+	double LDaboveC_nw;					/* (kgC/m2)  living+dead abovegound non-woody biomass C */
+	double LDaboveC_w;					/* (kgC/m2)  living+dead abovegound woody biomass C */
+	double LDaboveCnsc_nw;				/* (kgC/m2)  living+dead abovegound non-woody biomass C with non-structured carbohydrate */
+	double LDaboveCnsc_w;				/* (kgC/m2)  living+dead abovegound woody biomass C with non-structured carbohydrate  */
+	double LaboveC_nw;					/* (kgC/m2)  living abovegound non-woody biomass C */
+	double LaboveC_w;					/* (kgC/m2)  living abovegound woody biomass C */
+	double LaboveCnsc_nw;				/* (kgC/m2)  living abovegound non-woody biomass C with non-structured carbohydrate */
+	double LaboveCnsc_w;				/* (kgC/m2)  living abovegound woody biomass C with non-structured carbohydrate  */
+	double DaboveC_nw;					/* (kgC/m2)  dead abovegound non-woody biomass C */
+	double DaboveC_w;					/* (kgC/m2)  dead abovegound woody biomass C */
+	double DaboveCnsc_nw;				/* (kgC/m2)  dead abovegound non-woody biomass C with non-structured carbohydrate */
+	double DaboveCnsc_w;				/* (kgC/m2)  dead abovegound woody biomass C with non-structured carbohydrate  */
+	double litrCwdC_total;				/* (kgC/m2)  total litter and cwdc C */
+	double litrCwdN_total;				/* (kgC/m2)  total litter and cwdc N */
+	double litrN_total;					/* (kgC/m2)  total litter N */
+	double litrC_total;					/* (kgC/m2)  total litter C */
+	double soilC_total;					/* (kgC/m2)  total soil C */
+	double soilN_total;					/* (kgN/m2)  total soil N */
+	double sminN_total;					/* (kgN/m2)  total soil mineralized N */
+	double sminNavail_total;			/* (kgN/m2)  available total soil mineralized N */
+	double sminNavail_maxRZ;			/* (kgN/m2)  available soil mineralized N in maximal rooting zone */
+	double sminN_maxRZ;			    	/* (kgN/m2)  soil mineralized N in rooting zone */
+	double soilC_maxRZ;			    	/* (kgC/m2)  soil carbon content in rooting zone */
+	double soilN_maxRZ;			    	/* (kgN/m2)  soil nitrogen content in rooting zone */
+	double litrC_maxRZ;			    	/* (kgC/m2)  litter carbon content in rooting zone */
+	double litrN_maxRZ;			    	/* (kgN/m2)  litter nitrogen content in rooting zone */
+	double stableSOC_top30;				/* (%)  humus C content in 0-30 cm */
+	double totalC;						/* (kgC/m2)  total of vegc, litrc, and soilc */
+	double SOC_top30;					/* (%)  soil organic matter C content in 0-30 cm [carbon/soil] */
 	double SOM_N_top30;					/* (%)  soil organic matter N content in 0-30 cm [nitrogen/soil] */
-	double NH4_top30;					/* (mgN/kgSOIL)  available soil NH4-content in 0-30 cm */
-	double NO3_top30;					/* (mgN/kgSOIL)  available soil NO3-content in 0-30 cm */
-	double SOM_C_30to60;				/* (%)  soil organic matter C content in 30-60 cm [carbon/soil] */
-	double SOM_C_60to90;				/* (%)  soil organic matter C content in 30-60 cm [carbon/soil] */
-	double daily_gross_nmin_total;		/* (kgN/m2)  gross N mineralization   */
-	double daily_gross_nimmob_total;	/* (kgN/m2)  gross N immobilization   */
-	double daily_net_nmin_total;		/* (kgN/m2)  net N mineralization   */
+	double NH4_top30avail;				/* (ppm)  available soil NH4-content in 0-30 cm */
+	double NO3_top30avail;				/* (ppm)  available soil NO3-content in 0-30 cm */
+	double sminN_top30avail;			/* (ppm)  available soil mineralized N-content in 0-30 cm */
+	double SOC_30to60;					/* (%)  soil organic matter C content in 30-60 cm [carbon/soil] */
+	double SOC_60to90;					/* (%)  soil organic matter C content in 30-60 cm [carbon/soil] */
 	double leafc_LandD;                 /* (kgC/m2)  live and dead leaf carbon content */
 	double frootc_LandD;                /* (kgC/m2)  live and dead froot carbon content */
 	double fruitc_LandD;                /* (kgC/m2)  live and dead fruit carbon content */
 	double softstemc_LandD;             /* (kgC/m2)  live and dead sofstem carbon content */
 	double sminNH4_ppm[N_SOILLAYERS];	/* (ppm)  soil ammonium content in ppm */
 	double sminNO3_ppm[N_SOILLAYERS];	/* (ppm)  soil nitrate content in ppm */
-
+	double CH4_flux_TOTAL;              /* (kgC/m2/d) total ecosystem CH4 flux */
+	double lateral_Cflux;               /* (kgC/m2/d) lateral carbon flux */
+	double harvest_index;               /* (prop) ratio of harvested fruit C content and harvested aboveground C content */
+	double CNlitr_total;		        /* (prop) C:N ratio of litter pool  */
+	double CNsoil_total;				/* (prop) C:N ratio of soil pool  */
+	double litr1HR_total;				/* (kgC/m2/d) Heterotroph respiration of labile litter in soil */
+	double litr2HR_total;				/* (kgC/m2/d) Heterotroph respiration of unshielded cellulose soil */
+	double litr4HR_total;				/* (kgC/m2/d) Heterotroph respiration of lignin portion of litter in soil */
+	double soil1HR_total;				/* (kgC/m2/d) Heterotroph respiration of SOM pool (labile) in soil */
+	double soil2HR_total;				/* (kgC/m2/d) Heterotroph respiration of SOM pool (fast) in soil */
+	double soil3HR_total;				/* (kgC/m2/d) Heterotroph respiration of SOM pool (slow) in soil */
+	double soil4HR_total;				/* (kgC/m2/d) Heterotroph respiration of SOM pool (stable) in soil */
+	double tally1;                      /* (kgC/m2) tally of total soil C during successive met cycles (metcyle=1) for comparison */
+	double tally2;                      /* (kgC/m2) tally of total soil C during successive met cycles (metcyle=2) for comparison */
+	double metcycle;                    /* (dimless) counter for metcyles (0,1 or 2) */
+	double steady1;                     /* (flag) marker for comparison of soilC change and spinup tolerance in metcyle=1 */
+	double steady2;                     /* (flag) marker for comparison of soilC change and spinup tolerance in metcyle=2 */
 } summary_struct;
+
 /* endOUT */
 
 /* VAR restart: restart data structure */
@@ -1963,18 +2107,18 @@ typedef struct
 	double STDBc_froot;				/*  wilted froot biomass  */
 	double STDBc_fruit;				/*  wilted fruit biomass  */
 	double STDBc_softstem;			/*  wilted sofstem biomass  */
-	double STDBc_transfer;			/*  wilted transfer biomass  */
+	double STDBc_nsc;			    /*  wilted non-stuctured carbohydrate biomass  */
 	double CTDBc_leaf;				/*  cut-down leaf biomass  */
 	double CTDBc_froot;				/*  cut-down froot biomass  */
 	double CTDBc_fruit;				/*  cut-down fruit biomass  */
 	double CTDBc_softstem;			/*  cut-down sofstem biomass  */
-	double CTDBc_transfer;			/*  cut-down transfer biomass  */
+	double CTDBc_nsc;			    /*  cut-down non-stuctured biomass  */
 	double CTDBc_cstem;			    /*  cut-down coarse stem biomass  */
 	double CTDBc_croot;			    /*  cut-down coarse root biomass  */
-	double soil1c[N_SOILLAYERS];	/* (kgC/m2) microbial recycling pool C (fast) */
-	double soil2c[N_SOILLAYERS];	/* (kgC/m2) microbial recycling pool C (medium) */
-	double soil3c[N_SOILLAYERS];	/* (kgC/m2) microbial recycling pool C (medium) */ 
-	double soil4c[N_SOILLAYERS];	/* (kgC/m2) recalcitrant SOM C (humus, slowest) */
+	double soil1c[N_SOILLAYERS];	/* (kgC/m2) carbon content of labile SOM */
+	double soil2c[N_SOILLAYERS];	/* (kgC/m2) carbon content of fast decomposing SOM */
+	double soil3c[N_SOILLAYERS];	/* (kgC/m2) carbon content of slowly decomposing SOM */ 
+	double soil4c[N_SOILLAYERS];	/* (kgC/m2) carbon content of stable SOM */
 	double cpool;					/* (kgC/m2) temporary photosynthate C pool */
 	double leafn;					/* (kgN/m2) leaf carbon actual pool  */
 	double leafn_storage;			/* (kgN/m2) leaf carbon storage pool  */
@@ -2009,18 +2153,18 @@ typedef struct
 	double STDBn_froot;				/*  wilted froot biomass  */
 	double STDBn_fruit;				/*  wilted fruit biomass  */
 	double STDBn_softstem;			/*  wilted sofstem biomass  */
-	double STDBn_transfer;			/*  wilted transfer biomass  */
+	double STDBn_nsc;			    /*  wilted non-structured biomass  */
 	double CTDBn_leaf;				/*  cut-down leaf biomass  */
 	double CTDBn_froot;				/*  cut-down froot biomass  */
 	double CTDBn_fruit;				/*  cut-down fruit biomass  */
 	double CTDBn_softstem;			/*  cut-down sofstem biomass  */
-	double CTDBn_transfer;			/*  cut-down transfer biomass  */
+	double CTDBn_nsc;			    /*  cut-down non-structured biomass  */
 	double CTDBn_cstem;			    /*  cut-down coarse stem biomass  */
 	double CTDBn_croot;			    /*  cut-down coarse root biomass  */
-	double soil1n[N_SOILLAYERS];	/* (kgN/m2) microbial recycling pool carbon (fast) */
-	double soil2n[N_SOILLAYERS];	/* (kgN/m2) microbial recycling pool carbon (medium) */
-	double soil3n[N_SOILLAYERS];	/* (kgN/m2) microbial recycling pool carbon (slow) */ 
-	double soil4n[N_SOILLAYERS];	/* (kgN/m2) recalcitrant SOM carbon (humus, slowest) */
+	double soil1n[N_SOILLAYERS];	/* (kgN/m2) Nitrogen content of labile SOM */
+	double soil2n[N_SOILLAYERS];	/* (kgN/m2) Nitrogen content of fast decomposing SOM  */
+	double soil3n[N_SOILLAYERS];	/* (kgN/m2) Nitrogen content of slowly decomposing SOM  */ 
+	double soil4n[N_SOILLAYERS];	/* (kgN/m2) Nitrogen content of stable SOM  */
 	double retransn;				/* (kgN/m2) retranslocated N */
 	double npool;					/* (kgN/m2) temporary plant N pool */
 	double sminNH4[N_SOILLAYERS];	/* (kgN/m2) mineralized NH4 pool*/

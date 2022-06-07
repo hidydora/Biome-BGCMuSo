@@ -2,8 +2,8 @@
 conduct_limit_factors.c
 calculate the limitation factors of conductance
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -24,7 +24,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilprop_struct* sprop, const epconst_struct* epc, 
 						  epvar_struct* epv)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 	double vwc_sat,vwc_fc,vwc_wp, vwc_crit1, vwc_crit2;
     
@@ -55,14 +55,14 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilpr
 		{
 			printf("\n");
 			printf("ERROR: VWC_crit2 data is greater than saturation value in layer:%i\n", layer);
-			errflag=1;
+			errorCode=1;
 		}
 
-		if (!errflag && vwc_crit2 < vwc_crit1)
+		if (!errorCode && vwc_crit2 < vwc_crit1)
 		{
 			printf("\n");
 			printf("ERROR: VWC_crit1 data is greater then VWC_crit2 data in layer:%i\n", layer);
-			errflag=1;
+			errorCode=1;
 		}
 	
 		epv->vwc_crit1[layer]		= vwc_crit1;
@@ -73,5 +73,5 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilpr
 	if (ctrl->spinup < 2) fprintf(logfile.ptr, "SWC (limit1 and limit2):  %12.3f %12.3f\n", epv->vwc_crit1[0], epv->vwc_crit2[0]);
 	if (ctrl->spinup < 2) fprintf(logfile.ptr, " \n");
 		
-	return (errflag);
+	return (errorCode);
 }

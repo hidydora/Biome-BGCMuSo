@@ -3,8 +3,8 @@ mowing_init.c
 read mowing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -30,7 +30,7 @@ int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 	char MOW_filename[STRINGSIZE];
 	file MOW_file;
 
-	int errflag=0;
+	int errorCode=0;
 	int okFILE = 1;
 
 	int mgmread;
@@ -58,29 +58,29 @@ int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 	********************************************************************/
 	
 	/* header reading */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword, mowing_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	/* keyword control */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword for MOWING section\n");
-		errflag=1;
+		errorCode=1;
 	}
 	
 	/* number of management action */
-	if (!errflag && scan_value(init, &MOW->MOW_num, 'i'))
+	if (!errorCode && scan_value(init, &MOW->MOW_num, 'i'))
 	{
 		printf("ERROR reading number of mowing in MOWING section\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 
 	/* if MOW_num > 0 -> mowing */
-	if (!errflag && MOW->MOW_num)
+	if (!errorCode && MOW->MOW_num)
 	{
 		/* allocate space for the temporary MGM array */
 		MOWyear_array         = (int*) malloc(maxMOW_num*sizeof(double));  
@@ -90,10 +90,10 @@ int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 		transportMOW_array    = (double*) malloc(maxMOW_num*sizeof(double)); 
 
 		
-		if (!errflag && scan_value(init, MOW_filename, 's'))
+		if (!errorCode && scan_value(init, MOW_filename, 's'))
 		{
 			printf("ERROR reading mowing calculating file\n");
-			errflag=1;
+			errorCode=1;
 		}
 		
 		strcpy(MOW_file.name, MOW_filename);
@@ -102,25 +102,25 @@ int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 		if (file_open(&MOW_file,'i',1))
 		{
 			printf("ERROR opening MOW_file, mowing_int.c\n");
-			errflag=1;
+			errorCode=1;
 			okFILE=0;
 		}
 
-		if (!errflag && scan_value(MOW_file, header, 's'))
+		if (!errorCode && scan_value(MOW_file, header, 's'))
 		{
 			printf("ERROR reading header for MOWING section in MANAGMENET file\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 	
-		while (!errflag && !(mgmread = scan_array (MOW_file, &p1, 'i', 0, 0)))
+		while (!errorCode && !(mgmread = scan_array (MOW_file, &p1, 'i', 0, 0)))
 		{
 			n_MOWparam = 6;
 			mgmread = fscanf(MOW_file.ptr, "%c%d%c%d%lf%lf%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&p5);
 			if (mgmread != n_MOWparam)
 			{
 				printf("ERROR reading MOWING parameters from MOWING file\n");
-				errflag=1;
+				errorCode=1;
 			}
 			
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
@@ -165,10 +165,10 @@ int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 	else
 	{
 		/* reading the line of management file into a temporary variable */
-		if (!errflag && scan_value(init, header, 's'))
+		if (!errorCode && scan_value(init, header, 's'))
 		{
 			printf("ERROR reading line of management file (in case of no management)\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 
@@ -178,5 +178,5 @@ int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 
 	
 	
-	return (errflag);
+	return (errorCode);
 }

@@ -4,8 +4,8 @@ calculation of soil water content layer by layer taking into account soil hydrol
 (precipitation, evaporation, runoff, percolation, diffusion)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -40,121 +40,37 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 	
 
 	/* internal variables */
-	double prcp, evap_diff;
-	double vwc_avg, vwc_RZ;
-	double soilw_hw0, soilw_before;  /* (kgH2O/m2/min) */
-	double soilw_hw, transp_diff, transp_diff_SUM, soilw_trans_ctrl;
+	double vwc_avg, vwc_RZ, psi_RZ, soilw_RZ, weight, weight_SUM, ratio;
+	double soilw_hw, soilw_wp, transp_diff, transp_diff_SUM, soilw_trans_ctrl, soilw_before;
+	double vwcSAT_RZ, vwcFC_RZ, vwcWP_RZ, vwcHW_RZ, soilw_RZ_avail;
 	int layer;
-	double coeff_soiltype, coeff_soilmoist, RCN, coeff_runoff;
-	int errflag=0;
-	soilw_before=soilw_hw=transp_diff=transp_diff_SUM=soilw_trans_ctrl=vwc_avg=vwc_RZ=0;
-
+	int errorCode=0;
+	soilw_before=soilw_hw=transp_diff=transp_diff_SUM=soilw_trans_ctrl=vwc_avg=vwc_RZ=psi_RZ=soilw_RZ=weight=weight_SUM=ratio=soilw_wp=soilw_RZ_avail=0;
+	vwcSAT_RZ=vwcFC_RZ=vwcWP_RZ=vwcHW_RZ=0.0;
 	/* *****************************/
-	/* 1. PRECIPITATION AND RUNOFF*/
+	/* 1. INFILTRATION, POND AND RUNOFF*/
 
+	
 	/* when the precipitation at the surface exceeds the max. infiltration rate, the excess water is put into surfacerunoff (Balsamo et al. 20008; Eq.(7)) */
-	
-	prcp = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + ws->pond_water);
-
-
-	/* if the precipitation is greater than critical amount a fixed part of prcp is lost due to runoff (based on Campbell and Diaz, 1988) */
-
-	RCN = sprop->RCN;
-	coeff_soiltype  = 254*(100 / RCN - 1);
-
-	coeff_soilmoist = 0.15 * ((sprop->vwc_sat[0] - epv->vwc[0]) / (sprop->vwc_sat[0]  - sprop->vwc_hw[0]));
-
-	coeff_runoff = coeff_soiltype * coeff_soilmoist;
-
-	if (prcp > coeff_runoff)
-	{
-		wf->prcp_to_runoff = pow(prcp - coeff_runoff, 2) / (prcp + (1 - coeff_soilmoist)*coeff_soiltype);
-
-	}
-	else
-	{
-		wf->prcp_to_runoff = 0;
-	}
-
-
-	/* ********************************************/
-	/* 3. EVAPORATION */
-	
-	/* actual soil water content at theoretical lower limit of water content: hygroscopic water content */
-	soilw_hw0 = sprop->vwc_hw[0] * sitec->soillayer_thickness[0] * water_density;
-
-	/* evap_diff: control parameter to avoid negative soil water content (due to overestimated evaporation + dry soil) */
-	evap_diff = ws->soilw[0] - wf->soilw_evap - soilw_hw0;
-
-	/* theoretical lower limit of water content: hygroscopic water content. */
-	if (evap_diff < 0)
-	{
-		wf->soilw_evap += evap_diff;
-		/* limitevap_flag: flag of WARNING writing in log file (only at first time) */
-		if (fabs(transp_diff) > CRIT_PREC && !ctrl->limitevap_flag) ctrl->limitevap_flag = 1;
-	}
-	
-	ws->soilw[0] -= wf->soilw_evap;
-	epv->vwc[0]  = ws->soilw[0] / water_density / sitec->soillayer_thickness[0];
-
-
-	/* ********************************************/
-	/* 4. TRANSPIRATION */
-	
-	
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
-	{		
-		/* actual soil water content at theoretical lower limit of water content: hygroscopic water point */
-		soilw_hw = sprop->vwc_hw[layer] * sitec->soillayer_thickness[layer] * water_density;
-
-		/* transp_diff: control parameter to avoid negative soil water content (due to overestimated transpiration + dry soil) */
-		transp_diff = ws->soilw[layer] - wf->soilw_trans[layer] - soilw_hw;
-
-		
-
-		/* theoretical lower limit of water content: hygroscopic water point (if transp_diff less than 0, limited transpiration flux)  */
-		if (transp_diff < 0)
-		{
-			/* theoretical limit */
-			wf->soilw_trans[layer] += transp_diff;
-			transp_diff_SUM += transp_diff;
-
-			/* limittransp_flag: writing in log file (only at first time) */
-			if (fabs(transp_diff) > CRIT_PREC && !ctrl->limittransp_flag) ctrl->limittransp_flag = 1;
-		}
-
-		ws->soilw[layer] -= wf->soilw_trans[layer];
-		epv->vwc[layer]  = ws->soilw[layer] / sitec->soillayer_thickness[layer] / water_density;
-	
-
-		soilw_trans_ctrl += wf->soilw_trans[layer];
-	}
-
-	wf->soilw_trans_SUM += transp_diff_SUM;
-
-	/* control */
-	if (fabs(soilw_trans_ctrl - wf->soilw_trans_SUM) > CRIT_PREC)
+	/* if the precipitation is greater than critical amount a fixed part of infiltPOT is lost due to runoff (based on Campbell and Diaz, 1988) */
+	if (!errorCode && pondANDrunoff(sitec,sprop, epv, ws, wf))
 	{
 		printf("\n");
-		printf("ERROR: transpiration calculation error in multilayer_hydrolprocess.c:\n");
-		errflag=1;
-	}
-
-
-	/* evaportanspiration calculation */	
-	wf->evapotransp = wf->canopyw_evap + wf->soilw_evap + wf->soilw_trans_SUM + wf->snoww_subl;
-
+		printf("ERROR in runoff() from multilayer_hydrolprocess.c()\n");
+		errorCode=1; 
+	} 
 	
-    /* ********************************/
+
+	 /* ********************************/
 	/* 2. PERCOLATION  AND DIFFUSION  */
 	
 	if (epc->SHCM_flag == 0)
 	{
-		if (!errflag && richards(sitec, sprop, epc, epv, ws, wf))
+		if (!errorCode && richards(sitec, sprop, epc, epv, ws, wf))
 		{
 			printf("\n");
-			printf("ERROR in richards() from bgc()\n");
-			errflag=1; 
+			printf("ERROR in richards() from multilayer_hydrolprocess.c()\n");
+			errorCode=1; 
 		} 
 		#ifdef DEBUG
 					printf("%d\t%d\tdone richards\n",simyr,yday);
@@ -162,11 +78,11 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 	}
 	else
 	{
-		if (!errflag && tipping(sitec, sprop, epc, epv, ws, wf))
+		if (!errorCode && tipping(sitec, sprop, epc, epv, ws, wf))
 		{
 			printf("\n");
-			printf("ERROR in tipping() from bgc()\n");
-			errflag=1;
+			printf("ERROR in tipping() from multilayer_hydrolprocess.c()\n");
+			errorCode=1;
 		} 
 		#ifdef DEBUG
 					printf("%d\t%d\tdone tipping\n",simyr,yday);
@@ -174,44 +90,84 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 	}
 
 
-	/* ********************************/
-	/* 5. BOTTOM LAYER IS SPECIAL: percolated water is net loss for the system, water content does not change */
+	/* ********************************************/
+	/* 3. EVAPORATION */
 	
-	
-	if (ctrl->gwd_act == DATA_GAP || ( ctrl->gwd_act != DATA_GAP && ctrl->gwd_act > sitec->soillayer_depth[N_SOILLAYERS-1]))
-	{
-		soilw_before              = ws->soilw[N_SOILLAYERS-1];
-		epv->vwc[N_SOILLAYERS-1]  = sprop->vwc_fc[N_SOILLAYERS-1];
-		ws->soilw[N_SOILLAYERS-1] = sprop->vwc_fc[N_SOILLAYERS-1] * (sitec->soillayer_thickness[N_SOILLAYERS-1]) * water_density;
-		ws->deeppercolation_snk += (soilw_before - ws->soilw[N_SOILLAYERS-1]);
-	}
-
-	
-	/* ********************************/
-	/* 6. POND WATER EVAPORATION: water stored on surface which can not infiltrated because of saturation */
+	/* 3.1: pond water evaporation: water stored on surface which can not infiltrated because of saturation */
 	if (ws->pond_water > 0)
 	{
 		/* pond_flag: flag of WARNING writing (only at first time) */
 		if (!ctrl->pond_flag ) ctrl->pond_flag = 1;
-		if (wf->pot_evap < ws->pond_water)
-			wf->pondw_evap = wf->pot_evap;
+		if (wf->evapPOT < ws->pond_water)
+			wf->pondw_evap = wf->evapPOT;
 		else 
 			wf->pondw_evap = ws->pond_water;
 	}
-	
-	/* 7. m_soistress calculation based on VWC or transpiration demand-possibitiy */
-	if (epc->soilstress_flag == 0)
+	/* 3.2: calculation of actual evaporation from potential evaporation */
+	else
 	{
-		if (!errflag && soilstress_calculation(sprop, epc, epv))
+		if (!errorCode && potEVAP_to_actEVAP(ctrl, sitec, sprop, epv, ws, wf))
 		{
-			printf("\n");
-			printf("ERROR in soilstress_calculation() from bgc()\n");
-			errflag=1; 
-		} 
+			printf("ERROR in potEVAP_to_actEVAP() from multilayer_hydrolprocess.c()\n");
+			errorCode=1;
+		}
+	
 	}
 
+	/* ********************************************/
+	/* 4. TRANSPIRATION */
+	
+	/* calculate the part-transpiration from total transpiration */
+	if (!errorCode && multilayer_transpiration(ctrl, epc, sitec, sprop, epv, ws, wf))
+	{
+		printf("ERROR in multilayer_transpiration() from multilayer_hydrolprocess.c()\n");
+		errorCode=1;
+	}
+#ifdef DEBUG
+	printf("%d\t%d\tdone multilayer_transpiration\n",simyr,yday);
+#endif
+		
+
+	/* evaportanspiration calculation */	
+	
+	wf->evapotransp = wf->canopyw_evap + wf->soilw_evap + wf->soilw_trans_SUM + wf->snoww_subl;
+	wf->PET         = wf->evapPOT + wf->soilw_transPOT;
+
+
+	
+	/* ********************************************/
+	/* 5. Soilstress calculation based on VWC or transpiration demand-possibitiy */
+	
+	if (!errorCode && soilstress_calculation(sitec, sprop, epc, epv, ws, wf))
+	{
+		printf("\n");
+		printf("ERROR in soilstress_calculation() from multilayer_hydrolprocess.c()\n");
+		errorCode=1; 
+	} 
+
+   
 	/* ********************************/
-	/* 7. CONTROL and calculating averages - unrealistic VWC content (higher than saturation value or less then hygroscopic) */
+	/* 5. BOTTOM LAYER IS SPECIAL: percolated water is net loss for the system, water content does not change 	*/
+	
+	if (ctrl->gwd_act == DATA_GAP || ( ctrl->gwd_act != DATA_GAP && ctrl->gwd_act > sitec->soillayer_depth[N_SOILLAYERS-1]))
+	{
+		ws->soilw[N_SOILLAYERS-1] += wf->soilw_percolated[N_SOILLAYERS-2] + wf->soilw_diffused[N_SOILLAYERS-2];
+		soilw_before              = ws->soilw[N_SOILLAYERS-1];
+		epv->vwc[N_SOILLAYERS-1]  = sprop->vwc_fc[N_SOILLAYERS-1];
+		ws->soilw[N_SOILLAYERS-1] = sprop->vwc_fc[N_SOILLAYERS-1] * (sitec->soillayer_thickness[N_SOILLAYERS-1]) * water_density;
+		if (soilw_before > ws->soilw[N_SOILLAYERS-1])
+			wf->soilw_percolated[N_SOILLAYERS-1] = soilw_before - ws->soilw[N_SOILLAYERS-1];
+		else
+			wf->soilw_diffused[N_SOILLAYERS-1] = soilw_before - ws->soilw[N_SOILLAYERS-1];
+	
+	
+		
+	}
+
+
+
+	/* ********************************/
+	/* 6. CONTROL and calculating averages - unrealistic VWC content (higher than saturation value or less then hygroscopic) */
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -220,7 +176,6 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 			if (sprop->vwc_hw[layer] - epv->vwc[layer] < 1e-3)
 			{
 				wf->soilw_percolated[layer] -= (sprop->vwc_hw[layer] - epv->vwc[layer]);
-				ws->deeppercolation_snk -= (sprop->vwc_hw[layer] - epv->vwc[layer]);
 				epv->vwc[layer] = sprop->vwc_hw[layer];
 				ws->soilw[layer] = epv->vwc[layer] * water_density * sitec->soillayer_thickness[layer];
 			}
@@ -228,7 +183,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 			{
 				printf("\n");
 				printf("ERROR in soil water content calculation (multilayer_hydrolprocess.c)\n");
-				errflag=1;	
+				errorCode=1;	
 			}
 
 		}
@@ -238,7 +193,6 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 			if (epv->vwc[layer] - sprop->vwc_sat[layer] < 1e-2)
 			{
 				wf->soilw_percolated[layer] += (epv->vwc[layer] - sprop->vwc_sat[layer]);
-				ws->deeppercolation_snk += (epv->vwc[layer] - sprop->vwc_sat[layer]);
 				epv->vwc[layer] = sprop->vwc_sat[layer];
 				ws->soilw[layer] = epv->vwc[layer] * water_density * sitec->soillayer_thickness[layer];
 			}
@@ -246,21 +200,74 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 			{
 				printf("\n");
 				printf("ERROR in soil water content calculation (multilayer_hydrolprocess)\n");
-				errflag=1;	
+				errorCode=1;	
 			}
 
 		}
 		vwc_avg	  += epv->vwc[layer]    * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-1]);
 		
-		if (layer < epv->n_maxrootlayers)
-		{
-			vwc_RZ	  += epv->vwc[layer]     * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
+		
+		
+		/* calculation of rootzone variables - weight of the last layer depends on the depth of the root */
+	
+		if (epv->rootdepth && layer < epv->n_rootlayers && layer >= epv->germ_layer) 
+		{	
+			/* if the only layer is the germination layer - weight is 1, ratio is the prop. of rootlength in the germination layer and the thickness of the germination layer */
+			if (epv->n_rootlayers == epv->germ_layer+1)
+			{
+				weight = 1;
+				ratio = (epv->rootdepth-sitec->soillayer_thickness[epv->germ_layer-1])/epv->rootdepth-sitec->soillayer_thickness[epv->germ_layer];
+				soilw_RZ  += ws->soilw[layer] * ratio;
+			}
+			else
+			{
+				soilw_wp = sprop->vwc_wp[layer] * sitec->soillayer_thickness[layer] * water_density;
+				
+				if (layer < epv->n_rootlayers-1)
+				{
+					weight = sitec->soillayer_thickness[layer] / epv->rootlength;
+					soilw_RZ  += ws->soilw[layer] * weight;
+					if (ws->soilw[layer] - soilw_wp > 0) soilw_RZ_avail += (ws->soilw[layer] - soilw_wp) * weight;
+				}
+				else	
+				{
+					weight = (epv->rootdepth-sitec->soillayer_depth[layer-1])/ epv->rootlength;
+					/* soil water content in rootzone: last layer - only only as long as it reaches */
+					ratio = (epv->rootdepth - sitec->soillayer_depth[epv->n_rootlayers-2])/sitec->soillayer_thickness[epv->n_rootlayers-1];
+					soilw_RZ  += ws->soilw[layer] * ratio;
+					if (ws->soilw[layer] - soilw_wp > 0) soilw_RZ_avail += (ws->soilw[layer] - soilw_wp) * ratio;
+				}
+			}
+			weight_SUM += weight;
+
+			vwc_RZ	  += epv->vwc[layer]      * weight;
+			psi_RZ	  += epv->psi[layer]      * weight;
+			vwcSAT_RZ += sprop->vwc_sat[layer]* weight;
+			vwcFC_RZ  += sprop->vwc_fc[layer] * weight;
+			vwcWP_RZ  += sprop->vwc_wp[layer] * weight;
+			vwcHW_RZ  += sprop->vwc_hw[layer] * weight;
+
 		}
 
 	}
 
+	if (epv->rootdepth && fabs(1-weight_SUM) > CRIT_PREC)
+	{
+		printf("ERROR in calculation of rootzone variables (multilayer_hydrolprocess.c) \n");
+		errorCode=1;
+	}
+	epv->vwcSAT_RZ = vwcSAT_RZ;
+	epv->vwcFC_RZ  = vwcFC_RZ;
+	epv->vwcWP_RZ  = vwcWP_RZ;
+	epv->vwcHW_RZ  = vwcHW_RZ;
+	
 	epv->vwc_avg = vwc_avg;
 	epv->vwc_RZ  = vwc_RZ;
+	epv->psi_RZ  = psi_RZ;
+	ws->soilw_RZ  = soilw_RZ;
+	ws->soilw_RZ_avail  = soilw_RZ_avail;
+	
 
-	return (errflag);
+	
+	return (errorCode);
 }

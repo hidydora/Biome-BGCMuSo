@@ -4,10 +4,10 @@ create structures initialized with zero for forcing fluxes to zero
 between simulation days
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -25,7 +25,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 
 	wf->prcp_to_canopyw = 0;
@@ -38,11 +38,14 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->snoww_subl = 0;
 	wf->snoww_to_soilw = 0;
 	wf->soilw_evap = 0;
+	wf->soilw_transPOT = 0;
 	wf->soilw_trans_SUM = 0;
+	wf->soilw_transDEMAND_SUM = 0;
 	wf->evapotransp = 0;
+	wf->PET = 0;
 	wf->pondw_to_soilw = 0;
 	wf->soilw_to_pondw = 0;
-	wf->soilw_rootzone_leach = 0;
+	wf->soilw_leached_RZ = 0;
 	wf->canopyw_to_THN = 0;
 	wf->canopyw_to_MOW = 0;
 	wf->canopyw_to_HRV = 0;
@@ -50,7 +53,8 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->canopyw_to_GRZ = 0;
 	wf->IRG_to_prcp = 0;
 	wf->FRZ_to_soilw = 0;
-	wf->pot_evap = 0;
+	wf->evapPOT = 0;
+	wf->infiltPOT = 0;
 	cf->m_leafc_to_litr1c = 0;
 	cf->m_leafc_to_litr2c = 0;
 	cf->m_leafc_to_litr3c = 0;
@@ -117,11 +121,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->m_deadcrootc_to_fire = 0;
 	cf->m_gresp_storage_to_fire = 0;
 	cf->m_gresp_transfer_to_fire = 0;
-	cf->m_litr1c_to_fire = 0;
-	cf->m_litr2c_to_fire = 0;
-	cf->m_litr3c_to_fire = 0;
-	cf->m_litr4c_to_fire = 0;
-	cf->m_cwdc_to_fire = 0;
+	cf->m_litr1c_to_fireTOTAL = 0;
+	cf->m_litr2c_to_fireTOTAL = 0;
+	cf->m_litr3c_to_fireTOTAL = 0;
+	cf->m_litr4c_to_fireTOTAL = 0;
+	cf->m_cwdc_to_fireTOTAL = 0;
 	cf->m_vegc_to_SNSC = 0;
 	cf->m_leafc_to_SNSC = 0;
 	cf->m_leafc_to_SNSCgenprog = 0;
@@ -155,13 +159,13 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->STDBc_froot_to_litr = 0;
 	cf->STDBc_fruit_to_litr = 0;
 	cf->STDBc_softstem_to_litr = 0;
-	cf->STDBc_transfer_to_litr = 0;
+	cf->STDBc_nsc_to_litr = 0;
 	cf->STDBc_to_litr = 0;
 	cf->CTDBc_leaf_to_litr = 0;
 	cf->CTDBc_froot_to_litr = 0;
 	cf->CTDBc_fruit_to_litr = 0;
 	cf->CTDBc_softstem_to_litr = 0;
-	cf->CTDBc_transfer_to_litr = 0;
+	cf->CTDBc_nsc_to_litr = 0;
 	cf->CTDBc_cstem_to_cwd = 0;
 	cf->CTDBc_croot_to_cwd = 0;
 	cf->CTDBc_to_litr = 0;
@@ -198,7 +202,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->livecroot_mr = 0;
 	cf->psnsun_to_cpool = 0;
 	cf->psnshade_to_cpool = 0;
-	cf->DOC_rootzone_leach = 0;
+	cf->DOC_leached_RZ = 0;
 	cf->cpool_to_leafc = 0;
 	cf->cpool_to_leafc_storage = 0;
 	cf->cpool_to_frootc = 0;
@@ -297,11 +301,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->gresp_transfer_to_THN = 0;
 	cf->THN_to_CTDBc_leaf = 0;
 	cf->THN_to_CTDBc_fruit = 0;
-	cf->THN_to_CTDBc_transfer = 0;
+	cf->THN_to_CTDBc_nsc = 0;
 	cf->THN_to_CTDBc_cstem = 0;
 	cf->STDBc_leaf_to_THN = 0;
 	cf->STDBc_fruit_to_THN = 0;
-	cf->STDBc_transfer_to_THN = 0;
+	cf->STDBc_nsc_to_THN = 0;
 	cf->leafc_to_MOW = 0;
 	cf->leafc_storage_to_MOW = 0;
 	cf->leafc_transfer_to_MOW = 0;
@@ -316,11 +320,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->MOW_to_CTDBc_leaf = 0;
 	cf->MOW_to_CTDBc_fruit = 0;
 	cf->MOW_to_CTDBc_softstem = 0;
-	cf->MOW_to_CTDBc_transfer = 0;
+	cf->MOW_to_CTDBc_nsc = 0;
 	cf->STDBc_leaf_to_MOW = 0;
 	cf->STDBc_fruit_to_MOW = 0;
 	cf->STDBc_softstem_to_MOW = 0;
-	cf->STDBc_transfer_to_MOW = 0;
+	cf->STDBc_nsc_to_MOW = 0;
 	cf->leafc_to_HRV = 0;
 	cf->leafc_storage_to_HRV = 0;
 	cf->leafc_transfer_to_HRV = 0;
@@ -335,11 +339,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->HRV_to_CTDBc_leaf = 0;
 	cf->HRV_to_CTDBc_fruit = 0;
 	cf->HRV_to_CTDBc_softstem = 0;
-	cf->HRV_to_CTDBc_transfer = 0;
+	cf->HRV_to_CTDBc_nsc = 0;
 	cf->STDBc_leaf_to_HRV = 0;
 	cf->STDBc_fruit_to_HRV = 0;
 	cf->STDBc_softstem_to_HRV = 0;
-	cf->STDBc_transfer_to_HRV = 0;
+	cf->STDBc_nsc_to_HRV = 0;
 	cf->leafc_to_PLG = 0;
 	cf->leafc_storage_to_PLG = 0;
 	cf->leafc_transfer_to_PLG = 0;
@@ -358,7 +362,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->STDBc_froot_to_PLG = 0;
 	cf->STDBc_fruit_to_PLG = 0;
 	cf->STDBc_softstem_to_PLG = 0;
-	cf->STDBc_transfer_to_PLG = 0;
+	cf->STDBc_nsc_to_PLG = 0;
 	cf->CTDBc_leaf_to_PLG = 0;
 	cf->CTDBc_fruit_to_PLG = 0;
 	cf->CTDBc_softstem_to_PLG = 0;
@@ -376,7 +380,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->STDBc_leaf_to_GRZ = 0;
 	cf->STDBc_fruit_to_GRZ = 0;
 	cf->STDBc_softstem_to_GRZ = 0;
-	cf->STDBc_transfer_to_GRZ = 0;
+	cf->STDBc_nsc_to_GRZ = 0;
 	cf->GRZ_to_litr1c = 0;
 	cf->GRZ_to_litr2c = 0;
 	cf->GRZ_to_litr3c = 0;
@@ -387,7 +391,22 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->FRZ_to_litr4c = 0;
 	cf->CH4_flux_soil = 0;
 	cf->CH4_flux_MANURE = 0;
-	cf->CH4_flux_FERMENT = 0;
+	cf->CH4_flux_ANIMAL = 0;
+	cf->litr1_hr_total = 0;		
+	cf->litr2_hr_total = 0;		
+	cf->litr4_hr_total = 0;		
+	cf->soil1_hr_total = 0;		
+	cf->soil2_hr_total = 0;		
+	cf->soil3_hr_total = 0;		
+	cf->soil4_hr_total = 0;	
+	cf->litr1c_to_soil1c_total = 0;		
+	cf->litr2c_to_soil2c_total = 0;					
+	cf->litr3c_to_litr2c_total = 0;						
+	cf->litr4c_to_soil3c_total = 0;						
+	cf->cwdc_to_litr2c_total = 0;					
+	cf->cwdc_to_litr3c_total = 0;					
+	cf->cwdc_to_litr4c_total = 0;		
+
 	nf->m_leafn_to_litr1n = 0;
 	nf->m_leafn_to_litr2n = 0;
 	nf->m_leafn_to_litr3n = 0;
@@ -458,13 +477,13 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->STDBn_froot_to_litr = 0;
 	nf->STDBn_fruit_to_litr = 0;
 	nf->STDBn_softstem_to_litr = 0;
-	nf->STDBn_transfer_to_litr = 0;
+	nf->STDBn_nsc_to_litr = 0;
 	nf->STDBn_to_litr = 0;
 	nf->CTDBn_leaf_to_litr = 0;
 	nf->CTDBn_froot_to_litr = 0;
 	nf->CTDBn_fruit_to_litr = 0;
 	nf->CTDBn_softstem_to_litr = 0;
-	nf->CTDBn_transfer_to_litr = 0;
+	nf->CTDBn_nsc_to_litr = 0;
 	nf->CTDBn_cstem_to_cwd = 0;
 	nf->CTDBn_croot_to_cwd = 0;
 	nf->CTDBn_to_litr = 0;
@@ -495,11 +514,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->m_livecrootn_to_fire = 0;
 	nf->m_deadcrootn_to_fire = 0;
 	nf->m_retransn_to_fire = 0;
-	nf->m_litr1n_to_fire = 0;
-	nf->m_litr2n_to_fire = 0;
-	nf->m_litr3n_to_fire = 0;
-	nf->m_litr4n_to_fire = 0;
-	nf->m_cwdn_to_fire = 0;
+	nf->m_litr1n_to_fireTOTAL = 0;
+	nf->m_litr2n_to_fireTOTAL = 0;
+	nf->m_litr3n_to_fireTOTAL = 0;
+	nf->m_litr4n_to_fireTOTAL = 0;
+	nf->m_cwdn_to_fireTOTAL = 0;
 	nf->leafn_transfer_to_leafn = 0;
 	nf->frootn_transfer_to_frootn = 0;
 	nf->fruitn_transfer_to_fruitn = 0;
@@ -525,11 +544,21 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->softstemn_to_litr2n = 0;
 	nf->softstemn_to_litr3n = 0;
 	nf->softstemn_to_litr4n = 0;
-	nf->ndep_to_sminn = 0;
-	nf->nfix_to_sminn = 0;
+	nf->ndep_to_sminnTOTAL = 0;
+	nf->nfix_to_sminnTOTAL = 0;
 	
+	nf->cwdn_to_litr2n_total = 0;                
+	nf->cwdn_to_litr3n_total = 0;                
+	nf->cwdn_to_litr4n_total = 0;                
+	nf->litr1n_to_soil1n_total = 0;              
+	nf->litr2n_to_soil2n_total = 0;              
+	nf->litr3n_to_litr2n_total = 0;              
+	nf->litr4n_to_soil3n_total = 0; 
+	nf->soil1n_to_soil2n_total = 0;              
+	nf->soil2n_to_soil3n_total = 0;              
+	nf->soil3n_to_soil4n_total = 0;   
 	nf->soil4n_to_sminNH4_total = 0;
-        nf->sminn_to_soil_SUM_total = 0;
+    nf->sminn_to_soil_SUM_total = 0;
 	nf->sminNH4_to_soil_SUM_total = 0;
 	nf->sminNO3_to_soil_SUM_total = 0;
 	nf->sminNO3_to_denitr_total = 0;
@@ -537,12 +566,12 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->N2_flux_DENITR_total = 0;
 	nf->N2O_flux_NITRIF_total = 0;
 	nf->N2O_flux_DENITR_total = 0;
-	nf->sminNH4_to_npool_total = 0;
-	nf->sminNO3_to_npool_total = 0;
-	nf->sminn_to_npool = 0;
-	nf->sminN_rootzone_leach = 0;
-	nf->DON_rootzone_leach = 0;
-	nf->retransn_to_npool = 0;
+	nf->sminNH4_to_npoolTOTAL = 0;
+	nf->sminNO3_to_npoolTOTAL = 0;
+	nf->sminn_to_npoolTOTAL = 0;
+	nf->sminN_leached_RZ = 0;
+	nf->DON_leached_RZ = 0;
+	nf->retransn_to_npoolTOTAL = 0;
 	nf->npool_to_leafn = 0;
 	nf->npool_to_leafn_storage = 0;
 	nf->npool_to_frootn = 0;
@@ -616,11 +645,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->retransn_to_THN = 0;
 	nf->THN_to_CTDBn_leaf = 0;
 	nf->THN_to_CTDBn_fruit = 0;
-	nf->THN_to_CTDBn_transfer = 0;
+	nf->THN_to_CTDBn_nsc = 0;
 	nf->THN_to_CTDBn_cstem = 0;
 	nf->STDBn_leaf_to_THN = 0;
 	nf->STDBn_fruit_to_THN = 0;
-	nf->STDBn_transfer_to_THN = 0;
+	nf->STDBn_nsc_to_THN = 0;
 	nf->leafn_to_MOW = 0;
 	nf->leafn_storage_to_MOW = 0;
 	nf->leafn_transfer_to_MOW = 0;
@@ -634,11 +663,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->MOW_to_CTDBn_leaf = 0;
 	nf->MOW_to_CTDBn_fruit = 0;
 	nf->MOW_to_CTDBn_softstem = 0;
-	nf->MOW_to_CTDBn_transfer = 0;
+	nf->MOW_to_CTDBn_nsc = 0;
 	nf->STDBn_leaf_to_MOW = 0;
 	nf->STDBn_fruit_to_MOW = 0;
 	nf->STDBn_softstem_to_MOW = 0;
-	nf->STDBn_transfer_to_MOW = 0;
+	nf->STDBn_nsc_to_MOW = 0;
 	nf->leafn_to_HRV = 0;
 	nf->leafn_storage_to_HRV = 0;
 	nf->leafn_transfer_to_HRV = 0;
@@ -652,11 +681,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->HRV_to_CTDBn_leaf = 0;
 	nf->HRV_to_CTDBn_fruit = 0;
 	nf->HRV_to_CTDBn_softstem = 0;
-	nf->HRV_to_CTDBn_transfer = 0;
+	nf->HRV_to_CTDBn_nsc = 0;
 	nf->STDBn_leaf_to_HRV = 0;
 	nf->STDBn_fruit_to_HRV = 0;
 	nf->STDBn_softstem_to_HRV = 0;
-	nf->STDBn_transfer_to_HRV = 0;
+	nf->STDBn_nsc_to_HRV = 0;
 	nf->leafn_to_PLG = 0;
 	nf->leafn_storage_to_PLG = 0;
 	nf->leafn_transfer_to_PLG = 0;
@@ -674,7 +703,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->STDBn_froot_to_PLG = 0;
 	nf->STDBn_fruit_to_PLG = 0;
 	nf->STDBn_softstem_to_PLG = 0;
-	nf->STDBn_transfer_to_PLG = 0;
+	nf->STDBn_nsc_to_PLG = 0;
 	nf->CTDBn_leaf_to_PLG = 0;
 	nf->CTDBn_fruit_to_PLG = 0;
 	nf->CTDBn_softstem_to_PLG = 0;
@@ -690,7 +719,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->STDBn_leaf_to_GRZ = 0;
 	nf->STDBn_fruit_to_GRZ = 0;
 	nf->STDBn_softstem_to_GRZ = 0;
-	nf->STDBn_transfer_to_GRZ = 0;
+	nf->STDBn_nsc_to_GRZ = 0;
 	nf->retransn_to_GRZ = 0;
 	nf->GRZ_to_litr1n = 0;
 	nf->GRZ_to_litr2n = 0;
@@ -704,10 +733,16 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->FRZ_to_litr4n = 0;
 	nf->N2O_flux_GRZ = 0;
 	nf->N2O_flux_FRZ = 0;
-
+	nf->sminn_to_soil1n_l1_total = 0;				
+	nf->sminn_to_soil2n_l2_total = 0;	
+	nf->sminn_to_soil3n_l4_total = 0;
+	nf->sminn_to_soil2n_s1_total = 0;				
+	nf->sminn_to_soil3n_s2_total = 0;	
+	nf->sminn_to_soil4n_s3_total = 0;
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		wf->soilw_trans[layer] = 0;
+		wf->soilw_transDEMAND[layer] = 0;
 		wf->soilw_percolated[layer] = 0;
 		wf->soilw_diffused[layer] = 0;
 		wf->soilw_from_GW[layer] = 0;
@@ -728,14 +763,24 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 		cf->soil3_hr[layer] = 0;
 		cf->soil3c_to_soil4c[layer] = 0;
 		cf->soil4_hr[layer] = 0;
-		cf->soil1_DOC_leached[layer] = 0;
-		cf->soil2_DOC_leached[layer] = 0;
-		cf->soil3_DOC_leached[layer] = 0;
-		cf->soil4_DOC_leached[layer] = 0;
-		cf->soil1_DOC_diffused[layer] = 0;
-		cf->soil2_DOC_diffused[layer] = 0;
-		cf->soil3_DOC_diffused[layer] = 0;
-		cf->soil4_DOC_diffused[layer] = 0;
+		cf->soil1_DOC_percol[layer] = 0;
+		cf->soil2_DOC_percol[layer] = 0;
+		cf->soil3_DOC_percol[layer] = 0;
+		cf->soil4_DOC_percol[layer] = 0;
+		cf->soil1_DOC_diffus[layer] = 0;
+		cf->soil2_DOC_diffus[layer] = 0;
+		cf->soil3_DOC_diffus[layer] = 0;
+		cf->soil4_DOC_diffus[layer] = 0;
+		cf->m_litr1c_to_fire[layer] = 0;  
+		cf->m_litr2c_to_fire[layer] = 0;              
+		cf->m_litr3c_to_fire[layer] = 0;             
+		cf->m_litr4c_to_fire[layer] = 0;          
+		cf->m_cwdc_to_fire[layer] = 0;  
+		nf->m_litr1n_to_fire[layer] = 0;  
+		nf->m_litr2n_to_fire[layer] = 0;              
+		nf->m_litr3n_to_fire[layer] = 0;             
+		nf->m_litr4n_to_fire[layer] = 0;          
+		nf->m_cwdn_to_fire[layer] = 0; 
 		nf->cwdn_to_litr2n[layer] = 0;
 		nf->cwdn_to_litr3n[layer] = 0;
 		nf->cwdn_to_litr4n[layer] = 0;
@@ -763,20 +808,25 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 		nf->N2O_flux_DENITR[layer] = 0;
 		nf->sminNH4_to_npool[layer] = 0;
 		nf->sminNO3_to_npool[layer] = 0;
-		nf->sminNH4_leached[layer] = 0;
-		nf->sminNH4_diffused[layer] = 0;
-		nf->sminNO3_leached[layer] = 0;
-		nf->sminNO3_diffused[layer] = 0;
-		nf->soil1_DON_leached[layer] = 0;
-		nf->soil2_DON_leached[layer] = 0;
-		nf->soil3_DON_leached[layer] = 0;
-		nf->soil4_DON_leached[layer] = 0;
-		nf->soil1_DON_diffused[layer] = 0;
-		nf->soil2_DON_diffused[layer] = 0;
-		nf->soil3_DON_diffused[layer] = 0;
-		nf->soil4_DON_diffused[layer] = 0;
+		nf->sminn_to_npool[layer] = 0;
+		nf->sminNH4_percol[layer] = 0;
+		nf->sminNH4_diffus[layer] = 0;
+		nf->sminNO3_percol[layer] = 0;
+		nf->sminNO3_diffus[layer] = 0;
+		nf->soil1_DON_percol[layer] = 0;
+		nf->soil2_DON_percol[layer] = 0;
+		nf->soil3_DON_percol[layer] = 0;
+		nf->soil4_DON_percol[layer] = 0;
+		nf->soil1_DON_diffus[layer] = 0;
+		nf->soil2_DON_diffus[layer] = 0;
+		nf->soil3_DON_diffus[layer] = 0;
+		nf->soil4_DON_diffus[layer] = 0;
+		nf->retransn_to_npool[layer] = 0;
+		nf->ndep_to_sminNH4[layer] = 0;
+		nf->ndep_to_sminNO3[layer] = 0;
+		nf->nfix_to_sminNH4[layer] = 0;
 	}
 
 
-	return (errflag);
+	return (errorCode);
 }

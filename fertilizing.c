@@ -3,8 +3,8 @@ fertilizing.c
 do fertilization  - increase the mineral soil nitrogen (sminn)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -22,15 +22,15 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, fertilizing_struct* FRZ, epvar_struct* epv, 
+int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, fertilizing_struct* FRZ, epvar_struct* epv, 
 				cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf)
 {
 
 
 	/* fertilizing parameters .*/
-	int errflag=0;
+	int errorCode=0;
 
-	int layer;
+	int layer, layerCTRL;
 
 	double FRZdepth;					    /* (m) actual  depth of fertilization */
 	double fertilizer_DM;                   /* (kg/m2) dry matter content of fertilizer  */
@@ -45,7 +45,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, ferti
 	int FRZlayer;                               /* (DIM) number of fertilization layer */
 	
 		
-	double ratio, ratioSUM,ha_to_m2;
+	double ratio, ratioSUM,ha_to_m2,diff;
 
 	int md, year;
 
@@ -93,12 +93,12 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, ferti
 			}
 		
 	
-			EFf_N2O	    = FRZ->EFfert_N2O[md] /NDAYS_OF_YEAR;
+			EFf_N2O	    = FRZ->EFfert_N2O[md] /nDAYS_OF_YEAR;
 
 			if ((flab + fucel + fscel + flig) > 0 && fabs(flab + fucel + fscel + flig - 1) > CRIT_PREC)
 			{
 				printf("ERROR in fertilizing parameters in management file: sum of labile/cellulose/ligning fraction parameters must equal to 1 (fertilizing.c)\n");
-				errflag=1;
+				errorCode=1;
 			}
 
 			/* DM and WC content of fertilizer: kg/m2 = kg fertilizer/ha * ha/m2 * (% to prop.) */
@@ -138,7 +138,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, ferti
 				if (FRZlayer == 0)
 				{
 					printf("ERROR in fertilizing depth calculation (fertilizing.c)\n");
-					errflag=1;
+					errorCode=1;
 				}
 			}
 
@@ -181,13 +181,44 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, ferti
 
 				ws->soilw[layer]  += wf->FRZ_to_soilw * ratio;
 				epv->vwc[layer]   = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
+
+				/* control to avoid VWC above saturation */
+				if (epv->vwc[layer] > sprop->vwc_sat[layer])       
+				{
+					diff              = (epv->vwc[layer] - sprop->vwc_sat[layer]) * (water_density * sitec->soillayer_thickness[layer]);
+					epv->vwc[layer]   = sprop->vwc_sat[layer];
+					ws->soilw[layer] -= diff;
+			
+					layerCTRL = layer + 1;
+					
+					while (layerCTRL < N_SOILLAYERS && diff > 0)
+					{
+						ws->soilw[layerCTRL] += diff;
+						epv->vwc[layerCTRL]   = ws->soilw[layerCTRL] / (water_density * sitec->soillayer_thickness[layerCTRL]);
+
+						diff = (epv->vwc[layerCTRL] - sprop->vwc_sat[layerCTRL]) * (water_density * sitec->soillayer_thickness[layerCTRL]);
+						if (diff > 0)
+						{
+							epv->vwc[layerCTRL]   = sprop->vwc_sat[layerCTRL];
+							ws->soilw[layerCTRL] -= diff;
+						}
+
+						layerCTRL            -= 1;
+					}	
+					if (layerCTRL == N_SOILLAYERS && diff > 0)
+					{
+						printf("ERROR in water surplus calculation (fertilizing.c)\n");
+						errorCode=1;
+					}
+
+				}
 			}
 
 			/* control */
 			if (fabs(ratioSUM - 1) > CRIT_PREC)
 			{
 				printf("ERROR in fertilizing ratio calculation (fertilizing.c)\n");
-				errflag=1;
+				errorCode=1;
 			}
 			cs->FRZsrc_C += FRZ_to_litrc;
 			ns->FRZsrc_N += nf->FRZ_to_sminNH4 + nf->FRZ_to_sminNO3 + FRZ_to_litrn;
@@ -197,6 +228,6 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, ferti
 		} /* endif  */
 
 	}
-   return (errflag);
+   return (errorCode);
 }
 	

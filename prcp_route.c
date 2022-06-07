@@ -3,7 +3,7 @@ prcp_route.c
 routing of daily precipitation to canopy, soil, snowpack
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -33,7 +33,7 @@ int prcp_route(const metvar_struct* metv, double precip_int_coef, double all_lai
 	There is no canopy interception of snow.
 	*/
 	
-	int errflag=0;
+	int errorCode=0;
 	double max_int;
 	double prcp, through;
 
@@ -66,5 +66,5 @@ int prcp_route(const metvar_struct* metv, double precip_int_coef, double all_lai
 		wf->prcp_to_snoww = prcp;     /* no interception */
 	}
 	
-	return(errflag);
+	return(errorCode);
 }

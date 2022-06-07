@@ -4,7 +4,7 @@ functions called to copy restart info between restart structure and
 active structures
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -22,15 +22,23 @@ Missoula, MT 59812
 #include "bgc_func.h"       /* function prototypes */
 #include "bgc_constants.h"
 
-int restart_input(const epconst_struct* epc, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, restart_data_struct* restart)
+int restart_input(const control_struct* ctrl, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, 
+	             wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, restart_data_struct* restart)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
+	double soilw_sat;
 	
-	/* 1. water */
-	for (layer =0; layer < N_SOILLAYERS; layer++)
-	{ 
-		ws->soilw[layer]                  = restart->soilw[layer];
+	
+	/* 1. water: special case to initalize soil water from INI file - WSATE section (read_restart = 2) */
+	if (ctrl->read_restart == 1)
+	{
+		for (layer =0; layer < N_SOILLAYERS; layer++)
+		{ 
+			ws->soilw[layer]                  = restart->soilw[layer];
+			soilw_sat = sprop->vwc_sat[layer] * sitec->soillayer_thickness[layer] * water_density;
+			if (soilw_sat < ws->soilw[layer]) ws->soilw[layer] = soilw_sat;
+		}
 	}
 
 	ws->snoww                             = restart->snoww;
@@ -169,12 +177,12 @@ int restart_input(const epconst_struct* epc, wstate_struct* ws, cstate_struct* c
 	cs->STDBc_froot		= restart->STDBc_froot;
 	cs->STDBc_fruit		= restart->STDBc_fruit;
 	cs->STDBc_softstem	= restart->STDBc_softstem;
-	cs->STDBc_transfer	= restart->STDBc_transfer;
+	cs->STDBc_nsc	    = restart->STDBc_nsc;
 	cs->CTDBc_leaf		= restart->CTDBc_leaf;
 	cs->CTDBc_froot		= restart->CTDBc_froot;
 	cs->CTDBc_fruit		= restart->CTDBc_fruit;
 	cs->CTDBc_softstem	= restart->CTDBc_softstem;
-	cs->CTDBc_transfer	= restart->CTDBc_transfer;
+	cs->CTDBc_nsc	    = restart->CTDBc_nsc;
 	cs->CTDBc_cstem		= restart->CTDBc_cstem;
 	cs->CTDBc_croot		= restart->CTDBc_croot;
 	
@@ -182,12 +190,12 @@ int restart_input(const epconst_struct* epc, wstate_struct* ws, cstate_struct* c
 	ns->STDBn_froot		= restart->STDBn_froot;
 	ns->STDBn_fruit		= restart->STDBn_fruit;
 	ns->STDBn_softstem	= restart->STDBn_softstem;
-	ns->STDBn_transfer	= restart->STDBn_transfer;
+	ns->STDBn_nsc	    = restart->STDBn_nsc;
 	ns->CTDBn_leaf		= restart->CTDBn_leaf;
 	ns->CTDBn_froot		= restart->CTDBn_froot;
 	ns->CTDBn_fruit		= restart->CTDBn_fruit;
 	ns->CTDBn_softstem	= restart->CTDBn_softstem;
-	ns->CTDBn_transfer	= restart->CTDBn_transfer;
+	ns->CTDBn_nsc	    = restart->CTDBn_nsc;
 	ns->CTDBn_cstem		= restart->CTDBn_cstem;
 	ns->CTDBn_croot		= restart->CTDBn_croot;
 
@@ -228,12 +236,14 @@ int restart_input(const epconst_struct* epc, wstate_struct* ws, cstate_struct* c
 	epv->annmax_livecrootc                = restart->annmax_livecrootc;
  
 	
-	return(errflag);
+
+	
+	return(errorCode);
 }
 
 int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstate_struct* ns, const epvar_struct* epv, restart_data_struct* restart)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 
 	/* 1. soil water */
@@ -307,12 +317,12 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->STDBc_froot		= cs->STDBc_froot;
 	restart->STDBc_fruit		= cs->STDBc_fruit;
 	restart->STDBc_softstem		= cs->STDBc_softstem;
-	restart->STDBc_transfer		= cs->STDBc_transfer;
+	restart->STDBc_nsc		    = cs->STDBc_nsc;
 	restart->CTDBc_leaf			= cs->CTDBc_leaf;
 	restart->CTDBc_froot		= cs->CTDBc_froot;
 	restart->CTDBc_fruit		= cs->CTDBc_fruit;
 	restart->CTDBc_softstem		= cs->CTDBc_softstem;
-	restart->CTDBc_transfer		= cs->CTDBc_transfer;
+	restart->CTDBc_nsc		    = cs->CTDBc_nsc;
 	restart->CTDBc_cstem		= cs->CTDBc_cstem;
 	restart->CTDBc_croot		= cs->CTDBc_croot;
 
@@ -320,12 +330,12 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->STDBn_froot		= ns->STDBn_froot;
 	restart->STDBn_fruit		= ns->STDBn_fruit;
 	restart->STDBn_softstem		= ns->STDBn_softstem;
-	restart->STDBn_transfer		= ns->STDBn_transfer;
+	restart->STDBn_nsc		    = ns->STDBn_nsc;
 	restart->CTDBn_leaf			= ns->CTDBn_leaf;
 	restart->CTDBn_froot		= ns->CTDBn_froot;
 	restart->CTDBn_fruit		= ns->CTDBn_fruit;
 	restart->CTDBn_softstem		= ns->CTDBn_softstem;
-	restart->CTDBn_transfer		= ns->CTDBn_transfer;
+	restart->CTDBn_nsc		    = ns->CTDBn_nsc;
 	restart->CTDBn_cstem		= ns->CTDBn_cstem;
 	restart->CTDBn_croot		= ns->CTDBn_croot;
 
@@ -367,6 +377,5 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->annmax_livecrootc  			  = epv->annmax_livecrootc;
 
 
-	
-	return(errflag);
+	return(errorCode);
 }

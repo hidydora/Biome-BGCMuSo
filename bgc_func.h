@@ -3,17 +3,18 @@ bgc_func.h
 header file for function prototypes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
-int soilb_estimation(double sand, double silt, double* soil_b, double* vwc_sat,double* vwc_fc, double* vwc_wp,  double* BD, double* RCN);
-int multilayer_soilcalc(soilprop_struct* sprop);
+int soilb_estimation(double sand, double silt, double* soil_b, double* vwc_sat,double* vwc_fc, double* vwc_wp,  double* BD, double* RCN, int* soiltype);
+int multilayer_soilcalc(control_struct* ctrl, soilprop_struct* sprop);
+
 
 int output_map_init(double** output_map, phenology_struct* phen, metvar_struct* metv, wstate_struct* ws,
 	wflux_struct* wf, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, 
@@ -27,10 +28,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf);
 
 int atm_pres(double elev, double* pa);
 
-int restart_input(const epconst_struct* epc, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, restart_data_struct* restart);
+int restart_input(const control_struct* ctrl, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, 
+	              wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, restart_data_struct* restart);
 
-int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, 
-	         const cinit_struct* cinit, const planting_struct *PLT, phenology_struct* phen, epvar_struct* epv, 
+int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, const planting_struct *PLT, 
+	         cinit_struct* cinit, phenology_struct* phen, epvar_struct* epv, 
 			 cstate_struct* cs, nstate_struct* ns, metvar_struct* metv, psn_struct* psn_sun, psn_struct* psn_shade);
 
 int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary_struct* summary);
@@ -53,6 +55,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 
 int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const epvar_struct* epv, int yday, double snoww,
 					 metvar_struct* metv);
+int mulch(siteconst_struct* sitec, soilprop_struct* sprop, metvar_struct* metv,  epvar_struct* epv, cstate_struct* cs, wstate_struct* ws);
 
 int phenology(const control_struct* ctrl, const epconst_struct* epc, const cstate_struct* cs, const nstate_struct* ns, 
 	          phenology_struct* phen, metvar_struct* metv,epvar_struct* epv, cflux_struct* cf, nflux_struct* nf);
@@ -73,16 +76,20 @@ int prcp_route(const metvar_struct* metv, double precip_int_coef,double all_lai,
 
 int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww);
 
-int baresoil_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr);
+int potential_evap(const epconst_struct* epc, const soilprop_struct* sprop, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf);
 
-int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, 
-				 epvar_struct* epv, int simyr);
+int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, 
+                 epvar_struct* epv, wflux_struct* wf, int simyr);
 
-int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv, 
+int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv, 
 	           epvar_struct* epv, cflux_struct* cf);
 
-int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const soilprop_struct* sprop, epvar_struct* epv, wflux_struct* wf);
-	int penmon(const pmet_struct* in, int out_flag,	double* et);
+int canopy_et(const epconst_struct* epc, const siteconst_struct* sitec, const wstate_struct* ws, const metvar_struct* metv, const soilprop_struct* sprop, 
+	          epvar_struct* epv, wflux_struct* wf);
+
+int penmon(const pmet_struct* in, int out_flag,	double* et);
+
+int priestley(const metvar_struct* metv, const epvar_struct *epv, wflux_struct* wf);
 
 int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const cstate_struct* cs, const wstate_struct* ws, const phenology_struct* phen, 
 	               epvar_struct* epv, psn_struct* psn_sun, psn_struct* psn_shade, cflux_struct *cf); 
@@ -90,10 +97,10 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 
 int decomp(const metvar_struct* metv, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, const cstate_struct* cs, const nstate_struct* ns, 
 	       epvar_struct* epv, cflux_struct* cf, nflux_struct* nf, ntemp_struct* nt);
-	int CH4flux_estimation(const soilprop_struct* sprop, double BD, double VWC, double T, double* CH4_flux);
+	int CH4flux_estimation(const soilprop_struct* sprop, int layer, double VWC, double T, double* CH4_flux);
 
-int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, const metvar_struct* metv, cstate_struct*cs,  nstate_struct* ns, 
-	                 cflux_struct* cf, nflux_struct* nf, epvar_struct* epv, ntemp_struct* nt, double naddfrac);
+int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const metvar_struct* metv, 
+	                 cstate_struct*cs,  nstate_struct* ns, cflux_struct* cf, nflux_struct* nf, epvar_struct* epv, ntemp_struct* nt, double naddfrac);
 
 
 int flowering_heatstress(const epconst_struct* epc, const metvar_struct *metv, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf);
@@ -102,41 +109,52 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv);
 
 int growth_resp(const epconst_struct* epc, cflux_struct* cf);
 
-int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec, epvar_struct* epv, const wstate_struct* ws, wflux_struct* wf);
+int multilayer_transpiration(control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, 
+	                          epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
-int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const siteconst_struct* sitec, epvar_struct* epv, wflux_struct* wf);
+int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const siteconst_struct* sitec, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
 int groundwater(const siteconst_struct* sitec, const soilprop_struct* sprop, control_struct* ctrl, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
-int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc,
+int potEVAP_to_actEVAP(control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, 
+	                   epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+	int evapPHASE1toPHASE2(const soilprop_struct* sprop, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+
+int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, 
 							 epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+	int pondANDrunoff(const siteconst_struct* sitec, const soilprop_struct* sprop, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 	int richards(const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 	int tipping(const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
-	int soilstress_calculation(const soilprop_struct* sprop, const epconst_struct* epc, epvar_struct* epv);
+	int soilstress_calculation(const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, 
+		                       epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
 int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws);
 
-
-int daily_CN_state_update(const epconst_struct* epc, control_struct* ctrl, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns, 
-	                      int alloc, int woody, int evergreen);
+int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* epc, control_struct* ctrl, epvar_struct* epv, 
+	                      cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns, int alloc, int woody, int evergreen);
 	int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns);
 	int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double npool, double cflux, double nflux, double CNratio_flux);
 
-int senescence(int yday, const epconst_struct* epc, const grazing_struct* GRZ, const metvar_struct* metv, const phenology_struct* phen, 
+int senescence(int yday, const siteconst_struct *sitec, const epconst_struct* epc, const grazing_struct* GRZ, const metvar_struct* metv, const phenology_struct* phen, 
 			   control_struct* ctrl, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, epvar_struct* epv);
 	int genprog_senescence(const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf);
 
-int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar_struct* epv, const phenology_struct* phen, 
-	          cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, int simyr);	
+int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, const phenology_struct* phen, 
+	          epvar_struct* epv, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, int simyr);	
 
-int multilayer_sminn(const epconst_struct* epc, const soilprop_struct* sprop, const epvar_struct* epv, const siteconst_struct* sitec, const cflux_struct* cf, 
-	                 nstate_struct* ns, nflux_struct* nf);
+int multilayer_sminn(const control_struct* ctrl, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, const cflux_struct* cf, 
+	                 epvar_struct* epv, nstate_struct* ns, nflux_struct* nf);
+	int nitrification(const soilprop_struct* sprop, double net_miner, double pH, double WFPS, double t_scalar, double sminNH4avail, 
+	                  double* pH_scalar, double* wfps_scalar, double* N2O_flux_NITRIF, double* sminNH4_to_nitrif);
+	int denitrification(double soiltype, double sminNO3avail_ppm, double pH, double WFPS, double SOMrespTOTAL, 
+		                double* sminNO3_to_denitr, double* ratioN2_N2O);
 
-int multilayer_leaching(const epconst_struct* epc, const soilprop_struct* sprop,const epvar_struct* epv,
+int multilayer_leaching(const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, const epvar_struct* epv,
 					    control_struct* ctrl, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, wstate_struct* ws, wflux_struct* wf);
 
 int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting_struct* PLT, epconst_struct* epc, 
 	         epvar_struct* epv, phenology_struct* phen, cstate_struct* cs, nstate_struct*ns, cflux_struct* cf, nflux_struct* nf);
+int planttype_determination (control_struct* ctrl, phenology_struct* phen);
 
 int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinning_struct* THN, 
 	         cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf);
@@ -144,7 +162,7 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_struct* MOW, const epvar_struct* epv, 
 		   cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf);
 
-int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ, 
+int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ, epvar_struct* epv,
 	        cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf);
 
 int harvesting(control_struct* ctrl, const epconst_struct* epc, const harvesting_struct* HRV, epvar_struct* epv, 
@@ -153,19 +171,19 @@ int harvesting(control_struct* ctrl, const epconst_struct* epc, const harvesting
 int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_struct* sitec, soilprop_struct* sprop, metvar_struct* metv, epvar_struct* epv, 
 	          ploughing_struct* PLG, cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf);
 
-int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, fertilizing_struct* FRZ, epvar_struct* epv, 
+int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, fertilizing_struct* FRZ, epvar_struct* epv, 
 				cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf);
 
-int cutdown2litter(const epconst_struct* epc, const epvar_struct* epv, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf);
+int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, const epvar_struct* epv, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf);
 
 int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns);
 
-int check_water_balance(wstate_struct* ws, int first_balance);
+int check_water_balance(wstate_struct* ws, const epvar_struct* epv, const siteconst_struct *sitec, int first_balance);
 int check_carbon_balance(cstate_struct* cs, int first_balance);
 int check_nitrogen_balance(nstate_struct* ns, int first_balance);
 
 int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const metvar_struct* metv, 
-	            const cstate_struct* cs, const cflux_struct* cf, const nstate_struct* ns, const nflux_struct* nf, const wflux_struct* wf, const epvar_struct* epv, 
-				summary_struct* summary);
+	            const cstate_struct* cs, const cflux_struct* cf, const nstate_struct* ns, const nflux_struct* nf, const wflux_struct* wf, 
+				epvar_struct* epv, summary_struct* summary);
 
 int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstate_struct* ns, const epvar_struct* epv, restart_data_struct* restart);

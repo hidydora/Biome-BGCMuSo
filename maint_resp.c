@@ -3,10 +3,10 @@ maint_resp.c
 daily maintenance respiration
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -22,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv,
+int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv,
 	          epvar_struct* epv, cflux_struct* cf)
 {
 	/*
@@ -45,7 +45,7 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_s
 	
 	Leaf and fine root respiration are dependent on phenology.*/
 	
-	int errflag=0;
+	int errorCode=0;
 	double t1;
 	double exponent;
 	double n_area_sun, n_area_shade, dlmr_area_sun, dlmr_area_shade;
@@ -129,7 +129,7 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_s
 	/* ********************************************************* */
 	/* 3. Fruit simulation maintenance respiration when fruits on */
    
-	if (cs->fruitc)
+	if (cs->fruitc && PLT->PLT_num == 0)
 	{
 		exponent = (metv->tavg - 20.0) / 10.0;
 		t1 = pow(q10, exponent);
@@ -197,5 +197,5 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_s
 
 	
 	
-	return (errflag);
+	return (errorCode);
 }

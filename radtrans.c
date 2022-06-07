@@ -5,10 +5,10 @@ leaf area for sun and shade canopy fractions, then calculate
 canopy radiation interception and transmission 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -28,10 +28,10 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	         metvar_struct* metv, epvar_struct* epv)
 {
 
-	int errflag=0;
+	int errorCode=0;
 	int pp;
 	double proj_lai, leafcSUM, sla_avg;
-	double albedo_sw, albedo_par;
+	double albedo_par;
 	double sw,par;
 	double swabs, swtrans;
 	double parabs;
@@ -82,7 +82,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 			{
 				printf("\n");
 				printf("ERROR: Zero SLA value in radtrans.c\n");
-				errflag=1;
+				errorCode=1;
 			}
 		}
 				
@@ -98,7 +98,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 			printf("\n");
 			printf("ERROR: Negative plaishade\n");
 			printf("LAI of shaded canopy = %lf\n",epv->plaishade);
-			errflag=1;
+			errorCode=1;
 		}
 		
 		/* calculate the projected specific leaf area for sunlit and  shaded canopy fractions */
@@ -128,21 +128,21 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	
 	
 	/* calculate LAI dependent albedo */
-	if (sitec->sw_alb < crit_albedo)
-		albedo_sw = crit_albedo - (crit_albedo - sitec->sw_alb)* exp(-0.75*proj_lai);
+	if (sitec->albedo_sw < crit_albedo)
+		epv->albedo_LAI = crit_albedo - (crit_albedo - sitec->albedo_sw)* exp(-0.75*proj_lai);
 	else
-		albedo_sw = sitec->sw_alb;
+		epv->albedo_LAI = sitec->albedo_sw;
 
 	/* 1.2 calculate total shortwave absorbed */
 	k_sw = k;
 	sw = 0;
-	sw = metv->swavgfd * (1.0 - albedo_sw);
+	sw = metv->swavgfd * (1.0 - epv->albedo_LAI);
 	swabs = sw * (1.0 - exp(-k_sw*proj_lai));
 	swtrans = sw - swabs;
 	
 	/* 1.3 calculate PAR absorbed */
 	k_par = k * 1.0;
-	albedo_par = sitec->sw_alb/3.0;
+	albedo_par = sitec->albedo_sw/3.0;
 	par = metv->par * (1.0 - albedo_par);
 	parabs = par * (1.0 - exp(-k_par*proj_lai));
 	
@@ -154,14 +154,14 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	{
 		printf("\n");
 		printf("ERROR: negative swabs_plaishade (%lf)\n",swabs_plaishade);
-		errflag=1;
+		errorCode=1;
 	}
 
 	/* 1.5 convert this to the shortwave absorbed per unit LAI in the sunlit and  shaded canopy fractions */
 	
 	if (proj_lai > 0.0)
 	{
-		swabs_per_plaisun = swabs_plaisun/epv->plaisun;
+		swabs_per_plaisun = swabs_plaisun / epv->plaisun;
 		swabs_per_plaishade = swabs_plaishade/epv->plaishade;
 	}
 	else
@@ -176,7 +176,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	{	
 		printf("\n");
 		printf("FATAL ERROR: negative parabs_plaishade (%lf)\n",parabs_plaishade);
-		errflag=1;
+		errorCode=1;
 	}
 
 	/* 1.7 convert this to the PAR absorbed per unit LAI in the sunlit and shaded canopy fractions */
@@ -202,7 +202,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	
 	/* 2.2. net short-wave radiation: swRADnet. Dimensions: [rad]=MJ/m2/d-1; [swavgfd]=W/m2*; [swRADnet]=W/m2*/
 	rad = metv->swavgfd * W_to_MJperDAY; 
-	swRADnet = (1 - albedo_sw) * rad  / W_to_MJperDAY;
+	swRADnet = (1 - epv->albedo_LAI) * rad  / W_to_MJperDAY;
 	
 	/* 2.3. net outgoing long-wave-radation: lwRADnet */
 	/* number of the year between 1 and 365: J */
@@ -243,7 +243,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	{
 		printf("\n");
 		printf("ERROR: actual vapor pressure is negative in radtrans.c \n");
-		errflag=1;
+		errorCode=1;
 	}
 	
 	/* lwRADnet [W/m2] */
@@ -298,5 +298,5 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	metv->parabs_plaishade = parabs_plaishade;
 
 	
-	return (errflag);
+	return (errorCode);
 }

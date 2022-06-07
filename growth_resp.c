@@ -3,10 +3,10 @@ growth_resp.c
 daily growth respiration rates
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -24,7 +24,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 int growth_resp(const epconst_struct* epc, cflux_struct* cf)
 {
-	int errflag=0;
+	int errorCode=0;
 	double g1;   /* RATIO   C respired for growth : C grown  */ 
 	double g2;   /* proportion of growth resp to release at fixation */
 
@@ -60,6 +60,6 @@ int growth_resp(const epconst_struct* epc, cflux_struct* cf)
 	cf->transfer_deadcroot_gr = cf->deadcrootc_transfer_to_deadcrootc * g1 * (1.0-g2);
 	
 
-	return (errflag);
+	return (errorCode);
 }
 

@@ -3,10 +3,10 @@ dayphen.c
 transfer one day of phenological data from phenarr struct to phen struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -25,13 +25,13 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_struct* phenarr, const planting_struct* PLT, 
 	        epvar_struct* epv, phenology_struct* phen)
 {
-	int errflag=0;
+	int errorCode=0;
 	int nyear;
 
 
 	/* determining onday, offday, n_growthday, n_transferday and n_litfallday value on the first simulation day */
 
-	if (PLT->PLT_num)
+ 	if (PLT->PLT_num)
 		nyear = PLT->PLT_num;
 	else
 		nyear = ctrl->simyears;
@@ -49,27 +49,52 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 	{
 		ctrl->plantyr += 1;
 		
-		phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + NDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
-		phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + NDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
+		if (epc->onday == DATA_GAP)
+		{
+			if (epc->offday != DATA_GAP)
+			{
+				printf("FATAL ERROR: if onday is equal to -9999 offday must be equal to -9999 - bare soil simulation (dayphen.c)\n");
+				errorCode=1;
+			}
+			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
+			phen->offday        = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
+		}
+		else
+		{
+			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + nDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
+			phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + nDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
+		}
 
 		if (phen->offday <= phen->onday && (phen->offday != DATA_GAP && phen->onday != DATA_GAP))
 		{
 			printf("FATAL ERROR: onday is greater or equal than offday (dayphen.c)\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 	}
 
 	phen->n_growthday   = phen->offday - phen->onday + 1;
-	phen->n_transferday = floor(phen->n_growthday * epc->transfer_pdays);
-	phen->n_litfallday  = floor(phen->n_growthday * epc->litfall_pdays);
+
+
+	/* specifying evergreen overrides any user input phenology data, and triggers a very simple treatment of the transfer, litterfall,
+	   and current growth signals.  Treatment is the same for woody and non-woody types, and the same for model or user-input phenology */
+	if (epc->evergreen)
+	{
+		phen->n_transferday = nDAYS_OF_YEAR;
+		phen->n_litfallday  = nDAYS_OF_YEAR;
+	}
+	else
+	{
+		phen->n_transferday = floor(phen->n_growthday * epc->transfer_pdays);
+		phen->n_litfallday  = floor(phen->n_growthday * epc->litfall_pdays);
+	}
 	
 
 
 	
 	
 
-	return(errflag);
+	return(errorCode);
 
 
 }

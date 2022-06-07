@@ -2,8 +2,8 @@
 multilayer_rootdepth.c
 calculation of changing rooting depth based on empirical function 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -23,16 +23,16 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 	                    const soilprop_struct* sprop, const cstate_struct* cs, const planting_struct* PLT, epvar_struct* epv)
 {
 
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 
-	double RLprop_sum1, RLprop_sum2, frootc;
-	double vwcSAT_RZ, vwcFC_RZ, vwcWP_RZ, vwcHW_RZ, maxRD;
+	double RLprop_sum1, RLprop_sum2, RLprop_sum0, frootc;
+	double maxRD;
 
 
 	/* initalizing internal variables */
 
-	RLprop_sum1=RLprop_sum2=vwcSAT_RZ=vwcFC_RZ=vwcWP_RZ=vwcHW_RZ=0.0;
+	RLprop_sum1=RLprop_sum2=RLprop_sum0=0.0;
 
 	if (sprop->soildepth < epc->max_rootzone_depth)
 		maxRD = sprop->soildepth;
@@ -43,141 +43,132 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 	/* ***************************************************************************************************** */	
 	/* 1. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (only on first day) */
 	
-	if (ctrl->simyr == 0 && ctrl->yday == 0)
+	if (maxRD > 0)
 	{
-		if (maxRD > 0)
+		if (maxRD > sitec->soillayer_depth[0])
 		{
-			if (maxRD > sitec->soillayer_depth[0])
-			{
-				if (maxRD > sitec->soillayer_depth[1])
-				{	
-					if (maxRD > sitec->soillayer_depth[2])
+			if (maxRD > sitec->soillayer_depth[1])
+			{	
+				if (maxRD > sitec->soillayer_depth[2])
+				{
+					if (maxRD > sitec->soillayer_depth[3])
 					{
-						if (maxRD > sitec->soillayer_depth[3])
+						if (maxRD > sitec->soillayer_depth[4])
 						{
-							if (maxRD > sitec->soillayer_depth[4])
+							if (maxRD > sitec->soillayer_depth[5])
 							{
-								if (maxRD > sitec->soillayer_depth[5])
+								if (maxRD > sitec->soillayer_depth[6])
 								{
-									if (maxRD > sitec->soillayer_depth[6])
+									if (maxRD > sitec->soillayer_depth[7])
 									{
-										if (maxRD > sitec->soillayer_depth[7])
+										if (maxRD > sitec->soillayer_depth[8])
 										{
-											if (maxRD > sitec->soillayer_depth[8])
-											{
-													epv->n_maxrootlayers = 10;
-											}
-											else 
-											{
-												epv->n_maxrootlayers = 9;
-											}
+												epv->n_maxrootlayers = 10;
 										}
 										else 
 										{
-											epv->n_maxrootlayers = 8;
+											epv->n_maxrootlayers = 9;
 										}
 									}
 									else 
 									{
-										epv->n_maxrootlayers = 7;
+										epv->n_maxrootlayers = 8;
 									}
 								}
 								else 
 								{
-									epv->n_maxrootlayers = 6;
+									epv->n_maxrootlayers = 7;
 								}
 							}
 							else 
 							{
-								epv->n_maxrootlayers = 5;
+								epv->n_maxrootlayers = 6;
 							}
 						}
-						else
+						else 
 						{
-							epv->n_maxrootlayers = 4;
+							epv->n_maxrootlayers = 5;
 						}
 					}
-					else 
+					else
 					{
-						epv->n_maxrootlayers = 3;
-					}	
+						epv->n_maxrootlayers = 4;
+					}
 				}
 				else 
 				{
-					epv->n_maxrootlayers = 2;
-				}
+					epv->n_maxrootlayers = 3;
+				}	
 			}
-			else
+			else 
 			{
-				epv->n_maxrootlayers = 1;
+				epv->n_maxrootlayers = 2;
 			}
 		}
-		else 
+		else
 		{
-			epv->n_maxrootlayers = 0;
-			printf("\n");
-			printf("ERROR in multilayer_rootdepth: maximum of rooting depth is 0\n");
-			errflag=1;
+			epv->n_maxrootlayers = 1;
 		}
-	
-		/*calculation of critical VWC values for rootzone */
-
-		for (layer = 0; layer < epv->n_maxrootlayers; layer++)
-		{
-			vwcSAT_RZ += sprop->vwc_sat[layer]* (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-			vwcFC_RZ  += sprop->vwc_fc[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-			vwcWP_RZ  += sprop->vwc_wp[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-			vwcHW_RZ  += sprop->vwc_hw[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-		}
-		epv->vwcSAT_RZ = vwcSAT_RZ;
-		epv->vwcFC_RZ  = vwcFC_RZ;
-		epv->vwcWP_RZ  = vwcWP_RZ;
-		epv->vwcHW_RZ  = vwcHW_RZ;
 	}
+	else 
+	{
+		epv->n_maxrootlayers = 0;
+		printf("\n");
+		printf("ERROR in multilayer_rootdepth: maximum of rooting depth is 0\n");
+		errorCode=1;
+	}
+	
+
 
 	/* ***************************************************************************************************** */	
 	/* 2. Calculating rooting depth in case of non-wwody ecosystems (based on Campbell and Diaz, 1988) 
 	      actual rooting depth determines the rootzone depth (epv->n_rootlayers) */
 	
-	
-	if (cs->frootc) 
+	frootc = cs->frootc;
+	if (frootc > CRIT_PREC) 
 	{
-		frootc = cs->frootc + cs->STDBc_froot;
-		if (frootc < epc->rootlenght_par1)
+		if (frootc < epc->rootlength_par1)
 		{
 			/* par1: root weight corresponding to max root depth, par2: root depth function shape parameter */
-			epv->rooting_depth = epv->germ_depth + maxRD * pow(frootc / epc->rootlenght_par1, epc->rootlenght_par2);
+			epv->rootdepth = epv->germ_depth + (maxRD-epv->germ_depth) * pow(frootc / epc->rootlength_par1, epc->rootlength_par2);
 		}
 		else
-			epv->rooting_depth = epv->germ_depth + maxRD;
+			epv->rootdepth = epv->germ_depth + (maxRD-epv->germ_depth);
+
+		
 	}
 	else
-		epv->rooting_depth = 0;
+		epv->rootdepth = 0;
 
-	if (epc->woody) epv->rooting_depth = maxRD;
+	if (epc->woody) epv->rootdepth = maxRD;
+
+	if (epv->germ_layer)
+		epv->rootlength = epv->rootdepth - sitec->soillayer_depth[epv->germ_layer-1];
+	else
+		epv->rootlength = epv->rootdepth;
 
 	/* ***************************************************************************************************** */	
 	/* 3. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
 	
-	if (epv->rooting_depth > 0)
+	if (epv->rootdepth > 0)
 	{
-		if (epv->rooting_depth > sitec->soillayer_depth[0])
+		if (epv->rootdepth > sitec->soillayer_depth[0])
 		{
-			if (epv->rooting_depth > sitec->soillayer_depth[1])
+			if (epv->rootdepth > sitec->soillayer_depth[1])
 			{	
-				if (epv->rooting_depth > sitec->soillayer_depth[2])
+				if (epv->rootdepth > sitec->soillayer_depth[2])
 				{
-					if (epv->rooting_depth > sitec->soillayer_depth[3])
+					if (epv->rootdepth > sitec->soillayer_depth[3])
 					{
-						if (epv->rooting_depth > sitec->soillayer_depth[4])
+						if (epv->rootdepth > sitec->soillayer_depth[4])
 						{
-							if (epv->rooting_depth > sitec->soillayer_depth[5])
+							if (epv->rootdepth > sitec->soillayer_depth[5])
 							{
-								if (epv->rooting_depth > sitec->soillayer_depth[6])
+								if (epv->rootdepth > sitec->soillayer_depth[6])
 								{
-									if (epv->rooting_depth > sitec->soillayer_depth[7])
+									if (epv->rootdepth > sitec->soillayer_depth[7])
 									{
-										if (epv->rooting_depth > sitec->soillayer_depth[8])
+										if (epv->rootdepth > sitec->soillayer_depth[8])
 										{	
 											epv->n_rootlayers = 10;		
 										}
@@ -229,34 +220,66 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 	else 
 	{
 		epv->n_rootlayers = 0;
-		if (cs->frootc)
+		if (cs->frootc > CRIT_PREC)
 		{
 			printf("\n");
 			printf("ERROR in multilayer_rootdepth: root is available but rooting depth is 0\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 	
 	/* ***************************************************************************************************** */	
 	/* 4. Calculating the distribution of the root in the soil layers based on empirical function (Jarvis, 1989)*/
 	
-	/* calculation in active soil layer from 2 active soil layers */
-	
+
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
+		/* live root distribution for soil water calculation */
 		if (layer < epv->n_rootlayers && layer >= epv->germ_layer)
 		{
-			epv->rootlength_prop[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rooting_depth) * 
- 												  exp(-epc->rootdistrib_param * (sitec->soillayer_midpoint[layer] / epv->rooting_depth));
+			epv->rootlength_prop[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rootlength) * 
+ 												  exp(-epc->rootdistrib_param * (sitec->soillayer_midpoint[layer] / epv->rootlength));
 			RLprop_sum1 += epv->rootlength_prop[layer];
+
 		}
 		else
 			epv->rootlength_prop[layer]   = 0;
+
+		/* dead root distribution for soil water calculation */
+		if (epv->n_maxrootlayers)
+		{
+			if (layer < epv->n_maxrootlayers-1)
+				epv->rootlengthLandD_prop[layer] = sitec->soillayer_thickness[layer] / maxRD;
+			else
+			{
+				if (layer == epv->n_maxrootlayers-1) 
+					epv->rootlengthLandD_prop[layer] = (maxRD-sitec->soillayer_depth[layer-1]) / maxRD;
+				else
+					epv->rootlengthLandD_prop[layer] = 0;
+			}
+			 
+		}
+		else
+			epv->rootlengthLandD_prop[layer]   = 0;
+		
+		RLprop_sum0 += epv->rootlengthLandD_prop[layer];
+	}
+
+	if ((epv->n_maxrootlayers && fabs(1-RLprop_sum0) > CRIT_PREC) || (!epv->n_maxrootlayers && RLprop_sum0 != 0)) 
+	{
+		printf("\n");
+		printf("ERROR in multilayer_rootdepth: sum of soillayer_RZportion is 0.0\n");
+		errorCode=1;
 	}
 
 	if (RLprop_sum1 == 0) 
 	{
-		epv->rootlength_prop[epv->germ_layer] = 1;
+		if (epv->rootdepth)
+		{
+			printf("\n");
+			printf("ERROR in multilayer_rootdepth: sum of soillayer_RZportion is 0.0\n");
+			errorCode=1;
+		}
 	}
 
 	/* correction */
@@ -272,7 +295,7 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 		{
 			printf("\n");
 			printf("ERROR in multilayer_rootdepth: sum of soillayer_RZportion is not equal to 1.0\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 	
@@ -291,20 +314,15 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 	}
 	else
 	{
-		if (PLT->PLT_num)
-		{
-			epv->plant_height = pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantheight_par1),epc->plantheight_par2);
-		}
-		else
-		{
-			epv->plant_height = 0.12*epv->proj_lai + 0.15;	
-		}
+		
+		epv->plant_height = epc->max_plant_height * pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantheight_par1),epc->plantheight_par2);
+		
 	}
 	if (epv->plant_height > epc->max_plant_height) epv->plant_height = epc->max_plant_height;
 
 	
 
 
-	return(errflag);
+	return(errorCode);
 }
 

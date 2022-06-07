@@ -3,10 +3,10 @@ sitec_init.c
 Initialize the site physical constants for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -24,11 +24,11 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_func.h"
 
-int sitec_init(file init, siteconst_struct* sitec)
+int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl)
 {
 	/* reads the site physical constants from *.init */ 
 
-	int errflag=0;
+	int errorCode=0;
 
 	int layer;
 	char key[] = "SITE";
@@ -40,61 +40,69 @@ int sitec_init(file init, siteconst_struct* sitec)
 	READING INPUT DATA */
 
 	/* first scan keyword to ensure proper *.init format */ 
-	if (!errflag && scan_value(init, keyword, 's'))
+	if (!errorCode && scan_value(init, keyword, 's'))
 	{
 		printf("ERROR reading keyword, sitec_init()\n");
-		errflag=207;
+		errorCode=207;
 	}
-	if (!errflag && strcmp(keyword,key))
+	if (!errorCode && strcmp(keyword,key))
 	{
 		printf("Expecting keyword --> %s in %s\n",key,init.name);
-		errflag=207;
+		errorCode=207;
 	}
 
 
 	/* other site data - elev, lat, alb */
-	if (!errflag && scan_value(init, &sitec->elev, 'd'))
+	if (!errorCode && scan_value(init, &sitec->elev, 'd'))
 	{
 		printf("ERROR reading elevation, sitec_init()\n");
-		errflag=20701;
+		errorCode=20701;
 	}
-	if (!errflag && scan_value(init, &sitec->lat, 'd'))
+	if (!errorCode && scan_value(init, &sitec->lat, 'd'))
 	{
 		printf("ERROR reading site latitude, sitec_init()\n");
-		errflag=20702;
+		errorCode=20702;
 	}
-	if (!errflag && scan_value(init, &sitec->sw_alb, 'd'))
+	/* In southen hemisphere: year from 1th of July - last simulation year is truncated year */
+	if (sitec->lat < 0)
+	{
+		ctrl->south_shift = 183;
+	}
+	else
+		ctrl->south_shift = 0;
+
+	if (!errorCode && scan_value(init, &sitec->albedo_sw, 'd'))
 	{
 		printf("ERROR reading shortwave albedo, sitec_init()\n");
-		errflag=20703;
+		errorCode=20703;
 	}
 	
 
 	/* FIRST APPROXIMATION to initalize multilayer soil temperature -> mean_surf_air_temp [Celsius] */
-	if (!errflag && scan_value(init, &sitec->tair_annavg, 'd'))
+	if (!errorCode && scan_value(init, &sitec->tair_annavg, 'd'))
 	{
 		printf("ERROR reading tair_annavg, sitec_init()\n");
-		errflag=20704;
+		errorCode=20704;
 	}
 
-	if (!errflag && scan_value(init, &sitec->tair_annrange, 'd'))
+	if (!errorCode && scan_value(init, &sitec->tair_annrange, 'd'))
 	{
 		printf("ERROR reading tair_annrange, sitec_init()\n");
-		errflag=20705;
+		errorCode=20705;
 	}
 	
-	if (!errflag && scan_value(init, &sitec->NdepNH4_coeff, 'd'))
+	if (!errorCode && scan_value(init, &sitec->NdepNH4_coeff, 'd'))
 	{
 		printf("ERROR reading NdepNH4_coeff: sitec_init()\n");
-		errflag=20706;
+		errorCode=20706;
 	}
 
 
 	/* CONTROL to avoid negative meteorological data */
- 	if (sitec->sw_alb < 0 || sitec->NdepNH4_coeff < 0)
+ 	if (sitec->albedo_sw < 0 || sitec->NdepNH4_coeff < 0)
 	{
 		printf("ERROR in site data: swalb and NdepNH4_coeff must be positive\n");
-		errflag=20707;
+		errorCode=20707;
 	}
 
 	
@@ -132,7 +140,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 	}
 	
 	
- 	return (errflag);
+ 	return (errorCode);
 }
 
 

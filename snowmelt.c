@@ -3,10 +3,10 @@ snowmelt.c
 daily snowmelt and sublimation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -27,7 +27,7 @@ int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww)
 	/* temperature and radiation snowmelt, 
 	from Joseph Coughlan PhD thesis, 1991 */
 
-	int errflag=0;
+	int errorCode=0;
 	double rn;								/* (kJ/m2/d) incident radiation */
 	double melt, tmelt, rmelt, rsub;
 
@@ -57,5 +57,5 @@ int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww)
 		wf->snoww_subl = rsub;
 	}	
 	
-	return (errflag);
+	return (errorCode);
 }

@@ -6,10 +6,10 @@ end of the daily allocation function, in order to allow competition
 between microbes and plants for available N.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -25,17 +25,19 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
+
 int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, const cstate_struct* cs, const nstate_struct* ns, 
 	       epvar_struct* epv, cflux_struct* cf, nflux_struct* nf, ntemp_struct* nt)
 
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 	double t_scalar, w_scalar, z_scalar;
 	double rate_scalar = 0;
 	double rate_scalar_total = 0;
+	double rate_scalar_avg = 0;
 	double tk, tsoil;
-	double minvwc, maxvwc, optvwc, vwc;
+	double minvwc, maxvwc, opt1vwc, opt2vwc, vwc;
 	double rfl1s1, rfl2s2,rfl4s3,rfs1s2,rfs2s3,rfs3s4;
 	double kl1_base,kl2_base,kl4_base,ks1_base,ks2_base,ks3_base,ks4_base,kfrag_base;
 	double kl1,kl2,kl4,ks1,ks2,ks3,ks4,kfrag;
@@ -46,7 +48,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 	double pmnf_l1s1,pmnf_l2s2,pmnf_l4s3,pmnf_s1s2,pmnf_s2s3,pmnf_s3s4,pmnf_s4;
 	double potential_immob,mineralized;
 	double ratio;
-	double rate_scalar_avg;
+
 
 	/* calculate the C and N content in multilayer soil: layer by layer */
 	double litr1c, litr2c, litr3c, litr4c, soil1c, soil2c, soil3c, soil4c, cwdc; 
@@ -56,15 +58,21 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 	double cwdn_to_litr2n, cwdn_to_litr3n , cwdn_to_litr4n;
 
 	/* empirical estimation of CH4 flux */
-	double BD, CH4_flux;
+	double CH4_flux;
 
+	
 	/* initialize partial carbon and nitrogen content in litter and soil pool */
 	litr1c=litr2c=litr3c=litr4c=soil1c=soil2c=soil3c=soil4c=0;
 	litr1n=litr2n=litr3n=litr4n=soil1n=soil2n=soil3n=soil4n=0;
 
 	rate_scalar_avg=0;
 
+	cf->cwdc_to_litr2c_total = 0;					
+	cf->cwdc_to_litr3c_total = 0;					
+	cf->cwdc_to_litr4c_total = 0;	
 
+	epv->grossMINER_total = 0;
+	epv->potIMMOB_total = 0;;
 
 	/* 1. calculate the rate constant scalar in multilayer soil: layer by layer  */
 	for (layer=0; layer < N_SOILLAYERS; layer++)
@@ -76,8 +84,8 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		pmnf_l1s1=pmnf_l2s2=pmnf_l4s3=pmnf_s1s2=pmnf_s2s3=pmnf_s3s4=pmnf_s4=0.0;
 		cwdc_to_litr2c=cwdc_to_litr3c =cwdc_to_litr4c=cwdn_to_litr2n=cwdn_to_litr3n =cwdn_to_litr4n=0;
 
-		tsoil = metv->tsoil[layer];
-
+		tsoil = metv->tsoil[layer]; 
+	
 		/* 1.1: calculate the rate constant scalar for soil temperature,
 		assuming that the base rate constants are assigned for non-moisture
 		limiting conditions at 25 C. The function used here is taken from
@@ -93,16 +101,11 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		}
 		else
 		{
-			if (tsoil < 25)
-			{
-				tk = tsoil + 273.15;
-				t_scalar = exp(308.56*((1.0/71.02)-(1.0/(tk-227.13))));
-			}
-			else // !!!!!!!!!!!!! NEW BUG FIX  !!!!!!!!!!!!!!!!
-				t_scalar = 1;
+			tk = tsoil + 273.15;
+			t_scalar = exp(308.56*((1.0/71.02)-(1.0/(tk-227.13))));
 			
 		}
-		
+
 		/* 1.2: calculate the rate constant scalar for soil water content.
 		Uses the log relationship with water potential given in
 		Andren, O., and K. Paustian, 1987. Barley straw decomposition in the field:
@@ -112,50 +115,62 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		and soil moisture. Soil Biol. Biochem., 15(4):447-453.
 		*/
 		/* set the maximum and minimum values for water content limits (m3/m3) */
+
 		minvwc = sprop->vwc_hw[layer];
 		maxvwc = sprop->vwc_sat[layer];
-		optvwc = epv->vwc_crit1[layer]; 
-		vwc    = epv->vwc[layer];
+		opt1vwc = sprop->vwc_fc[layer];
+		opt2vwc = epv->vwc_crit2[layer]; 
 
+		vwc    = epv->vwc[layer];
+	
 		if (vwc < minvwc)
 		{
-			/* no decomp below the minimum soil water potential and at saturation*/
+			/* no decomp below  hygroscopic water */
 			w_scalar = 0.0;
 		}
 		else
 		{
-			/* decreasing decomp near to total saturation*/
-			if (vwc >= optvwc) 
+			/* increasing decomp near to field capacity */
+			if (vwc < opt2vwc) 
 			{
-				w_scalar = (maxvwc - vwc) / (maxvwc - optvwc);
+				/* unlimited decomp between optimal VWC values */
+				if (vwc < opt1vwc)
+					w_scalar = (vwc - minvwc) / (opt1vwc - minvwc);	
+				else
+					w_scalar = 1;	
+			}
+			else
+			{
+				/* decreasing decomp near to total saturation*/
+				w_scalar = (maxvwc - vwc) / (maxvwc - opt2vwc);
 
 				/* lower limit for saturation: m_fullstress2 */
-				if (w_scalar < epc->m_fullstress2) w_scalar = epc->m_fullstress2;
-			}
-			else w_scalar = (vwc - minvwc) / (optvwc - minvwc);		
+				if (w_scalar < epc->m_fullstress2) w_scalar = epc->m_fullstress2;}
 		}
-
+		
+	
 		/* CONTROL - w_scalar must be grater than 0 */
-		if (w_scalar < 0)
+		if (w_scalar < 0 || w_scalar > 1)
 		{
 			printf("\n");
  			printf("ERROR in w_scalar calculation in decomp.c\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 
 		/* 1.3: depth dependence of decompostion rate */
 		z_scalar = exp(-1*(sitec->soillayer_midpoint[layer] / sprop->efolding_depth));
 
-		
-		/* 1.4: calculate the final rate scalar as the product of the temperature andwater scalars */
+	
+		/* 1.4: calculate the final rate scalar as the product of the temperature water and depth scalars */
 		rate_scalar				= w_scalar * t_scalar * z_scalar;
-		rate_scalar_total       += rate_scalar;
+		
+		rate_scalar_total       += rate_scalar; 
 
 		epv->t_scalar[layer]	= t_scalar;
 		epv->w_scalar[layer]	= w_scalar;
 		epv->rate_scalar[layer] = rate_scalar;
-		rate_scalar_avg        += rate_scalar * (sitec->soillayer_thickness[layer]/sitec->soillayer_depth[layer-1]);
+		rate_scalar_avg        += rate_scalar * (sitec->soillayer_thickness[layer]/sitec->soillayer_depth[N_SOILLAYERS-1]);
 
 
 		epv->rate_scalar_avg = rate_scalar_avg;
@@ -184,10 +199,10 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		cn_l1 = litr1c/litr1n;
 		cn_l2 = litr2c/litr2n;
 		cn_l4 = litr4c/litr4n;
-		cn_s1 = SOIL1_CN;
-		cn_s2 = SOIL2_CN;
-		cn_s3 = SOIL3_CN;
-		cn_s4 = SOIL4_CN;
+		cn_s1 = sprop->soil1_CN;
+		cn_s2 = sprop->soil2_CN;
+		cn_s3 = sprop->soil3_CN;
+		cn_s4 = sprop->soil4_CN;
 		
 		/* 3. respiration fractions for fluxes between compartments */
 		rfl1s1 = sprop->rfl1s1;
@@ -202,10 +217,10 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		kl1_base	= sprop->kl1_base;   /* labile litter pool */
 		kl2_base	= sprop->kl2_base;   /* cellulose litter pool */
 		kl4_base	= sprop->kl4_base;   /* lignin litter pool */
-		ks1_base	= sprop->ks1_base;   /* fast microbial recycling pool */
-		ks2_base	= sprop->ks2_base;   /* medium microbial recycling pool */
-		ks3_base	= sprop->ks3_base;   /* slow microbial recycling pool */
-		ks4_base	= sprop->ks4_base;   /* recalcitrant SOM (humus) pool */
+		ks1_base	= sprop->ks1_base;   /* labile SOM pool  */
+		ks2_base	= sprop->ks2_base;   /* fast SOM pool  */
+		ks3_base	= sprop->ks3_base;   /* slow SOM pool  */
+		ks4_base	= sprop->ks4_base;   /* stable SOM pool  */
 		kfrag_base	= sprop->kfrag_base; /* physical fragmentation of coarse woody debris */
 		kl1 = kl1_base * epv->rate_scalar[layer];
 		kl2 = kl2_base * epv->rate_scalar[layer];
@@ -219,6 +234,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		/* woody vegetation type fluxes */
 		if (epc->woody)
 		{
+			
 			/* calculate the flux from CWD to litter lignin and cellulose
 			compartments, due to physical fragmentation */
 			cwdc_loss	   = kfrag * cwdc;
@@ -236,7 +252,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		soil compartments. These will be ammended for N limitation if it turns
 		out the potential gross immobilization is greater than potential gross
 		mineralization. */
-		/* 1. labile litter to fast microbial recycling pool */
+		/* 1. labile litter to labile SOM pool  */
 		if (litr1c > 0)
 		{
 			plitr1c_loss = kl1 * litr1c;
@@ -245,7 +261,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 			pmnf_l1s1 = (plitr1c_loss * (1.0 - rfl1s1 - (ratio)))/cn_s1;
 		}
 		
-		/* 2. cellulose litter to medium microbial recycling pool */
+		/* 2. cellulose litter to fast SOM pool  */
 		if (litr2c > 0)
 		{
 			plitr2c_loss = kl2 * litr2c;
@@ -254,7 +270,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 			pmnf_l2s2 = (plitr2c_loss * (1.0 - rfl2s2 - (ratio)))/cn_s2;
 		}
 		
-		/* 3. lignin litter to slow microbial recycling pool */
+		/* 3. lignin litter to slow SOM pool  */
 		if (litr4c > 0)
 		{
 			plitr4c_loss = kl4 * litr4c;
@@ -263,28 +279,28 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 			pmnf_l4s3 = (plitr4c_loss * (1.0 - rfl4s3 - (ratio)))/cn_s3;
 		}
 		
-		/* 4. fast microbial recycling pool to medium microbial recycling pool */
+		/* 4. labile SOM pool to fast SOM pool  */
 		if (soil1c > 0)
 		{
 			psoil1c_loss = ks1 * soil1c;
 			pmnf_s1s2 = (psoil1c_loss * (1.0 - rfs1s2 - (cn_s2/cn_s1)))/cn_s2;
 		}
 		
-		/* 5. medium microbial recycling pool to slow microbial recycling pool */
+		/* 5. fast SOM pool to slow SOM pool */
 		if (soil2c > 0)
 		{
 			psoil2c_loss = ks2 * soil2c;
 			pmnf_s2s3 = (psoil2c_loss * (1.0 - rfs2s3 - (cn_s3/cn_s2)))/cn_s3;
 		}
 		
-		/* 6. slow microbial recycling pool to recalcitrant SOM pool */
+		/* 6. slow SOM pool to stable SOM pool */
 		if (soil3c > 0)
 		{
 			psoil3c_loss = ks3 * soil3c;
 			pmnf_s3s4 = (psoil3c_loss * (1.0 - rfs3s4 - (cn_s4/cn_s3)))/cn_s4;
 		}
 		
-		/* 7. mineralization of recalcitrant SOM */
+		/* 7. mineralization of stable SOM */
 		if (soil4c > 0)
 		{
 			psoil4c_loss = ks4 * soil4c;
@@ -310,21 +326,14 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		mineralized += -pmnf_s4;
 
 		/* CH4 FLUX - only from the first layer */
-		
-		BD  = sprop->BD[layer];
-		if (!errflag && CH4flux_estimation(sprop, BD, epv->vwc[layer], metv->tsoil[layer], &CH4_flux))
+		if (!errorCode && CH4flux_estimation(sprop, layer, epv->vwc[layer], metv->tsoil[layer], &CH4_flux))
 		{
 			printf("\n");
 			printf("ERROR: CH4flux_estimation() in decomp.c\n");
-			errflag=1;
+			errorCode=1;
 		}	
 		cf->CH4_flux_soil += CH4_flux;
 			
-
-
-
-
-
 
 		/* save the potential fluxes until plant demand has been assessed,
 		to allow competition between immobilization fluxes and plant growth
@@ -345,26 +354,37 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		nt->psoil3c_loss[layer]		= psoil3c_loss;
 		nt->pmnf_s3s4[layer]		= pmnf_s3s4;
 		nt->psoil4c_loss[layer]		= psoil4c_loss;
+		nt->pmnf_s4[layer]		    = pmnf_s4;
 		nt->kl4[layer]				= kl4;
 
-	
 
-		/* store the day's gross mineralization */
-		epv->daily_gross_nmin[layer] = mineralized;
+		/* store the mineralization-immobilization-litter fluxes */
+		epv->grossMINER[layer] = mineralized;
+		epv->potIMMOB[layer]   = potential_immob;
+		epv->grossMINER_total += mineralized;
+		epv->potIMMOB_total	  += potential_immob;
 
 		cf->cwdc_to_litr2c[layer]  = cwdc_to_litr2c;
 		cf->cwdc_to_litr3c[layer]  = cwdc_to_litr3c;
 		cf->cwdc_to_litr4c[layer]  = cwdc_to_litr4c;
 
-
 		nf->cwdn_to_litr2n[layer]  = cwdn_to_litr2n;
 		nf->cwdn_to_litr3n[layer]  = cwdn_to_litr3n;
 		nf->cwdn_to_litr4n[layer]  = cwdn_to_litr4n;
 
+		cf->cwdc_to_litr2c_total += cf->cwdc_to_litr2c[layer];					
+		cf->cwdc_to_litr3c_total += cf->cwdc_to_litr3c[layer];					
+		cf->cwdc_to_litr4c_total += cf->cwdc_to_litr4c[layer];	
 
-	}
+		nf->cwdn_to_litr2n_total += nf->cwdn_to_litr2n[layer];                
+		nf->cwdn_to_litr3n_total += nf->cwdn_to_litr3n[layer];              
+		nf->cwdn_to_litr4n_total += nf->cwdn_to_litr4n[layer];              
+
+	
+}
 	
 	
-	return (errflag);
+	
+	return (errorCode);
 }
 

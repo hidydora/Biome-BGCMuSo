@@ -3,10 +3,10 @@ annual_rates.c
 Functions called annually from bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -24,17 +24,17 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 {
-	int errflag=0;
+	int errorCode=0;
 	
 	if (epc->evergreen)
 	{
 		/* leaf and fineroot litterfall rates */
-		epv->day_leafc_litfall_increment = epv->annmax_leafc            * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-		epv->day_frootc_litfall_increment = epv->annmax_frootc          * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-		epv->day_fruitc_litfall_increment = epv->annmax_fruitc          * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-		epv->day_softstemc_litfall_increment = epv->annmax_softstemc    * epc->nonwoody_turnover / NDAYS_OF_YEAR;
-		epv->day_livestemc_turnover_increment = epv->annmax_livestemc   * epc->woody_turnover / NDAYS_OF_YEAR;
-		epv->day_livecrootc_turnover_increment = epv->annmax_livecrootc * epc->woody_turnover / NDAYS_OF_YEAR;
+		epv->day_leafc_litfall_increment = epv->annmax_leafc            * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		epv->day_frootc_litfall_increment = epv->annmax_frootc          * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		epv->day_fruitc_litfall_increment = epv->annmax_fruitc          * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		epv->day_softstemc_litfall_increment = epv->annmax_softstemc    * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		epv->day_livestemc_turnover_increment = epv->annmax_livestemc   * epc->woody_turnover / nDAYS_OF_YEAR;
+		epv->day_livecrootc_turnover_increment = epv->annmax_livecrootc * epc->woody_turnover / nDAYS_OF_YEAR;
 		
 		epv->annmax_leafc = 0.0;
 		epv->annmax_frootc = 0.0;
@@ -59,5 +59,5 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 	}
 
 	
-	return (errflag);
+	return (errorCode);
 }

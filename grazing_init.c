@@ -3,8 +3,8 @@ grazing_init.c
 read grazinz information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -29,7 +29,7 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 	char GRZ_filename[STRINGSIZE];
 	file GRZ_file;
 
-	int errflag=0;
+	int errorCode=0;
 	int okFILE = 1;
 
 	int mgmread;
@@ -51,8 +51,8 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 	double* weight_LSU;							
 	double* stocking_rate_array;				
 	double* DMintake_array;						
-	double* prop_DMintake2excr_array;			
-	double* prop_excr2litter_array;			
+	double* DMintake2excr_array;			
+	double* excr2litter_array;			
 	double* DM_Ccontent_array;				
 	double* EXCR_Ncontent_array;				
 	double* EXCR_Ccontent_array;				
@@ -71,29 +71,29 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 	********************************************************************/
 	
 	/* header reading */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword, grazing_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	/* keyword control */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword, grazing_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 	
 	/* number of management action */
-	if (!errflag && scan_value(init, &GRZ->GRZ_num, 'i'))
+	if (!errorCode && scan_value(init, &GRZ->GRZ_num, 'i'))
 	{
 		printf("ERROR reading number of grazing in GRAZING section\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 
 	/* if GRZ_num > 0 -> grazing */
-	if (!errflag && GRZ->GRZ_num)
+	if (!errorCode && GRZ->GRZ_num)
 	{
 		/* allocate space for the temporary MGM array */ 
 		GRZstart_year_array       = (int*) malloc(maxGRZ_num*sizeof(double));  
@@ -106,8 +106,8 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 		weight_LSU                = (double*) malloc(maxGRZ_num*sizeof(double)); 
 		stocking_rate_array       = (double*) malloc(maxGRZ_num*sizeof(double)); 
 		DMintake_array            = (double*) malloc(maxGRZ_num*sizeof(double));
-		prop_DMintake2excr_array  = (double*) malloc(maxGRZ_num*sizeof(double)); 
-		prop_excr2litter_array    = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		DMintake2excr_array       = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		excr2litter_array         = (double*) malloc(maxGRZ_num*sizeof(double)); 
 		DM_Ccontent_array         = (double*) malloc(maxGRZ_num*sizeof(double)); 
 		EXCR_Ncontent_array       = (double*) malloc(maxGRZ_num*sizeof(double));
 		EXCR_Ccontent_array       = (double*) malloc(maxGRZ_num*sizeof(double)); 
@@ -116,10 +116,11 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 		EFman_CH4                 = (double*) malloc(maxGRZ_num*sizeof(double));
 		EFfer_CH4                 = (double*) malloc(maxGRZ_num*sizeof(double));
 		
-		if (!errflag && scan_value(init, GRZ_filename, 's'))
+
+		if (!errorCode && scan_value(init, GRZ_filename, 's'))
 		{
 			printf("ERROR reading grazing calculating file\n");
-			errflag=1;
+			errorCode=1;
 		}
 		
 		strcpy(GRZ_file.name, GRZ_filename);
@@ -128,18 +129,18 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 		if (file_open(&GRZ_file,'i',1))
 		{
 			printf("ERROR opening GRZ_file, grazing_int.c\n");
-			errflag=1;
+			errorCode=1;
 			okFILE=0;
 		}
 
-		if (!errflag && scan_value(GRZ_file, header, 's'))
+		if (!errorCode && scan_value(GRZ_file, header, 's'))
 		{
 			printf("ERROR reading header for GRAZING section in MANAGMENET file\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 	
-		while (!errflag && !(mgmread = scan_array (GRZ_file, &p1, 'i', 0, 0)))
+		while (!errorCode && !(mgmread = scan_array (GRZ_file, &p1, 'i', 0, 0)))
 		{
 			n_GRZparam = 22;
 			mgmread = fscanf(GRZ_file.ptr, "%c%d%c%d%d%c%d%c%d%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&tempvar,&p5,&tempvar,&p6, 
@@ -147,23 +148,24 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 			if (mgmread != n_GRZparam)
 			{
 				printf("ERROR reading GRAZING parameters from GRAZING file  file\n");
-				errflag=1;
+				errorCode=1;
 			}
-			
+
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
+						
 				GRZstart_year_array[nmgm]       = p1;  
 				GRZstart_month_array[nmgm]      = p2; 
 				GRZstart_day_array[nmgm]        = p3; 
 				GRZend_year_array[nmgm]         = p4;  
 				GRZend_month_array[nmgm]        = p5; 
 				GRZend_day_array[nmgm]          = p6; 
-				trampling_effect[nmgm]          = p7; 
-				weight_LSU[nmgm]                = p8; 
-				stocking_rate_array[nmgm]       = p9; 
-				DMintake_array[nmgm]            = p10;
-				prop_DMintake2excr_array[nmgm]  = p11; 
-				prop_excr2litter_array[nmgm]    = p12; 
+				weight_LSU[nmgm]                = p7; 
+				stocking_rate_array[nmgm]       = p8; 
+				DMintake_array[nmgm]            = p9;
+				trampling_effect[nmgm]          = p10; 
+				DMintake2excr_array[nmgm]       = p11; 
+				excr2litter_array[nmgm]         = p12; 
 				DM_Ccontent_array[nmgm]         = p13; 
 				EXCR_Ncontent_array[nmgm]       = p14; 
 				EXCR_Ccontent_array[nmgm]       = p15; 
@@ -171,6 +173,7 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 				EFman_N2O[nmgm]                 = p17; 
 				EFman_CH4[nmgm]                 = p18; 
 				EFfer_CH4[nmgm]                 = p19; 
+				
 	
 				nmgm += 1;
 			}
@@ -191,8 +194,8 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 		GRZ->weight_LSU                = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
 		GRZ->stocking_rate_array       = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
 		GRZ->DMintake_array            = (double*) malloc(GRZ->GRZ_num*sizeof(double));
-		GRZ->prop_DMintake2excr_array  = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
-		GRZ->prop_excr2litter_array    = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->DMintake2excr_array       = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->excr2litter_array         = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
 		GRZ->DM_Ccontent_array         = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
 		GRZ->EXCR_Ncontent_array       = (double*) malloc(GRZ->GRZ_num*sizeof(double));
 		GRZ->EXCR_Ccontent_array       = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
@@ -213,8 +216,8 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 			GRZ->weight_LSU[nmgm]                = weight_LSU[nmgm]  ; 
 			GRZ->stocking_rate_array[nmgm]       = stocking_rate_array[nmgm] ; 
 			GRZ->DMintake_array[nmgm]            = DMintake_array[nmgm] ;
-			GRZ->prop_DMintake2excr_array[nmgm]  = prop_DMintake2excr_array[nmgm] ; 
-			GRZ->prop_excr2litter_array[nmgm]    = prop_excr2litter_array[nmgm]; 
+			GRZ->DMintake2excr_array[nmgm]       = DMintake2excr_array[nmgm] ; 
+			GRZ->excr2litter_array[nmgm]         = excr2litter_array[nmgm]; 
 			GRZ->DM_Ccontent_array[nmgm]         = DM_Ccontent_array[nmgm]  ; 
 			GRZ->EXCR_Ncontent_array[nmgm]       = EXCR_Ncontent_array[nmgm] ; 
 			GRZ->EXCR_Ccontent_array[nmgm]       = EXCR_Ccontent_array[nmgm] ; 
@@ -237,8 +240,8 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 		free(weight_LSU);							
 		free(stocking_rate_array);				
 		free(DMintake_array);						
-		free(prop_DMintake2excr_array);			
-		free(prop_excr2litter_array);			
+		free(DMintake2excr_array);			
+		free(excr2litter_array);			
 		free(DM_Ccontent_array);				
 		free(EXCR_Ncontent_array);				
 		free(EXCR_Ccontent_array);				
@@ -251,10 +254,10 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 	else
 	{
 		/* reading the line of management file into a temporary variable */
-		if (!errflag && scan_value(init, header, 's'))
+		if (!errorCode && scan_value(init, header, 's'))
 		{
 			printf("ERROR reading line of management file (in case of no management)\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 
@@ -263,6 +266,6 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 	GRZ->mgmdGRZ = 0;
 
 	
-	return (errflag);	
+	return (errorCode);	
 
 }

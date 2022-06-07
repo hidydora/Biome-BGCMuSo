@@ -3,7 +3,7 @@ restart_init.c
 Initialize the simulation restart parameters
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -23,7 +23,7 @@ Missoula, MT 59812
 
 int restart_init(file init, restart_ctrl_struct* restart)
 {
-	int errflag=0;
+	int errorCode=0;
 	char key1[] = "RESTART";
 	char keyword[STRINGSIZE];
 	char junk[STRINGSIZE];
@@ -36,38 +36,38 @@ int restart_init(file init, restart_ctrl_struct* restart)
 	********************************************************************/
 	
 	/* scan for the restart block keyword, exit if not next */
-	if (!errflag && scan_value(init, keyword, 's'))
+	if (!errorCode && scan_value(init, keyword, 's'))
 	{
 		printf("ERROR reading keyword for restart data\n");
-		errflag=203;
+		errorCode=203;
 	}
-	if (!errflag && strcmp(keyword, key1))
+	if (!errorCode && strcmp(keyword, key1))
 	{
 		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		errflag=203;
+		errorCode=203;
 	}
 	
 	/* check for input restart file */
-	if (!errflag && scan_value(init, &restart->read_restart, 'i'))
+	if (!errorCode && scan_value(init, &restart->read_restart, 'i'))
 	{
 		printf("ERROR reading input restart flag\n");
-		errflag=20301;
+		errorCode=20301;
 	}
 	/* check for output restart file */
-	if (!errflag && scan_value(init, &restart->write_restart, 'i'))
+	if (!errorCode && scan_value(init, &restart->write_restart, 'i'))
 	{
 		printf("ERROR reading output restart flag\n");
-		errflag=20302;
+		errorCode=20302;
 	}
 	
 	/* if using an input restart file, open it, otherwise
 	discard the next line of the ini file */
-	if (!errflag && restart->read_restart)
+	if (!errorCode && restart->read_restart)
 	{
     	if (scan_open(init,&(restart->in_restart),'r',1)) 
 		{
 			printf("ERROR opening input restart file\n");
-			errflag=20303;
+			errorCode=20303;
 		}
 	}
 	else
@@ -75,17 +75,17 @@ int restart_init(file init, restart_ctrl_struct* restart)
 		if (scan_value(init, junk, 's'))
 		{
 			printf("ERROR scanning input restart filename\n");
-			errflag=20304;
+			errorCode=20304;
 		}
 	}
 	/* if using an output restart file, open it, otherwise
 	discard the next line of the ini file */
-	if (!errflag && restart->write_restart)
+	if (!errorCode && restart->write_restart)
 	{
     	if (scan_open(init,&(restart->out_restart),'w',1)) 
 		{
 			printf("ERROR opening output restart file\n");
-			errflag=20305;
+			errorCode=20305;
 		}
 	}
 	else
@@ -93,9 +93,9 @@ int restart_init(file init, restart_ctrl_struct* restart)
 		if (scan_value(init, junk, 's'))
 		{
 			printf("ERROR scanning output restart filename\n");
-			errflag=20306;
+			errorCode=20306;
 		}
 	}
 	
-	return (errflag);
+	return (errorCode);
 }

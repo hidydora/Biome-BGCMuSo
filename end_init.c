@@ -3,7 +3,7 @@ end_init.c
 Final housekeeping for initialization file reading 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -20,7 +20,7 @@ Missoula, MT 59812
 
 int end_init(file init)
 {
-	int errflag=0;
+	int errorCode=0;
 	char key1[] = "END_INIT";
 	char keyword[STRINGSIZE];
 	
@@ -32,24 +32,24 @@ int end_init(file init)
 	********************************************************************/
 	
 	/* scan for the end keyword, exit if not next */
-	if (!errflag && scan_value(init, keyword, 's'))
+	if (!errorCode && scan_value(init, keyword, 's'))
 	{
 		printf("ERROR reading keyword for end of initialization file\n");
 		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
 		printf("This indicates that you have the wrong number of lines\n");
 		printf("of information in your initialization file.\n");
 		printf("Refer to documentation to determine proper format.\n");
-		errflag=217;
+		errorCode=217;
 	}
-	if (!errflag && strcmp(keyword, key1))
+	if (!errorCode && strcmp(keyword, key1))
 	{
 		printf("ERROR reading keyword for end of initialization file\n");
 		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
 		printf("This indicates that you have the wrong number of lines\n");
 		printf("of information in your initialization file.\n");
 		printf("Refer to documentation to determine proper format.\n");
-		errflag=217;
+		errorCode=217;
 	}
 	
-	return (errflag);
+	return (errorCode);
 }

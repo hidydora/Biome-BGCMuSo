@@ -3,8 +3,8 @@ thinning_init.c
 read thinning information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -30,7 +30,7 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 	char THN_filename[STRINGSIZE];
 	file THN_file;
 
-	int errflag=0;
+	int errorCode=0;
 	int okFILE = 1;
 
 	int mgmread;
@@ -60,30 +60,30 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 	********************************************************************/
 	
 	/* header reading */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword, thinning_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	/* keyword control */
-	if (!errflag && scan_value(init, header, 's'))
+	if (!errorCode && scan_value(init, header, 's'))
 	{
 		printf("ERROR reading keyword, thinning_init()\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	
 	/* number of management action */
-	if (!errflag && scan_value(init, &THN->THN_num, 'i'))
+	if (!errorCode && scan_value(init, &THN->THN_num, 'i'))
 	{
 		printf("ERROR reading number of thinning in THINNING section\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 
 	/* if THN_num > 0 -> thinning */
-	if (!errflag && THN->THN_num)
+	if (!errorCode && THN->THN_num)
 	{
 		/* allocate space for the temporary MGM array */
 		THNyear_array         = (int*) malloc(maxTHN_num*sizeof(double));  
@@ -94,10 +94,10 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 		transpcoeff_w_array   = (double*) malloc(maxTHN_num*sizeof(double)); 
 		transpcoeff_nw_array  = (double*) malloc(maxTHN_num*sizeof(double)); 
 		
-		if (!errflag && scan_value(init, THN_filename, 's'))
+		if (!errorCode && scan_value(init, THN_filename, 's'))
 		{
 			printf("ERROR reading thinning calculating file\n");
-			errflag=1;
+			errorCode=1;
 		}
 		
 		strcpy(THN_file.name, THN_filename);
@@ -106,25 +106,25 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 		if (file_open(&THN_file,'i',1))
 		{
 			printf("ERROR opening THN_file, thinning_int.c\n");
-			errflag=1;
+			errorCode=1;
 			okFILE=0;
 		}
 
-		if (!errflag && scan_value(THN_file, header, 's'))
+		if (!errorCode && scan_value(THN_file, header, 's'))
 		{
 			printf("ERROR reading header for THINNING section in MANAGMENET file\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 	
-		while (!errflag && !(mgmread = scan_array (THN_file, &p1, 'i', 0, 0)))
+		while (!errorCode && !(mgmread = scan_array (THN_file, &p1, 'i', 0, 0)))
 		{
 			n_THNparam = 8;
  			mgmread = fscanf(THN_file.ptr, "%c%d%c%d%lf%lf%lf%lf%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&p5,&p6,&p7);
 			if (mgmread != n_THNparam)
 			{
 				printf("ERROR reading THINNING parameters from THINNING file  file\n");
-				errflag=1;
+				errorCode=1;
 			}
 
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
@@ -178,10 +178,10 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 	else
 	{
 		/* reading the line of management file into a temporary variable */
-		if (!errflag && scan_value(init, header, 's'))
+		if (!errorCode && scan_value(init, header, 's'))
 		{
 			printf("ERROR reading line of management file (in case of no management)\n");
-			errflag=1;
+			errorCode=1;
 		}
 	}
 
@@ -191,5 +191,5 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 
 
 	
-	return (errflag);
+	return (errorCode);
 }

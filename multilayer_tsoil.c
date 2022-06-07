@@ -4,8 +4,8 @@ calculation of soil temperature in the different soil layers based on the change
 to top soil layer and based on empirical function of temperature gradient in soil (Zheng et al.1993)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -27,7 +27,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 					 metvar_struct* metv)
 
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer;
 
 	/* effect of air temperature change on top soil temperature */
@@ -70,7 +70,6 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 	tsoil_top_change = (metv->tday - metv->tsoil_surface_pre) * heating_coefficient * effect_of_vegetation;	
 
 
-
 	/* ************************************************- */
 	/* 2. TEMPERATURE OF DEEPER LAYER BASED ON TEMPERATURE GRADIENT BETWEEN SURFACE LAYER AND LOWERMOST LAYER (BELOW 3M) */
 
@@ -111,6 +110,6 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 	metv->tsoil_surface_pre = metv->tsoil_surface;
     metv->tsoil_avg         = tsoil_avg;
 
-	return (errflag);
+	return (errorCode);
 }
 	

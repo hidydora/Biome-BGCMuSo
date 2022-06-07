@@ -4,8 +4,8 @@ Calculating the change in content of soil mineral nitrogen in multilayer soil (p
 depostion and fixing). 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -21,171 +21,227 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_sminn(const epconst_struct* epc, const soilprop_struct* sprop, const epvar_struct* epv, const siteconst_struct* sitec, const cflux_struct* cf, 
-	                 nstate_struct* ns, nflux_struct* nf)
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+
+int multilayer_sminn(const control_struct* ctrl, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, const cflux_struct* cf, 
+	                 epvar_struct* epv, nstate_struct* ns, nflux_struct* nf)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer=0;
-	double NH4_prop, sminn_layer, diffNH4, diffNO3, change_ctrl,sminn_rootzone,layer_prop,net_miner,SOMresp, N2O_coeff_denitr;
-	double p1_pH,p2_pH,p3_pH,p4_pH,pH_scalar;
+	double NH4_prop,SOMresp,sminNO3avail,sminNO3avail_ppm;
+	double pH, WFPS, net_miner,t_scalar, sminNH4avail, N2O_flux_NITRIF,sminNH4_to_nitrif, pH_scalar, wfps_scalar;
+	double weight,g_per_cm3_to_kg_per_m3;
+	double sminn_layer[N_SOILLAYERS];
+	double sminNH4_change[N_SOILLAYERS];
+	double sminNO3_change[N_SOILLAYERS];
+	double sminn_to_soilCTRL, sminn_to_npoolCTRL, ndep_to_sminnCTRL, nfix_to_sminnCTRL;
+	double SOMrespTOTAL,sminNO3_to_denitr,ratioN2_N2O;
+	
+	NH4_prop=net_miner=SOMresp=sminn_to_soilCTRL=sminn_to_npoolCTRL=ndep_to_sminnCTRL=nfix_to_sminnCTRL=0;
+	g_per_cm3_to_kg_per_m3 = 1000;
 
-
-	NH4_prop=sminn_layer=diffNH4=diffNO3=change_ctrl=sminn_rootzone=layer_prop=net_miner=SOMresp=N2O_coeff_denitr=0;
-
-	p1_pH=0.15563;
-	p2_pH=0.97859;
-	p3_pH=2.91355;
-	p4_pH=0.75220;
-
-    
 	/* *****************************************************************************************************
 
-	0.Deposition and fixation
-	1.Plant N uptake from SMINN: sminn_to_npool 
-	2.Immobilization: sminn_to_soil_SUM - due microbial soil processes SMINN is changing in the soil (determined in daily_allocation).
-	3 Mineralization
-	4.Denitrification and Nitrification */
+	1.Deposition and fixation - INPUT
+	2.Plant N uptake from SMINN: sminn_to_npool 
+	3.Immobilization-mineralization: sminn_to_soil_SUM - due microbial soil processes SMINN is changing in the soil (determined in daily_allocation).
+	4. Denitrification and Nitrification */
 
+	/* if no root - no N-fixation */
+	if (epv->n_rootlayers == 0) nf->nfix_to_sminnTOTAL = 0;
 
-	/* 0. calulation of sminn contents in the whole soil */
+	/* SOMrespTOTAL calculation - unit: kgC/ha */
+	SOMrespTOTAL = 0;
+	for (layer = 0; layer < N_SOILLAYERS; layer++) 
+		SOMrespTOTAL += (cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer])* 10000;
+	
+
+	/*-----------------------------------------------------------------------------*/
+	/* Calculations layer by layer */
+
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
+		/*************************************/
+		/* 0: calculation of sminn and NH4 prop in soil layers */
 
-		/*-----------------------------------------------------------------------------*/
-		/* 1.A deposition: only in top soil layer */
-		if (layer == 0) 
-		{
-			ns->sminNH4[0] += nf->ndep_to_sminn * sitec->NdepNH4_coeff;
-			ns->sminNO3[0] += nf->ndep_to_sminn * (1-sitec->NdepNH4_coeff);
+		sminn_layer[layer] = (ns->sminNH4avail[layer] + ns->sminNO3avail[layer]);
 
-			ns->ndep_src     += nf->ndep_to_sminn;
-		}
-
-		/*-----------------------------------------------------------------------------*/
-		/* 1.B fixation:  in root soil layer */
-	
-		ns->sminNH4[layer] += nf->nfix_to_sminn * epv->rootlength_prop[layer];
-		ns->nfix_src       += nf->nfix_to_sminn * epv->rootlength_prop[layer];
-
-	
-		 /*-----------------------------------------------------------------------------*/
-		/* NH4 pool is buffered to represent an exchangeable pool and a pool in solution that is available for plants */
-		if (layer >= epv->germ_layer && layer < epv->n_rootlayers) 
-		{
-			sminn_rootzone     += ns->sminNH4[layer] * sprop->NH4_mobilen_prop + ns->sminNO3[layer] * sprop->NO3_mobilen_prop;
-		}
-	
-		nf->sminn_to_soil_SUM[layer] = nf->sminn_to_soil1n_l1[layer]+nf->sminn_to_soil2n_l2[layer]+nf->sminn_to_soil3n_l4[layer] + 
-			                           nf->sminn_to_soil2n_s1[layer]+nf->sminn_to_soil3n_s2[layer]+nf->sminn_to_soil4n_s3[layer];
-
-	}
-
+		if (sminn_layer[layer]) 
+			NH4_prop   = ns->sminNH4avail[layer] / sminn_layer[layer];
+		else
+			NH4_prop   = sitec->NdepNH4_coeff;
 		
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
-	{
-		/* sminn in the given layer */
-		layer_prop  = 0;
-		NH4_prop    = 0;
-		sminn_layer = (ns->sminNH4[layer] * sprop->NH4_mobilen_prop + ns->sminNO3[layer] * sprop->NO3_mobilen_prop);
-
-		if (sminn_rootzone && layer >= epv->germ_layer && layer < epv->n_rootlayers) 
+		/*********************************************/
+		/* 1. Deposition  only in 0-30 cm, fixation in rooting zone - based on rootlenght proportion */
+		
+		if (layer < 2) 
 		{
-			layer_prop = sminn_layer /sminn_rootzone;
+ 			weight = sitec->soillayer_thickness[layer]/sitec->soillayer_depth[1];
+			nf->ndep_to_sminNH4[layer] = (nf->ndep_to_sminnTOTAL * weight) * sitec->NdepNH4_coeff;
+			nf->ndep_to_sminNO3[layer] = (nf->ndep_to_sminnTOTAL * weight) * (1-sitec->NdepNH4_coeff);
+		}
+		else
+		{
+			nf->ndep_to_sminNH4[layer] = 0;
+			nf->ndep_to_sminNO3[layer] = 0;
 		}
 		
-		if (sminn_layer) NH4_prop   = (ns->sminNH4[layer] * sprop->NH4_mobilen_prop) / sminn_layer;
+		nf->nfix_to_sminNH4[layer] = nf->nfix_to_sminnTOTAL * epv->rootlength_prop[layer];
 
-		/*-----------------------------------------------------------------------------*/
-		/* 2.Plant N uptake from SMINN (only from rootzone) */
-		nf->sminNH4_to_npool[layer]     = (nf->sminn_to_npool)  * layer_prop * NH4_prop;
-		nf->sminNO3_to_npool[layer]     = (nf->sminn_to_npool)  * layer_prop * (1-NH4_prop);
+		ndep_to_sminnCTRL += nf->ndep_to_sminNH4[layer] + nf->ndep_to_sminNO3[layer];
+		nfix_to_sminnCTRL += nf->nfix_to_sminNH4[layer];
+		
+		/*********************************************/
+		/* 2. Immobilization-mineralization fluxes */
 
-		/* 3.Immobilization */ 
 		nf->sminNH4_to_soil_SUM[layer] = nf->sminn_to_soil_SUM[layer] * NH4_prop;
 		nf->sminNO3_to_soil_SUM[layer] = nf->sminn_to_soil_SUM[layer] * (1-NH4_prop);
+		
+		sminn_to_soilCTRL             += nf->sminNH4_to_soil_SUM[layer] + nf->sminNO3_to_soil_SUM[layer];
 
-  		/* 4.Mineralization: nf->soil4n_to_sminNH4[layer] - from recalcitrant SOM pool in daily allocation*/
-	
-		/* 2-4 CONTROL */
-		diffNH4 = ns->sminNH4[layer] * sprop->NH4_mobilen_prop - 
-			      nf->sminNH4_to_npool[layer] - nf->sminNH4_to_soil_SUM[layer] + nf->soil4n_to_sminNH4[layer];
-		diffNO3 = ns->sminNO3[layer] * sprop->NO3_mobilen_prop - 
-			      nf->sminNO3_to_npool[layer] - nf->sminNO3_to_soil_SUM[layer];
-	
-		if (diffNH4 < 0.0)       
-		{	
-			nf->sminNH4_to_soil_SUM[layer]+= diffNH4;
-			nf->sminn_to_soil_SUM[layer]  += diffNH4;
-			ns->nvol_snk                  += diffNH4;	
-		}
+		/*********************************************/
+		/* 3. Plant N uptake  in rootzone */
+		
+		nf->sminNH4_to_npool[layer] = nf->sminn_to_npool[layer] * NH4_prop;
+		nf->sminNO3_to_npool[layer] = nf->sminn_to_npool[layer] * (1-NH4_prop);
+		sminn_to_npoolCTRL         += nf->sminNH4_to_npool[layer] + nf->sminNO3_to_npool[layer];
 
-		if (diffNO3 < 0.0)       
-		{	
-			nf->sminNO3_to_soil_SUM[layer]+= diffNO3;
-			nf->sminn_to_soil_SUM[layer]  += diffNO3;
-			ns->nvol_snk                  += diffNO3;	
-		}
+		/*********************************************/
+		/* 4. Nitrification */
+		
+		if (nf->sminNH4_to_soil_SUM[layer] > 0)
+			net_miner    = nf->soil4n_to_sminNH4[layer];
+		else
+			net_miner    = nf->soil4n_to_sminNH4[layer] - nf->sminNH4_to_soil_SUM[layer];
+		
+	 	WFPS         = epv->WFPS[layer];
+		sminNH4avail = ns->sminNH4avail[layer];
+		t_scalar     = epv->t_scalar[layer];
+		pH           = sprop->pH[layer];
 
-		/* 2-4 STATE UPDATE */
-	
-		ns->sminNH4[layer] = ns->sminNH4[layer] - nf->sminNH4_to_npool[layer] - nf->sminNH4_to_soil_SUM[layer] + nf->soil4n_to_sminNH4[layer];
-		ns->sminNO3[layer] = ns->sminNO3[layer] - nf->sminNO3_to_npool[layer] - nf->sminNO3_to_soil_SUM[layer];
-
-		/* control */
-		if(ns->sminNH4[layer] < 0)
+		if (!errorCode && nitrification(sprop, net_miner,pH,WFPS,t_scalar,sminNH4avail, &pH_scalar, &wfps_scalar, &N2O_flux_NITRIF, &sminNH4_to_nitrif))
 		{
-			if (fabs (ns->sminNH4[layer]) > CRIT_PREC)
-			{
-				printf("\n");
-				printf("FATAL ERROR: negative NH4 pool (multilayer_sminn.c)\n");
-				errflag=1;
-			}
-			else
-			{
-				ns->nvol_snk     += ns->sminNH4[layer];
-				ns->sminNH4[layer] = 0;
+			printf("\n");
+			printf("ERROR in nitrification() for multilayer_sminn.c \n");
+		}	
 
-			}
-
-		}
+		nf->N2O_flux_NITRIF[layer]   =  N2O_flux_NITRIF;
+		nf->sminNH4_to_nitrif[layer] = sminNH4_to_nitrif;
 	
-		if(ns->sminNO3[layer] < 0)
+
+		/*********************************************/
+		/* 5. Denitfirication  */
+
+		sminNO3avail = ns->sminNO3avail[layer] - nf->sminNO3_to_npool[layer];
+		if (nf->sminNO3_to_soil_SUM[layer] > 0) sminNO3avail -= nf->sminNO3_to_soil_SUM[layer];
+
+		sminNO3avail_ppm = sminNO3avail / (sprop->BD[layer] / g_per_cm3_to_kg_per_m3 * sitec->soillayer_thickness[layer]);
+		
+		SOMresp = (cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer])* 1000;
+
+		if (!errorCode && denitrification(ctrl->soiltype, sminNO3avail_ppm, pH,WFPS, SOMrespTOTAL, &sminNO3_to_denitr,&ratioN2_N2O))
 		{
-			if (fabs (ns->sminNO3[layer]) > CRIT_PREC)
-			{
-				printf("\n");
-				printf("ERROR: negative NO3 pool (multilayer_sminn.c)\n");
-				errflag=1;
-			}
-			else
-			{
-				ns->nvol_snk     += ns->sminNO3[layer];
-				ns->sminNO3[layer] = 0;
-
-			}
-
+			printf("\n");
+			printf("ERROR in denitrification() for multilayer_sminn.c \n");
 		}
+		
+		
+		if (epv->vwc[layer] / sprop->vwc_sat[layer] > sprop->critWFPS_denitr && sminNO3avail > 0)
+			nf->sminNO3_to_denitr[layer] = sprop->denitr_coeff * SOMresp * sminNO3avail * (epv->vwc[layer] / sprop->vwc_sat[layer]);
+		else
+			nf->sminNO3_to_denitr[layer] = 0;
+		
+		
+	
+		nf->N2O_flux_DENITR[layer]  = nf->sminNO3_to_denitr[layer] / (1 + ratioN2_N2O *  sprop->texDEP_N2Oratio);
+		nf->N2_flux_DENITR[layer]   = nf->sminNO3_to_denitr[layer] - nf->N2O_flux_DENITR[layer];
+
 
 	
-		ns->npool	      += nf->sminNH4_to_npool[layer] + nf->sminNO3_to_npool[layer];
-	
+		/*********************************************/
+		/* 7. STATE UPDATE */
+
+		sminNH4_change[layer] = (nf->nfix_to_sminNH4[layer] + nf->ndep_to_sminNH4[layer] + nf->soil4n_to_sminNH4[layer] - 
+			                     nf->sminNH4_to_soil_SUM[layer] - nf->sminNH4_to_npool[layer] - nf->sminNH4_to_nitrif[layer]);
+		sminNO3_change[layer] = (nf->ndep_to_sminNO3[layer] + (nf->sminNH4_to_nitrif[layer]- nf->N2O_flux_NITRIF[layer]) -
+			                     nf->sminNO3_to_soil_SUM[layer] - nf->sminNO3_to_npool[layer] - nf->sminNO3_to_denitr[layer]);
+
+		ns->sminNH4[layer] += sminNH4_change[layer]; 
+		ns->sminNO3[layer] += sminNO3_change[layer];
+
+		ns->sminNH4avail[layer] = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;
+		ns->sminNO3avail[layer] = ns->sminNO3[layer] * NO3_mobilen_prop;
+
 		ns->soil1n[layer] += nf->sminn_to_soil1n_l1[layer];
 		ns->soil2n[layer] += nf->sminn_to_soil2n_l2[layer] + nf->sminn_to_soil2n_s1[layer];
 		ns->soil3n[layer] += nf->sminn_to_soil3n_l4[layer] + nf->sminn_to_soil3n_s2[layer];
 		ns->soil4n[layer] += nf->sminn_to_soil4n_s3[layer] - nf->soil4n_to_sminNH4[layer];
+		
+		ns->npool         += (nf->sminNH4_to_npool[layer] + nf->sminNO3_to_npool[layer]);
+		ns->Nfix_src      += nf->nfix_to_sminNH4[layer];
+		ns->Ndep_src      += nf->ndep_to_sminNH4[layer] + nf->ndep_to_sminNO3[layer];
 
-		/* CONTROL */
+		ns->Nvol_snk      +=  nf->N2O_flux_NITRIF[layer];
+		ns->Nvol_snk      +=  nf->sminNO3_to_denitr[layer];
+		
+		/*********************************************/
+		/* 8. Total flux calculation */
+
+		nf->N2_flux_DENITR_total		+= nf->N2_flux_DENITR[layer];
+		nf->N2O_flux_DENITR_total		+= nf->N2O_flux_DENITR[layer];
+		nf->N2O_flux_NITRIF_total		+= nf->N2O_flux_NITRIF[layer];
+         
+		nf->sminNH4_to_soil_SUM_total	+= nf->sminNH4_to_soil_SUM[layer];           
+		nf->sminNO3_to_soil_SUM_total	+= nf->sminNO3_to_soil_SUM[layer];          
+		nf->sminNO3_to_denitr_total		+= nf->sminNO3_to_denitr[layer];
+		nf->sminNH4_to_nitrif_total		+= nf->sminNH4_to_nitrif[layer];
+		nf->sminNH4_to_npoolTOTAL		+= nf->sminNH4_to_npool[layer];
+		nf->sminNO3_to_npoolTOTAL		+= nf->sminNO3_to_npool[layer];
+
+		/*********************************************/
+		/* 9. CONTROL */
+		if (ns->sminNH4[layer] < 0.0)       
+		{	
+			if (fabs(ns->sminNH4[layer]) > CRIT_PREC)
+			{
+				printf("\n");
+				printf("ERROR: negative NH4 pool (multilayer_sminn.c)\n");
+				errorCode=1;
+			}
+			else
+			{
+				ns->Nprec_snk     += ns->sminNH4[layer];
+				ns->sminNH4[layer] = 0.0;
+			}
+		}
+
+		if (ns->sminNO3[layer] < 0.0)       
+		{	
+			if (fabs(ns->sminNO3[layer]) > CRIT_PREC)
+			{
+				printf("\n");
+				printf("ERROR: negative NO3 pool (multilayer_sminn.c)\n");
+				errorCode=1;
+			}
+			else
+			{
+				ns->Nprec_snk     += ns->sminNO3[layer];
+				ns->sminNO3[layer] = 0.0;
+			}
+		}
+
 		if ((ns->soil1n[layer] < 0))
 		{
 			if (fabs (ns->soil1n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
 				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
-				errflag=1;
+				errorCode=1;
 			}
 			else
 			{
-				ns->sminNO3[layer] = 0;
+				ns->Nprec_snk     += ns->soil1n[layer];
+				ns->soil1n[layer] = 0.0;
 			}
 		}
 
@@ -195,11 +251,12 @@ int multilayer_sminn(const epconst_struct* epc, const soilprop_struct* sprop, co
 			{
 				printf("\n");
 				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
-				errflag=1;
+				errorCode=1;
 			}
 			else
 			{
-				ns->soil2n[layer] = 0;
+				ns->Nprec_snk     += ns->soil2n[layer];
+				ns->soil2n[layer] = 0.0;
 			}
 		}
 
@@ -209,11 +266,12 @@ int multilayer_sminn(const epconst_struct* epc, const soilprop_struct* sprop, co
 			{
 				printf("\n");
 				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
-				errflag=1;
+				errorCode=1;
 			}
 			else
 			{
-				ns->soil3n[layer] = 0;
+				ns->Nprec_snk     += ns->soil3n[layer];
+				ns->soil3n[layer] = 0.0;
 			}
 		}
 
@@ -223,110 +281,164 @@ int multilayer_sminn(const epconst_struct* epc, const soilprop_struct* sprop, co
 			{
 				printf("\n");
 				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
-				errflag=1;
+				errorCode=1;
 			}
 			else
 			{
-				ns->soil4n[layer] = 0;
+				ns->Nprec_snk     += ns->soil4n[layer];
+				ns->soil4n[layer] = 0.0;
 			}
 		}
+	}
 
-		/*-----------------------------------------------------------------------------*/
-		/* 5. Nitrification */
-		
-		net_miner = nf->soil4n_to_sminNH4[layer] - nf->sminNH4_to_soil_SUM[layer];
-				
-		pH_scalar = p2_pH + (p1_pH-p2_pH)/(1 + exp((sprop->pH[layer]-p3_pH)/p4_pH));	
-		
-		if (net_miner > 0)
+	if (fabs(sminn_to_soilCTRL - nf->sminn_to_soil_SUM_total) > CRIT_PREC || fabs(sminn_to_npoolCTRL - nf->sminn_to_npoolTOTAL) > CRIT_PREC ||
+		fabs(ndep_to_sminnCTRL - nf->ndep_to_sminnTOTAL) > CRIT_PREC || fabs(nfix_to_sminnCTRL - nf->nfix_to_sminnTOTAL) > CRIT_PREC)
+	{
+		printf("\n");
+		printf("ERROR: in calculation of nitrogen state update (multilayer_sminn.c)\n");
+		errorCode=1;
+	}
+
+
+
+	return (errorCode);
+}
+
+int nitrification(const soilprop_struct* sprop, double net_miner, double pH, double WFPS, double t_scalar, double sminNH4avail, 
+	              double* pH_scalar, double* wfps_scalar, double* N2O_flux_NITRIF, double* sminNH4_to_nitrif)
+{
+	int errorCode = 0;
+	double p1_pH,p2_pH,p3_pH,p4_pH, pH_sc, wfps_sc,sminNH4_to_nit,N2O_flux_NIT;
+	
+	p1_pH=0.15563;
+	p2_pH=0.97859;
+	p3_pH=2.91355;
+	p4_pH=0.75220;
+	
+	pH_sc = p2_pH + (p1_pH-p2_pH)/(1 + exp((pH-p3_pH)/p4_pH));	
+
+
+	if (WFPS < sprop->minWFPS)
+	{
+		wfps_sc = 0;
+	}
+	else
+	{
+		if (WFPS < sprop->opt1WFPS)
 		{
-			nf->sminNH4_to_nitrif[layer]  = sprop->nitrif_coeff1 * net_miner + 
-											sprop->nitrif_coeff2 * (ns->sminNH4[layer] * sprop->NH4_mobilen_prop) * 
-											epv->t_scalar[layer] * epv->w_scalar[layer] * pH_scalar;
+			wfps_sc = (WFPS - sprop->minWFPS) / (sprop->opt1WFPS - sprop->minWFPS);	
 		}
 		else
 		{
-			nf->sminNH4_to_nitrif[layer]  = sprop->nitrif_coeff2 * (ns->sminNH4[layer] * sprop->NH4_mobilen_prop) * 
-						                    epv->t_scalar[layer] * epv->w_scalar[layer] * pH_scalar;
-		}
-		nf->N2O_flux_NITRIF[layer]    = nf->sminNH4_to_nitrif[layer] * sprop->N2Ocoeff_nitrif;
-
-		/* 6. denitrification */
-		SOMresp = (cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer])*1000;
-		N2O_coeff_denitr  = 1. / (1 + 0.16 * epv->w_scalar[layer]);  /* Parton et al. 2001 */
-		
-		nf->sminNO3_to_denitr[layer] = sprop->denitr_coeff * SOMresp * (ns->sminNO3[layer] * sprop->NO3_mobilen_prop) * 
-			                           (epv->vwc[layer] / sprop->vwc_sat[layer]);
-		
-		nf->N2O_flux_DENITR[layer]   = nf->sminNO3_to_denitr[layer] * N2O_coeff_denitr;
-		nf->N2_flux_DENITR[layer]    = nf->sminNO3_to_denitr[layer] * (1 - N2O_coeff_denitr);
-
-
-		/* 5-6 state update */
-		ns->sminNH4[layer] -=  nf->sminNH4_to_nitrif[layer];
-		ns->sminNO3[layer] += (nf->sminNH4_to_nitrif[layer]  - nf->N2O_flux_NITRIF[layer]);
-		ns->nvol_snk       +=  nf->N2O_flux_NITRIF[layer];
-
-        ns->sminNO3[layer] -=  nf->sminNO3_to_denitr[layer];
-		ns->nvol_snk       +=  nf->sminNO3_to_denitr[layer];
-
-		/* control */
-		if(ns->sminNH4[layer] < 0)
-		{
-			if (fabs (ns->sminNH4[layer]) > CRIT_PREC)
+			if (WFPS < sprop->opt2WFPS)
 			{
-				printf("\n");
-				printf("FATAL ERROR: negative NH4 pool (multilayer_sminn.c)\n");
-				errflag=1;
+				wfps_sc = 1;
 			}
 			else
 			{
-				ns->nvol_snk     += ns->sminNH4[layer];
-				ns->sminNH4[layer] = 0;
-
+				wfps_sc = (1 - WFPS) / (1 - sprop->opt2WFPS) + (WFPS-sprop->opt2WFPS)/(1-sprop->opt2WFPS)* sprop->WFPSscalar_min;
 			}
-
 		}
-	
-		if(ns->sminNO3[layer] < 0)
-		{
-			if (fabs (ns->sminNO3[layer]) > CRIT_PREC)
-			{
-				printf("FATAL ERROR: negative NO3 pool (multilayer_sminn.c)\n");
-				errflag=1;
-			}
-			else
-			{
-				ns->nvol_snk     += ns->sminNO3[layer];
-				ns->sminNO3[layer] = 0;
-
-			}
-
-		}
-
-		nf->N2_flux_DENITR_total		+= nf->N2_flux_DENITR[layer];
-		nf->N2O_flux_DENITR_total		+= nf->N2O_flux_DENITR[layer];
-		nf->N2O_flux_NITRIF_total		+= nf->N2O_flux_NITRIF[layer];
-		nf->sminn_to_soil_SUM_total		+= nf->sminn_to_soil_SUM[layer];           
-		nf->sminNH4_to_soil_SUM_total	+= nf->sminNH4_to_soil_SUM[layer];           
-		nf->sminNO3_to_soil_SUM_total	+= nf->sminNO3_to_soil_SUM[layer];          
-		nf->sminNO3_to_denitr_total		+= nf->sminNO3_to_denitr[layer];
-		nf->sminNH4_to_nitrif_total		+= nf->sminNH4_to_nitrif[layer];
-		nf->sminNH4_to_npool_total		+= nf->sminNH4_to_npool[layer];
-		nf->sminNO3_to_npool_total		+= nf->sminNO3_to_npool[layer];
-		nf->soil4n_to_sminNH4_total     += nf->soil4n_to_sminNH4[layer];
-		change_ctrl  += layer_prop;
 	}
-
-	if ((sminn_rootzone) && fabs(1 - change_ctrl) > CRIT_PREC)
+		
+	if (net_miner > 0)
 	{
-		printf("\n");
-		printf("ERROR in calculation of mineralized nitrogen in multilayer_sminn.c\n");
-		errflag=1;
+		sminNH4_to_nit= sprop->netMiner_to_nitrif * net_miner + 
+										sprop->maxNitrif_rate * sminNH4avail * t_scalar * wfps_sc * pH_sc;
 	}
+	else
+	{
+		sminNH4_to_nit = sprop->maxNitrif_rate * sminNH4avail *  t_scalar * wfps_sc * pH_sc;
+	}
+		
+	N2O_flux_NIT   = sminNH4_to_nit * sprop->N2Ocoeff_nitrif;
 
 
-	
-	return (errflag);
+
+	*pH_scalar         = pH_sc;	
+	*wfps_scalar       = wfps_sc;
+	*sminNH4_to_nitrif = sminNH4_to_nit;
+	*N2O_flux_NITRIF   =  N2O_flux_NIT;
+
+	return (errorCode);
 }
 
+int denitrification(double soiltype, double sminNO3avail_ppm, double pH, double WFPS, double SOMrespTOTAL, double* sminNO3_to_denitr, double* ratioN2_N2O)
+{
+	int errorCode = 0;
+	double pDEN1, FrNO3, FrCO2, FrWFPS, FrPH;
+	double FdNO3, FdWFPS, FdCO2, FdPH;
+	double a,b,c,d,e;
+	double denitr_flux, denitr_ratio;
+
+	FrNO3=FrCO2=FrWFPS=FrPH=0;
+	FdNO3=FdWFPS=FdCO2=FdPH=0;
+
+	/* coarse: sand, loamy sand, sandy loam */
+	if (soiltype <= 2)
+	{
+		a=1.56;
+		b=12;
+		c=16;
+		d=2.01;
+	}
+	else
+	{
+		/* medium: loam types */
+		if (soiltype <= 8)
+		{
+			a=4.82;
+			b=14;
+			c=16;
+			d=1.39;
+		}
+		/* fine: clay types */
+		else
+		{
+			a=60;
+			b=18;
+			c=22;
+			d=1.06;
+		}
+	}
+		
+	FdNO3 = 11000+ (40000 * atan(PI*0.002*(sminNO3avail_ppm - 180)))/PI;
+	
+	e = c/pow(b,d*WFPS);
+		
+	FdWFPS = a / pow(b,e);
+		
+	FdCO2 = 24000/(1 + (200/exp(0.35*SOMrespTOTAL)));
+		
+		
+	if (pH < 6.5)
+	{
+		if (pH <=3.5)
+			FdPH = 0.001;
+		else
+			FdPH = (pH - 3.5)/3;				
+	}
+	else
+		FdPH = 1;
+	
+	denitr_flux = MIN(FdNO3, FdCO2) * FdWFPS * FdPH;
+		
+	/* unit of denitr_flux: gN/ha/d -> kgN/m2/day */
+	*sminNO3_to_denitr = denitr_flux * 0.001 * 0.0001;
+
+
+	FrNO3 = (1 - (0.5 + ((atan(PI * 0.01 * (sminNO3avail_ppm - 190))) / PI))) * 25;
+		
+	FrCO2 = 13 + ((30.78 * atan(PI * 0.07 * (SOMrespTOTAL-13))) / PI);
+	
+	pDEN1 = pow(13,2.2*WFPS);
+	FrWFPS = 1.4 / pow(13,17/pDEN1);
+		
+	FrPH = 1. / (1470 * exp(-1.1 * pH));
+
+	denitr_ratio = MIN(FrNO3, FrCO2) * FrWFPS * FrPH;
+
+	*ratioN2_N2O = denitr_ratio;
+
+return (errorCode);
+}

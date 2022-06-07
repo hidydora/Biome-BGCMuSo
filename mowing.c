@@ -3,8 +3,8 @@ mowing.c
 do mowing  - decrease the plant material (leafc, leafn, canopy water)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -33,7 +33,7 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 	/* local parameters */
 	double befgrass_LAI;						/* value of LAI before mowing */
 	double MOWcoeff;							/* coefficient determining the decrease of plant material caused by mowing */
-	int errflag=0;
+	int errorCode=0;
 	int md, year,ap;
 
 	year = ctrl->simstartyear + ctrl->simyr;
@@ -144,12 +144,12 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 		cf->STDBc_leaf_to_MOW     = cs->STDBc_leaf     * MOWcoeff;
 		cf->STDBc_fruit_to_MOW    = cs->STDBc_fruit    * MOWcoeff; 
 		cf->STDBc_softstem_to_MOW = cs->STDBc_softstem * MOWcoeff;
-		cf->STDBc_transfer_to_MOW = cs->STDBc_transfer * MOWcoeff;
+		cf->STDBc_nsc_to_MOW = cs->STDBc_nsc * MOWcoeff;
 
 		nf->STDBn_leaf_to_MOW     = ns->STDBn_leaf     * MOWcoeff; 
 		nf->STDBn_fruit_to_MOW    = ns->STDBn_fruit    * MOWcoeff; 
 		nf->STDBn_softstem_to_MOW = ns->STDBn_softstem * MOWcoeff;
-		nf->STDBn_transfer_to_MOW = ns->STDBn_transfer * MOWcoeff;
+		nf->STDBn_nsc_to_MOW      = ns->STDBn_nsc * MOWcoeff;
 
 
 
@@ -175,11 +175,11 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 
 		cf->MOW_to_CTDBc_softstem = (cf->softstemc_to_MOW + cf->STDBc_softstem_to_MOW)  * remained_prop;
 
-		cf->MOW_to_CTDBc_transfer = (cf->leafc_transfer_to_MOW     + cf->leafc_storage_to_MOW + 
+		cf->MOW_to_CTDBc_nsc      = (cf->leafc_transfer_to_MOW     + cf->leafc_storage_to_MOW + 
 									 cf->fruitc_transfer_to_MOW    + cf->fruitc_storage_to_MOW + 
 									 cf->softstemc_transfer_to_MOW + cf->softstemc_storage_to_MOW + 
 									 cf->gresp_storage_to_MOW      + cf->gresp_transfer_to_MOW +
-									 cf->STDBc_transfer_to_MOW);
+									 cf->STDBc_nsc_to_MOW);
 
 
 		nf->MOW_to_CTDBn_leaf     = (nf->leafn_to_MOW     + nf->STDBn_leaf_to_MOW) * remained_prop;
@@ -188,11 +188,11 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 
 		nf->MOW_to_CTDBn_softstem = (nf->softstemn_to_MOW + nf->STDBn_softstem_to_MOW) * remained_prop;
 
-		nf->MOW_to_CTDBn_transfer = (nf->leafn_transfer_to_MOW     + nf->leafn_storage_to_MOW + 
+		nf->MOW_to_CTDBn_nsc      = (nf->leafn_transfer_to_MOW     + nf->leafn_storage_to_MOW + 
 									 nf->fruitn_transfer_to_MOW    + nf->fruitn_storage_to_MOW + 
 									 nf->softstemn_transfer_to_MOW + nf->softstemn_storage_to_MOW + 
 									 nf->retransn_to_MOW +
-									 nf->STDBn_transfer_to_MOW);
+									 nf->STDBn_nsc_to_MOW);
 
 		/**********************************************************************************************/
 		/* III. STATE UPDATE */
@@ -234,12 +234,12 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 		cs->STDBc_leaf     -= cf->STDBc_leaf_to_MOW;
 		cs->STDBc_fruit    -= cf->STDBc_fruit_to_MOW;
 		cs->STDBc_softstem -= cf->STDBc_softstem_to_MOW;
-		cs->STDBc_transfer -= cf->STDBc_transfer_to_MOW ;
+		cs->STDBc_nsc -= cf->STDBc_nsc_to_MOW ;
 
 		ns->STDBn_leaf     -= nf->STDBn_leaf_to_MOW;
 		ns->STDBn_fruit    -= nf->STDBn_fruit_to_MOW;
 		ns->STDBn_softstem -= nf->STDBn_softstem_to_MOW;
-		ns->STDBn_transfer -= nf->STDBn_transfer_to_MOW ;
+		ns->STDBn_nsc      -= nf->STDBn_nsc_to_MOW ;
 
 
 		/* 1.3. water */
@@ -256,12 +256,12 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 		cs->CTDBc_leaf     += cf->MOW_to_CTDBc_leaf;
 		cs->CTDBc_fruit    += cf->MOW_to_CTDBc_fruit;
 		cs->CTDBc_softstem += cf->MOW_to_CTDBc_softstem;
-		cs->CTDBc_transfer += cf->MOW_to_CTDBc_transfer;
+		cs->CTDBc_nsc      += cf->MOW_to_CTDBc_nsc;
 
 		ns->CTDBn_leaf     += nf->MOW_to_CTDBn_leaf;
 		ns->CTDBn_fruit    += nf->MOW_to_CTDBn_fruit;
 		ns->CTDBn_softstem += nf->MOW_to_CTDBn_softstem;
-		ns->CTDBn_transfer += nf->MOW_to_CTDBn_transfer;
+		ns->CTDBn_nsc      += nf->MOW_to_CTDBn_nsc;
 	
 
 		/**********************************************************************************************/
@@ -271,27 +271,27 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 			   cf->fruitc_to_MOW + cf->fruitc_transfer_to_MOW + cf->fruitc_storage_to_MOW +
 			   cf->softstemc_to_MOW + cf->softstemc_transfer_to_MOW + cf->softstemc_storage_to_MOW +
 			   cf->gresp_storage_to_MOW + cf->gresp_transfer_to_MOW + 
-			   cf->STDBc_leaf_to_MOW + cf->STDBc_fruit_to_MOW + cf->STDBc_softstem_to_MOW + cf->STDBc_transfer_to_MOW;
+			   cf->STDBc_leaf_to_MOW + cf->STDBc_fruit_to_MOW + cf->STDBc_softstem_to_MOW + cf->STDBc_nsc_to_MOW;
 
 		outn = nf->leafn_to_MOW + nf->leafn_transfer_to_MOW + nf->leafn_storage_to_MOW +
 			   nf->fruitn_to_MOW + nf->fruitn_transfer_to_MOW + nf->fruitn_storage_to_MOW +
 			   nf->softstemn_to_MOW + nf->softstemn_transfer_to_MOW + nf->softstemn_storage_to_MOW +
 			   nf->retransn_to_MOW + 
-			   nf->STDBn_leaf_to_MOW + nf->STDBn_fruit_to_MOW + nf->STDBn_softstem_to_MOW + nf->STDBn_transfer_to_MOW;
+			   nf->STDBn_leaf_to_MOW + nf->STDBn_fruit_to_MOW + nf->STDBn_softstem_to_MOW + nf->STDBn_nsc_to_MOW;
 
-		inc = cf->MOW_to_CTDBc_leaf + cf->MOW_to_CTDBc_fruit  + cf->MOW_to_CTDBc_softstem + cf->MOW_to_CTDBc_transfer;
-		inn = nf->MOW_to_CTDBn_leaf + nf->MOW_to_CTDBn_fruit  + nf->MOW_to_CTDBn_softstem + nf->MOW_to_CTDBn_transfer;
+		inc = cf->MOW_to_CTDBc_leaf + cf->MOW_to_CTDBc_fruit  + cf->MOW_to_CTDBc_softstem + cf->MOW_to_CTDBc_nsc;
+		inn = nf->MOW_to_CTDBn_leaf + nf->MOW_to_CTDBn_fruit  + nf->MOW_to_CTDBn_softstem + nf->MOW_to_CTDBn_nsc;
 
 		if (fabs(inc + MOW_to_transpC - outc) > CRIT_PREC || fabs(inn + MOW_to_transpN - outn) > CRIT_PREC )
 		{
 			printf("\n");
 			printf("BALANCE ERROR in mowing calculation in mowing.c\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 
 }
 
-  return (errflag);
+  return (errorCode);
 }	
 

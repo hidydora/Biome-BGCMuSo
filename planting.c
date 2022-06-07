@@ -3,8 +3,8 @@ planting.c
 planting  - planting seeds in soil - increase transfer pools
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
-Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.1.
+Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -36,7 +36,7 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 	double total_allocation = epc->alloc_leafc[epc->n_germ_phenophase-1]+epc->alloc_frootc[epc->n_germ_phenophase-1]+
 		                      epc->alloc_softstemc[epc->n_germ_phenophase-1]+epc->alloc_fruitc[epc->n_germ_phenophase-1];
 	
-	int errflag=0;
+	int errorCode=0;
 	int flag_layerIMP, layer, EPCfromINI; 
 	file epc_file;
 	int md, year;
@@ -66,12 +66,19 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 			
 			/* read ecophysiological constants */
 			EPCfromINI = 0;
-			if (epc_init(epc_file, epc, ctrl, EPCfromINI))
+			if (!errorCode && epc_init(epc_file, epc, ctrl, EPCfromINI))
 			{
 				printf("ERROR in EPC file reading (from PLANTING file)\n");
-				errflag=1;
+				errorCode=1;
 			}
 
+			/* plant type determination based on EPC file header */
+			if (!errorCode && planttype_determination(ctrl, phen))
+			{
+				printf("\n");
+				printf("ERROR in planttype_determination() in planting.c\n");
+				errorCode=1; 
+			} 
 
 			seed_quantity = PLT->n_seedlings_array[md] * (PLT->weight_1000seed_array[md] * g_to_kg / 1000);	/* n/m2 * (g/1000n) -> kg seed/m2 */
 			seed_Ccontent = PLT->seed_carbon_array[md]/100;														/* change unit: % to number */
@@ -89,10 +96,6 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 				else
 					layer += 1;
 			}
-
-			/* initalize harvest index parameters */
-			cs->fruitC_HRV = 0;
-			cs->vegC_HRV = 0;
 	
 		}
 
@@ -163,6 +166,92 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 
 
 
-   return (errflag);
+   return (errorCode);
 }
 	
+
+int planttype_determination(control_struct* ctrl, phenology_struct* phen)
+{
+	int errorCode = 0;
+	char pt1[] = "maize";
+	char pt2[] = "winter_wheat";
+	char pt3[] = "winter_barley";
+	char pt4[] = "sunflower";
+	char pt5[] = "canola";
+	char pt6[] = "spring_wheat";
+	char pt7[] = "spring_barley";
+	char pt8[] = "alfalfa";
+	char pt9[] = "sugarbeet";
+	char pt10[] = "bean";
+	char pt11[] = "pea";
+	char pt12[] = "potato";
+	char pt13[] = "oat";
+	char pt14[] = "rye";
+	char pt15[] = "sugarcane";
+	char pt16[] = "rice";
+	char pt17[] = "cotton";
+	char pt18[] = "crop_notSpec";
+	char pt19[] = "vegetable_notSpec";
+	char pt20[] = "c3_grass";
+	char pt21[] = "c4_grass";
+	char pt22[] = "shrub";
+	char pt23[] = "deciduous_forest";
+	char pt24[] = "evergreen_forest";
+	
+	
+	phen->planttype =-1;
+
+	/* 	bare soil/fallow:0  */
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt1)) phen->planttype = 1;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt2)) phen->planttype = 2;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt3)) phen->planttype = 3;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt4)) phen->planttype = 4;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt5)) phen->planttype = 5;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt6)) phen->planttype = 6;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt7)) phen->planttype = 7;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt8)) phen->planttype = 8;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt9)) phen->planttype = 9;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt10)) phen->planttype = 10;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt11)) phen->planttype = 11;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt12)) phen->planttype = 12;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt13)) phen->planttype = 13;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt14)) phen->planttype = 14;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt15)) phen->planttype = 15;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt16)) phen->planttype = 16;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt17)) phen->planttype = 17;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt18)) phen->planttype = 18;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt19)) phen->planttype = 19;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt20)) phen->planttype = 20;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt21)) phen->planttype = 21;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt22)) phen->planttype = 22;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt23)) phen->planttype = 23;
+
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt24)) phen->planttype = 24;
+
+
+
+	return (errorCode);
+}

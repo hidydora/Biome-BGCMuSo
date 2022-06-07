@@ -3,10 +3,10 @@ check_balance.c
 daily test of mass balance (water, carbon, and nitrogen state variables)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.0.
+Biome-BGCMuSo v6.1.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -22,14 +22,14 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int check_water_balance(wstate_struct* ws, int first_balance)
+int check_water_balance(wstate_struct* ws, const epvar_struct* epv, const siteconst_struct *sitec, int first_balance)
 {
-	int errflag=0;
+	int errorCode=0;
 	static double old_balance;
 	
-	int layer        = 0; 
-	double balance   = 0;
-	double soilw_SUM = 0;
+	int layer; 
+	double balance, soilw_SUM, soilw_2m;
+	balance=soilw_SUM=soilw_2m=0;
 	
 	/* DAILY CHECK ON WATER BALANCE */
 
@@ -40,17 +40,20 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 		{
 			printf("\n");
 			printf("ERROR: negative soil water content\n");
-			errflag=1;
+			errorCode=1;
 		}
 		soilw_SUM += ws->soilw[layer];
+		if (layer < 7) soilw_2m += ws->soilw[layer];
+
 	}
 	ws->soilw_SUM = soilw_SUM;
+	ws->soilw_2m = soilw_2m;
 
 	if (ws->snoww < 0.0 || ws->canopyw < 0  || ws->soilw_SUM < 0 || ws->pond_water < 0)
 	{
 		printf("\n");
 		printf("ERROR: negative water storage\n");
-		errflag=1;
+		errorCode=1;
 	}
 	
 	/* sum of sources */
@@ -64,7 +67,7 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 		ws->canopyw_HRVsnk +			/* harvesting */
 		ws->canopyw_PLGsnk +			/* ploughing */
 		ws->canopyw_GRZsnk +			/* grazing */
-		ws->runoff_snk	  +				/* soil-water submodel */
+		ws->runoff_snk     +			/* soil-water submodel */
 		ws->deeppercolation_snk;		/* soil-water submodel .*/
 
 	/* sum of current storage */
@@ -80,12 +83,12 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 	}
 	old_balance = balance;
 	
-	return (errflag);
+	return (errorCode);
 }
 
 int check_carbon_balance(cstate_struct* cs, int first_balance)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer=0;
 	static double old_balance;
 	double balance;
@@ -100,12 +103,12 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		cs->livecrootc < 0.0 ||  cs->livecrootc_storage < 0.0 || cs->livecrootc_transfer < 0.0 || 
 		cs->deadcrootc < 0.0 || cs->deadcrootc_storage < 0.0 || cs->deadcrootc_transfer < 0.0 || 
 		cs->gresp_storage < 0.0 || cs->gresp_transfer < 0.0 ||
-		cs->STDBc_leaf < 0 || cs->STDBc_froot < 0 || cs->STDBc_fruit < 0|| cs->STDBc_softstem < 0 || cs->STDBc_transfer < 0 || 
-		cs->CTDBc_leaf < 0 || cs->CTDBc_froot < 0 || cs->CTDBc_fruit < 0|| cs->CTDBc_softstem < 0 || cs->CTDBc_transfer < 0 || cs->CTDBc_cstem < 0  || cs->CTDBc_croot < 0)
+		cs->STDBc_leaf < 0 || cs->STDBc_froot < 0 || cs->STDBc_fruit < 0|| cs->STDBc_softstem < 0 || cs->STDBc_nsc < 0 || 
+		cs->CTDBc_leaf < 0 || cs->CTDBc_froot < 0 || cs->CTDBc_fruit < 0|| cs->CTDBc_softstem < 0 || cs->CTDBc_nsc < 0 || cs->CTDBc_cstem < 0  || cs->CTDBc_croot < 0)
 		{
 			printf("\n");
 			printf("ERROR: negative carbon stock\n");
-			errflag=1;
+			errorCode=1;
 		}
 
 	
@@ -127,7 +130,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		{
 		 	printf("\n");
 			printf("ERROR: negative soil carbon stock\n");
-			errflag=1;
+			errorCode=1;
 		}
 		cs->soil1c_total	+= cs->soil1c[layer];
 		cs->soil2c_total	+= cs->soil2c[layer];
@@ -139,7 +142,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		{			
 			printf("\n");
 			printf("ERROR: negative dissolved soil nitrogen pool\n");
-			errflag=1;
+			errorCode=1;
 		}
 		cs->soil_DOC[layer]     = cs->soil1_DOC[layer] + cs->soil2_DOC[layer] + cs->soil3_DOC[layer] + cs->soil4_DOC[layer];
 	
@@ -148,7 +151,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		{	
 			printf("\n");
 			printf("ERROR: negative litter carbon stock\n");
-			errflag=1;
+			errorCode=1;
 		}
 		cs->litr1c_total += cs->litr1c[layer];
 		cs->litr2c_total += cs->litr2c[layer];
@@ -160,11 +163,11 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 
 
 	/* summarizing cut-down and standing dead biomass */
-	cs->CTDBc_above = cs->CTDBc_leaf  + cs->CTDBc_fruit    + cs->CTDBc_softstem + cs->CTDBc_cstem;
-	cs->CTDBc_below = cs->CTDBc_froot + cs->CTDBc_transfer + cs->CTDBc_croot;
+	cs->CTDBc_above = cs->CTDBc_leaf  + cs->CTDBc_fruit    + cs->CTDBc_softstem + cs->CTDBc_cstem + cs->CTDBc_nsc;
+	cs->CTDBc_below = cs->CTDBc_froot + cs->CTDBc_croot;
 	
-	cs->STDBc_above = cs->STDBc_leaf  + cs->STDBc_fruit + cs->STDBc_softstem;
-	cs->STDBc_below = cs->STDBc_froot + cs->STDBc_transfer;
+	cs->STDBc_above = cs->STDBc_leaf  + cs->STDBc_fruit + cs->STDBc_softstem + cs->STDBc_nsc;
+	cs->STDBc_below = cs->STDBc_froot;
 
 
 
@@ -180,7 +183,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 			  cs->livecroot_mr_snk + cs->livecroot_gr_snk + cs->deadcroot_gr_snk + 
 			  cs->litr1_hr_snk + cs->litr2_hr_snk + cs->litr4_hr_snk + 
 			  cs->soil1_hr_snk + cs->soil2_hr_snk + cs->soil3_hr_snk + cs->soil4_hr_snk + 
-			  cs->FIREsnk_C + 
+			  cs->FIREsnk_C +  cs->Cdeepleach_snk + 
 			  cs->GRZsnk_C + cs->THN_transportC + cs->MOW_transportC + cs->HRV_transportC; 
 		
 		     
@@ -201,6 +204,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 				cs->cpool +
 				cs->CTDBc_above + cs->STDBc_above + cs->CTDBc_below + cs->STDBc_below;   
 	
+	
 	/* calculate current balance */
 	balance = cs->inC - cs->outC - cs->storeC;
 	 
@@ -212,12 +216,12 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	old_balance = balance;
 
 
-	return (errflag);
+	return (errorCode);
 }		
 
 int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 {
-	int errflag=0;
+	int errorCode=0;
 	int layer=0;
 	double balance;
 	static double old_balance = 0.0;
@@ -232,12 +236,12 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		ns->livecrootn < 0.0 ||  ns->livecrootn_storage < 0.0 || ns->livecrootn_transfer < 0.0 || 
 		ns->deadcrootn < 0.0 || ns->deadcrootn_storage < 0.0 || ns->deadcrootn_transfer < 0.0 ||
 		ns->retransn < 0.0 ||
-		ns->STDBn_leaf < 0 || ns->STDBn_froot < 0 || ns->STDBn_fruit < 0|| ns->STDBn_softstem < 0 || ns->STDBn_transfer < 0 ||  
-		ns->CTDBn_leaf < 0 || ns->CTDBn_froot < 0 || ns->CTDBn_fruit < 0|| ns->CTDBn_softstem < 0 || ns->CTDBn_transfer < 0 || ns->CTDBn_cstem < 0  || ns->CTDBn_croot < 0)
+		ns->STDBn_leaf < 0 || ns->STDBn_froot < 0 || ns->STDBn_fruit < 0|| ns->STDBn_softstem < 0 || ns->STDBn_nsc < 0 ||  
+		ns->CTDBn_leaf < 0 || ns->CTDBn_froot < 0 || ns->CTDBn_fruit < 0|| ns->CTDBn_softstem < 0 || ns->CTDBn_nsc < 0 || ns->CTDBn_cstem < 0  || ns->CTDBn_croot < 0)
 	{	
 		printf("\n");
 		printf("ERROR: negative plant nitrogen pool\n");
-		errflag=1;
+		errorCode=1;
 	}
 
 	/* control avoiding negative pools in SOILC array and calculate soil1c_total */
@@ -260,7 +264,7 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		{			
 			printf("\n");
 			printf("ERROR: negative soil nitrogen pool\n");
-			errflag=1;
+			errorCode=1;
 		}
 		ns->soil1n_total	+= ns->soil1n[layer];
 		ns->soil2n_total	+= ns->soil2n[layer];
@@ -272,7 +276,7 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		{			
 			printf("\n");
 			printf("ERROR: negative dissolved soil nitrogen pool\n");
-			errflag=1;
+			errorCode=1;
 		}
 		ns->soil_DON[layer]     = ns->soil1_DON[layer] + ns->soil2_DON[layer] + ns->soil3_DON[layer] + ns->soil4_DON[layer];
 		
@@ -281,7 +285,7 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		{	
 			printf("\n");
 			printf("ERROR: negative litter nitrogen pool\n");
-			errflag=1;
+			errorCode=1;
 		}
 		ns->litr1n_total	+= ns->litr1n[layer];
 		ns->litr2n_total	+= ns->litr2n[layer];
@@ -294,7 +298,7 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		{
 			printf("\n");
 			printf("ERROR: negative mineralized nitrogen pool\n");
-			errflag=1;
+			errorCode=1;
 		}
 	
 		ns->sminNH4_total	+= ns->sminNH4[layer];
@@ -302,23 +306,23 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	}
 	
 	/* summarizing cut-down and standing dead biomass */
-	ns->CTDBn_above = ns->CTDBn_leaf  + ns->CTDBn_fruit + ns->CTDBn_softstem + ns->CTDBn_cstem;
-	ns->CTDBn_below = ns->CTDBn_froot + ns->CTDBn_transfer + ns->CTDBn_croot;
+	ns->CTDBn_above = ns->CTDBn_leaf  + ns->CTDBn_fruit + ns->CTDBn_softstem + ns->CTDBn_cstem + ns->CTDBn_nsc;
+	ns->CTDBn_below = ns->CTDBn_froot + ns->CTDBn_croot;
 
-	ns->STDBn_above = ns->STDBn_leaf + ns->STDBn_fruit + ns->STDBn_softstem;
-	ns->STDBn_below = ns->STDBn_froot + ns->STDBn_transfer;
+	ns->STDBn_above = ns->STDBn_leaf + ns->STDBn_fruit + ns->STDBn_softstem  + ns->STDBn_nsc;
+	ns->STDBn_below = ns->STDBn_froot;
 
 
 
 	/* DAILY CHECK ON NITROGEN BALANCE */
 	
 	/* sum of sources: fixation, deposition, spinup add, management */
-	ns->inN = ns->nfix_src + ns->ndep_src + ns->SPINUPsrc +
+	ns->inN = ns->Nfix_src + ns->Ndep_src + ns->SPINUPsrc +
 			  ns->PLTsrc_N +  ns->GRZsrc_N +  ns->FRZsrc_N;
 	
 	
-	/* sum of sinks: volatilization, fire, leach, diffusion, management */
-	ns->outN = ns->nvol_snk + ns->FIREsnk_N + ns->nleached_snk + ns->ndiffused_snk + 
+	/* sum of sinks: volatilization, fire, deep leach, management */
+	ns->outN = ns->Nvol_snk + ns->Nprec_snk + ns->FIREsnk_N + ns->Ndeepleach_snk + 
 			   ns->GRZsnk_N + ns->THN_transportN + ns->MOW_transportN+  + ns->HRV_transportN;
 
 		
@@ -352,6 +356,6 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 
 	
 	
-	return (errflag);
+	return (errorCode);
 }
 

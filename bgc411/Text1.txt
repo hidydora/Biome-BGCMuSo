@@ -1,0 +1,10 @@
+		cs->litr1c_strg_HRV = 0;
+		cs->litr2c_strg_HRV = 0;
+		cs->litr3c_strg_HRV = 0;
+		cs->litr4c_strg_HRV = 0;
+		ns->HRVsrc += ns->litr1n_strg_HRV + ns->litr2n_strg_HRV + ns->litr3n_strg_HRV + ns->litr4n_strg_HRV;
+		ns->litr1n_strg_HRV = 0;
+		ns->litr2n_strg_HRV = 0;
+		ns->litr3n_strg_HRV = 0;
+		ns->litr4n_strg_HRV = 0;
+	}

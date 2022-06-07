@@ -1,0 +1,563 @@
+# Microsoft Developer Studio Generated Dependency File, included by bgc411.mak
+
+..\annual_rates.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\atm_pres.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\baresoil_evap.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\bgc.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_io.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\canopy_et.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\check_balance.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\co2_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\conduct_calc.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\conduct_limit_factors.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\daily_allocation.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\daymet.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\dayphen.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\decomp.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\end_init.c : \
+	"..\ini.h"\
+	
+
+..\epc_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\fertilizing.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\fertilizing_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\firstday.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\grazing.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\grazing_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\groundwater.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\groundwater_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\growth_resp.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\GSI_calculation.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\misc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\GSI_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\harvesting.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\harvesting_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\ini.c : \
+	"..\ini.h"\
+	
+
+..\irrigation.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\irrigation_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\maint_resp.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\make_zero_flux_struct.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\management.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\met_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\metarr_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\misc_func.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\mortality.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\mowing.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\mowing_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\multilayer_hydrolparams.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\multilayer_hydrolprocess.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\multilayer_rootdepth.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\multilayer_sminn.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\multilayer_transpiration.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\multilayer_tsoil.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\ndep_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\otherGHGflux_estimation.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\output_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\output_map_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\phenology.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\photosynthesis.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\planting.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\planting_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\ploughing.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\ploughing_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\pointbgc.c : \
+	"..\bgc_epclist.h"\
+	"..\bgc_io.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\prcp_route.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\precision_control.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\prephenology.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\misc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\presim_state_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\radtrans.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\read_mgmarray.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\restart_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\restart_io.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\richards.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\scc_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\senescence.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\sitec_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\smooth.c : \
+	"..\misc_func.h"\
+	
+
+..\snowmelt.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\spinup_bgc.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_io.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\spinup_daily_allocation.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\state_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\state_update.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\summary.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\thinning.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\thinning_init.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\time_init.c : \
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\tipping.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\transient_bgc.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_io.h"\
+	"..\bgc_struct.h"\
+	"..\ini.h"\
+	"..\pointbgc_func.h"\
+	"..\pointbgc_struct.h"\
+	
+
+..\waterstress_days.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	
+
+..\zero_srcsnk.c : \
+	"..\bgc_constants.h"\
+	"..\bgc_func.h"\
+	"..\bgc_struct.h"\
+	

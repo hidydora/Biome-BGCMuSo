@@ -40,17 +40,17 @@ daylength   s      (daylight duration)
 int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_struct* scc,const siteconst_struct* sitec, const control_struct* ctrl) 
 {
 	int errflag=0;
-	int sd,j, metread, shift;
+	int sd,j, metread;
 	int ndays, nsimdays, dd, n_METvar;
-	int nyears, year, day,gapday;
+	int nyears, year, day;
 	double tmax, tmin, tday, tavg, prcp, vpd, swavgfd, dayl;
 	double sw_MJ;
 
 	n_METvar = 9;
 	tmax=tmin=tday=tavg=prcp=vpd=swavgfd=dayl=0;
 	nyears = ctrl->simyears;
-	ndays    = nDAYS_OF_YEAR * nyears;
-	nsimdays = nDAYS_OF_YEAR * (nyears-1) + point->nday_lastsimyear;
+	ndays    = NDAYS_OF_YEAR * nyears;
+	nsimdays = NDAYS_OF_YEAR * (nyears-1) + point->nday_lastsimyear;
 
 	/* allocate space for the metv arrays */
 	if (!errflag)
@@ -194,23 +194,14 @@ int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_str
 			errflag=218;
 		}
 	}
-	/* southen hemisphere: year from 1th of July - last simulation year: truncated year */
-	shift = ctrl->south_shift;
-	point->nday_lastsimyear -= shift;
-	if (point->nday_lastsimyear < 0) 
-	{
-		printf("ERROR in meteorological file: in southen hemisphere the number of days in the last simulation year must greater than 182\n");
-		errflag=21806;
-	}
+
 	
-	sd=0;
-	gapday=0;
 	/* begin daily loop: read input file, generate array values */
+	sd=0;
 	while (!errflag && sd < ndays)
 	{
 		metread = fscanf(point->metf.ptr,"%i%i%lf%lf%lf%lf%lf%lf%lf%*[^\n]",&year,&day,&tmax,&tmin,&tday,&prcp,&vpd,&swavgfd,&dayl);
-		
-		if (sd+shift < nsimdays && metread != n_METvar)
+		if (sd < nsimdays && metread != n_METvar)
 		{
 			printf("ERROR reading MET variables (must be 9 columns: year,day,tmax,tmin,tday,prcp,vpd,swavgfd,dayl)\n");
 			errflag=21801;
@@ -221,14 +212,13 @@ int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_str
 			printf("ERROR reading MET variables: file must contain meteorological data for each simulation day (from the beginning)\n");
 			errflag=21802;
 		}
-			
-		/* shifting meteorological data in southen hemisphere */
-		if (point->nday_lastsimyear < nDAYS_OF_YEAR && sd+shift >= nsimdays)
+		
+		if (point->nday_lastsimyear < NDAYS_OF_YEAR && sd >= nsimdays)
 		{
 			tmax=tmin=tday=prcp=vpd=swavgfd=dayl=0;
 			for (j=0; j<nyears-1;j++)
 			{
-				dd = (j * nDAYS_OF_YEAR) + (point->nday_lastsimyear + gapday - 1);
+				dd = (j * NDAYS_OF_YEAR) + (point->nday_lastsimyear - 1);
 				tmax     += metarr->tmax[dd];
 				tmin     += metarr->tmin[dd];
 				tday     += metarr->tday[dd];
@@ -236,7 +226,6 @@ int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_str
 				vpd      += metarr->vpd[dd];
 				swavgfd  += metarr->swavgfd[dd];
 				dayl     += metarr->dayl[dd];
-
 			}
 			tmax    = tmax    / (nyears-1);
 			tmin    = tmin    / (nyears-1);
@@ -245,7 +234,6 @@ int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_str
 			vpd     = vpd     / (nyears-1);
 			swavgfd = swavgfd / (nyears-1);
 			dayl    = dayl    / (nyears-1);
-			gapday      += 1;
 		}
 	
 
@@ -273,7 +261,7 @@ int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_str
 
 		
 		/* apply the climate change scenario and store */
-		if (!errflag && (year > ctrl->simstartyear || (year == ctrl->simstartyear && day > shift)))
+		if (!errflag && year >= ctrl->simstartyear)
 		{
 			metarr->tmax[sd] = tmax + scc->s_tmax;
 			metarr->tmin[sd] = tmin + scc->s_tmin;
@@ -293,15 +281,12 @@ int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_str
 			if (sd == 0)
 				metarr->F_temprad[sd] = metarr->tavg[sd] +  (tmax - metarr->tavg[sd]) * sqrt(sw_MJ*0.03);
 			else
-				metarr->F_temprad[sd] = (1 - sitec->albedo_sw) * (metarr->tavg[sd] +  (tmax - metarr->tavg[sd]) * sqrt(sw_MJ*0.03))
-										+ sitec->albedo_sw * metarr->F_temprad[sd-1];
+				metarr->F_temprad[sd] = (1 - sitec->sw_alb) * (metarr->tavg[sd] +  (tmax - metarr->tavg[sd]) * sqrt(sw_MJ*0.03))
+										+ sitec->sw_alb * metarr->F_temprad[sd-1];
 
-						
 			/* counter of simdays*/			
 			sd += 1;
 		}
-		
-
 	}
 
 

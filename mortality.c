@@ -45,7 +45,7 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, const epvar
 	/******************************************************************/
 
 
-	/* 1. if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * nDAYS_OF_YEAR */
+	/* 1. if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * NDAYS_OF_YEAR */
 
 	if (phen->n_growthday > 1)
 	{

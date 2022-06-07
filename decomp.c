@@ -34,7 +34,6 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 	double t_scalar, w_scalar, z_scalar;
 	double rate_scalar = 0;
 	double rate_scalar_total = 0;
-	double rate_scalar_avg = 0;
 	double tk, tsoil;
 	double minvwc, maxvwc, optvwc, vwc;
 	double rfl1s1, rfl2s2,rfl4s3,rfs1s2,rfs2s3,rfs3s4;
@@ -47,7 +46,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 	double pmnf_l1s1,pmnf_l2s2,pmnf_l4s3,pmnf_s1s2,pmnf_s2s3,pmnf_s3s4,pmnf_s4;
 	double potential_immob,mineralized;
 	double ratio;
-
+	double rate_scalar_avg;
 
 	/* calculate the C and N content in multilayer soil: layer by layer */
 	double litr1c, litr2c, litr3c, litr4c, soil1c, soil2c, soil3c, soil4c, cwdc; 
@@ -67,16 +66,18 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 
 
+	/* initialize the potential loss and mineral N flux variables */
+	potential_immob=mineralized=kl4=CH4_flux=0;
+	plitr1c_loss=plitr2c_loss=plitr4c_loss=psoil1c_loss=psoil2c_loss=psoil3c_loss=psoil4c_loss=0.0;
+	pmnf_l1s1=pmnf_l2s2=pmnf_l4s3=pmnf_s1s2=pmnf_s2s3=pmnf_s3s4=pmnf_s4=0.0;
+	cwdc_to_litr2c=cwdc_to_litr3c =cwdc_to_litr4c=cwdn_to_litr2n=cwdn_to_litr3n =cwdn_to_litr4n=0;
+
+
+
+	
 	/* 1. calculate the rate constant scalar in multilayer soil: layer by layer  */
 	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
-
-		/* initialize the potential loss and mineral N flux variables */
-		potential_immob=mineralized=kl4=CH4_flux=0;
-		plitr1c_loss=plitr2c_loss=plitr4c_loss=psoil1c_loss=psoil2c_loss=psoil3c_loss=psoil4c_loss=0.0;
-		pmnf_l1s1=pmnf_l2s2=pmnf_l4s3=pmnf_s1s2=pmnf_s2s3=pmnf_s3s4=pmnf_s4=0.0;
-		cwdc_to_litr2c=cwdc_to_litr3c =cwdc_to_litr4c=cwdn_to_litr2n=cwdn_to_litr3n =cwdn_to_litr4n=0;
-
 		tsoil = metv->tsoil[layer];
 
 		/* 1.1: calculate the rate constant scalar for soil temperature,

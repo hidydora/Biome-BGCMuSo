@@ -24,7 +24,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_func.h"
 
-int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl)
+int sitec_init(file init, siteconst_struct* sitec)
 {
 	/* reads the site physical constants from *.init */ 
 
@@ -63,15 +63,7 @@ int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl)
 		printf("ERROR reading site latitude, sitec_init()\n");
 		errflag=20702;
 	}
-	/* In southen hemisphere: year from 1th of July - last simulation year is truncated year */
-	if (sitec->lat < 0)
-	{
-		ctrl->south_shift = 183;
-	}
-	else
-		ctrl->south_shift = 0;
-
-	if (!errflag && scan_value(init, &sitec->albedo_sw, 'd'))
+	if (!errflag && scan_value(init, &sitec->sw_alb, 'd'))
 	{
 		printf("ERROR reading shortwave albedo, sitec_init()\n");
 		errflag=20703;
@@ -99,7 +91,7 @@ int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl)
 
 
 	/* CONTROL to avoid negative meteorological data */
- 	if (sitec->albedo_sw < 0 || sitec->NdepNH4_coeff < 0)
+ 	if (sitec->sw_alb < 0 || sitec->NdepNH4_coeff < 0)
 	{
 		printf("ERROR in site data: swalb and NdepNH4_coeff must be positive\n");
 		errflag=20707;

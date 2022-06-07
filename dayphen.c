@@ -31,7 +31,7 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 
 	/* determining onday, offday, n_growthday, n_transferday and n_litfallday value on the first simulation day */
 
- 	if (PLT->PLT_num)
+	if (PLT->PLT_num)
 		nyear = PLT->PLT_num;
 	else
 		nyear = ctrl->simyears;
@@ -49,27 +49,24 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 	{
 		ctrl->plantyr += 1;
 		
-		if (epc->onday == DATA_GAP)
-		{
-			if (epc->offday != DATA_GAP)
-			{
-				printf("FATAL ERROR: if onday is equal to -9999 offday must be equal to -9999 - bare soil simulation (dayphen.c)\n");
-				errflag=1;
-			}
-			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
-			phen->offday        = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
-		}
-		else
-		{
-			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + nDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
-			phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + nDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
-		}
+		phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
+		phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1]);
 
 		if (phen->offday <= phen->onday && (phen->offday != DATA_GAP && phen->onday != DATA_GAP))
 		{
-			printf("FATAL ERROR: onday is greater or equal than offday (dayphen.c)\n");
-			errflag=1;
+			if (PLT->PLT_num)
+			{
+				phen->offday = NDAYS_OF_YEAR + phen->offday;
+				if (ctrl->onscreen) printf("INFORMATION: autumn sowing\n");
+			}
+			else
+			{
+				printf("FATAL ERROR: onday is greater or equal than offday (dayphen.c)\n");
+				errflag=1;
+			}
 		}
+		else
+			phen->yday_phen     = ctrl->yday;
 
 	}
 

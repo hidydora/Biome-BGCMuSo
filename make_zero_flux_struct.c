@@ -39,7 +39,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->snoww_to_soilw = 0;
 	wf->soilw_evap = 0;
 	wf->soilw_trans_SUM = 0;
-	wf->soilw_transDEMAND_SUM = 0;
 	wf->evapotransp = 0;
 	wf->pondw_to_soilw = 0;
 	wf->soilw_to_pondw = 0;
@@ -52,7 +51,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->IRG_to_prcp = 0;
 	wf->FRZ_to_soilw = 0;
 	wf->pot_evap = 0;
-	wf->pot_infilt = 0;
 	cf->m_leafc_to_litr1c = 0;
 	cf->m_leafc_to_litr2c = 0;
 	cf->m_leafc_to_litr3c = 0;
@@ -390,7 +388,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->CH4_flux_soil = 0;
 	cf->CH4_flux_MANURE = 0;
 	cf->CH4_flux_FERMENT = 0;
-
 	nf->m_leafn_to_litr1n = 0;
 	nf->m_leafn_to_litr2n = 0;
 	nf->m_leafn_to_litr3n = 0;
@@ -711,7 +708,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		wf->soilw_trans[layer] = 0;
-		wf->soilw_transDEMAND[layer] = 0;
 		wf->soilw_percolated[layer] = 0;
 		wf->soilw_diffused[layer] = 0;
 		wf->soilw_from_GW[layer] = 0;

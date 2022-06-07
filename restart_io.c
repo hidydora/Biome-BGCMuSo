@@ -22,18 +22,15 @@ Missoula, MT 59812
 #include "bgc_func.h"       /* function prototypes */
 #include "bgc_constants.h"
 
-int restart_input(const control_struct* ctrl, const epconst_struct* epc, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, restart_data_struct* restart)
+int restart_input(const epconst_struct* epc, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, restart_data_struct* restart)
 {
 	int errflag=0;
 	int layer;
 	
-	/* 1. water: special case to initalize soil water from INI file - WSATE section (read_restart = 2) */
-	if (ctrl->read_restart == 1)
-	{
-		for (layer =0; layer < N_SOILLAYERS; layer++)
-		{ 
-			ws->soilw[layer]                  = restart->soilw[layer];
-		}
+	/* 1. water */
+	for (layer =0; layer < N_SOILLAYERS; layer++)
+	{ 
+		ws->soilw[layer]                  = restart->soilw[layer];
 	}
 
 	ws->snoww                             = restart->snoww;

@@ -53,7 +53,7 @@ are set to 0.0 to control rounding and overflow errors */
 #define SPINUP_TOLERANCE 0.008 
 
 /* output control constants */
-#define NMAP 4200
+#define NMAP 3200
 
 /* contants for multilayer soil model calculation */
 #define HC_water			4200000.	/* (J/m3/K) heat capacity of water */
@@ -71,8 +71,7 @@ are set to 0.0 to control rounding and overflow errors */
 #define lh_sub				2845.0		/* (kJ/kg) latent heal of sublimation */
 #define tcoef				0.65		/* (kg/m2/deg C/d) temp. snowmelt coef */
 
-#define nDAYS_OF_YEAR	    365	
-#define nMONTHS_OF_YEAR	    12	
+#define NDAYS_OF_YEAR	    365	
 #define NSEC_IN_DAY		    86400					/* (s/day)  calculation of daily value from second values */
 #define NHOUR_IN_DAY		24.						/* (hour/day)  calculation of daily value from hourly values */
 #define DATA_GAP			-9999

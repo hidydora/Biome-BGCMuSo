@@ -40,7 +40,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	int onday = 0;
 	int offday = 0;
 	int nyears = ctrl->simyears;
-	int n_yday = nDAYS_OF_YEAR;
+	int n_yday = NDAYS_OF_YEAR;
 	
 	/*  enviromental conditions taken account to calculate onset and offset days */
 	double tmax_act, tmin_act, tavg_act, vpd_act, dayl_act, heatsum_act;	
@@ -72,7 +72,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	/* at the presence of snow cover no vegetation period (calculating snow cover from precipitation, Tavg and srad) */
 	double snowcover, snowcover_limit, prcp_act, srad_act;
 	double rn, tmelt, rmelt, melt, snow_loss, snow_plus, rsub;
-	double albedo_sw = sitec->albedo_sw;
+	double albedo_sw = sitec->sw_alb;
 	
 	/* to calculate moving average from total index values */
 	double epc_index_SUM = 0;
@@ -126,7 +126,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 
 
 
-		for (yday=0; yday<nDAYS_OF_YEAR; yday++)	
+		for (yday=0; yday<NDAYS_OF_YEAR; yday++)	
 		{
 		/* ******************************************************************* */
 		/* 1. calculation of snow loss and plus*/
@@ -305,7 +305,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 		
 		
 			/* if vegetation period has not ended until the last day of year, the offday is equal to the last day of year */
-			if (yday == nDAYS_OF_YEAR-1 && offday == 0)
+			if (yday == NDAYS_OF_YEAR-1 && offday == 0)
 			{	/* if vegetation period has not began */
 				if (onday_flag == 0) 
 				{	

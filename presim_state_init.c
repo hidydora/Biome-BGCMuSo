@@ -37,9 +37,6 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cinit->max_livecrootc = 0.0;
 	
 	ws->soilw_SUM = 0;
-	ws->soilw_RZ = 0;
-	ws->soilw_RZ_avail=0;
-	ws->soilw_2m = 0;
 	ws->pond_water = 0;
 	ws->snoww = 0;
 	ws->canopyw = 0;
@@ -63,8 +60,6 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->inW = 0;
 	ws->outW = 0;
 	ws->storeW = 0;
-	ws->soil_evapCUM1 = 0.0;
-	ws->soil_evapCUM2 = 0.0;
 	cs->leafc = 0;
 	cs->leafc_storage = 0;
 	cs->leafc_transfer = 0;
@@ -235,7 +230,6 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		ws->soilw[layer] = 0;
-		ws->transp_lack[layer] = 0;
 		cs->cwdc[layer] = 0;
 		cs->litr1c[layer] = 0;
 		cs->litr2c[layer] = 0;

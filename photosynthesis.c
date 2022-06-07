@@ -185,7 +185,6 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 		psn_shade->Aj	    = 0;
 	}
 
-	
 	epv->assim_sun = psn_sun->A * assim_Tcoeff;
 	epv->assim_shade = psn_shade->A * assim_Tcoeff;
 
@@ -197,10 +196,6 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 		cf->psnsun_to_cpool = (epv->assim_sun + epv->dlmr_area_sun) * epv->plaisun * metv->dayl * 12.011e-9; 
 		cf->psnshade_to_cpool = (epv->assim_shade + epv->dlmr_area_shade) * epv->plaishade * metv->dayl * 12.011e-9; 
 	}
-
-	/* stress effect to photosyntesis */
-	cf->psnsun_to_cpool   = cf->psnsun_to_cpool   * epv->m_final_sun;
-	cf->psnshade_to_cpool = cf->psnshade_to_cpool * epv->m_final_shade;
 
 
 

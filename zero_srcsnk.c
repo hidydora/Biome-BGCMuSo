@@ -51,8 +51,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	ws->inW = 0.0;
 	ws->outW = 0.0;
 	ws->storeW = 0.0;
-	ws->soil_evapCUM1 = 0.0;
-	ws->soil_evapCUM2 = 0.0;
+
 
 	/* zero the carbon sources and sinks */
 	cs->psnsun_src = 0.0;
@@ -96,10 +95,6 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->inC = 0.0;
 	cs->outC = 0.0;
 	cs->storeC = 0.0;
-	cs->nsc_nw = 0.0;
-	cs->nsc_w = 0.0;
-	cs->sc_nw = 0.0;
-	cs->sc_w = 0.0;
 
 	ns->nfix_src = 0.0;
 	ns->ndep_src = 0.0;
@@ -131,14 +126,13 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->cum_nep = 0.0;
 	summary->cum_nee = 0.0;
 	summary->cum_gpp = 0.0;
-	summary->cum_ngb = 0.0;
 	summary->cum_mr = 0.0;
 	summary->cum_gr = 0.0;
 	summary->cum_hr = 0.0;
 	summary->cum_transp  = 0;
 	summary->cum_ET  = 0;	
 	summary->cum_ET	= 0.0;
-	summary->cum_tr = 0.0;
+	summary->cum_fire = 0.0;
 	summary->cum_n2o = 0.0;
 	summary->cum_Closs_MGM  = 0;
 	summary->cum_Cplus_MGM  = 0;

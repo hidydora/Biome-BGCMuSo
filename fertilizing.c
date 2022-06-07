@@ -93,7 +93,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, ferti
 			}
 		
 	
-			EFf_N2O	    = FRZ->EFfert_N2O[md] /nDAYS_OF_YEAR;
+			EFf_N2O	    = FRZ->EFfert_N2O[md] /NDAYS_OF_YEAR;
 
 			if ((flab + fucel + fscel + flig) > 0 && fabs(flab + fucel + fscel + flig - 1) > CRIT_PREC)
 			{

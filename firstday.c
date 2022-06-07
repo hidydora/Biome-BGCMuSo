@@ -44,8 +44,8 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->leafday_lastmort = -1;
 	epv->n_rootlayers = 0;
 	epv->n_maxrootlayers = 0;
-	epv->germ_layer = 1;
-	epv->germ_depth = 0.05;
+	epv->germ_layer = 0;
+	epv->germ_depth = 0;
     epv->proj_lai = 0;
     epv->all_lai = 0;
 	epv->sla_avg = 0;
@@ -69,11 +69,6 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->NSC_limit_w = 0;
 	epv->NDVI = 0;
 	epv->rooting_depth = 0;
-	epv->rate_scalar_avg = 0;
-	epv->m_tmin = 0;
-	epv->m_co2 = 0;
-	epv->max_conduct = 0;
-	epv->albedo_LAI = 0;
 
 	psn_sun->A      = 0;
 	psn_sun->Ci	    = 0;
@@ -106,10 +101,10 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	if (epc->evergreen)
 	{
 		/* leaf and fineroot litterfall rates */
-		epv->day_leafc_litfall_increment = cinit->max_leafc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
-		epv->day_frootc_litfall_increment = cinit->max_frootc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
-		epv->day_fruitc_litfall_increment = cinit->max_fruitc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
-		epv->day_softstemc_litfall_increment = cinit->max_softstemc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		epv->day_leafc_litfall_increment = cinit->max_leafc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
+		epv->day_frootc_litfall_increment = cinit->max_frootc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
+		epv->day_fruitc_litfall_increment = cinit->max_fruitc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
+		epv->day_softstemc_litfall_increment = cinit->max_softstemc * epc->nonwoody_turnover / NDAYS_OF_YEAR;
 	}
 	else
 	{
@@ -121,8 +116,8 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 		epv->day_softstemc_litfall_increment = 0.0;
 	}
 
-	epv->day_livestemc_turnover_increment = cs->livestemc * epc->woody_turnover / nDAYS_OF_YEAR;
-	epv->day_livecrootc_turnover_increment = cs->livecrootc * epc->woody_turnover / nDAYS_OF_YEAR;
+	epv->day_livestemc_turnover_increment = cs->livestemc * epc->woody_turnover / NDAYS_OF_YEAR;
+	epv->day_livecrootc_turnover_increment = cs->livecrootc * epc->woody_turnover / NDAYS_OF_YEAR;
 
 
 	/* initialize multilayer variables (first approximation: field cap.) and multipliers for stomatal limitation calculation */
@@ -163,20 +158,20 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->gl_t_wv_sun = 0;
 	epv->gl_t_wv_shade = 0;
 
-	for (day = 0; day < nDAYS_OF_YEAR; day++)
+	for (day = 0; day < NDAYS_OF_YEAR; day++)
 	{
 		epv->thermal_timeSUM[day]     = 0;
 		epv->cpool_to_leafcARRAY[day] = 0;
 		epv->npool_to_leafnARRAY[day] = 0;
 	}
-	epv->Nlimit_RZ          = 0;
+	
 	epv->vwc_avg		    = sprop->vwc_fc[0];
 	epv->vwc_RZ 		    = sprop->vwc_fc[0];  
 	epv->vwcSAT_RZ 		    = sprop->vwc_sat[0];  
 	epv->vwcFC_RZ 		    = sprop->vwc_fc[0];  
 	epv->vwcWP_RZ 		    = sprop->vwc_wp[0];  
 	epv->vwcHW_RZ 		    = sprop->vwc_hw[0];  
-	epv->psi_RZ		        = sprop->psi_fc[0];
+	epv->psi_avg		    = sprop->psi_fc[0];
 	epv->m_soilstress	    = 1;
 	epv->SMSI               = 0;
 	metv->tsoil_avg	   	    = sitec->tair_annavg;
@@ -187,7 +182,7 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	phen->GDD_emergSTART = 0;
 	phen->GDD_emergEND   = 0;
 	phen->GDD_limit      = 0;
-	phen->yday_total     = 0;
+	phen->yday_phen      = 0;
 	phen->onday          = -1;
 	phen->offday         = -1;
 

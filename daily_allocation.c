@@ -566,8 +566,11 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 			cf->soil1_hr[layer]				= rfs1s2 * nt->psoil1c_loss[layer];
 			cf->soil1c_to_soil2c[layer]		= (1.0 - rfs1s2) * nt->psoil1c_loss[layer];
 			nf->soil1n_to_soil2n[layer]		= nt->psoil1c_loss[layer] / cn_s1;
-			nf->sminn_to_soil2n_s1[layer]   = nt->pmnf_s1s2[layer];
-			daily_net_nmin                 -= nt->pmnf_s1s2[layer];
+			if (ns->soil2n[layer] > 0)
+			{
+				nf->sminn_to_soil2n_s1[layer]   = nt->pmnf_s1s2[layer];
+				daily_net_nmin                 -= nt->pmnf_s1s2[layer];
+			}
 		}
 		
 		/* medium microbial recycling pool */
@@ -581,8 +584,11 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 			cf->soil2_hr[layer]           = rfs2s3 * nt->psoil2c_loss[layer];
 			cf->soil2c_to_soil3c[layer]   = (1.0 - rfs2s3) * nt->psoil2c_loss[layer];
 			nf->soil2n_to_soil3n[layer]   = nt->psoil2c_loss[layer] / cn_s2;
-			nf->sminn_to_soil3n_s2[layer] = nt->pmnf_s2s3[layer];
-			daily_net_nmin               -= nt->pmnf_s2s3[layer];
+			if (ns->soil3n[layer] > 0)
+			{
+				nf->sminn_to_soil3n_s2[layer] = nt->pmnf_s2s3[layer];
+				daily_net_nmin               -= nt->pmnf_s2s3[layer];
+			}
 		}
 
 		/* slow microbial recycling pool */
@@ -596,16 +602,22 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 			cf->soil3_hr[layer]           = rfs3s4 * nt->psoil3c_loss[layer];
 			cf->soil3c_to_soil4c[layer]   = (1.0 - rfs3s4) * nt->psoil3c_loss[layer];
 			nf->soil3n_to_soil4n[layer]   = nt->psoil3c_loss[layer] / cn_s3;
-			nf->sminn_to_soil4n_s3[layer] = nt->pmnf_s3s4[layer];
-			daily_net_nmin               -= nt->pmnf_s3s4[layer];
+			if (ns->soil4n[layer] > 0)
+			{
+				nf->sminn_to_soil4n_s3[layer] = nt->pmnf_s3s4[layer];
+				daily_net_nmin               -= nt->pmnf_s3s4[layer];
+			}
 		}
 		
 		/* recalcitrant SOM pool (rf = 1.0, always mineralizing) */
 		if (cs->soil4c[layer] > 0.0)
 		{
 			cf->soil4_hr[layer]           = nt->psoil4c_loss[layer];
-			nf->soil4n_to_sminNH4[layer]  = nt->psoil4c_loss[layer] / cn_s4;
-			daily_net_nmin                += nf->soil4n_to_sminNH4[layer];
+			if (ns->soil4n[layer] > 0)
+			{
+				nf->soil4n_to_sminNH4[layer]  = nt->psoil4c_loss[layer] / cn_s4;
+				daily_net_nmin                += nf->soil4n_to_sminNH4[layer];
+			}
 		}
 		
 		/* store the day's net N mineralization */

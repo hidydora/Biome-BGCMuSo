@@ -843,8 +843,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone photosynthesis\n",simyr,yday);
 #endif
 			
-
-
+	
 			/* daily litter and soil decomp and nitrogen fluxes */
 			if (!errflag && decomp(&metv,&epc, &sprop, &sitec,&cs,&ns,&epv,&cf,&nf,&nt))
 			{

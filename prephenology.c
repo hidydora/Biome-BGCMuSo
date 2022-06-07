@@ -31,7 +31,7 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 	int errflag=0;
 	
 	int model,woody,evergreen,south;
-	int countONOFFDAY, countONOFFDAY_PLT;
+	int countONOFFDAY;
 	double t1;
 	int i,pday,ndays,py;
 	int nyears,phenyears;
@@ -70,8 +70,6 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 
 	int onday_min, onday_max, offday_min, offday_max;
 	int PLTyday, HRVyday, PLTyear, HRVyear;
-	int yrcount = 0;
-	int year = 0;
 
 
 
@@ -149,7 +147,6 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 			offday_min = 364;
 			offday_max = 0;
 			countONOFFDAY = 0;
-			countONOFFDAY_PLT = 0;
 			
 			for (py=0 ; py<PLT->PLT_num; py++)
 			{

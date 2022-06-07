@@ -840,7 +840,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 				printf("%d\t%d\tdone photosynthesis\n",simyr,yday);
 #endif
-				
+		
 
 				/* daily litter and soil decomp and nitrogen fluxes */
 				if (!errflag && decomp(&metv,&epc,&sprop,&sitec,&cs,&ns,&epv,&cf,&nf,&nt))
@@ -852,8 +852,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone decomp\n",simyr,yday);
 #endif
-
-	
+		
 	
 				/* Daily allocation gets called whether or not this is a current growth day, because the competition between decomp
 				immobilization fluxes and plant growth N demand is resolved here.  
@@ -1016,6 +1015,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone mortality\n",simyr,yday);
 #endif
+		
 		
 				/* calculate the change of soil mineralized N in multilayer soil */ 
 				if (!errflag && multilayer_sminn(&epc, &sprop, &epv, &sitec, &cf, &ns, &nf))

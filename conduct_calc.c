@@ -2,12 +2,11 @@
 conduct_calc.c
 Calculation of conductance values based on limitation factors (in original BBGC this subroutine is partly included in canopy_et.c)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
-Original code: Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -23,16 +22,28 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, 
                  epvar_struct* epv, int simyr)
 {
-	int ok=1;	
-	int layer;
-	
-	double gl_bl, gl_c, gl_s_sun, gl_s_shade, gl_e_wv, gl_t_wv_sun, gl_t_wv_shade, gl_sh, gc_e_wv, gc_sh;
-	double m_ppfd_sun, m_ppfd_shade, m_tmin, m_co2, m_vpd, m_final_sun, m_final_shade, gcorr;
-	double max_conduct, m_vwcR_layer, vwc_ratio, m_soilstress_avg, p_co2;
+	int ok=1;
+	double gl_bl, gl_c, gl_s_sun, gl_s_shade;
+	double gl_e_wv, gl_t_wv_sun, gl_t_wv_shade, gl_sh;
+	double gc_e_wv, gc_sh;
+	double m_ppfd_sun, m_ppfd_shade;
+	double m_tmin, m_co2, m_vpd, m_final_sun, m_final_shade;
+	double gcorr;
 
-	gl_bl=gl_c=gl_s_sun=gl_s_shade=gl_e_wv=gl_t_wv_sun=gl_t_wv_shade=gl_sh=gc_e_wv=gc_sh=0;
-	m_ppfd_sun=m_ppfd_shade=m_tmin=m_co2=m_vpd=m_final_sun=m_final_shade=gcorr=0;
-	max_conduct=m_vwcR_layer=vwc_ratio=m_soilstress_avg=p_co2=0;
+	/* Hidy 2013 - changing MSC value */
+	double max_conduct;
+
+
+	/* Hidy 2010. - multiplier for soil properties in multilayer soil (instead of psi: vwc) */
+	int layer;
+	double m_vwcR_layer; 
+	double vwc_ratio;	
+	double m_soilstress_avg = 0;
+
+	/* Hidy 2015 - m_co2 */
+	double p_co2;
+
+
 	
 	/* temperature and pressure correction factor for conductances */
 	gcorr = pow((metv->tday+273.15)/293.15, 1.75) * 101300/metv->pa;
@@ -84,7 +95,7 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 		m_co2 = 1;
 
 
-	/* changing MSC value taking into account the effect of CO2 concentration */
+	/* Hidy 2015 - changing MSC value taking into account the effect of CO2 concentration */
 	if (ctrl->varMSC_flag && ctrl->spinup != 1)
 		max_conduct=epc->msc_array[simyr] * m_co2;
 	else
@@ -92,9 +103,9 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 
 	/* ******************/
 	/* 2. Soil water content
-		  calculate the multipiers for soil properties (soil water content ratio) in multilayer soil  - Jarvis (1989)*/	
+		  Hidy 2014 - calculate the multipiers for soil properties (soil water content ratio) in multilayer soil  - Jarvis (1989)*/	
 
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	for (layer = 0; layer < epv->n_rootlayers; layer++)
 	{
 
 		if (epv->vwc[layer] > sitec->vwc_wp[layer])

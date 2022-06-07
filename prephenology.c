@@ -3,12 +3,11 @@ prephenology.c
 Initialize phenology arrays, called prior to annual loop in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
-Original code: Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -23,17 +22,26 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 #include "misc_func.h"
 
-int prephenology(file logfile, const planting_struct* PLT, const harvesting_struct* HRV, const epconst_struct* epc, 
-	const siteconst_struct* sitec, const metarr_struct* metarr, const control_struct* ctrl, phenarray_struct* phenarr)
+int prephenology(file logfile, const control_struct* ctrl, const epconst_struct* epc, 
+const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* phenarr)
 
 {
 	int ok=1;
+	int n_yday = NDAY_OF_YEAR;
 	
 	int model,woody,evergreen,south;
 	double t1;
+	char round[80];
 	int i,pday,ndays,py;
 	int nyears,phenyears;
+	int ngrowthdays,ntransferdays,nlitfalldays;
 	int onday,offday;
+	int counter;
+	int remdays_curgrowth[365];
+	int remdays_transfer[365];
+	int predays_transfer[365];
+	int remdays_litfall[365];
+	int predays_litfall[365];
 	/* phenology model variables */
 	int *onday_arr = 0;
 	int *offday_arr = 0;
@@ -59,23 +67,74 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 	double grass_prcpprev;
 	double grass_prcpnextcrit = 0.97;
 	double grass_prcpnext;
-	double grass_tmaxyear[NDAYS_OF_YEAR];
-	double grass_tminyear[NDAYS_OF_YEAR];
-	double grass_3daytmin[NDAYS_OF_YEAR];
+	double grass_tmaxyear[365];
+	double grass_tminyear[365];
+	double grass_3daytmin[365];
 	int psum_startday, psum_stopday;
 	double tmax_ann, tmax, new_tmax;
 	double tmin_annavg;
 
-	int onday_min, onday_max, offday_min, offday_max;
+	int onday_min=364;
+	int onday_max=0;
+	int offday_min=364;
+	int offday_max=0;
 
 
 	onday = offday = 0;
 	nyears = ctrl->metyears;
-	ndays = NDAYS_OF_YEAR * nyears;
-
-	onday_min = offday_min = 364;
-	onday_max = offday_max = 0;
+	ndays = n_yday * nyears;
 	
+	/* allocate space for phenology arrays */
+	if (ok)
+	{
+		phenarr->remdays_curgrowth = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->remdays_curgrowth)
+		{
+			printf("Error allocating for phenarr->curgrowth, prephenology()\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		phenarr->remdays_transfer = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->remdays_transfer)
+		{
+			printf("Error allocating for phenarr->remdays_transfer, prephenology()\n");
+			ok=0;
+		}
+	}
+
+
+	if (ok)
+	{
+		phenarr->remdays_litfall = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->remdays_litfall)
+		{
+			printf("Error allocating for phenarr->remdays_litfall, prephenology()\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		phenarr->predays_transfer = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->predays_transfer)
+		{
+			printf("Error allocating for phenarr->predays_transfer, prephenology()\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		phenarr->predays_litfall = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->predays_litfall)
+		{
+			printf("Error allocating for phenarr->predays_litfall, prephenology()\n");
+			ok=0;
+		}
+	}
 
 	if (ok)
 	{
@@ -97,6 +156,7 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 		}
 	}
 	
+	/* Hidy 2012 */	
 	if (!ctrl->GSI_flag)
 	{
 		if (ok)
@@ -138,25 +198,22 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 
 	fprintf(logfile.ptr, "Information about SGS and EGS values (yday of onday and offday)\n");
 
-	/* control: in case of planting/harvesting, model-defined phenology is not possible: first day - planting day, last day - harvesting day */
-	if (epc->phenology_flag == 1 && (PLT->PLT_flag || HRV->HRV_flag))
-	{
-		printf("\n");
-		printf("ERROR in model parametrization: in case of planting/harvesting, model-defined phenology is not possible (firstday:planting, lastday:harvesting\n");
-		printf("Please check EPC file and try again\n");
-		ok=0;
-	}
-
-	/************************************************************************************************************
-	/* I. CONSTANT onday and offday
-	      define the phenology signals for cases in which the phenology signals are constant between years */
-	/************************************************************************************************************/
-
-	
+	/* define the phenology signals for cases in which the phenology signals
+	are constant between years */
 	if (evergreen || !model)
 	{
+		/* zero the n_yday-day phen arrays */
+		for (pday=0 ; pday<n_yday ; pday++)
+		{
+			remdays_curgrowth[pday] = 0;
+			remdays_transfer[pday] = 0;
+			predays_transfer[pday] = 0;
+			remdays_litfall[pday] = 0;
+			predays_litfall[pday] = 0;
+		}
 		
-		/*  1. define USER-DEFINED onday and offdays (from EPC file or SGS/EGS file) */
+
+		/* Hidy 2015 - user defined on and off days (base zero) */
 		for (py=0 ; py<phenyears ; py++)
 		{
 	
@@ -177,74 +234,212 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 			}
 
 		
+			if (onday >= offday) 
+			{
+				printf("FATAL ERROR: user-defined onday is greater or equal than offday (prephenology.c)\n");
+				ok = 0;
+			}
+		
 			phenarr->onday_arr[py]  = onday;
 			phenarr->offday_arr[py] = offday;
 
-			/* for wrinting out log file */
+			/* Hidy 2015  - wrinting out log file */
 			if (onday  < onday_min)  onday_min  = onday;
 			if (onday  > onday_max)  onday_max  = onday;
 			if (offday < offday_min) offday_min = offday;
 			if (offday > offday_max) offday_max = offday;
-		} /* end of user defined on and off days  */
-
-	
-		/* 2. if management information - use planting and harvest date for onday and offday	*/
-		if (PLT->PLT_flag)
-		{
-			onday_min = 364;
-			onday_max = 0;
-			for (py=0 ; py<phenyears ; py++)
-			{
-				/* yearly variable (from MGM file) or constant (from INI file) management data */
-				if (ctrl->PLT_flag == 2)
-					onday_arr[py] = (int) PLT->PLTdays_array[0][py];
-				else
-					onday_arr[py] = (int) PLT->PLTdays_array[0][0];
-
-				phenarr->onday_arr[py] = onday_arr[py];
-
-				if (onday_arr[py]  < onday_min)  onday_min  = onday_arr[py];
-				if (onday_arr[py]  > onday_max)  onday_max  = onday_arr[py];
-				
-			}
 		}
 
-		if (HRV->HRV_flag)
-		{
-			offday_min = 364;
-			offday_max = 0;
-			for (py=0 ; py<phenyears ; py++)
-			{
-				/* yearly variable (from MGM file) or constant (from INI file) management data */
-				if (ctrl->PLT_flag == 2)
-					offday_arr[py] = (int) HRV->HRVdays_array[0][py];
-				else
-					offday_arr[py] = (int) HRV->HRVdays_array[0][0];
-
-				phenarr->offday_arr[py] = offday_arr[py];
-
-				if (offday_arr[py]  < offday_min)  offday_min  = offday_arr[py];
-				if (offday_arr[py]  > offday_max)  offday_max  = offday_arr[py];
-				
-			}
-		}
-
-		/* 3. wrinting log file */
+		/* Hidy 2015  - wrinting log file */
 		fprintf(logfile.ptr, "SGS value (min and max): %6i %6i\n", onday_min, onday_max);
 		fprintf(logfile.ptr, "EGS value (min and max): %6i %6i\n", offday_min, offday_max);
 		fprintf(logfile.ptr, " \n");
 
-	} /* end if constant phenological signals */
+		if (!model && onday == -1 && offday == -1)
+		{
+			/* this is the special signal to repress all vegetation
+			growth, for simulations of bare ground */
+			for (pday=0 ; pday<n_yday ; pday++)
+			{
+				remdays_curgrowth[pday] = 0;
+				remdays_transfer[pday] = 0;
+				predays_transfer[pday] = 0;
+				remdays_litfall[pday] = 0;
+				predays_litfall[pday] = 0;
+			}
+		} /* end if special no-growth signal */
+		else
+		{
+			/* normal growth */
 
-	/************************************************************************************************************
-	/* II. MODEL-CALCULATED onday and offday */
-	/************************************************************************************************************/
+			if (!model && !evergreen)
+			{
+				/* user-specified dates for onset and offset, but this
+				gets overridden for evergreen types, so this case is only
+				for USER-SPECIFIED DECIDUOUS (either woody or non-woody) */
+				/* IMPORTANT NOTE:  the user specified yeardays for onset
+				and offset are in relation to a phenological definition for
+				a year, instead of the calendar year. In the Northern hemisphere,
+				this is the same as the calendar year, but in the southern
+				hemisphere, the phenological yeardays are defined to start on
+				July 2 (N. Hem yearday 182, using base-zero).  This lets a
+				user shift from N. Hem site to S. Hem site without having to
+				change phenological yeardays in the ini file */
+				/* force onset and offset to be at least one day apart */
+				if (onday == offday)
+				{
+					if (onday > 0) onday--;
+					else offday++;
+				}
+				ngrowthdays = offday - onday;
+				/* define the length of the transfer and litfall periods */
+				/* calculate number of transfer days and number of litfall days
+				as proportions of number of growth days, as specified by user.
+				Round and truncate to force these values between 1 and 
+				ngrowthdays */
+				t1 = epc->transfer_pdays * (double)ngrowthdays;
+				sprintf(round,"%.0lf",t1);
+				ntransferdays = atoi(round);
+				if (ntransferdays < 1) ntransferdays = 1;
+				if (ntransferdays > ngrowthdays) ntransferdays = ngrowthdays;
+				t1 = epc->litfall_pdays * (double)ngrowthdays;
+				sprintf(round,"%.0lf",t1);
+				nlitfalldays = atoi(round);
+				if (nlitfalldays < 1) nlitfalldays = 1;
+				if (nlitfalldays > ngrowthdays) nlitfalldays = ngrowthdays;
+				for (pday=0 ; pday<onday ; pday++)
+				{
+					remdays_curgrowth[pday] = 0;
+					remdays_transfer[pday] = 0;
+					remdays_litfall[pday] = 0;
+					predays_transfer[pday] = 0;
+					predays_litfall[pday] = 0;
+				}
+				counter = ngrowthdays;
+				for (pday=onday ; pday<offday ; pday++)
+				{
+					remdays_curgrowth[pday] = counter;
+					counter--;
+				}
+				for (pday=offday ; pday<n_yday ; pday++)
+				{
+					remdays_curgrowth[pday] = 0;
+				}
+				counter = ntransferdays;
+				for (pday=onday ; pday<onday+ntransferdays ; pday++)
+				{
+					remdays_transfer[pday] = counter;
+					predays_transfer[pday] = ntransferdays - counter;
+					counter--;
+				}
+				for (pday=onday+ntransferdays ; pday<=offday ; pday++)
+				{
+					remdays_transfer[pday] = 0;
+					predays_transfer[pday] = ntransferdays;
+				}
+				for (pday=offday+1 ; pday<n_yday ; pday++)
+				{
+					remdays_transfer[pday] = 0;
+					predays_transfer[pday] = 0;
+				}
+				for (pday=onday ; pday<offday-nlitfalldays+1 ; pday++)
+				{
+					remdays_litfall[pday] = 0;
+					predays_litfall[pday] = 0;
+				}
+				counter = nlitfalldays;
+				for (pday=offday-nlitfalldays+1 ; pday<=offday ; pday++)
+				{
+					remdays_litfall[pday] = counter;
+					predays_litfall[pday] = nlitfalldays - counter;
+					counter--;
+				}
+				for (pday=offday+1 ; pday<n_yday ; pday++)
+				{
+					remdays_litfall[pday] = 0;
+					predays_litfall[pday] = 0;
+				}
+			} /* end if user-specified and deciduous */
+
+			if (evergreen)
+			{	
+				/* specifying evergreen overrides any user input phenology data,
+				and triggers a very simple treatment of the transfer, litterfall,
+				and current growth signals.  Treatment is the same for woody and
+				non-woody types, and the same for model or user-input phenology */
+				/* fill the local phenyear control arrays */
+				for (pday=0 ; pday<n_yday ; pday++)
+				{
+					remdays_curgrowth[pday] = n_yday-pday;
+					remdays_transfer[pday] = n_yday-pday;
+					remdays_litfall[pday] = n_yday-pday;
+					predays_transfer[pday] = pday;
+					predays_litfall[pday] = pday;
+				} 
+			} /* end if evergreen */
+		} /* end else normal growth */
+
+		/* now copy this year multiple times to the permanent phenology struct
+		arrays, with tests for southern hemisphere. */
+		for (py=0 ; py<phenyears ; py++)
+		{
+			if (south)
+			{
+				if (py==0)
+				{
+					/* only copy the second half of this phenological
+					year to the permanent phenology array */
+					for (pday=182 ; pday<n_yday ; pday++)
+					{
+						phenarr->remdays_curgrowth[pday-182] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[pday-182] = remdays_transfer[pday];
+						phenarr->remdays_litfall[pday-182] = remdays_litfall[pday];
+						phenarr->predays_transfer[pday-182] = predays_transfer[pday];
+						phenarr->predays_litfall[pday-182] = predays_litfall[pday];
+					}
+				}
+				else if (py==phenyears-1)
+				{
+					/* only copy the first half of this phenological
+					year to the permanent phenology array */
+					for (pday=0 ; pday<182 ; pday++)
+					{
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
+					}
+				}
+				else
+				{
+					for (pday=0 ; pday<n_yday ; pday++)
+					{
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
+					}
+				}
+			} /* end if south */
+			else
+			{
+				/* north */
+				for (pday=0 ; pday<n_yday ; pday++)
+				{
+					phenarr->remdays_curgrowth[py*n_yday+pday] = remdays_curgrowth[pday];
+					phenarr->remdays_transfer[py*n_yday+pday] = remdays_transfer[pday];
+					phenarr->remdays_litfall[py*n_yday+pday] = remdays_litfall[pday];
+					phenarr->predays_transfer[py*n_yday+pday] = predays_transfer[pday];
+					phenarr->predays_litfall[py*n_yday+pday] = predays_litfall[pday];
+				}
+			} /* end if north */
+		} /* end py loop */
+	} /* end if constant phenological signals */
 	else
 	{
-		/*  1. define MODEL-DEFINED onday and offdays (original or GSI-method */
-		/**************************************************************/
-		/* A: ORIGINAL METHOD for calculating onset and offset day */
-		/**************************************************************/
+		/* original method for calculating onset and offset day */
 		if (!ctrl->GSI_flag)
 		{
 			/* Cases that have variable phenological signals between years */
@@ -287,12 +482,12 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 							}
 							else
 							{
-								phensoilt = metarr->tavg11_ra[py*NDAYS_OF_YEAR-182+pday];
+								phensoilt = metarr->tavg11_ra[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg11_ra[py*NDAYS_OF_YEAR+pday];
+							phensoilt = metarr->tavg11_ra[py*n_yday+pday];
 						}
 						
 						fall_tavg += phensoilt;
@@ -307,7 +502,7 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 				{
 					sum_soilt = 0.0;
 					onset_day = offset_day = -1;
-					for (pday=0 ; pday<NDAYS_OF_YEAR ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
 						if (south)
 						{
@@ -328,14 +523,14 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 							}
 							else
 							{
-								phensoilt = metarr->tavg11_ra[py*NDAYS_OF_YEAR-182+pday];
-								phendayl = metarr->dayl[py*NDAYS_OF_YEAR-182+pday];
+								phensoilt = metarr->tavg11_ra[py*n_yday-182+pday];
+								phendayl = metarr->dayl[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg11_ra[py*NDAYS_OF_YEAR+pday];
-							phendayl = metarr->dayl[py*NDAYS_OF_YEAR+pday];
+							phensoilt = metarr->tavg11_ra[py*n_yday+pday];
+							phendayl = metarr->dayl[py*n_yday+pday];
 						}
 						
 						/* tree onset test */
@@ -422,7 +617,7 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 					ann_prcp += metarr->prcp[i];
 				}
 				mean_tavg /= (double)ndays;
-				ann_prcp /= (double)ndays / NDAYS_OF_YEAR;
+				ann_prcp /= (double)ndays / NDAY_OF_YEAR;
 				
 				/* grass onset equation from White et al., 1997, with parameter
 				values specified by Mike White, Aug. 1997 */
@@ -441,7 +636,7 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 				for (py=0 ; py<phenyears ; py++)
 				{
 					new_tmax = -1000.0;
-					for (pday=0 ; pday<NDAYS_OF_YEAR ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
 						if (south)
 						{
@@ -462,14 +657,14 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 							}
 							else
 							{
-								tmax = metarr->tmax[py*NDAYS_OF_YEAR-182+pday];
-								tmin_annavg += metarr->tmin[py*NDAYS_OF_YEAR-182+pday];
+								tmax = metarr->tmax[py*n_yday-182+pday];
+								tmin_annavg += metarr->tmin[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							tmax = metarr->tmax[py*NDAYS_OF_YEAR+pday];
-							tmin_annavg += metarr->tmin[py*NDAYS_OF_YEAR+pday];
+							tmax = metarr->tmax[py*n_yday+pday];
+							tmin_annavg += metarr->tmin[py*n_yday+pday];
 						}
 						
 						if (tmax > new_tmax) new_tmax = tmax;
@@ -481,7 +676,7 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 				tmax_ann /= (double) phenyears;
 				/* 92% of tmax_ann is the threshold used in grass offset below */
 				tmax_ann *= 0.92;
-				tmin_annavg /= (double) phenyears * NDAYS_OF_YEAR;
+				tmin_annavg /= (double) phenyears * NDAY_OF_YEAR;
 				
 				/* loop through phenyears again, fill onset and offset arrays */
 				for (py=0 ; py<phenyears ; py++)
@@ -489,7 +684,7 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 					sum_soilt = 0.0;
 					sum_prcp = 0.0;
 					onset_day = offset_day = -1;
-					for (pday=0 ; pday<NDAYS_OF_YEAR ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
 						if (south)
 						{
@@ -516,20 +711,20 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 							}
 							else
 							{
-								phensoilt = metarr->tavg11_ra[py*NDAYS_OF_YEAR-182+pday];
-								phenprcp = metarr->prcp[py*NDAYS_OF_YEAR-182+pday];
+								phensoilt = metarr->tavg11_ra[py*n_yday-182+pday];
+								phenprcp = metarr->prcp[py*n_yday-182+pday];
 								grass_prcpyear[pday] = phenprcp;
-								grass_tminyear[pday] = metarr->tmin[py*NDAYS_OF_YEAR-182+pday];
-								grass_tmaxyear[pday] = metarr->tmax[py*NDAYS_OF_YEAR-182+pday];
+								grass_tminyear[pday] = metarr->tmin[py*n_yday-182+pday];
+								grass_tmaxyear[pday] = metarr->tmax[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg11_ra[py*NDAYS_OF_YEAR+pday];
-							phenprcp = metarr->prcp[py*NDAYS_OF_YEAR+pday];
+							phensoilt = metarr->tavg11_ra[py*n_yday+pday];
+							phenprcp = metarr->prcp[py*n_yday+pday];
 							grass_prcpyear[pday] = phenprcp;
-							grass_tminyear[pday] = metarr->tmin[py*NDAYS_OF_YEAR+pday];
-							grass_tmaxyear[pday] = metarr->tmax[py*NDAYS_OF_YEAR+pday];
+							grass_tminyear[pday] = metarr->tmin[py*n_yday+pday];
+							grass_tmaxyear[pday] = metarr->tmax[py*n_yday+pday];
 						}
 						
 						/* grass onset test */
@@ -551,13 +746,13 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 					if (onset_day != -1)
 					{
 						/* calculate three-day boxcar average of tmin */
-						if (boxcar_smooth(grass_tminyear, grass_3daytmin, NDAYS_OF_YEAR,3,0))
+						if (boxcar_smooth(grass_tminyear, grass_3daytmin, n_yday,3,0))
 						{
 							printf("Error in prephenology() call to boxcar()\n");
 							ok=0;
 						}
 						
-						for (pday=onset_day+30 ; pday<NDAYS_OF_YEAR ; pday++)
+						for (pday=onset_day+30 ; pday<n_yday ; pday++)
 						{
 							/* calculate the previous 31-day prcp total */
 							psum_startday = pday - 30;
@@ -636,13 +831,13 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 				} 	/* end phenyears loop for filling onset and offset arrays */
 			} /* end else !woody (grass phenology model) */
 
-			/* fix the onday and offday value */
+			/* Hidy 2012 - fix the onday and offday value */
 			for (py=0 ; py<phenyears ; py++)
 			{
 				phenarr->onday_arr[py]  = onday_arr[py];
 				phenarr->offday_arr[py] = offday_arr[py];
 
-				/* wrinting out log file */
+				/* Hidy 2015  - wrinting out log file */
 				if (onday_arr[py]  < onday_min)  onday_min  = onday_arr[py];
 				if (onday_arr[py]  > onday_max)  onday_max  = onday_arr[py];
 				if (offday_arr[py] < offday_min) offday_min = offday_arr[py];
@@ -650,10 +845,15 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 
 			}
 
+
+		/* Hidy 2015  - wrinting log file */
+		//fprintf(logfile.ptr, "SGS value (min and max) %6i %6i\n", onday_min, onday_max);
+		//fprintf(logfile.ptr, "EGS value (min and max) %6i %6i\n", offday_min, offday_max);
+		//fprintf(logfile.ptr, " \n");
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
 		}
-		/**************************************************************/
-		/* B. GSI-METHOD for calculating onset and offset day */
-		/**************************************************************/
+		/* Hidy 2012. - use onday and offdays from GSI_calculations to  */
 		else
 		{
 			for (py=0 ; py<phenyears ; py++)
@@ -661,7 +861,8 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 				onday_arr[py] = phenarr->onday_arr[py];
 				offday_arr[py] = phenarr->offday_arr[py];
 
-				/* wrinting out log file */
+
+				/* Hidy 2015  - wrinting out log file */
 				if (onday_arr[py]  < onday_min)  onday_min  = onday_arr[py];
 				if (onday_arr[py]  > onday_max)  onday_max  = onday_arr[py];
 				if (offday_arr[py] < offday_min) offday_min = offday_arr[py];
@@ -671,59 +872,185 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 			}
 		}
 
-		/* 2. if management information - use planting and harvest date for onday and offday	*/
-		if (PLT->PLT_flag)
-		{
-			onday_min = 364;
-			onday_max = 0;
-			for (py=0 ; py<phenyears ; py++)
-			{
-				/* yearly variable (from MGM file) or constant (from INI file) management data */
-				if (ctrl->PLT_flag == 2)
-					onday_arr[py] = (int) PLT->PLTdays_array[0][py];
-				else
-					onday_arr[py] = (int) PLT->PLTdays_array[0][0];
-				phenarr->onday_arr[py] = onday_arr[py];
-
-				if (onday_arr[py]  < onday_min)  onday_min  = onday_arr[py];
-				if (onday_arr[py]  > onday_max)  onday_max  = onday_arr[py];
-				
-			}
-		}
-
-		if (HRV->HRV_flag)
-		{
-			offday_min = 364;
-			offday_max = 0;
-			for (py=0 ; py<phenyears ; py++)
-			{
-				/* yearly variable (from MGM file) or constant (from INI file) management data */
-				if (ctrl->HRV_flag == 2)
-					offday_arr[py] = (int) HRV->HRVdays_array[0][py];
-				else
-					offday_arr[py] = (int) HRV->HRVdays_array[0][0];
-				phenarr->offday_arr[py] = offday_arr[py];
-
-				if (offday_arr[py]  < offday_min)  offday_min  = offday_arr[py];
-				if (offday_arr[py]  > offday_max)  offday_max  = offday_arr[py];
-				
-			}
-		}
-
 	
-		/* 3. wrinting log file */
+		/* Hidy 2015  - wrinting log file */
 		fprintf(logfile.ptr, "SGS value (min and max): %6i %6i\n", onday_min, onday_max);
 		fprintf(logfile.ptr, "EGS value (min and max): %6i %6i\n", offday_min, offday_max);
 		fprintf(logfile.ptr, " \n");
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		/* 4. now the onset and offset days are established for each phenyear,either by the deciduous tree or the grass model.  
-		Next loop through phenyears filling the phenology signal arrays and copying them to the permanent phen struct arrays */
+	
+		
+		/* now the onset and offset days are established for each phenyear,
+		either by the deciduous tree or the grass model.  Next loop through
+		phenyears filling the phenology signal arrays and copying them to 
+		the permanent phen struct arrays */
 		for (py=0 ; py<phenyears ; py++)
 		{
+			/* zero the n_yday-day phen arrays */
+			for (pday=0 ; pday<n_yday ; pday++)
+			{
+				remdays_curgrowth[pday] = 0;
+				remdays_transfer[pday] = 0;
+				predays_transfer[pday] = 0;
+				remdays_litfall[pday] = 0;
+				predays_litfall[pday] = 0;
+			}
 			
 			onday = onday_arr[py];
 			offday = offday_arr[py];
-		
+			
+			if (onday == -1 && offday == -1)
+			{
+				/* this is the special signal to repress all vegetation
+				growth */
+				for (pday=0 ; pday<n_yday ; pday++)
+				{
+					remdays_curgrowth[pday] = 0;
+					remdays_transfer[pday] = 0;
+					predays_transfer[pday] = 0;
+					remdays_litfall[pday] = 0;
+					predays_litfall[pday] = 0;
+				}
+			} /* end if special no-growth signal */
+			else
+			{
+				/* normal growth year */
+				ngrowthdays = offday - onday;
+				if (ngrowthdays < 1)
+				{
+					printf("FATAL ERROR: ngrowthdays < 1\n");
+					printf("ngrowthdays = %d\n",ngrowthdays);
+					printf("onday = %d\toffday = %d\tphenyear = %d\n",
+					onday,offday,py);
+					ok=0;
+				}
+				/* define the length of the transfer and litfall periods */
+				/* calculate number of transfer days and number of litfall days
+				as proportions of number of growth days, as specified by user.
+				Round and truncate to force these values between 1 and 
+				ngrowthdays */
+				t1 = epc->transfer_pdays * (double)ngrowthdays;
+				sprintf(round,"%.0lf",t1);
+				ntransferdays = atoi(round);
+				if (ntransferdays < 1) ntransferdays = 1;
+				if (ntransferdays > ngrowthdays) ntransferdays = ngrowthdays;
+				t1 = epc->litfall_pdays * (double)ngrowthdays;
+				sprintf(round,"%.0lf",t1);
+				nlitfalldays = atoi(round);
+				if (nlitfalldays < 1) nlitfalldays = 1;
+				if (nlitfalldays > ngrowthdays) nlitfalldays = ngrowthdays;
+				
+				for (pday=0 ; pday<onday ; pday++)
+				{
+					remdays_curgrowth[pday] = 0;
+					remdays_transfer[pday] = 0;
+					remdays_litfall[pday] = 0;
+					predays_transfer[pday] = 0;
+					predays_litfall[pday] = 0;
+				}
+				counter = ngrowthdays;
+				for (pday=onday ; pday<offday ; pday++)
+				{
+					remdays_curgrowth[pday] = counter;
+					counter--;
+				}
+				for (pday=offday ; pday<n_yday ; pday++)
+				{
+					remdays_curgrowth[pday] = 0;
+				}
+				counter = ntransferdays;
+				for (pday=onday ; pday<onday+ntransferdays ; pday++)
+				{
+					remdays_transfer[pday] = counter;
+					predays_transfer[pday] = ntransferdays - counter;
+					counter--;
+				}
+				for (pday=onday+ntransferdays ; pday<=offday ; pday++)
+				{
+					remdays_transfer[pday] = 0;
+					predays_transfer[pday] = ntransferdays;
+				}
+				for (pday=offday+1 ; pday<n_yday ; pday++)
+				{
+					remdays_transfer[pday] = 0;
+					predays_transfer[pday] = 0;
+				}
+				for (pday=onday ; pday<offday-nlitfalldays+1 ; pday++)
+				{
+					remdays_litfall[pday] = 0;
+					predays_litfall[pday] = 0;
+				}
+				counter = nlitfalldays;
+				for (pday=offday-nlitfalldays+1 ; pday<=offday ; pday++)
+				{
+					remdays_litfall[pday] = counter;
+					predays_litfall[pday] = nlitfalldays - counter;
+					counter--;
+				}
+				for (pday=offday+1 ; pday<n_yday ; pday++)
+				{
+					remdays_litfall[pday] = 0;
+					predays_litfall[pday] = 0;
+				}
+			} /* end else normal growth year */
+			
+			/* now put the signals for this phenological year into the
+			right place in the permanent phen struct arrays */ 
+			if (south)
+			{
+				if (py==0)
+				{
+					/* only copy the second half of this phenological
+					year to the permanent phenology array */
+					for (pday=182 ; pday<n_yday ; pday++)
+					{
+						phenarr->remdays_curgrowth[pday-182] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[pday-182] = remdays_transfer[pday];
+						phenarr->remdays_litfall[pday-182] = remdays_litfall[pday];
+						phenarr->predays_transfer[pday-182] = predays_transfer[pday];
+						phenarr->predays_litfall[pday-182] = predays_litfall[pday];
+					}
+				}
+				else if (py==phenyears-1)
+				{
+					/* only copy the first half of this phenological
+					year to the permanent phenology array */
+					for (pday=0 ; pday<182 ; pday++)
+					{
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
+					}
+				}
+				else
+				{
+					for (pday=0 ; pday<n_yday ; pday++)
+					{
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
+					}
+				}
+			} /* end if south */
+			else
+			{
+				/* north */
+				for (pday=0 ; pday<n_yday ; pday++)
+				{
+					phenarr->remdays_curgrowth[py*n_yday+pday] = remdays_curgrowth[pday];
+					phenarr->remdays_transfer[py*n_yday+pday] = remdays_transfer[pday];
+					phenarr->remdays_litfall[py*n_yday+pday] = remdays_litfall[pday];
+					phenarr->predays_transfer[py*n_yday+pday] = predays_transfer[pday];
+					phenarr->predays_litfall[py*n_yday+pday] = predays_litfall[pday];
+				}
+			} /* end if north */
 		} /* end phenyears loop for filling permanent arrays */
 	} /* end else phenology model block */
 	
@@ -734,3 +1061,18 @@ int prephenology(file logfile, const planting_struct* PLT, const harvesting_stru
 	return (!ok);
 }
 
+int free_phenmem(phenarray_struct* phenarr)
+{
+	int ok=1;
+	
+	/* free memory in phenology arrays */
+	free(phenarr->remdays_curgrowth);
+	free(phenarr->remdays_transfer);
+	free(phenarr->remdays_litfall);
+	free(phenarr->predays_transfer);
+	free(phenarr->predays_litfall);
+	free(phenarr->onday_arr);
+	free(phenarr->offday_arr);
+	
+	return (!ok);
+}

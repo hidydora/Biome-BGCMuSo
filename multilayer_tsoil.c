@@ -4,10 +4,9 @@ calculation of soil temperature in the different soil layers based on the change
 to top soil layer and based on empirical function of temperature gradient in soil (Zheng et al.1993)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0
-Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -23,9 +22,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, const epvar_struct* epv, int yday, double snoww,
-					 metvar_struct* metv)
-
+int multilayer_tsoil(int yday, const epconst_struct* epc, const siteconst_struct* sitec, const wstate_struct* ws, 
+					 metvar_struct* metv, epvar_struct* epv)
 {
 	int ok=1;
 	int layer;
@@ -38,21 +36,18 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 
 	/* daily averaged air tempreture on the given day (calculated from tmax and tmin), temp.gradient and local temperatures */
-	double temp_diff_total, temp_diff, tsoil, tsoil_avg;
+	double temp_diff_total, temp_diff, tsoil;
 
 	double STv1, STv2, WC, FX, f1, ALX, TA, Td, ZD;
-
-	/* 4M parameter */
-	double c_param_tsoil = 4;
 	
-	tsoil_avg=0;
+
 
 	/* *********************************************************** */
 	/* 1. FIRST LAYER PROPERTIES */
 	/* surface soil temperature change caused by air temp. change can be estimated from the air temperature using empirical equations */	
 
 	
-	if (snoww) 
+	if (ws->snoww) 
 		heating_coefficient = heatcoeff_snow;
 	else
 		heating_coefficient = heatcoeff_nosnow;
@@ -89,7 +84,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 		STv1 = 1000 + 2500 * sitec->BD[layer]/((sitec->BD[layer] + 686 * exp(-5.63*sitec->BD[layer])));
 		STv2 = log(500/STv1);
-		WC = epv->vwc_avg / ((0.356-0.144*sitec->BD[layer]) * sitec->soillayer_depth[N_SOILLAYERS-2]*100); // max_rootzone_depth: m to cm 
+		WC = epv->vwc_avg / ((0.356-0.144*sitec->BD[layer]) * sitec->soillayer_depth[N_SOILLAYERS-2]*1000); // max_rootzone_depth: m to cm 
 		FX = exp(STv2*pow((1-WC)/(1+WC),2));
 		f1 = 1/(FX*STv1);
 
@@ -97,21 +92,18 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 		TA = sitec->tair_annavg + sitec->tair_annrange * cos(ALX)/2;
 		Td = metv->F_temprad_ra - TA;
 	
-		ZD = -1 * sitec->soillayer_midpoint[layer] * 1000 * f1 * c_param_tsoil; // m to mm
+		ZD = -1 * sitec->soillayer_midpoint[layer] * 1000 * f1 * epc->c_param_tsoil; // m to mm
 	
 		tsoil = sitec->tair_annavg + (sitec->tair_annrange/2 * cos(ALX + ZD) + Td)  * exp(ZD); // depth: m to cm 
 
 		if (epc->STCM_flag) 
 			metv->tsoil[layer] = tsoil;
 
-		if (layer < N_SOILLAYERS-1) tsoil_avg += metv->tsoil[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
-
 	}
 
 	metv->tsoil_surface_pre = metv->tsoil_surface;
 	metv->tday_pre          = metv->tday; 
-    metv->tsoil_avg         = tsoil_avg;
-
+   
 	return (!ok);
 }
 	

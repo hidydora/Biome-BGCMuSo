@@ -3,10 +3,9 @@ harvesting_init.c
 read harvesting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0
-Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -23,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HRV)
+int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV)
 {
 	char key1[] = "HARVESTING";
 	char keyword[80];
@@ -67,7 +66,6 @@ int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HR
 		{
 			
 			ok=1;
-			printf("But it is not a problem (it is only due to the reading of harvesting file)\n");
 			if (ctrl->onscreen) printf("INFORMATION: harvesting information from file\n");
 			HRV->HRV_flag = 2;
 			strcpy(HRV_file.name, HRV_filename);
@@ -77,7 +75,6 @@ int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HR
 	/* yeary varied garzing parameters (HRV_flag=2); else: constant garzing parameters (HRV_flag=1) */
 	if (HRV->HRV_flag == 2)
 	{
-		
 		ny = ctrl->simyears; 
 	
 		/* open the main init file for ascii read and check for errors */
@@ -119,6 +116,7 @@ int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HR
 	}
 
 	HRV->mgmd = -1;
+	HRV->afterHRV = 0;
 
 
 	return (!ok);

@@ -1,14 +1,13 @@
- /*
-farquhar.c
+/*
+photosynthesis.c
 C3/C4 photosynthesis model
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
-Original code: Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 Updated1:
@@ -17,7 +16,7 @@ as suggested by Jim Collatz, I found that a modification to the J=f(I) equation 
 Also changed the  kinetic constants Kc and Ko to match de Pury and Farquhar 1997 (see below).
 Added a flag for the C3/C4 model, so that all variation is handled inside photosynthesis.c (change quantum yield, increase Ca for C4).
 Updated2:
-Hidy: correction of c4 photosynthesis routine based on the work of Vittorio et al in Biome-BGC 4.3 beta
+Hidy 2013: correction of c4 photosynthesis routine based on the work of Vittorio et al in Biome-BGC 4.3 beta
 */
 
 #include <stdlib.h>
@@ -29,140 +28,7 @@ Hidy: correction of c4 photosynthesis routine based on the work of Vittorio et a
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, 
-	               epvar_struct* epv, psn_struct* psn_sun, psn_struct* psn_shade, cflux_struct *cf) 
-{
-	int ok=1;
-	double assim_Tcoeff = 1;
-	double W_to_MJperDAY, DDMP_sunlit, DDMP_shaded, RUE, assim_CO2coeff, co2_ref, b, g_to_kg;
-
-	/* 1. Tmax limitation calculation of photosynthesis */
-	
-	if (epc->assim_minT != DATA_GAP)
-	{
-		/* if less than min or greater than max -> 0 */
-		if (metv->tmax < epc->assim_minT || metv->tmax >= epc->assim_maxT)
-			assim_Tcoeff = 0;
-		else
-		{
-			/*  between optimal temperature -> 1, below/above linearly decreasing */
-			if (metv->tmax < epc->assim_opt1T)
-				assim_Tcoeff = (metv->tmax - epc->assim_minT) / (epc->assim_opt1T - epc->assim_minT);
-			else
-			{
-				if (metv->tmax < epc->assim_opt2T)
-					assim_Tcoeff = 1;
-				else
-					assim_Tcoeff = (epc->assim_maxT - metv->tmax) / (epc->assim_maxT - epc->assim_opt2T);
-			}
-			
-		}
-		/* control */
-		if (assim_Tcoeff < 0 || assim_Tcoeff > 1)
-		{
-			printf("\n");
-			printf("FATAL ERROR in assim_Tcoeff calculation (photosynthesis.c)\n");
-			ok=0;
-		}
-	}
-
-	
-	if (epc->photosynt_flag)
-	{
-	
-		/* 2. DSSAT photosytnhesis rountine */
-		/* constant values from Dry matter production */
-		co2_ref = 350;
-		
-		g_to_kg = 0.001;
-		
-		if (epc->c3_flag)
-			b = 0.8;
-		else
-			b = 0.4;
-		
-		W_to_MJperDAY = 1e-6 * NSEC_IN_DAY; 
-
-		assim_CO2coeff = (1 + b * log(metv->co2/co2_ref));
-		RUE  = epc->potRUE * assim_Tcoeff * assim_CO2coeff;             // [RUE] = g MJ-1
-		DDMP_sunlit = (metv->parabs_plaisun   * W_to_MJperDAY) * RUE;   // [DDMP] = g m-2 d-1
-		DDMP_shaded = (metv->parabs_plaishade * W_to_MJperDAY) * RUE;
-
-		cf->psnsun_to_cpool   = DDMP_sunlit * g_to_kg;  
-		cf->psnshade_to_cpool = DDMP_shaded * g_to_kg;  
-
-	}
-	else
-	{
-
-	
-	
-		/* 3.1 MuSo SUNLIT canopy fraction photosynthesis */
-	
-		/* set the input variables */
-		psn_sun->c3		= epc->c3_flag;
-		psn_sun->co2	= metv->co2;
-		psn_sun->pa		= metv->pa;
-		psn_sun->t		= metv->tday;
-		psn_sun->lnc	= 1.0 / (epv->sun_proj_sla * epc->leaf_cn);
-		psn_sun->flnr	= epc->flnr;
-		psn_sun->flnp	= epc->flnp;
-		psn_sun->ppfd	= metv->ppfd_per_plaisun;
-		/* convert conductance from m/s --> umol/m2/s/Pa, and correct for CO2 vs. water vapor */
-		psn_sun->g		= epv->gl_t_wv_sun * 1e6/(1.6*R*(metv->tday+273.15));
-		psn_sun->dlmr	= epv->dlmr_area_sun;
-
-		if (ok && farquhar(epc, metv, psn_sun))
-		{
-			printf("Error in farquhar() in  photosynthesis()\n");
-			ok=0;
-		}
-
-
-	
-		epv->assim_sun = psn_sun->A * assim_Tcoeff;
-
-				
-		/* for the final flux assignment, the assimilation output needs to have the maintenance respiration rate added, this
-		sum multiplied by the projected leaf area in the relevant canopy fraction, and this total converted from umol/m2/s -> kgC/m2/d */
-		cf->psnsun_to_cpool = (epv->assim_sun + epv->dlmr_area_sun) * epv->plaisun * metv->dayl * 12.011e-9; 
-				
-						
-		/* 3.2. MuSo SHADED canopy fraction photosynthesis */
-		psn_shade->c3	= epc->c3_flag;
-		psn_shade->co2	= metv->co2;
-		psn_shade->pa	= metv->pa;
-		psn_shade->t	= metv->tday;
-		psn_shade->lnc	= 1.0 / (epv->shade_proj_sla * epc->leaf_cn);
-		psn_shade->flnr	= epc->flnr;
-		psn_shade->flnp	= epc->flnp;
-		psn_shade->ppfd	= metv->ppfd_per_plaishade;
-		/* convert conductance from m/s --> umol/m2/s/Pa, and correct for CO2 vs. water vapor */
-		psn_shade->g	= epv->gl_t_wv_shade * 1e6/(1.6*R*(metv->tday+273.15));
-		psn_shade->dlmr	= epv->dlmr_area_shade;
-			
-		if (ok && farquhar(epc, metv, psn_shade))
-		{
-			printf("Error in photosynthesis() from bgc()\n");
-			ok=0;
-		}
-	
-
-		epv->assim_shade = psn_shade->A * assim_Tcoeff;
-
-		/* for the final flux assignment, the assimilation output needs to have the maintenance respiration rate added, this
-		sum multiplied by the projected leaf area in the relevant canopy fraction, and this total converted from umol/m2/s -> kgC/m2/d */
-
-		cf->psnshade_to_cpool = (epv->assim_shade + epv->dlmr_area_shade) * epv->plaishade * metv->dayl * 12.011e-9; 
-
-	}
-
-
-
-return (!ok);
-}
-
-int farquhar(const epconst_struct* epc, const metvar_struct* metv, psn_struct* psn) 
+int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, psn_struct* psn)
 {
 	/*
 	The following variables are assumed to be defined in the psn struct
@@ -213,13 +79,13 @@ int farquhar(const epconst_struct* epc, const metvar_struct* metv, psn_struct* p
 	All other parameters, including the q10's for Kc and Ko are the same
 	as in Woodrow and Berry. */
 	static double Kc25 = 404.0;   /* (ubar) MM const carboxylase, 25 deg C */ 
-	static double q10Kc = 2.1;    /* (dimless) Q_10 for Kc */
+	static double q10Kc = 2.1;    /* (DIM) Q_10 for Kc */
 	static double Ko25 = 248.0;   /* (mbar) MM const oxygenase, 25 deg C */
-	static double q10Ko = 1.2;    /* (dimless) Q_10 for Ko */
+	static double q10Ko = 1.2;    /* (DIM) Q_10 for Ko */
 	static double act25 = 3.6;    /* (umol/mgRubisco/min) Rubisco activity */
-	static double q10act = 2.4;   /* (dimless) Q_10 for Rubisco activity */
+	static double q10act = 2.4;   /* (DIM) Q_10 for Rubisco activity */
 
-	static double pabs = 0.85;    /* (dimless) fPAR effectively absorbed by PSII */
+	static double pabs = 0.85;    /* (DIM) fPAR effectively absorbed by PSII */
 
 	/* NEW - this is now held constant across both routines*/
 	static double ppe = 2.6;  /*efficiency of photon absorbtion by photosystem II - mol photons absorbed/mol e- transported*/
@@ -229,10 +95,10 @@ int farquhar(const epconst_struct* epc, const metvar_struct* metv, psn_struct* p
 	static double fnp = 7.12; /* mass proportion of PEP Carboxylase to its N content - after Joseph White's algorithm description*/
 	static double actp = 438333.333; /*activity of pep carboxylase - umol CO2/(kgPEP*sec); sage et al 1987 for amaranthus retroflexus; uedan et al. 1976 gives = 413333.333;  MIGHT NEED TO ADD A TEMPERATURE CORRECTION HERE */
 	static double Kp25 = 82; /*ubar pep carboxylase Michaelis-Menton constant; remember ubar=ppm*/
-	static double Q10Kp = 2.1; /*(dimless) Q10 for pep carboxylase activity*/
+	static double Q10Kp = 2.1; /*(DIM) Q10 for pep carboxylase activity*/
 	static double Rbs = 0.000130; /* (m2s/umol) - bundle sheath resistance to co2 flux perleaf area, bundle sheath area bases -- average of 3 types of C4 plant, von Caemmerer 2003*/
 
-	/* acclimation  */
+	/* acclimation - Hidy 2015 */
 	static double acclim_a  = 2.59;
 	static double acclim_b  = -0.035;
 	double acclim_rVJ;
@@ -285,8 +151,6 @@ int farquhar(const epconst_struct* epc, const metvar_struct* metv, psn_struct* p
 		Kc = Kc25 * pow(1.8*q10Kc, (t-15.0)/10.0) / q10Kc;
 		act = act25 * pow(1.8*q10act, (t-15.0)/10.0) / q10act;
 	}
-
-	
 	psn->Kc = Kc = Kc * 0.10;   /* ubar --> Pa */
 	act = act * 1e6 / 60.0;     /* umol/mg/min --> umol/kg/s */
 	psn->Ca = Ca;

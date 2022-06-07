@@ -1,15 +1,14 @@
 	/*
 pointbgc.c
 front-end to BIOME-BGC for single-point, single-biome simulations
-Uses BBGC MuSo v5 library function
+Uses BBGC MuSo v4 library function
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
-Original code: Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -26,7 +25,6 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"     /* function prototypes for point driver */
 #include "bgc_io.h"           /* bgc() interface definition */
 #include "bgc_epclist.h"      /* array structure for epc-by-vegtype */
-#include "bgc_constants.h"      /* array structure for epc-by-vegtype */
 
 int main(int argc, char *argv[])
 {
@@ -177,7 +175,7 @@ int main(int argc, char *argv[])
 	}
 	
 	 /* -------------------------------------------------------------------------*/
-	/* MANAGEMENT SECTION  */
+	/* MANAGEMENT SECTION - Hidy 2012.. */
 	
 	/* read the planting information */
 	if (planting_init(init, &bgcin.ctrl, &bgcin.PLT))
@@ -273,7 +271,7 @@ int main(int argc, char *argv[])
 	fclose(init.ptr);
 
 	/* read meteorology file, build metarr arrays, compute running avgs */
-	if (metarr_init(&point, &bgcin.metarr, &scc, &bgcin.sitec, bgcin.ctrl.metyears))
+	if (metarr_init(point.metf, &bgcin.metarr, &scc, &bgcin.sitec, bgcin.ctrl.metyears))
 	{
 		printf("Error in call to metarr_init() from pointbgc.c... Exiting\n");
 		fprintf(output.log_file.ptr, "ERROR in reading meteorological file\n");
@@ -290,7 +288,6 @@ int main(int argc, char *argv[])
 		fprintf(output.log_file.ptr, "ERROR in reading groundwater file\n");
 		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
 		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
 	}
 	
 
@@ -305,36 +302,30 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.ndayout = output.ndayout;
 	bgcin.ctrl.nannout = output.nannout;
 	bgcin.ctrl.daycodes = output.daycodes;
-	bgcin.ctrl.daynames = output.daynames;
 	bgcin.ctrl.anncodes = output.anncodes;
-	bgcin.ctrl.annnames = output.annnames;
 	bgcin.ctrl.read_restart = restart.read_restart;
 	bgcin.ctrl.write_restart = restart.write_restart;
 	bgcin.ctrl.keep_metyr = restart.keep_metyr;
-	bgcin.ctrl.GSI_flag = bgcin.GSI.GSI_flag;		/* do GSI calc  */
-	bgcin.ctrl.FRZ_flag = bgcin.FRZ.FRZ_flag;		/* do FRZ  */
-	bgcin.ctrl.THN_flag = bgcin.THN.THN_flag;       /* do MOW  */
-	bgcin.ctrl.MOW_flag = bgcin.MOW.MOW_flag;       /* do MOW  */
-	bgcin.ctrl.GRZ_flag = bgcin.GRZ.GRZ_flag;       /* do GR  */
-	bgcin.ctrl.HRV_flag = bgcin.HRV.HRV_flag;       /* do HRV  */
-	bgcin.ctrl.PLG_flag = bgcin.PLG.PLG_flag;       /* do PL  */
-	bgcin.ctrl.PLT_flag = bgcin.PLT.PLT_flag;       /* do PLT  */
-	bgcin.ctrl.IRG_flag = bgcin.IRG.IRG_flag;       /* do PLT  */
-	bgcin.ctrl.simyr = 0;							/* counter  */
-	bgcin.ctrl.yday = 0;							/* counter  */
-	bgcin.ctrl.spinyears = 0;						/* counter  */
-	bgcin.ctrl.month = 1;							/* counter  */
-	bgcin.ctrl.day = 1;								/* counter  */
-	bgcin.ctrl.CNerror = 0;
-	bgcin.ctrl.germ_depth = 0;
-	bgcin.ctrl.germ_layer = 0;
-	bgcin.ctrl.gwd_act=DATA_GAP;
+	bgcin.ctrl.GSI_flag = bgcin.GSI.GSI_flag;		/* do GSI calc - Hidy 2009.*/
+	bgcin.ctrl.FRZ_flag = bgcin.FRZ.FRZ_flag;		/* do FRZ - Hidy 2009.*/
+	bgcin.ctrl.THN_flag = bgcin.THN.THN_flag;       /* do MOW - Hidy 2009.*/
+	bgcin.ctrl.MOW_flag = bgcin.MOW.MOW_flag;       /* do MOW - Hidy 2009.*/
+	bgcin.ctrl.GRZ_flag = bgcin.GRZ.GRZ_flag;       /* do GR - Hidy 2009.*/
+	bgcin.ctrl.HRV_flag = bgcin.HRV.HRV_flag;       /* do HRV - Hidy 2009.*/
+	bgcin.ctrl.PLG_flag = bgcin.PLG.PLG_flag;       /* do PL - Hidy 2009.*/
+	bgcin.ctrl.PLT_flag = bgcin.PLT.PLT_flag;       /* do PLT - Hidy 2009.*/
+	bgcin.ctrl.IRG_flag = bgcin.IRG.IRG_flag;       /* do PLT - Hidy 2009.*/
+	bgcin.ctrl.simyr = 0;							/* counter - Hidy 2010.*/
+	bgcin.ctrl.yday = 0;							/* counter - Hidy 2010.*/
+	bgcin.ctrl.spinyears = 0;						/* counter - Hidy 2010.*/
 
 	/* copy the output file structures into bgcout */
 	if (output.dodaily) bgcout.dayout = output.dayout;
 	if (output.domonavg) bgcout.monavgout = output.monavgout;
 	if (output.doannavg) bgcout.annavgout = output.annavgout;
 	if (output.doannual) bgcout.annout = output.annout;
+	bgcout.anntext = output.anntext;
+	bgcout.control_file = output.control_file;
 	bgcout.log_file = output.log_file;
 	
 	
@@ -417,7 +408,6 @@ int main(int argc, char *argv[])
 	if (bgcin.co2.varco2) free(bgcin.co2.co2ppm_array);
 	free(output.anncodes);
 	free(output.daycodes);
-	free(output.daynames);
 	
 	/* close files */
 	if (restart.read_restart) fclose(restart.in_restart.ptr);
@@ -426,7 +416,8 @@ int main(int argc, char *argv[])
 	if (output.domonavg) fclose(output.monavgout.ptr);
 	if (output.doannavg) fclose(output.annavgout.ptr);
 	if (output.doannual) fclose(output.annout.ptr);
+	fclose(output.anntext.ptr);
 	fclose(output.log_file.ptr);
-    /* end of main */	
- } 
+	
+ } /* end of main */
 	

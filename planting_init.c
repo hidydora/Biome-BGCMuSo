@@ -3,10 +3,9 @@ planting_init.c
 read planting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
-Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -23,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int planting_init(file init, const control_struct* ctrl, planting_struct* PLT)
+int planting_init(file init, control_struct* ctrl, planting_struct* PLT)
 {
 	
 	char key0[]  = "-------------------";
@@ -47,7 +46,7 @@ int planting_init(file init, const control_struct* ctrl, planting_struct* PLT)
 	**                                                                 **
 	********************************************************************/
 	
-	/* keyword control */
+	/* keyword control - Hidy 2012. */
 	if (ok && scan_value(init, keyword, 's'))
 	{
 		printf("Error reading keyword for management section\n");
@@ -103,7 +102,6 @@ int planting_init(file init, const control_struct* ctrl, planting_struct* PLT)
 		{
 			
 			ok=1;
-			printf("But it is not a problem (it is only due to the reading of planting file)\n");
 			if (ctrl->onscreen) printf("INFORMATION: planting information from file\n");
 			PLT->PLT_flag = 2;
 			strcpy(PLT_file.name, PLT_filename);
@@ -114,7 +112,6 @@ int planting_init(file init, const control_struct* ctrl, planting_struct* PLT)
 	/* yeary varied garzing parameters (PLT_flag=2); else: constant garzing parameters (PLT_flag=1) */
 	if (PLT->PLT_flag == 2)
 	{
-
 		ny = ctrl->simyears; 
 	
 		/* open the main init file for ascii read and check for errors */
@@ -130,27 +127,15 @@ int planting_init(file init, const control_struct* ctrl, planting_struct* PLT)
 	}
 	else PLT_file=init;
 
- 	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->PLTdays_array)))
+	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->PLTdays_array)))
 	{
 		printf("Error reading PLTdays_array\n");
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->germ_depth_array)))
+	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->seed_quantity_array)))
 	{
-		printf("Error reading germ_depth_array\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->n_seedlings_array)))
-	{
-		printf("Error reading n_seedlings\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->seed_specweight_array)))
-	{
-		printf("Error reading seed_specweight_array\n");
+		printf("Error reading seed_quantity_array\n");
 		ok=0;
 	}
 
@@ -160,9 +145,9 @@ int planting_init(file init, const control_struct* ctrl, planting_struct* PLT)
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->emerg_rate_array)))
+	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->utiliz_coeff_array)))
 	{
-		printf("Error reading emerg_rate_array\n");
+		printf("Error reading utiliz_coeff_array\n");
 		ok=0;
 	}
 
@@ -174,7 +159,7 @@ int planting_init(file init, const control_struct* ctrl, planting_struct* PLT)
 	
 	
 	PLT->mgmd = -1;
-
+	PLT->afterPLT = 0;
 	
 	return (!ok);
- }
+}

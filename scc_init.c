@@ -3,11 +3,11 @@ scc_init.c
 Initialize the scalar climate change parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

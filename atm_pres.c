@@ -3,11 +3,9 @@ atm_pres.c
 estimate atmospheric pressure as a function of elevation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -28,7 +26,7 @@ int atm_pres(double elev, double* pa)
 		Edition. D. Reidel Publishing Company, Dordrecht, The Netherlands.
 		(p. 168)
 	*/
-	 
+	
 	int ok=1;
 	double t1,t2;
 	

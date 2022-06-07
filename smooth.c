@@ -3,11 +3,9 @@ smooth.c
 functions that perform smoothing on vectors
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

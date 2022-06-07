@@ -4,11 +4,9 @@ function prototypes for miscellaneous functions used in bgc routines
 for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 /* function prototypes for smoothing functions */

@@ -4,11 +4,11 @@ A single-function treatment of canopy evaporation and transpiration
 fluxes.  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -21,18 +21,18 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const epvar_struct* epv, wflux_struct* wf)
+int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
 {
 	int ok=1;
 
 
 	double e, cwe, t, trans, trans_sun, trans_shade, e_dayl,t_dayl;
 	
+
 	pmet_struct pmet_in;
-    
-	e=cwe=t=trans=trans_sun=trans_shade=e_dayl=t_dayl=0;
 
-
+	
+        cwe = trans = 0.0;
 	/* Assign values in pmet_in that don't change */
 	pmet_in.ta = metv->tday;
 	pmet_in.pa = metv->pa;
@@ -49,12 +49,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const epvar_
 		/* assign appropriate resistance and radiation for pmet_in */
 		pmet_in.rv = 1.0/epv->gc_e_wv;
 		pmet_in.rh = 1.0/epv->gc_sh;
-
-		/* choose evapotranspiration calculation method */
-		if (epc->evapotransp_flag == 0)
-			pmet_in.irad = metv->swabs;
-		else
-			pmet_in.irad = metv->RADnet;
+		pmet_in.irad = metv->swabs;
 		
 		/* call penman-monteith function, returns e in kg/m2/s */
 		if (penmon(&pmet_in, 0, &e))
@@ -84,14 +79,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const epvar_
 			/* first for sunlit canopy fraction */
 			pmet_in.rv = 1.0/epv->gl_t_wv_sun;
 			pmet_in.rh = 1.0/epv->gl_sh;
-
-			/* choose radiation calculation method */
-			if (epc->radiation_flag == 0)
-				pmet_in.irad = metv->swabs_per_plaisun;
-			else
-				pmet_in.irad = metv->RADnet_per_plaisun;
-
-			/* call Penman-Monthieth function */
+			pmet_in.irad = metv->swabs_per_plaisun;
 			if (penmon(&pmet_in, 0, &t))
 			{
 				printf("ERROR: penmon() for adjusted transpiration... \n");
@@ -102,14 +90,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const epvar_
 			/* next for shaded canopy fraction */
 			pmet_in.rv = 1.0/epv->gl_t_wv_shade;
 			pmet_in.rh = 1.0/epv->gl_sh;
-			
-			/* choose radiation calculation method */
-			if (epc->radiation_flag == 0)
-				pmet_in.irad = metv->swabs_per_plaishade;
-			else
-				pmet_in.irad = metv->RADnet_per_plaishade;
-		
-			/* call Penman-Monthieth function */
+			pmet_in.irad = metv->swabs_per_plaishade;
 			if (penmon(&pmet_in, 0, &t))
 			{
 				printf("ERROR: penmon() for adjusted transpiration... \n");
@@ -125,14 +106,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const epvar_
 		/* first for sunlit canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_sun;
 		pmet_in.rh = 1.0/epv->gl_sh;
-	
-		/* choose radiation calculation method */
-		if (epc->radiation_flag == 0)
-			pmet_in.irad = metv->swabs_per_plaisun;
-		else
-			pmet_in.irad = metv->RADnet_per_plaisun;
-
-		/* call Penman-Monthieth function */
+		pmet_in.irad = metv->swabs_per_plaisun;
 		if (penmon(&pmet_in, 0, &t))
 		{
 			printf("ERROR: penmon() for adjusted transpiration... \n");
@@ -143,14 +117,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const epvar_
 		/* next for shaded canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_shade;
 		pmet_in.rh = 1.0/epv->gl_sh;
-		
-		/* choose radiation calculation method */
-		if (epc->radiation_flag == 0)
-			pmet_in.irad = metv->swabs_per_plaishade;
-		else
-			pmet_in.irad = metv->RADnet_per_plaishade;
-		
-		/* call Penman-Monthieth function */
+		pmet_in.irad = metv->swabs_per_plaishade;
 		if (penmon(&pmet_in, 0, &t))
 		{
 			printf("ERROR: penmon() for adjusted transpiration... \n");
@@ -162,8 +129,19 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const epvar_
 
 		
 	}
-	/* multilayer soil model: multilayer transpiration is calculated in multilayer_transpiration.c */
-	wf->soilw_trans_SUM = trans;
+	/* Hidy 2011 - multilayer soil model: transpiration is calculated in multilayer_transpiration.c 
+	original: wf->soilw_trans = trans; */	
+	if (epv->m_soilstress > epc->m_soilstress_crit)
+	{
+		wf->soilw_trans_SUM = trans;
+	}
+	else
+	{
+		wf->soilw_trans_SUM = (epv->m_soilstress / epc->m_soilstress_crit) * trans;
+	//	if (ctrl->onscreen && ctrl->spinup == 0) printf("WARNING: Limited transpiration due to dry soil (canopy_et.c)\n");
+	}
+
+	wf->soilw_trans_SUM = epv->m_soilstress * trans;
 	
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
 	wf->canopyw_evap = cwe;

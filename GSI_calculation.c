@@ -5,10 +5,9 @@ based on literure (Jolly et al, 2005) and own method. The goal is to replace pre
 of the model-defined onset and offset day does not work correctly
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0
-Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -40,7 +39,7 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 	int onday = 0;
 	int offday = 0;
 	int nyears = ctrl->metyears;
-	int n_yday = NDAYS_OF_YEAR;
+	int n_yday = NDAY_OF_YEAR;
 	
 	/*  enviromental conditions taken account to calculate onset and offset days */
 	double tmax_act, tmin_act, tavg_act, vpd_act, dayl_act, heatsum_act;	
@@ -97,8 +96,7 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 		onday_arr = (int*) malloc((nyears+1) * sizeof(int));
 		if (!onday_arr)
 		{
-			printf("\n");
-			printf("ERROR allocating for onday_arr, prephenology()\n");
+			printf("Error allocating for onday_arr, prephenology()\n");
 			ok=0;
 		}
 	}
@@ -107,19 +105,33 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 		offday_arr = (int*) malloc((nyears+1) * sizeof(int));
 		if (!offday_arr)
 		{
-			printf("\n");
-			printf("ERROR allocating for offday_arr, prephenology()\n");
+			printf("Error allocating for offday_arr, prephenology()\n");
 			ok=0;
 		}
 	}
 
+
+		
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	if (ctrl->onscreen)
+	{
+		fprintf(GSI->GSI_file.ptr, "year yday snowcover heatsum_act tmin_index vpd_index dayl_index heatsum_index GSI_index_avg GSI_index_total\n");
+		
+		if (ctrl->spinup == 0)
+		{	
+			printf("-----------------\n");
+			printf("ONDAYS AND OFFDAYS\n");
+		}
+	}
+	////////////////////////////////////////////////////////////////////
 
 	for (ny=0; ny<nyears; ny++)
 	{
 		onday  = 0;
 		offday = 0;
 
-		for (yday=0; yday<NDAYS_OF_YEAR; yday++)	
+		for (yday=0; yday<NDAY_OF_YEAR; yday++)	
 		{
 		/* ******************************************************************* */
 		/* 1. calculation of snow loss and plus*/
@@ -298,12 +310,12 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 		
 		
 			/* if vegetation period has not ended until the last day of year, the offday is equal to the last day of year */
-			if (yday == NDAYS_OF_YEAR-1 && offday == 0)
+			if (yday == NDAY_OF_YEAR-1 && offday == 0)
 			{	/* if vegetation period has not began */
 				if (onday_flag == 0) 
 				{	
 					onday_arr[ny] = yday-2;
-					if (ctrl->onscreen) printf("WARNING: no real vegetation period - check meteorological data\n");
+					if (ctrl->onscreen) printf("WARNING: no real vegetation period - check meteorological data");
 				}
 				onday_flag     = 0;
 				offday_flag    = 1;
@@ -311,13 +323,30 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 				offday_arr[ny] = offday;
 			
 			}
+			/* ******************************************************************* */
+			/* 4. writing out the enviromental parameters and GSI indexes */
+			if (ctrl->onscreen)
+			{
+				fprintf(GSI->GSI_file.ptr, "%i %i %5.2f %5.1f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f\n", 
+						ctrl->simstartyear+ny, yday, 
+						snowcover, heatsum_act, tmin_index, vpd_index, dayl_index, heatsum_index, GSI_index_avg, GSI_index_total);
+			}
 
 		}/* endfor - simdays */
 
 	
 	} /* endfor - simyears */
 
-
+	/* writing out the date of onday and offday for every simulation year */
+	if (ctrl->onscreen)
+	{
+		for (ny=0 ; ny<nyears ; ny++)
+		{
+			fprintf(GSI->GSI_file.ptr, "%i\n", ctrl->simstartyear+ny);
+			fprintf(GSI->GSI_file.ptr, "%i\n", onday_arr[ny]);
+			fprintf(GSI->GSI_file.ptr, "%i\n", offday_arr[ny]);
+		}
+	}
 
 	phenarr->onday_arr = onday_arr;
 	phenarr->offday_arr= offday_arr;

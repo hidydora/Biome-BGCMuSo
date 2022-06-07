@@ -3,11 +3,9 @@ epclist.h
 structure for array of ecophysiological constants structures 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -19,4 +17,4 @@ typedef struct
 
 /* function prototypes */
 int epclist_init(file init, epclist_struct* epclist);
-int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ctrl); 
+int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ctrl); // Hidy 2012 - changing WPM);

@@ -3,12 +3,10 @@ pointbgc_struct.h
 for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
-Original code: Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
-Hungarian Academy of Sciences, Hungary
-See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
+BBGC MuSo v4
+Copyright 2000, Peter E. Thornton
+Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -18,7 +16,6 @@ typedef struct
     char header[100];      /* header string, written to all output files */
 	char systime[100];     /* system time at start of simulation */ 
 	file metf;             /* met data file (ASCII) *//* simulation restart control variables */
-	int  nday_lastsimyear; /* (int) number of simdays in last simyear (truncated year: < 365) */
 } point_struct;
 
 typedef struct
@@ -42,27 +39,27 @@ typedef struct
 
 typedef struct
 {
-	int onscreen;				/* flag for on-screen progress indicator */
-	char outprefix[100];		/* output filename prefix */
-	int dodaily; 				/* flag for daily output */
-	int domonavg;				/* flag for monthly average output */
-	int doannavg;				/* flag for annual average output */
-	int doannual;				/* flag for annual output */
-	int ndayout;				/* number of custom daily outputs */
-	int nannout;				/* number of custom annual outputs */
-	int* daycodes;				/* array of indices for daily outputs */
-	char** daynames;			/* array of names for daily outputs */
-	int* anncodes;				/* array of indices for annual outputs */
-	char** annnames;			/* array of names for daily outputs */
-    file dayout;				/* daily output file */
-	file monavgout;				/* monthly average output file */
-	file annavgout;				/* annual average output file */
-    file annout;				/* annual output file */
-	file log_file;				/* main information about model run */
+	int onscreen;          /* flag for on-screen progress indicator */
+	char outprefix[100];   /* output filename prefix */
+	int dodaily; 	       /* flag for daily output */
+	int domonavg;          /* flag for monthly average output */
+	int doannavg;          /* flag for annual average output */
+	int doannual;		   /* flag for annual output */
+	int ndayout;           /* number of custom daily outputs */
+	int nannout;           /* number of custom annual outputs */
+	int* daycodes;         /* array of indices for daily outputs */
+	int* anncodes;         /* array of indices for annual outputs */
+    file dayout;           /* daily output file */
+	file monavgout;        /* monthly average output file */
+	file annavgout;        /* annual average output file */
+    file annout;           /* annual output file */
+	file anntext;          /* simple annual text output */
+	file control_file;	   /* Hidy 2012 - file to write out control variables */
+	file log_file;		   /* Hidy 2015 - main information about model run */
 } output_struct;
 
 
-/* GSI arrays */
+/* GSI arrays - by Hidy 2012.*/
 typedef struct
 {
 	int GSI_flag;					/* flag for using GSI or not */
@@ -78,5 +75,6 @@ typedef struct
 	int n_moving_avg;				/* moving average (calculated from indicatiors to avoid the effects of single extreme events)*/
 	double GSI_limit_SGS;			/* when GSI index fisrt time greater that limit -> start of the growing season */
 	double GSI_limit_EGS;			/* when GSI index fisrt time less that limit -> end of the growing season */
+	file GSI_file;					/* file to write out th estimated start and the end of vegper */
 } GSI_struct;
 

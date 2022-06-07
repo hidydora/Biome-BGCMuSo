@@ -3,11 +3,11 @@ met_init.c
 open met file for input, scan through header lines
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -72,15 +72,6 @@ int met_init(file init, point_struct* point)
 			ok=0;
 		}
 	}
-
-	/* number of simdays in last simyear (truncated year: < 365) */
-	if (ok && scan_value(init, &point->nday_lastsimyear, 'i'))
-	{
-		printf("Error reading number of simdays in last simyear: met_init()\n");
-		ok=0;
-	}
-
-	if (point->nday_lastsimyear < NDAYS_OF_YEAR) printf("WARNING: truncated last simulation year\n");
 
 	return (!ok);
 }

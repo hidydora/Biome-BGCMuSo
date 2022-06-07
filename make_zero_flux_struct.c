@@ -130,11 +130,11 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	cf->m_deadcrootc_to_fire = 0;
 	cf->m_gresp_storage_to_fire = 0;
 	cf->m_gresp_transfer_to_fire = 0;
-	cf->m_litr1c_to_fireTOTAL = 0;
-	cf->m_litr2c_to_fireTOTAL = 0;
-	cf->m_litr3c_to_fireTOTAL = 0;
-	cf->m_litr4c_to_fireTOTAL = 0;
-	cf->m_cwdc_to_fireTOTAL = 0;
+	cf->m_litr1c_to_fire_total = 0;
+	cf->m_litr2c_to_fire_total = 0;
+	cf->m_litr3c_to_fire_total = 0;
+	cf->m_litr4c_to_fire_total = 0;
+	cf->m_cwdc_to_fire_total = 0;
 	cf->m_vegc_to_SNSC = 0;
 	cf->m_leafc_to_SNSC = 0;
 	cf->m_leafc_to_SNSCgenprog = 0;
@@ -553,11 +553,11 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	nf->m_livecrootn_to_fire = 0;
 	nf->m_deadcrootn_to_fire = 0;
 	nf->m_retransn_to_fire = 0;
-	nf->m_litr1n_to_fireTOTAL = 0;
-	nf->m_litr2n_to_fireTOTAL = 0;
-	nf->m_litr3n_to_fireTOTAL = 0;
-	nf->m_litr4n_to_fireTOTAL = 0;
-	nf->m_cwdn_to_fireTOTAL = 0;
+	nf->m_litr1n_to_fire_total = 0;
+	nf->m_litr2n_to_fire_total = 0;
+	nf->m_litr3n_to_fire_total = 0;
+	nf->m_litr4n_to_fire_total = 0;
+	nf->m_cwdn_to_fire_total = 0;
 	nf->leafn_transfer_to_leafn = 0;
 	nf->frootn_transfer_to_frootn = 0;
 	nf->fruitn_transfer_to_fruitn = 0;
@@ -583,8 +583,8 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	nf->softstemn_to_litr2n = 0;
 	nf->softstemn_to_litr3n = 0;
 	nf->softstemn_to_litr4n = 0;
-	nf->ndep_to_sminnTOTAL = 0;
-	nf->nfix_to_sminnTOTAL = 0;
+	nf->ndep_to_sminn_total = 0;
+	nf->nfix_to_sminn_total = 0;
 	
 	nf->cwdn_to_litr2n_total = 0;                
 	nf->cwdn_to_litr3n_total = 0;                
@@ -596,21 +596,19 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	nf->soil1n_to_soil2n_total = 0;              
 	nf->soil2n_to_soil3n_total = 0;              
 	nf->soil3n_to_soil4n_total = 0;   
-	nf->soil4n_to_sminNH4_total = 0;
-    nf->sminn_to_soil_SUM_total = 0;
-	nf->sminNH4_to_soil_SUM_total = 0;
-	nf->sminNO3_to_soil_SUM_total = 0;
+	
+	
 	nf->sminNO3_to_denitr_total = 0;
 	nf->sminNH4_to_nitrif_total = 0;
 	nf->N2_flux_DENITR_total = 0;
 	nf->N2O_flux_NITRIF_total = 0;
 	nf->N2O_flux_DENITR_total = 0;
-	nf->sminNH4_to_npoolTOTAL = 0;
-	nf->sminNO3_to_npoolTOTAL = 0;
-	nf->sminn_to_npoolTOTAL = 0;
+	nf->sminNH4_to_npool_total = 0;
+	nf->sminNO3_to_npool_total = 0;
+	nf->sminn_to_npool_total = 0;
 	nf->sminN_leachRZ = 0;
 	nf->DON_leachRZ = 0;
-	nf->retransn_to_npoolTOTAL = 0;
+	nf->retransn_to_npool_total = 0;
 	nf->npool_to_leafn = 0;
 	nf->npool_to_leafn_storage = 0;
 	nf->npool_to_frootn = 0;
@@ -788,12 +786,21 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	nf->FRZ_to_litr4n = 0;
 	nf->N2O_flux_GRZ = 0;
 	nf->N2O_flux_FRZ = 0;
+
 	nf->sminn_to_soil1n_l1_total = 0;				
 	nf->sminn_to_soil2n_l2_total = 0;	
 	nf->sminn_to_soil3n_l4_total = 0;
 	nf->sminn_to_soil2n_s1_total = 0;				
 	nf->sminn_to_soil3n_s2_total = 0;	
 	nf->sminn_to_soil4n_s3_total = 0;
+	nf->soil4n_to_sminn_total = 0;
+
+	
+
+    nf->sminn_to_soil_SUM_total = 0;
+	nf->sminNH4_to_soil_SUM_total = 0;
+	nf->sminNO3_to_soil_SUM_total = 0;
+
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		wf->soilwTransp[layer] = 0;
@@ -843,7 +850,7 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 		nf->soil1n_to_soil2n[layer] = 0;
 		nf->soil2n_to_soil3n[layer] = 0;
 		nf->soil3n_to_soil4n[layer] = 0;
-		nf->soil4n_to_sminNH4[layer] = 0;
+		nf->soil4n_to_sminn[layer] = 0;
 		nf->sminn_to_soil_SUM[layer] = 0;
 		nf->sminNH4_to_soil_SUM[layer] = 0;
 		nf->sminNO3_to_soil_SUM[layer] = 0;

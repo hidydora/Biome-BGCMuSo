@@ -86,8 +86,6 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.prephen1_flag = 0;         
 	bgcin.ctrl.prephen2_flag = 0;          
 	bgcin.ctrl.bareground_flag = 0;
-	bgcin.ctrl.GW_flag = 0;
-	bgcin.ctrl.oldSOIfile_flag = 0;
 	bgcin.ctrl.vegper_flag = 0;
 	bgcin.ctrl.south_shift = 0;
 	bgcin.ctrl.allocControl_flag = 0;

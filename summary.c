@@ -22,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const metvar_struct* metv, 
+int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const metvar_struct* metv, 
 	            const cstate_struct* cs, const cflux_struct* cf, const nstate_struct* ns, const nflux_struct* nf, const wflux_struct* wf, 
 				epvar_struct* epv, summary_struct* summary)
 {
@@ -36,55 +36,8 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 	double Closs_SNSC, daily_STDB_to_litr, daily_CTDB_to_litr;
 
 	summary->leafCN = summary->frootCN = summary->fruitCN = summary->softstemCN =0;
-	/*******************************************************************************/
-	/* 0. cumulative SUMS: zero at yday 0 */
 
-	if (yday == 0) 
-	{
-	
-		summary->annprcp     = 0;
-		summary->anntavg     = 0;
-		summary->cum_runoff   = 0;
-		summary->cum_WleachRZ  = 0;
-		summary->cum_NleachRZ  = 0;
-		summary->cum_npp  = 0;
-		summary->cum_nep  = 0;
-		summary->cum_nee  = 0;
-		summary->cum_gpp  = 0;
-		summary->cum_ngb  = 0;
-		summary->cum_mr  = 0;
-		summary->cum_gr  = 0;
-		summary->cum_hr  = 0;
-		summary->cum_tr  = 0;
-		summary->cum_sr  = 0;
-		summary->cum_n2o  = 0;
-		summary->cum_Closs_MGM  = 0;
-		summary->cum_Cplus_MGM  = 0;
-		summary->cum_Closs_THN_w = 0;
-		summary->cum_Closs_THN_nw = 0;
-		summary->cum_Closs_MOW  = 0;
 
-		summary->cum_Closs_GRZ  = 0;
-		summary->cum_Cplus_GRZ  = 0;
-		summary->cum_Cplus_FRZ  = 0;
-		
-		summary->cum_Cplus_PLT  = 0;
-		summary->cum_Closs_PLT  = 0;
-		summary->cum_Closs_HRV  = 0;
-		summary->cum_yieldC_HRV = 0;
-		summary->cum_Closs_PLG  = 0;
-
-		summary->cum_Nplus_GRZ  = 0;
-		summary->cum_Nplus_FRZ  = 0;
-		summary->cum_Closs_SNSC  = 0;
-		summary->cum_Cplus_STDB  = 0;
-		summary->cum_Cplus_CTDB  = 0;
-		summary->cum_evap  = 0;
-		summary->cum_transp  = 0;
-		summary->cum_ET  = 0;
-	
-	}
-	
 	/*******************************************************************************/
 	/* 1. summarize meteorological and water variables */
 
@@ -264,7 +217,7 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 
 	summary->daily_n2o = nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
 
-	summary->CH4_flux_TOTAL = cf->CH4_flux_ANIMAL + cf->CH4_flux_MANURE + cf->CH4_flux_soil;
+	summary->CH4_fluxTOTAL = cf->CH4_flux_ANIMAL + cf->CH4_flux_MANURE + cf->CH4_flux_soil;
 
 	/*******************************************************************************/
 	/* 3. calculate daily fluxes (GPP, NPP, NEP, MR, GR, HR) positive for net growth: NPP = Gross PSN - Maintenance Resp - Growth Resp */
@@ -335,8 +288,8 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 			cf->m_livecrootc_to_fire + cf->m_livecrootc_storage_to_fire + cf->m_livecrootc_transfer_to_fire +
 			cf->m_deadcrootc_to_fire + cf->m_deadcrootc_storage_to_fire + cf->m_deadcrootc_transfer_to_fire + 
 			cf->m_gresp_storage_to_fire + cf->m_gresp_transfer_to_fire + 
-			cf->m_litr1c_to_fireTOTAL + cf->m_litr2c_to_fireTOTAL + cf->m_litr3c_to_fireTOTAL + cf->m_litr4c_to_fireTOTAL +
-			cf->m_cwdc_to_fireTOTAL +
+			cf->m_litr1c_to_fire_total + cf->m_litr2c_to_fire_total + cf->m_litr3c_to_fire_total + cf->m_litr4c_to_fire_total +
+			cf->m_cwdc_to_fire_total +
 			/* fruit simulation */
 			cf->m_fruitc_to_fire +  cf->m_fruitc_storage_to_fire + cf->m_fruitc_transfer_to_fire +
 			/* softstem simulation */
@@ -365,8 +318,9 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 	summary->cum_tr += (mr+gr+hr);
 	summary->cum_sr += sr;
 
-	summary->cum_n2o += nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
 
+	summary->cum_n2o += summary->daily_n2o;
+	summary->cum_ch4 += summary->CH4_fluxTOTAL;
 	summary->cum_evap   += (wf->canopyw_evap + wf->soilwEvap);
 	summary->cum_transp += wf->soilwTransp_SUM;
 	summary->cum_ET += wf->evapotransp;
@@ -382,7 +336,7 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 		summary->daily_litdecomp += cf->litr1c_to_soil1c[layer] + cf->litr2c_to_soil2c[layer]  + cf->litr4c_to_soil3c[layer];
 	}
 
-	summary->daily_litfire = cf->m_litr1c_to_fireTOTAL + cf->m_litr2c_to_fireTOTAL + cf->m_litr3c_to_fireTOTAL + cf->m_litr4c_to_fireTOTAL;
+	summary->daily_litfire = cf->m_litr1c_to_fire_total + cf->m_litr2c_to_fire_total + cf->m_litr3c_to_fire_total + cf->m_litr4c_to_fire_total;
 	
 	/* aboveground litter */
 	summary->daily_litfallc_above = 
@@ -533,6 +487,7 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 
 	nbp = nep + disturb_gain - disturb_loss;
 	summary->daily_nbp = nbp;
+	summary->cum_nbp += summary->daily_nbp;
 
 	/* lateral flux calculation */
 	summary->cum_Closs_MGM += disturb_loss;
@@ -540,8 +495,8 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 	summary->lateral_Cflux = disturb_loss - disturb_gain;
 
 	/* NGB calculation: net greenhouse gas balance - NBP - N2O(Ceq) -CH(Ceq) */
-	N2O_Ceq= summary->daily_n2o * (44/28) * 298 * (12/44);
-	CH4_Ceq= summary->CH4_flux_TOTAL * (18/14) * 34 * (12/44);
+	N2O_Ceq= summary->daily_n2o * (44./28.) * 298 * (12./44.);
+	CH4_Ceq= summary->CH4_fluxTOTAL * (18./14.) * 34 * (12./44.);
 	summary->daily_ngb = summary->daily_nbp - N2O_Ceq - CH4_Ceq;
 	summary->cum_ngb += summary->daily_ngb;
 	

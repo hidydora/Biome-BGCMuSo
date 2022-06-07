@@ -213,7 +213,13 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 
 				if (epc->SGS_array[ndata] < 0.0 && epc->SGS_array[ndata] != DATA_GAP)
 				{
-					printf("ERROR in epc_init(): sgs must be positive\n");
+					printf("ERROR in using annual varying onday data, if user-defined bareground simulation is defined (offday=-9999), epc_init()\n");
+					errorCode=20906;
+				}
+
+				if (epc->SGS_array[ndata] > 364)
+				{
+					printf("ERROR in epc_init(): SGS must less than 365\n");
 					errorCode=20906;
 				}
 			
@@ -258,6 +264,12 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	if (ctrl->varEGS_flag == 1 && epc->offday ==  DATA_GAP)
 	{
 		printf("ERROR in using annual varying offday data, if user-defined bareground simulation is defined (offday=-9999), epc_init()\n");
+		errorCode=20906;
+	}
+
+	if (ctrl->varEGS_flag > 364)
+	{
+		printf("ERROR in using annual varying offday data: EGS must less than 365\n");
 		errorCode=20906;
 	}
 

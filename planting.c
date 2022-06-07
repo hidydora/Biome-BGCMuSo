@@ -26,6 +26,7 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 	         epvar_struct* epv, phenology_struct* phen, cstate_struct* cs, nstate_struct*ns, cflux_struct* cf, nflux_struct* nf)
 {
 
+	int planttype_determination(control_struct* ctrl, phenology_struct* phen);
 
 	/* planting parameters */	   
 

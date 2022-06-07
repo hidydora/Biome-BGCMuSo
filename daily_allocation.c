@@ -232,7 +232,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	/*-----------------------------------------------------------------------------------------------------------------*/
 	/* 4. calculation of spinup N-add and sminnAVAIL and potIMMOB */
 
-	ns->sminNavail_RZ = nf->sminn_to_npoolTOTAL = nf->retransn_to_npoolTOTAL = plantNalloc = plantCalloc = 0;
+	ns->sminNavail_RZ = nf->sminn_to_npool_total = nf->retransn_to_npool_total = plantNalloc = plantCalloc = 0;
 	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
 		ns->sminNH4avail[layer] = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;
@@ -326,8 +326,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 				plantCalloc       = 0;
 			
 		}
-		nf->retransn_to_npoolTOTAL += nf->retransn_to_npool[layer] ;
-		nf->sminn_to_npoolTOTAL    += nf->sminn_to_npool[layer];
+		nf->retransn_to_npool_total += nf->retransn_to_npool[layer] ;
+		nf->sminn_to_npool_total    += nf->sminn_to_npool[layer];
 	}
 	
 	epv->plantCalloc = plantCalloc; 
@@ -480,7 +480,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	nf->soil1n_to_soil2n_total      = 0;             
 	nf->soil2n_to_soil3n_total      = 0;             
 	nf->soil3n_to_soil4n_total      = 0;  
-	nf->soil4n_to_sminNH4_total     = 0;
+	nf->soil4n_to_sminn_total       = 0;
 	nf->sminn_to_soil1n_l1_total    = 0;
 	nf->sminn_to_soil2n_l2_total    = 0;
 	nf->sminn_to_soil3n_l4_total    = 0;
@@ -635,7 +635,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 			cf->soil4_hr[layer]           = nt->psoil4c_loss[layer];
 			if (ns->soil4n[layer] > 0)
 			{
-				nf->soil4n_to_sminNH4[layer]  = -nt->pmnf_s4[layer];
+				nf->soil4n_to_sminn[layer]  = -nt->pmnf_s4[layer];
 			}
 		}
 		
@@ -663,7 +663,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		nf->soil1n_to_soil2n_total      += nf->soil1n_to_soil2n[layer];             
 		nf->soil2n_to_soil3n_total      += nf->soil2n_to_soil3n[layer];             
 		nf->soil3n_to_soil4n_total      += nf->soil3n_to_soil4n[layer];  
-		nf->soil4n_to_sminNH4_total     += nf->soil4n_to_sminNH4[layer];
+		nf->soil4n_to_sminn_total       += nf->soil4n_to_sminn[layer];
 		nf->sminn_to_soil1n_l1_total    += nf->sminn_to_soil1n_l1[layer];
 		nf->sminn_to_soil2n_l2_total    += nf->sminn_to_soil2n_l2[layer];
 		nf->sminn_to_soil3n_l4_total    += nf->sminn_to_soil3n_l4[layer];
@@ -680,6 +680,17 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 
 	}
+
+
+	nf->sminn_to_soil1n_l1_totalCUM += nf->sminn_to_soil1n_l1_total;
+	nf->sminn_to_soil2n_l2_totalCUM += nf->sminn_to_soil2n_l2_total;
+	nf->sminn_to_soil3n_l4_totalCUM += nf->sminn_to_soil3n_l4_total;
+	nf->sminn_to_soil2n_s1_totalCUM += nf->sminn_to_soil2n_s1_total;
+	nf->sminn_to_soil3n_s2_totalCUM += nf->sminn_to_soil3n_s2_total;
+	nf->sminn_to_soil4n_s3_totalCUM += nf->sminn_to_soil4n_s3_total;
+	nf->soil4n_to_sminn_totalCUM    += nf->soil4n_to_sminn_total;
+	nf->netMINER_totalCUM           += epv->netMINER_total;
+	nf->sminn_to_npool_totalCUM     += nf->sminn_to_npool_total;
 		
 	return (errorCode);
 }

@@ -411,8 +411,8 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	cs->cpool        += (cf->psnsun_to_cpool + cf->psnshade_to_cpool);
 
 	/* 7. Plant allocation flux, from N retrans pool */
-	ns->npool		    += nf->retransn_to_npoolTOTAL;
-	ns->retransn        -= nf->retransn_to_npoolTOTAL;
+	ns->npool		    += nf->retransn_to_npool_total;
+	ns->retransn        -= nf->retransn_to_npool_total;
 
 	
 	/* 8. Litter decomposition fluxes - MULTILAYER SOIL */
@@ -566,7 +566,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		ns->STDBn_fruit    += nf->fruitn_to_flowHS;
 
 		/* control */
-		if ((cf->fruitc_to_flowHS > 0 && nf->fruitn_to_flowHS > 0 && epv->n_actphen != epc->n_flowHS_phenophase + 1) || 
+		if ((cf->fruitc_to_flowHS > 0 && nf->fruitn_to_flowHS > 0 && epv->n_actphen != epc->n_flowHS_phenophase) || 
 			(cs->fruitc < 0 && fabs(cs->fruitc) > CRIT_PREC)  || (ns->fruitn < 0 && fabs(ns->fruitn) > CRIT_PREC)  )
 		{
 			if (!errorCode) printf("ERROR in flowering heat stress calculation in state_update.c\n");

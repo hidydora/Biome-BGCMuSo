@@ -112,6 +112,14 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 				ts_decomp = sprop->Tp1_decomp/(1+pow(fabs((tsoil-sprop->Tp4_decomp)/sprop->Tp2_decomp),sprop->Tp3_decomp));
 			
 		}
+
+		/* CONTROL - ts_decomp must be grater than 0 */
+		if (ts_decomp < 0)
+		{
+			printf("\n");
+ 			printf("ERROR in ts_decomp calculation in decomp.c\n");
+			errorCode=1;
+		}
 			
 
 		/* 1.2: calculate the rate constant scalar for soil water content.

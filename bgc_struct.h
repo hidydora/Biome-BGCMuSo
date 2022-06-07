@@ -70,8 +70,6 @@ typedef struct
 	int prephen1_flag;          /* (flag) for warnings into logfile */
 	int prephen2_flag;          /* (flag) for warnings into logfile */	
 	int bareground_flag;        /* (flag) for warnings into logfile */	
-	int GW_flag;                /* (flag) for GW-method*/
-	int oldSOIfile_flag;          /* (flag) for extraSOI parameters */
 	int vegper_flag;            /* (flag) for warnings into logfile */	
 	int allocControl_flag;       /* (flag) for warnings into logfile */	
 	int south_shift;            /* (int) shifting of meteo data for southern hemisphere */
@@ -511,11 +509,11 @@ typedef struct
 	double m_deadcrootc_to_fire;           
 	double m_gresp_storage_to_fire;        
 	double m_gresp_transfer_to_fire;       
-	double m_litr1c_to_fireTOTAL;               
-	double m_litr2c_to_fireTOTAL;               
-	double m_litr3c_to_fireTOTAL;               
-	double m_litr4c_to_fireTOTAL;               
-	double m_cwdc_to_fireTOTAL;    
+	double m_litr1c_to_fire_total;               
+	double m_litr2c_to_fire_total;               
+	double m_litr3c_to_fire_total;               
+	double m_litr4c_to_fire_total;               
+	double m_cwdc_to_fire_total;    
 	double m_litr1c_to_fire[N_SOILLAYERS];               
 	double m_litr2c_to_fire[N_SOILLAYERS];               
 	double m_litr3c_to_fire[N_SOILLAYERS];               
@@ -643,7 +641,7 @@ typedef struct
 	double soil2DOC_leach[N_SOILLAYERS]; 
 	double soil3DOC_leach[N_SOILLAYERS]; 
 	double soil4DOC_leach[N_SOILLAYERS]; 
-	double soilDOC_leachCUM[N_SOILLAYERS]; 
+	double soilDOC_leachCUM[N_SOILLAYERS];
 	double DOC_leachRZ;
 	/* group: daily allocation fluxes from current GPP */
 	double cpool_to_leafc;               
@@ -1101,11 +1099,11 @@ typedef struct
 	double m_livecrootn_to_fire;           
 	double m_deadcrootn_to_fire;           
 	double m_retransn_to_fire;             
-	double m_litr1n_to_fireTOTAL;               
-	double m_litr2n_to_fireTOTAL;               
-	double m_litr3n_to_fireTOTAL;               
-	double m_litr4n_to_fireTOTAL;               
-	double m_cwdn_to_fireTOTAL;    
+	double m_litr1n_to_fire_total;               
+	double m_litr2n_to_fire_total;               
+	double m_litr3n_to_fire_total;               
+	double m_litr4n_to_fire_total;               
+	double m_cwdn_to_fire_total;    
 	double m_litr1n_to_fire[N_SOILLAYERS];               
 	double m_litr2n_to_fire[N_SOILLAYERS];               
 	double m_litr3n_to_fire[N_SOILLAYERS];               
@@ -1142,8 +1140,8 @@ typedef struct
 	double ndep_to_sminNH4[N_SOILLAYERS];      
 	double ndep_to_sminNO3[N_SOILLAYERS];  
 	double nfix_to_sminNH4[N_SOILLAYERS]; 
-	double ndep_to_sminnTOTAL;                 
-	double nfix_to_sminnTOTAL;    
+	double ndep_to_sminn_total;                 
+	double nfix_to_sminn_total;    
 	/* group: litter and soil decomposition fluxes  */
 	double cwdn_to_litr2n[N_SOILLAYERS];                
 	double cwdn_to_litr3n[N_SOILLAYERS];                
@@ -1165,10 +1163,8 @@ typedef struct
 	double soil1n_to_soil2n_total;              
 	double soil2n_to_soil3n_total;              
 	double soil3n_to_soil4n_total;   
-	/* group: mineralization fluxes  */
-	double soil4n_to_sminNH4[N_SOILLAYERS];    
-	double soil4n_to_sminNH4_total;    
-	/* group: immobilization fluxes  */
+
+	/* group: mineralization-immobilization fluxes  */
 	double sminn_to_soil_SUM[N_SOILLAYERS];             
 	double sminNH4_to_soil_SUM[N_SOILLAYERS];           
 	double sminNO3_to_soil_SUM[N_SOILLAYERS];                       
@@ -1178,6 +1174,7 @@ typedef struct
 	double sminn_to_soil2n_s1[N_SOILLAYERS];            
 	double sminn_to_soil3n_s2[N_SOILLAYERS];            
 	double sminn_to_soil4n_s3[N_SOILLAYERS]; 
+	double soil4n_to_sminn[N_SOILLAYERS];    
 
 	double sminn_to_soil_SUM_total; 
 	double sminNH4_to_soil_SUM_total;           
@@ -1188,6 +1185,17 @@ typedef struct
 	double sminn_to_soil2n_s1_total;
 	double sminn_to_soil3n_s2_total;
 	double sminn_to_soil4n_s3_total;
+	double soil4n_to_sminn_total; 
+
+	double sminn_to_soil1n_l1_totalCUM;
+	double sminn_to_soil2n_l2_totalCUM;
+	double sminn_to_soil3n_l4_totalCUM;
+	double sminn_to_soil2n_s1_totalCUM;
+	double sminn_to_soil3n_s2_totalCUM;
+	double sminn_to_soil4n_s3_totalCUM;
+	double soil4n_to_sminn_totalCUM; 
+	double netMINER_totalCUM;
+
 	/* group: nitrification and denitrification fluxes */
 	double sminNO3_to_denitr[N_SOILLAYERS];
 	double sminNH4_to_nitrif[N_SOILLAYERS];
@@ -1203,9 +1211,10 @@ typedef struct
 	double sminNH4_to_npool[N_SOILLAYERS];                 
 	double sminNO3_to_npool[N_SOILLAYERS]; 
 	double sminn_to_npool[N_SOILLAYERS];
-	double sminNH4_to_npoolTOTAL;          
-	double sminNO3_to_npoolTOTAL;			
-	double sminn_to_npoolTOTAL;
+	double sminNH4_to_npool_total;          
+	double sminNO3_to_npool_total;			
+	double sminn_to_npool_total;
+	double sminn_to_npool_totalCUM;
 	/* group: SOIL components leaching*/
 	double sminNH4_leach[N_SOILLAYERS];    
 	double sminNO3_leach[N_SOILLAYERS];    
@@ -1220,7 +1229,7 @@ typedef struct
 	double DON_leachRZ;
 	/* group: daily allocation fluxes */
 	double retransn_to_npool[N_SOILLAYERS];   
-	double retransn_to_npoolTOTAL; 
+	double retransn_to_npool_total; 
 	double npool_to_leafn;                
 	double npool_to_leafn_storage;  
 	double npool_to_frootn;               
@@ -1797,6 +1806,7 @@ typedef struct
 	double soil2_CN;				/* (prop) C:N for fast decomposing SOM pool   */
 	double soil3_CN;				/* (prop) C:N for slowdecomposing SOM pool   */
 	double soil4_CN;				/* (prop) C:N for stable SOM pool   */
+	double totalSOCcrit;			/* (kgC/m2) critical (user-defined) total SOC content   */
 	double soilEvapLIM;             /* (mm) limitation of soil evaporation (Joe Ritchie-method) */
 	double rfl1s1;                  /* (prop) respiration fractions for fluxes between compartments  */
 	double rfl2s2;                  /* (prop) respiration fractions for fluxes between compartments  */
@@ -2114,6 +2124,7 @@ typedef struct
 	double cum_nep;						/* (kgC/m2)  cumulative SUM of NEP */
 	double cum_nee;						/* (kgC/m2)  cumulative SUM of NEE */
 	double cum_gpp;						/* (kgC/m2)  cumulative SUM of GPP */
+	double cum_nbp;					    /* (kgC/m2)  cumulative SUM of NBP */
 	double cum_ngb;					    /* (kgC/m2)  cumulative SUM of NGB */
 	double cum_mr;						/* (kgC/m2)  cumulative SUM of MR */
 	double cum_gr;						/* (kgC/m2)  cumulative SUM of GR */
@@ -2121,6 +2132,7 @@ typedef struct
 	double cum_tr;					    /* (kgC/m2)  cumulative SUM of total ecosystem respiration */
 	double cum_sr;					    /* (kgC/m2)  cumulative SUM of soil respiration */
 	double cum_n2o;						/* (kgN/m2)  cumulative SUM N2O flux */
+	double cum_ch4;						/* (kgN/m2)  cumulative SUM CH4 flux */
 	double cum_Closs_MGM;				/* (kgC/m2)  cumulative SUM of management carbon loss  */
 	double cum_Cplus_MGM;				/* (kgC/m2)  cumulative SUM of management carbon plus  */
 	double cum_Closs_THN_w;				/* (kgC/m2)  cumulative SUM of thinning woody carbon loss  */
@@ -2195,7 +2207,7 @@ typedef struct
 	double softstemc_LandD;             /* (kgC/m2)  live and dead sofstem carbon content */
 	double sminNH4_ppm[N_SOILLAYERS];	/* (ppm)  soil ammonium content in ppm */
 	double sminNO3_ppm[N_SOILLAYERS];	/* (ppm)  soil nitrate content in ppm */
-	double CH4_flux_TOTAL;              /* (kgC/m2/d) total ecosystem CH4 flux */
+	double CH4_fluxTOTAL;              /* (kgC/m2/d) total ecosystem CH4 flux */
 	double lateral_Cflux;               /* (kgC/m2/d) lateral carbon flux */
 	double harvestIndex;                /* (prop) ratio of harvested fruit C content and harvested aboveground C content */
 	double rootIndex;           /* (prop) ratio of fine root C content and vegetation C content on harvest day */

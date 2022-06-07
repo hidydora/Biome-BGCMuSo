@@ -41,7 +41,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	double swabs_per_plaisun, swabs_per_plaishade;
 	double parabs_plaisun, parabs_plaishade;
 	double parabs_per_plaisun, parabs_per_plaishade, W_to_MJperDAY;
-	double crit_albedo = 0.23;
+	double crit_albedo = 0.23; //param MuSo7
 
 	double lwRADnet, swRADnet, RADnet, RADnet_per_plaisun, RADnet_per_plaishade, RADcs, rad, plai_crit;
 	double J, delta, omega_s, d_r, solar_constant, RADextter, f_cd, Tmax_K, Tmin_K, e_sat, e_act, fi;

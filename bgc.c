@@ -335,11 +335,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	}
 
-	if (ctrl.oldSOIfile_flag == 0) 
-		fprintf(bgcout->log_file.ptr, "SOI data - new SOI file (number of lines: 92)\n");
-	else
-		fprintf(bgcout->log_file.ptr, "SOI data - old SOI file  (number of lines: 64) and extraSOIparameters.txt\n");
-
 	if (ctrl.varWPM_flag == 0) 
 		fprintf(bgcout->log_file.ptr, "WPM data - constant \n");
 	else
@@ -662,15 +657,14 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 	printf("done make_zero_flux\n");
 #endif
-			/* initalizing annmax variables */
+			/* initalizing annmax and cumulative variables */
 			if (yday == 0)
 			{
-				epv.annmax_leafc = 0;
-				epv.annmax_frootc = 0;
-				epv.annmax_fruitc = 0;
-				epv.annmax_softstemc = 0;
-				epv.annmax_livestemc = 0;
-				epv.annmax_livecrootc = 0;
+				if (!errorCode && annVARinit(&summary, &epv, &phen, &cs, &cf, &nf))
+				{
+					printf("ERROR in call to make_zero_flux_struct() from bgc.c\n");
+					errorCode=501;
+				}
 			}
 
 			/* set the day index for meteorological and phenological arrays */
@@ -678,8 +672,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 
 			/* nitrogen deposition and fixation */
-			nf.ndep_to_sminnTOTAL = daily_ndep;
-			nf.nfix_to_sminnTOTAL = epc.nfix / nDAYS_OF_YEAR;
+			nf.ndep_to_sminn_total = daily_ndep;
+			nf.nfix_to_sminn_total = epc.nfix / nDAYS_OF_YEAR;
 
 
 			/* calculating actual onday and offday */
@@ -721,7 +715,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone daymet\n",simyr,yday);
 #endif
-
+			
 
 			/* phenophases calculation */
 			if (!errorCode && phenphase(bgcout->log_file, &ctrl, &epc, &sprop, &PLT, &phen, &metv, &epv, &cs))
@@ -757,7 +751,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* phenology calculation */
-			if (!errorCode && phenology(&ctrl, &epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
+			if (!errorCode && phenology(&epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
 			{
 				printf("ERROR in phenology() from bgc.c\n");
 				errorCode=508;
@@ -1101,7 +1095,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 		 
 			/* FERTILIZING  */
-	    	if (!errorCode && fertilizing(&ctrl, &sitec, &sprop, &FRZ, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
+	    	if (!errorCode && fertilizing(&ctrl, &sitec, &sprop, &FRZ, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in fertilizing() from bgc.c\n");
 				errorCode=537;
@@ -1179,7 +1173,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 
 			/* calculate summary variables */
-			if (!errorCode && cnw_summary(yday, &epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
+			if (!errorCode && cnw_summary(&epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
 			{
 				printf("ERROR in cnw_summary() from bgc.c\n");
 				errorCode=545;

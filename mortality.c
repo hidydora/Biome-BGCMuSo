@@ -562,8 +562,8 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 	
 		/* 1.5 litter and CWD fire fluxes: fire affects only the rootzone layers */
 
-		cf->m_litr1c_to_fireTOTAL=cf->m_litr2c_to_fireTOTAL=cf->m_litr3c_to_fireTOTAL=cf->m_litr4c_to_fireTOTAL=0;
-		nf->m_litr1n_to_fireTOTAL=nf->m_litr2n_to_fireTOTAL=nf->m_litr3n_to_fireTOTAL=nf->m_litr4n_to_fireTOTAL=nf->m_cwdn_to_fireTOTAL=0;
+		cf->m_litr1c_to_fire_total=cf->m_litr2c_to_fire_total=cf->m_litr3c_to_fire_total=cf->m_litr4c_to_fire_total=0;
+		nf->m_litr1n_to_fire_total=nf->m_litr2n_to_fire_total=nf->m_litr3n_to_fire_total=nf->m_litr4n_to_fire_total=nf->m_cwdn_to_fire_total=0;
 		
 		for (layer = 0; layer < epv->n_rootlayers; layer++)
 		{
@@ -591,17 +591,17 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 			flux_from_carbon = cf->m_cwdc_to_fire[layer] * (cs->cwdc[layer] / ns->cwdn[layer]);
 			if (nf->m_cwdn_to_fire[layer] > flux_from_carbon) nf->m_cwdn_to_fire[layer] = flux_from_carbon;
 
-			cf->m_litr1c_to_fireTOTAL  += cf->m_litr1c_to_fire[layer];
-			cf->m_litr2c_to_fireTOTAL  += cf->m_litr2c_to_fire[layer];
-			cf->m_litr3c_to_fireTOTAL  += cf->m_litr3c_to_fire[layer];
-			cf->m_litr4c_to_fireTOTAL  += cf->m_litr4c_to_fire[layer];
-			cf->m_cwdc_to_fireTOTAL    += cf->m_cwdc_to_fire[layer];
+			cf->m_litr1c_to_fire_total  += cf->m_litr1c_to_fire[layer];
+			cf->m_litr2c_to_fire_total  += cf->m_litr2c_to_fire[layer];
+			cf->m_litr3c_to_fire_total  += cf->m_litr3c_to_fire[layer];
+			cf->m_litr4c_to_fire_total  += cf->m_litr4c_to_fire[layer];
+			cf->m_cwdc_to_fire_total    += cf->m_cwdc_to_fire[layer];
 	
-			nf->m_litr1n_to_fireTOTAL  += nf->m_litr1n_to_fire[layer];
-			nf->m_litr2n_to_fireTOTAL  += nf->m_litr2n_to_fire[layer];
-			nf->m_litr3n_to_fireTOTAL  += nf->m_litr3n_to_fire[layer];
-			nf->m_litr4n_to_fireTOTAL  += nf->m_litr4n_to_fire[layer];
-			nf->m_cwdn_to_fireTOTAL    += nf->m_cwdn_to_fire[layer];
+			nf->m_litr1n_to_fire_total  += nf->m_litr1n_to_fire[layer];
+			nf->m_litr2n_to_fire_total  += nf->m_litr2n_to_fire[layer];
+			nf->m_litr3n_to_fire_total  += nf->m_litr3n_to_fire[layer];
+			nf->m_litr4n_to_fire_total  += nf->m_litr4n_to_fire[layer];
+			nf->m_cwdn_to_fire_total    += nf->m_cwdn_to_fire[layer];
 
 
 			

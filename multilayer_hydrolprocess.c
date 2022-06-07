@@ -63,7 +63,7 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 					printf("%d\t%d\tdone groundwater\n",simyr,yday);
 		#endif	
 
-		if (!errorCode && richards(logfile, ctrl, epc, sprop, ws, wf, gwc))
+		if (!errorCode && richards(epc, sprop, ws, wf, gwc))
 		{
 			printf("\n");
 			printf("ERROR in richards() from multilayer_hydrolprocess.c()\n");
@@ -74,7 +74,7 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 		#endif	
 
 		/* groundwater postprocessing */
-		if (!errorCode && groundwaterRICHARDSpostproc(ctrl, sitec, sprop, epv, ws, wf, gws, gwc))
+		if (!errorCode && groundwaterRICHARDSpostproc(sitec,epv, ws, wf, gwc))
 		{
 			printf("ERROR in groundwater() from bgc.c\n");
 			errorCode=523;

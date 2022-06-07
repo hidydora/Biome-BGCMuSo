@@ -286,7 +286,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			fprintf(bgcout->log_file.ptr, "SGS data - user-defined from EPC file\n");
 		else
 		{
-			fprintf(bgcout->log_file.ptr, "SGS data - user-defined from annual varying EGS file\n");
+			fprintf(bgcout->log_file.ptr, "SGS data - user-defined from annual varying SGS file\n");
 			if (ctrl.onscreen) printf("INFORMATION: reading onday file: annual varying SGS data\n");
 		}
 
@@ -311,11 +311,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			fprintf(bgcout->log_file.ptr, "EGS data - model estimation (with GSI method)\n");
 		}
 	}
-
-	if (ctrl.oldSOIfile_flag == 0) 
-		fprintf(bgcout->log_file.ptr, "SOI data - new SOI file (number of lines: 92)\n");
-	else
-		fprintf(bgcout->log_file.ptr, "SOI data - old SOI file  (number of lines: 64) and extraSOIparameters.txt\n");
 
 	if (ctrl.varWPM_flag == 0) 
 		fprintf(bgcout->log_file.ptr, "WPM data - constant \n");
@@ -349,7 +344,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 	fprintf(bgcout->log_file.ptr, " \n");
 
-	fprintf(bgcout->log_file.ptr, "Critical VWC (m3/m3) and PSI (MPa) values of top soil layer \n");
+	fprintf(bgcout->log_file.ptr, "CRITICAL VWC (m3/m3) AND PSI (MPa) VALUES OF TOP SOIL LAYER  \n");
 	fprintf(bgcout->log_file.ptr, "saturation:                    %12.3f%12.4f\n",sprop.VWCsat[0],sprop.PSIsat[0]);
 	fprintf(bgcout->log_file.ptr, "field capacity:                %12.3f%12.4f\n",sprop.VWCfc[0], sprop.PSIfc[0]);
 	fprintf(bgcout->log_file.ptr, "wilting point:                 %12.3f%12.4f\n",sprop.VWCwp[0], sprop.PSIwp[0]);
@@ -674,16 +669,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				ctrl.metday	= simyr*nDAYS_OF_YEAR + yday;			
 				
 
-			    /* initalizing annmax variables */
-				if (yday == 0)
-				{
-					epv.annmax_leafc = 0;
-					epv.annmax_frootc = 0;
-					epv.annmax_fruitc = 0;
-					epv.annmax_softstemc = 0;
-					epv.annmax_livestemc = 0;
-					epv.annmax_livecrootc = 0;
-				}
 
 				/* set fluxes to zero */
 				if (!errorCode && make_zero_flux_struct(&ctrl,&wf, &cf, &nf, &gwc))
@@ -692,14 +677,24 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 					errorCode=501;
 				}
 
+				/* initalizing annmax and cumulative variables */
+				if (yday == 0)
+				{
+					if (!errorCode && annVARinit(&summary, &epv, &phen, &cs, &cf, &nf))
+					{
+						printf("ERROR in call to make_zero_flux_struct() from bgc.c\n");
+						errorCode=501;
+					}
+				}
+
 #ifdef DEBUG
 	printf("done make_zero_flux\n");
 #endif
 
 
                 /* nitrogen deposition and fixation */
-			    nf.ndep_to_sminnTOTAL = ndep.ndep / nDAYS_OF_YEAR;
-			    nf.nfix_to_sminnTOTAL = epc.nfix / nDAYS_OF_YEAR;
+			    nf.ndep_to_sminn_total = ndep.ndep / nDAYS_OF_YEAR;
+			    nf.nfix_to_sminn_total = epc.nfix / nDAYS_OF_YEAR;
 		
 				/* calculating actual onday and offday */
 				if (!errorCode && dayphen(&ctrl, &epc, &phenarr, &PLT, &phen))
@@ -774,7 +769,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	#endif
 
 				/* phenology calculation */
-				if (!errorCode && phenology(&ctrl, &epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
+				if (!errorCode && phenology(&epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
 				{
 					printf("ERROR in phenology() from spinup_bgc.c\n");
 					errorCode=508;
@@ -1044,7 +1039,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone mortality\n",simyr,yday);
 #endif
 			
-	
+		
 				/* calculate the change of soil mineralized N in multilayer soil */ 
 				if (!errorCode && multilayer_sminn(&ctrl, &metv, &sprop, &sitec, &cf, &epv, &ns, &nf))
 				{
@@ -1133,7 +1128,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			
 				/* calculate summary variables */
-				if (!errorCode && cnw_summary(yday, &epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
+				if (!errorCode && cnw_summary(&epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
 				{
 					printf("ERROR in cnw_summary.c from spinup_bgc.c\n");
 					errorCode=545;
@@ -1271,24 +1266,36 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 	
 
-	/* end of spinup test: if maxspincycles positive - examination of soil carbon balance, if negative: maximum spinup cycle is determinative */
+	/* end of spinup test:  errorCode and maximum spinup cycle are determinative */
 	spincycle = spinyears / ctrl.simyears;
-	if (ctrl.maxspincycles > 0)
+	if (!errorCode)
 	{
-		if (!(steady1 && steady2) && (spincycle < ctrl.maxspincycles || metcycle != 0))
+		if (spincycle < ctrl.maxspincycles)
 		{
-			endofspinup = 0;
+			if (!(steady1 && steady2) && metcycle != 0)
+			{
+				endofspinup = 0;
+			}
+			else
+				endofspinup = 1;
+
+				/* new option from MuSo6.4-b2: end of spinup if totalSOC reaches the critical (user-defined) value */
+			if (sprop.totalSOCcrit != DATA_GAP) 
+			{
+				if (summary.soilC_total > sprop.totalSOCcrit) 
+					endofspinup = 1;
+				else
+					endofspinup = 0;
+			}
 		}
 		else
 			endofspinup = 1;
 	}
 	else
-	{
-		if (spincycle == -1*ctrl.maxspincycles)
-		{
-			endofspinup = 1;
-		}
-	}
+		endofspinup = 1;
+	
+
+
 	
 	/* end of do block, test for steady state */	
 	} while (endofspinup == 0);

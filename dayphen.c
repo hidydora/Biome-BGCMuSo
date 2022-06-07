@@ -92,6 +92,8 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 
 	}
 
+
+
 	phen->n_growthday   = phen->offday - phen->onday + 1;
 
 

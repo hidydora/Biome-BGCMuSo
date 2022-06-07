@@ -4,11 +4,11 @@ functions called to copy restart info between restart structure and
 active structures
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
+Biome-BGCMuSo v4.0.2
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Numerical Terradynamic Simulation Group (NTSG)
+School of Forestry, University of Montana
+Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

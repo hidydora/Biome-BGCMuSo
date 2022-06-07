@@ -3,9 +3,10 @@ ploughing.c
 do ploughing  - decrease the plant material (leafc, leafn, canopy water)
 
  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v4.0.2
+Copyright 2016, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -493,7 +494,7 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 
 	if (mgmd >= 0 && (fabs(diffC) > 1e-3 || fabs(diffN) > 1e-4))
 	{
-		printf("Warning: small rounding error in harvesting pools (harvesting.c)\n");
+	//	printf("Warning: small rounding error in harvesting pools (harvesting.c)\n");
 	}
 	
 

@@ -3,9 +3,10 @@ harvesting.c
 do harvesting  - decrease the plant material (leafc, leafn, canopy water)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v4.0.2
+Copyright 2016, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -34,7 +35,7 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 	double diffC, diffN;
 	double litr1c_STDB_to_HRV, litr2c_STDB_to_HRV, litr3c_STDB_to_HRV, litr4c_STDB_to_HRV;
 	double litr1n_STDB_to_HRV, litr2n_STDB_to_HRV, litr3n_STDB_to_HRV, litr4n_STDB_to_HRV;
-	double out, out1, out2;
+
 	/* local parameters */
 	int ok = 1;
 	int ny;
@@ -239,8 +240,6 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 	cs->SNSCsrc          += cf->STDBc_to_HRV;
 	cs->STDBc            -= cf->STDBc_to_HRV;
 
-	out = cf->STDBc_to_HRV - litr1c_STDB_to_HRV - litr2c_STDB_to_HRV - litr3c_STDB_to_HRV - litr4c_STDB_to_HRV;
-
 
 	/* fruit simulation - Hidy 2013. */
 	cs->HRVsnk             += cf->fruitc_to_HRV;
@@ -358,7 +357,7 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 
 	if (mgmd >= 0 && (fabs(diffC) > 1e-3 || fabs(diffN) > 1e-3 || cs->litr_belowground < 0))
 	{
-		printf("Warning: small rounding error in harvesting pools (harvesting.c)\n");
+	//	printf("Warning: small rounding error in harvesting pools (harvesting.c)\n");
 	}
 	
 

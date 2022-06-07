@@ -110,7 +110,7 @@ int phenology(const control_struct* ctrl, const epconst_struct* epc, const pheno
 			{
 				cf->livestemc_to_deadstemc = livestemtovrc;
 				nf->livestemn_to_deadstemn = livestemtovrc / epc->deadwood_cn;
-				nf->livestemn_to_retransn = livestemtovrn - nf->livestemn_to_deadstemn;
+				nf->livestemn_to_retransn  = livestemtovrn - nf->livestemn_to_deadstemn;
 			}
 
 			/* turnover from live coarse root wood to dead coarse root wood */

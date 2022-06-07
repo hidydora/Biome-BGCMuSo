@@ -1,6 +1,6 @@
 /* 
 multilayer_rootdepth.c
-Hidy 2011 - calculation of changing rooting depth based on empirical function and state update of rootzone sminn content (sminn_RZ)
+Hidy 2011 - calculation of changing rooting depth based on empirical function and state update of sminn content
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 BBGC MuSo v4
 Copyright 2014, D. Hidy (dori.hidy@gmail.com)
@@ -19,20 +19,20 @@ Hungarian Academy of Sciences
 
 int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, 
 						 phenology_struct* phen, planting_struct* PLT, harvesting_struct* HRV, 
-						 epvar_struct* epv, nstate_struct* ns,metvar_struct* metv)
+						 epvar_struct* epv, metvar_struct* metv)
 {
 
 
 	int ok=1;
 	int layer, yday, ny;
 
-	double onday, offday, plant_day, matur_day, rootdepthmin, RLprop_sum1, RLprop_sum2, sminn_RZ, maturity_coeff;
+	double onday, offday, plant_day, matur_day, rootdepthmin, RLprop_sum1, RLprop_sum2,  maturity_coeff;
 	double vwc_avg, psi_avg, tsoil_avg;
 
 
 	/* initalizing internal variables */
 	vwc_avg=psi_avg=tsoil_avg=0;
-	onday=offday=plant_day=matur_day=rootdepthmin=RLprop_sum1=RLprop_sum2=sminn_RZ=maturity_coeff=0;
+	onday=offday=plant_day=matur_day=rootdepthmin=RLprop_sum1=RLprop_sum2=maturity_coeff=0;
 
 	maturity_coeff = epc->maturity_coeff;
 	yday           = ctrl->yday;
@@ -255,26 +255,6 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 		printf("Error in multilayer_rootdepth: sum of soillayer_RZportion is not equal to 1.0\n");
 	    ok=0;
 	}
-
-
-	/* ***************************************************************************************************** */	
-	/* 5. Calculating the soil mineral N content of rooting zone taking into account changing rooting depth 
-		  N elimitated/added to rootzone Ncontent because of the decrease/increase of rootzone depth */
-	
-	sminn_RZ = 0;
-	if (epv->n_rootlayers == 1)
-	{
-		sminn_RZ = ns->sminn[0];
-	}
-	else
-	{
-		for (layer = 0; layer < epv->n_rootlayers-1; layer++)
-		{
-			sminn_RZ	+= ns->sminn[layer];
-		}	
-		sminn_RZ	+= ns->sminn[epv->n_rootlayers-1] * (epv->rooting_depth - sitec->soillayer_depth[layer-1]) / sitec->soillayer_thickness[layer];
-	}
-	ns->sminn_RZ	  = sminn_RZ;
 
 	
 	/* ***************************************************************************************************** */	

@@ -27,253 +27,245 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	int ok=1;
 	int layer;
 	
-	/* Hidy 2010 - multilayer soil */
+	/* water */
 	for (layer = 0; layer < N_SOILLAYERS; layer ++)
 	{
-		ws->soilw[layer] = 0.0;
+		ws->soilw[layer]=0;
 	}
-	ws->soilw_SUM = 0.0;
-	ws->pond_water = 0.0;
+	ws->soilw_SUM=0;
+	ws->pond_water=0;
+	ws->snoww=0;
+	ws->canopyw=0;
+	ws->prcp_src=0;
+	ws->soilevap_snk=0;
+	ws->snowsubl_snk=0;
+	ws->canopyevap_snk=0;
+	ws->pondwevap_snk=0;
+	ws->trans_snk=0;
+	ws->runoff_snk=0;
+	ws->deeppercolation_snk=0;
+	ws->deepdiffusion_snk=0;
+	ws->deeptrans_src=0;
+	ws->groundwater_src=0;
+	ws->pondwater_src=0;
+	ws->canopyw_THNsnk=0;
+	ws->canopyw_MOWsnk=0;
+	ws->canopyw_HRVsnk=0;
+	ws->canopyw_PLGsnk=0;
+	ws->canopyw_GRZsnk=0;
+	ws->IRGsrc=0;
+	ws->balance=0;
 
-	ws->snoww = 0.0;
-	ws->canopyw = 0.0;
-	ws->prcp_src = 0.0;
-	ws->soilevap_snk = 0.0;
-	ws->snowsubl_snk = 0.0;
-	ws->canopyevap_snk = 0.0;
-	ws->pondwevap_snk = 0.0;
-	ws->trans_snk = 0.0;	
-	/* thinning - Hidy 2012. */
-	ws->canopyw_THNsnk = 0.0;
-	/* mowing - Hidy 2008. */
-	ws->canopyw_MOWsnk = 0.0;
-	/* harvesting - Hidy 2012. */
-	ws->canopyw_HRVsnk = 0.0;
-	/* ploughing - Hidy 2012. */
-	ws->canopyw_PLGsnk = 0.0;
-	/* grazing - Hidy 2008. */
-	ws->canopyw_GRZsnk = 0.0;
-	/* soil-water submodel - Hidy 2010. */
-	ws->runoff_snk = 0.0;
-	ws->deeppercolation_snk = 0.0;
-	ws->deepdiffusion_snk = 0.0;
-	ws->deeptrans_src = 0.0;
-    ws->groundwater_src = 0.0;
-	ws->pondwater_src = 0.0;
-
+	/* carbon */
 	cinit->max_leafc = 0.0;
 	cinit->max_stemc = 0.0;
-	
-	cs->leafc = 0.0;
-	cs->leafc_storage = 0.0;
-	cs->leafc_transfer = 0.0;
-	cs->frootc = 0.0;
-	cs->frootc_storage = 0.0;
-	cs->frootc_transfer = 0.0;
-	cs->livestemc = 0.0;
-	cs->livestemc_storage = 0.0;
-	cs->livestemc_transfer = 0.0;
-	cs->deadstemc = 0.0;
-	cs->deadstemc_storage = 0.0;
-	cs->deadstemc_transfer = 0.0;
-	cs->livecrootc = 0.0;
-	cs->livecrootc_storage = 0.0;
-	cs->livecrootc_transfer = 0.0;
-	cs->deadcrootc = 0.0;
-	cs->deadcrootc_storage = 0.0;
-	cs->deadcrootc_transfer = 0.0;
-	cs->gresp_storage = 0.0;
-	cs->gresp_transfer = 0.0;
-	cs->cwdc = 0.0;
-	cs->litr1c = 0.0;
-	cs->litr2c = 0.0;
-	cs->litr3c = 0.0;
-	cs->litr4c = 0.0;
-	cs->litr_belowground = 0.0;
-	cs->litr_aboveground = 0.0;
-	/* Hidy 2013 - senescence */
-	cs->litr1c_STDB = 0.0;
-	cs->litr2c_STDB = 0.0;
-	cs->litr3c_STDB = 0.0;
-	cs->litr4c_STDB = 0.0;
-	cs->STDBc = 0.0;
-	cs->CTDBc = 0.0;
-	cs->soil1c = 0.0;
-	cs->soil2c = 0.0;
-	cs->soil3c = 0.0;
-	cs->soil4c = 0.0;
-	cs->cpool = 0.0;
-	cs->psnsun_src = 0.0;
-	cs->psnshade_src = 0.0;
-	cs->leaf_mr_snk = 0.0;
-	cs->leaf_gr_snk = 0.0;
-	cs->froot_mr_snk = 0.0;
-	cs->froot_gr_snk = 0.0;
-	cs->livestem_mr_snk = 0.0;
-	cs->livestem_gr_snk = 0.0;
-	cs->deadstem_gr_snk = 0.0;
-	cs->livecroot_mr_snk = 0.0;
-	cs->livecroot_gr_snk = 0.0;
-	cs->deadcroot_gr_snk = 0.0;
-	cs->litr1_hr_snk = 0.0;
-	cs->litr2_hr_snk = 0.0;
-	cs->litr4_hr_snk = 0.0;
-	cs->soil1_hr_snk = 0.0;
-	cs->soil2_hr_snk = 0.0;
-	cs->soil3_hr_snk = 0.0;
-	cs->soil4_hr_snk = 0.0;
-	cs->fire_snk = 0.0;
-    /* planting - Hidy 2012.*/
-	cs->PLTsrc = 0.0; 
-	/* thinning - Hidy 2012.*/
-	cs->THNsnk = 0.0; 
-	cs->THNsrc = 0.0;
-	cs->THN_transportC  = 0.0;
-	cs->litr1c_strg_THN = 0.0;
-	cs->litr2c_strg_THN = 0.0;
-	cs->litr3c_strg_THN = 0.0;
-	cs->litr4c_strg_THN = 0.0;
-	cs->cwdc_strg_THN   = 0.0;
-	/* mowing - Hidy 2008.*/
-	cs->MOWsnk = 0.0; 
-	cs->MOWsrc = 0.0;
-	cs->MOW_transportC = 0.0;
-	cs->litr1c_strg_MOW = 0.0;
-	cs->litr2c_strg_MOW = 0.0;
-	cs->litr3c_strg_MOW = 0.0;
-	cs->litr4c_strg_MOW = 0.0;
-	/* grazing - Hidy 2008. */
-	cs->GRZsnk = 0.0;  
-	cs->GRZsrc = 0.0;
-	/* harvesting - Hidy 2012. */
-	cs->HRVsnk = 0.0;  
-	cs->HRVsrc = 0.0;
-	cs->HRV_transportC = 0.0;
-	cs->litr1c_strg_HRV = 0.0;
-	cs->litr2c_strg_HRV = 0.0;
-	cs->litr3c_strg_HRV = 0.0;
-	cs->litr4c_strg_HRV = 0.0;
-	/* ploughing - Hidy 2012. */
-	cs->PLGsnk = 0.0;	
-	cs->PLGsrc = 0.0;
-	cs->PLG_cpool = 0.0;
-	/* fertilizing - Hidy 2009.*/
-	cs->FRZsrc = 0.0;
-	/* senescence - Hidy 2012.*/
-	cs->SNSCsnk= 0.0;
-	cs->SNSCsrc= 0.0;
-	/* fruit simulation - Hidy 2013.*/
-	cs->fruitc = 0.0;
-	cs->fruitc_storage = 0.0;
-	cs->fruitc_transfer = 0.0;
-	cs->fruit_gr_snk = 0.0;
-	cs->fruit_mr_snk = 0.0;
-	/* softstem simulation - Hidy 2013.*/
-	cs->softstemc = 0.0;
-	cs->softstemc_storage = 0.0;
-	cs->softstemc_transfer = 0.0;
-	cs->softstem_gr_snk = 0.0;
-	cs->softstem_mr_snk = 0.0;
-	
-	ns->leafn = 0.0;
-	ns->leafn_storage = 0.0;
-	ns->leafn_transfer = 0.0;
-	ns->frootn = 0.0;
-	ns->frootn_storage = 0.0;
-	ns->frootn_transfer = 0.0;
-	ns->livestemn = 0.0;
-	ns->livestemn_storage = 0.0;
-	ns->livestemn_transfer = 0.0;
-	ns->deadstemn = 0.0;
-	ns->deadstemn_storage = 0.0;
-	ns->deadstemn_transfer = 0.0;
-	ns->livecrootn = 0.0;
-	ns->livecrootn_storage = 0.0;
-	ns->livecrootn_transfer = 0.0;
-	ns->deadcrootn = 0.0;
-	ns->deadcrootn_storage = 0.0;
-	ns->deadcrootn_transfer = 0.0;
-	ns->cwdn = 0.0;
-	ns->litr1n = 0.0;
-	ns->litr2n = 0.0;
-	ns->litr3n = 0.0;
-	ns->litr4n = 0.0;
-	/* Hidy 2013 - senescence */
-	ns->litr1n_STDB = 0.0;
-	ns->litr2n_STDB = 0.0;
-	ns->litr3n_STDB = 0.0;
-	ns->litr4n_STDB = 0.0;
-	ns->STDBn = 0.0;
-	ns->soil1n = 0.0;
-	ns->soil2n = 0.0;
-	ns->soil3n = 0.0;
-	ns->soil4n = 0.0;
-	/* Hidy 2011 - multilayer soil */
+	cs->leafc=0;
+	cs->leafc_storage=0;
+	cs->leafc_transfer=0;
+	cs->frootc=0;
+	cs->frootc_storage=0;
+	cs->frootc_transfer=0;
+	cs->livestemc=0;
+	cs->livestemc_storage=0;
+	cs->livestemc_transfer=0;
+	cs->deadstemc=0;
+	cs->deadstemc_storage=0;
+	cs->deadstemc_transfer=0;
+	cs->livecrootc=0;
+	cs->livecrootc_storage=0;
+	cs->livecrootc_transfer=0;
+	cs->deadcrootc=0;
+	cs->deadcrootc_storage=0;
+	cs->deadcrootc_transfer=0;
+	cs->gresp_storage=0;
+	cs->gresp_transfer=0;
+	cs->cwdc[N_SOILLAYERS]=0;
+
 	for (layer = 0; layer < N_SOILLAYERS; layer ++)
 	{
-		ns->sminn[layer] = 0.0;
+		cs->litr1c[layer]=0;
+		cs->litr2c[layer]=0;
+		cs->litr3c[layer]=0;
+		cs->litr4c[layer]=0;
+		cs->soil1c[layer]=0;
+		cs->soil2c[layer]=0;
+		cs->soil3c[layer]=0;
+		cs->soil4c[layer]=0;
 	}
-	ns->sminn_RZ = 0.0;
-	ns->retransn = 0.0;
-	ns->npool = 0.0;
-	ns->nfix_src = 0.0;
-	ns->ndep_src = 0.0;
-	ns->nleached_snk = 0.0;
-	ns->ndiffused_snk = 0.0;
-	ns->nvol_snk = 0.0;
-	ns->fire_snk = 0.0;
-	/* effect of boundary layer with constant N-content - Hidy 2015 */
-	ns->BNDRYsrc = 0.0;
-	ns->sum_ndemand = 0.0;
-	/* planting - Hidy 2012. */
-	ns->PLTsrc  = 0.0;  
-	/* thining - Hidy 2012. */
-	ns->THNsnk = 0.0;  
-	ns->THNsrc = 0.0;
-	ns->THN_transportN  = 0.0;
-	ns->litr1n_strg_THN = 0.0;
-	ns->litr2n_strg_THN = 0.0;
-	ns->litr3n_strg_THN = 0.0;
-	ns->litr4n_strg_THN = 0.0;
-	ns->cwdn_strg_THN   = 0.0;
-	/* mowing - Hidy 2008. */
-	ns->MOWsnk = 0.0;  
-	ns->MOWsrc = 0.0;
-	ns->MOW_transportN = 0.0;
-	ns->litr1n_strg_MOW = 0.0;
-	ns->litr2n_strg_MOW = 0.0;
-	ns->litr3n_strg_MOW = 0.0;
-	ns->litr4n_strg_MOW = 0.0;
-	 /* grazing - Hidy 2008. */
-	ns->GRZsnk = 0.0; 
-	ns->GRZsrc = 0.0;
-	/* harvesting - Hidy 2012. */
-	ns->HRVsnk = 0.0;  
-	ns->HRVsrc = 0.0;
-	ns->HRV_transportN = 0.0;
-	ns->litr1n_strg_HRV = 0.0;
-	ns->litr2n_strg_HRV = 0.0;
-	ns->litr3n_strg_HRV = 0.0;
-	ns->litr4n_strg_HRV = 0.0;
-	/* ploughing - Hidy 2012. */
-	ns->PLGsnk = 0.0;	
-	ns->PLGsrc = 0.0;
-	ns->PLG_npool = 0.0;
-    /* fertilization - Hidy 2008. */
-	ns->FRZsrc = 0.0;  
-	/* senescence - Hidy 2012.*/
-	ns->SNSCsnk= 0.0;
-	ns->SNSCsrc= 0.0;
-	/* fruit simulation - Hidy 2013.*/
-	ns->fruitn = 0.0;
-	ns->fruitn_storage = 0.0;
-	ns->fruitn_transfer = 0.0;
-	/* softstem simulation - Hidy 2013.*/
-	ns->softstemn = 0.0;
-	ns->softstemn_storage = 0.0;
-	ns->softstemn_transfer = 0.0;
-	
-	
+
+	cs->litr1c_total=0;
+	cs->litr2c_total=0;
+	cs->litr3c_total=0;
+	cs->litr4c_total=0;
+	cs->cwdc_total=0;
+	cs->litr1cA_STDB=0;
+	cs->litr1cB_STDB=0;
+	cs->litr2cA_STDB=0;
+	cs->litr2cB_STDB=0;
+	cs->litr3cA_STDB=0;
+	cs->litr3cB_STDB=0;
+	cs->litr4cA_STDB=0;
+	cs->litr4cB_STDB=0;
+	cs->cwdcA_STDB=0;
+	cs->cwdcB_STDB=0;
+	cs->litr1cA_CTDB=0;
+	cs->litr1cB_CTDB=0;
+	cs->litr2cA_CTDB=0;
+	cs->litr2cB_CTDB=0;
+	cs->litr3cA_CTDB=0;
+	cs->litr3cB_CTDB=0;
+	cs->litr4cA_CTDB=0;
+	cs->litr4cB_CTDB=0;
+	cs->cwdcA_CTDB=0;
+	cs->cwdcB_CTDB=0;
+	cs->STDBc_above=0;
+	cs->CTDBc_above=0;
+	cs->STDBc_below=0;
+	cs->CTDBc_below=0;
+	cs->soil1c_total=0;
+	cs->soil2c_total=0;
+	cs->soil3c_total=0;
+	cs->soil4c_total=0;
+	cs->cpool=0;
+	cs->psnsun_src=0;
+	cs->psnshade_src=0;
+	cs->leaf_mr_snk=0;
+	cs->leaf_gr_snk=0;
+	cs->froot_mr_snk=0;
+	cs->froot_gr_snk=0;
+	cs->livestem_mr_snk=0;
+	cs->livestem_gr_snk=0;
+	cs->deadstem_gr_snk=0;
+	cs->livecroot_mr_snk=0;
+	cs->livecroot_gr_snk=0;
+	cs->deadcroot_gr_snk=0;
+	cs->litr1_hr_snk=0;
+	cs->litr2_hr_snk=0;
+	cs->litr4_hr_snk=0;
+	cs->soil1_hr_snk=0;
+	cs->soil2_hr_snk=0;
+	cs->soil3_hr_snk=0;
+	cs->soil4_hr_snk=0;
+	cs->fire_snk=0;
+	cs->SNSCsnk=0;
+	cs->STDBsrc=0;
+	cs->CTDBsrc=0;
+	cs->PLTsrc=0;
+	cs->THN_transportC=0;
+	cs->MOW_transportC=0;
+	cs->HRV_transportC=0;
+	cs->GRZsnk=0;
+	cs->GRZsrc=0;
+	cs->FRZsrc=0;
+	cs->fruitc=0;
+	cs->fruitc_storage=0;
+	cs->fruitc_transfer=0;
+	cs->fruit_gr_snk=0;
+	cs->fruit_mr_snk=0;
+	cs->softstemc=0;
+	cs->softstemc_storage=0;
+	cs->softstemc_transfer=0;
+	cs->softstem_gr_snk=0;
+	cs->softstem_mr_snk=0;
+	cs->balance=0;
+
+	/* nitrogen */
+	ns->leafn=0;
+	ns->leafn_storage=0;
+	ns->leafn_transfer=0;
+	ns->frootn=0;
+	ns->frootn_storage=0;
+	ns->frootn_transfer=0;
+	ns->livestemn=0;
+	ns->livestemn_storage=0;
+	ns->livestemn_transfer=0;
+	ns->deadstemn=0;
+	ns->deadstemn_storage=0;
+	ns->deadstemn_transfer=0;
+	ns->livecrootn=0;
+	ns->livecrootn_storage=0;
+	ns->livecrootn_transfer=0;
+	ns->deadcrootn=0;
+	ns->deadcrootn_storage=0;
+	ns->deadcrootn_transfer=0;
+
+
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		ns->litr1n[layer]=0;
+		ns->litr2n[layer]=0;
+		ns->litr3n[layer]=0;
+		ns->litr4n[layer]=0;
+		ns->soil1n[layer]=0;
+		ns->soil2n[layer]=0;
+		ns->soil3n[layer]=0;
+		ns->soil4n[layer]=0;
+		ns->cwdn[layer]=0;
+	}
+	ns->litr1n_total=0;
+	ns->litr2n_total=0;
+	ns->litr3n_total=0;
+	ns->litr4n_total=0;
+	ns->cwdn_total=0;
+	ns->fruitn=0;
+	ns->fruitn_storage=0;
+	ns->fruitn_transfer=0;
+	ns->softstemn=0;
+	ns->softstemn_storage=0;
+	ns->softstemn_transfer=0;
+	ns->litr1nA_STDB=0;
+	ns->litr1nB_STDB=0;
+	ns->litr2nA_STDB=0;
+	ns->litr2nB_STDB=0;
+	ns->litr3nA_STDB=0;
+	ns->litr3nB_STDB=0;
+	ns->litr4nA_STDB=0;
+	ns->litr4nB_STDB=0;
+	ns->cwdnA_STDB=0;
+	ns->cwdnB_STDB=0;
+	ns->litr1nA_CTDB=0;
+	ns->litr1nB_CTDB=0;
+	ns->litr2nA_CTDB=0;
+	ns->litr2nB_CTDB=0;
+	ns->litr3nA_CTDB=0;
+	ns->litr3nB_CTDB=0;
+	ns->litr4nA_CTDB=0;
+	ns->litr4nB_CTDB=0;
+	ns->cwdnA_CTDB=0;
+	ns->cwdnB_CTDB=0;
+	ns->STDBn_above=0;
+	ns->CTDBn_above=0;
+	ns->STDBn_below=0;
+	ns->CTDBn_below=0;
+
+	ns->soil1n_total=0;
+	ns->soil2n_total=0;
+	ns->soil3n_total=0;
+	ns->soil4n_total=0;
+	ns->retransn=0;
+	ns->sminn[N_SOILLAYERS]=0;
+	ns->sminn_total=0;
+	ns->npool=0;
+	ns->nfix_src=0;
+	ns->ndep_src=0;
+	ns->nleached_snk=0;
+	ns->nvol_snk=0;
+	ns->fire_snk=0;
+	ns->ndiffused_snk=0;
+	ns->SNSCsnk=0;
+	ns->STDBsrc=0;
+	ns->CTDBsrc=0;
+	ns->FRZsrc=0;
+	ns->PLTsrc=0;
+	ns->THN_transportN=0;
+	ns->MOW_transportN=0;
+	ns->HRV_transportN=0;
+	ns->GRZsnk=0;
+	ns->GRZsrc=0;
+	ns->BNDRYsrc=0;
+	ns->SPINUPsrc=0;
+	ns->sum_ndemand=0;
+		
 	return(!ok);
 }
 	

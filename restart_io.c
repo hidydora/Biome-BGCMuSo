@@ -65,37 +65,45 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, wstate_
 	cs->deadcrootc_transfer               = restart->deadcrootc_transfer;
 	cs->gresp_storage                     = restart->gresp_storage;
 	cs->gresp_transfer                    = restart->gresp_transfer;
-	cs->cwdc                              = restart->cwdc;
-	cs->litr1c                            = restart->litr1c;
-	cs->litr2c                            = restart->litr2c;
-	cs->litr3c                            = restart->litr3c;
-	cs->litr4c                            = restart->litr4c;
-	cs->soil1c                            = restart->soil1c;
-	cs->soil2c                            = restart->soil2c;
-	cs->soil3c                            = restart->soil3c;
-	cs->soil4c                            = restart->soil4c;
+
+
+	/* Hidy 2016 - multilayer soil */
+	for (layer=0; layer < N_SOILLAYERS; layer++)
+	{
+		cs->litr1c[layer]                 = restart->litr1c[layer];
+		cs->litr2c[layer]                 = restart->litr2c[layer];
+		cs->litr3c[layer]                 = restart->litr3c[layer];
+		cs->litr4c[layer]                 = restart->litr4c[layer];
+		cs->soil1c[layer]                 = restart->soil1c[layer];
+		cs->soil2c[layer]                 = restart->soil2c[layer];
+		cs->soil3c[layer]                 = restart->soil3c[layer];
+		cs->soil4c[layer]                 = restart->soil4c[layer];
+		cs->cwdc[layer]                   = restart->cwdc[layer];
+	}
 	cs->cpool                             = restart->cpool;
 
-	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
-	cs->litr1c_STDB				  = restart->litr1c_STDB;
-	cs->litr2c_STDB				  = restart->litr2c_STDB;
-	cs->litr3c_STDB				  = restart->litr3c_STDB;
-	cs->litr4c_STDB				  = restart->litr4c_STDB;
-	cs->litr1c_strg_HRV           = restart->litr1c_strg_HRV;
-	cs->litr2c_strg_HRV           = restart->litr2c_strg_HRV;
-	cs->litr3c_strg_HRV           = restart->litr3c_strg_HRV;
-	cs->litr4c_strg_HRV           = restart->litr4c_strg_HRV;
-	cs->litr1c_strg_MOW           = restart->litr1c_strg_MOW;
-	cs->litr2c_strg_MOW           = restart->litr2c_strg_MOW;
-	cs->litr3c_strg_MOW           = restart->litr3c_strg_MOW;
-	cs->litr4c_strg_MOW           = restart->litr4c_strg_MOW;
-	cs->litr1c_strg_THN           = restart->litr1c_strg_THN;
-	cs->litr2c_strg_THN           = restart->litr2c_strg_THN;
-	cs->litr3c_strg_THN           = restart->litr3c_strg_THN;
-	cs->litr4c_strg_THN           = restart->litr4c_strg_THN;
-	cs->litr_aboveground          = restart->litr_aboveground;
-	cs->litr_belowground          = restart->litr_belowground;
-	cs->CTDBc                     = restart->CTDBc;
+	/* Hidy 2016 - standing dead biomass, cut-down dead biomass and litter pools */
+	cs->litr1cA_STDB			  = restart->litr1cA_STDB;
+	cs->litr1cB_STDB			  = restart->litr1cB_STDB;
+	cs->litr2cA_STDB			  = restart->litr2cA_STDB;
+	cs->litr2cB_STDB			  = restart->litr2cB_STDB;
+	cs->litr3cA_STDB			  = restart->litr3cA_STDB;
+	cs->litr3cB_STDB			  = restart->litr3cB_STDB;
+	cs->litr4cA_STDB			  = restart->litr4cA_STDB;
+	cs->litr4cB_STDB			  = restart->litr4cB_STDB;
+	cs->cwdcA_STDB                = restart->cwdcA_STDB;
+	cs->cwdcB_STDB                = restart->cwdcB_STDB;
+	cs->litr1cA_CTDB			  = restart->litr1cA_CTDB;
+	cs->litr1cB_CTDB			  = restart->litr1cB_CTDB;
+	cs->litr2cA_CTDB			  = restart->litr2cA_CTDB;
+	cs->litr2cB_CTDB			  = restart->litr2cB_CTDB;
+	cs->litr3cA_CTDB			  = restart->litr3cA_CTDB;
+	cs->litr3cB_CTDB			  = restart->litr3cB_CTDB;
+	cs->litr4cA_CTDB			  = restart->litr4cA_CTDB;
+	cs->litr4cB_CTDB			  = restart->litr4cB_CTDB;
+	cs->cwdcA_CTDB                = restart->cwdcA_CTDB;
+	cs->cwdcB_CTDB                = restart->cwdcB_CTDB;
+
 
 	
 	/* spinup - normal C and N pool adjustment in order to avoud negative N pools in case of land use change (changing EOC) */
@@ -179,7 +187,7 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, wstate_
 		ns->deadcrootn                    = cs->deadcrootc         / epc->deadwood_cn;
 		ns->deadcrootn_storage            = cs->deadcrootc_storage / epc->deadwood_cn;
 		ns->deadcrootn_transfer           = cs->deadcrootc_transfer/ epc->deadwood_cn;
-		ns->cwdn                          = cs->cwdc / epc->deadwood_cn;
+	
 	}
 	else
 	{
@@ -189,38 +197,48 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, wstate_
 		ns->deadcrootn                    = 0;
 		ns->deadcrootn_storage            = 0;
 		ns->deadcrootn_transfer           = 0;
-		ns->cwdn						  = 0;
+	
 	}
 
-
- 	ns->litr1n                            = restart->litr1n;
-	ns->litr2n                            = restart->litr2n;
-	ns->litr3n                            = restart->litr3n;
-	ns->litr4n                            = restart->litr4n;
-	ns->soil1n                            = restart->soil1n;
-	ns->soil2n                            = restart->soil2n;
-	ns->soil3n                            = restart->soil3n;
-	ns->soil4n                            = restart->soil4n;
+	/* Hidy 2016 - multilayer soil */
+	for (layer=0; layer < N_SOILLAYERS; layer++)
+	{
+ 		ns->litr1n[layer]                 = restart->litr1n[layer];
+		ns->litr2n[layer]                 = restart->litr2n[layer];
+		ns->litr3n[layer]                 = restart->litr3n[layer];
+		ns->litr4n[layer]                 = restart->litr4n[layer];
+		ns->soil1n[layer]                 = restart->soil1n[layer];
+		ns->soil2n[layer]                 = restart->soil2n[layer];
+		ns->soil3n[layer]                 = restart->soil3n[layer];
+		ns->soil4n[layer]                 = restart->soil4n[layer];
+		if (epc->deadwood_cn > 0) 
+			ns->cwdn[layer]  = cs->cwdc[layer] / epc->deadwood_cn;
+		else
+			ns->cwdn[layer]  = 0;
+	}
 
 	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
-	ns->litr1n_STDB				  = restart->litr1n_STDB;
-	ns->litr2n_STDB				  = restart->litr2n_STDB;
-	ns->litr3n_STDB				  = restart->litr3n_STDB;
-	ns->litr4n_STDB				  = restart->litr4n_STDB;
-	ns->litr1n_strg_HRV           = restart->litr1n_strg_HRV;
-	ns->litr2n_strg_HRV           = restart->litr2n_strg_HRV;
-	ns->litr3n_strg_HRV           = restart->litr3n_strg_HRV;
-	ns->litr4n_strg_HRV           = restart->litr4n_strg_HRV;
-	ns->litr1n_strg_MOW           = restart->litr1n_strg_MOW;
-	ns->litr2n_strg_MOW           = restart->litr2n_strg_MOW;
-	ns->litr3n_strg_MOW           = restart->litr3n_strg_MOW;
-	ns->litr4n_strg_MOW           = restart->litr4n_strg_MOW;
-	ns->litr1n_strg_THN           = restart->litr1n_strg_THN;
-	ns->litr2n_strg_THN           = restart->litr2n_strg_THN;
-	ns->litr3n_strg_THN           = restart->litr3n_strg_THN;
-	ns->litr4n_strg_THN           = restart->litr4n_strg_THN;
+	ns->litr1nA_STDB			  = restart->litr1nA_STDB;
+	ns->litr1nB_STDB			  = restart->litr1nB_STDB;
+	ns->litr2nA_STDB			  = restart->litr2nA_STDB;
+	ns->litr2nB_STDB			  = restart->litr2nB_STDB;
+	ns->litr3nA_STDB			  = restart->litr3nA_STDB;
+	ns->litr3nB_STDB			  = restart->litr3nB_STDB;
+	ns->litr4nA_STDB			  = restart->litr4nA_STDB;
+	ns->litr4nB_STDB			  = restart->litr4nB_STDB;
+	ns->cwdnA_STDB                = restart->cwdnA_STDB;
+	ns->cwdnB_STDB                = restart->cwdnB_STDB;
+	ns->litr1nA_CTDB			  = restart->litr1nA_CTDB;
+	ns->litr1nB_CTDB			  = restart->litr1nB_CTDB;
+	ns->litr2nA_CTDB			  = restart->litr2nA_CTDB;
+	ns->litr2nB_CTDB			  = restart->litr2nB_CTDB;
+	ns->litr3nA_CTDB			  = restart->litr3nA_CTDB;
+	ns->litr3nB_CTDB			  = restart->litr3nB_CTDB;
+	ns->litr4nA_CTDB			  = restart->litr4nA_CTDB;
+	ns->litr4nB_CTDB			  = restart->litr4nB_CTDB;
+
 	/*-----------------------------*/
-	/* Hidy 2011 - multilayer soil */
+	/* Hidy 2016 - multilayer soil */
 	
 	for (layer =0; layer < N_SOILLAYERS; layer++)
 	{ 
@@ -228,7 +246,7 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, wstate_
 	}
 	/*-----------------------------*/
 	
-	ns->retransn                          = restart->retransn;
+	ns->retransn			              = restart->retransn;
 	ns->npool                             = restart->npool;
 
 	epv->day_leafc_litfall_increment      = restart->day_leafc_litfall_increment;
@@ -302,36 +320,44 @@ int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar
 	restart->deadcrootc_transfer			  = cs->deadcrootc_transfer;
 	restart->gresp_storage  				  = cs->gresp_storage;
 	restart->gresp_transfer 				  = cs->gresp_transfer;
-	restart->cwdc							  = cs->cwdc;
-	restart->litr1c 						  = cs->litr1c;
-	restart->litr2c 						  = cs->litr2c;
-	restart->litr3c 						  = cs->litr3c;
-	restart->litr4c 						  = cs->litr4c;
+
 
 	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
-	restart->litr1c_STDB		= cs->litr1c_STDB;
-	restart->litr2c_STDB		= cs->litr2c_STDB;
-	restart->litr3c_STDB		= cs->litr3c_STDB;
-	restart->litr4c_STDB		= cs->litr4c_STDB;
-	restart->litr1c_strg_HRV	= cs->litr1c_strg_HRV;
-	restart->litr2c_strg_HRV	= cs->litr2c_strg_HRV;
-	restart->litr3c_strg_HRV	= cs->litr3c_strg_HRV;
-	restart->litr4c_strg_HRV	= cs->litr4c_strg_HRV;
-	restart->litr1c_strg_MOW	= cs->litr1c_strg_MOW;
-	restart->litr2c_strg_MOW	= cs->litr2c_strg_MOW;
-	restart->litr3c_strg_MOW	= cs->litr3c_strg_MOW;
-	restart->litr4c_strg_MOW	= cs->litr4c_strg_MOW;
-	restart->litr1c_strg_THN	= cs->litr1c_strg_THN;
-	restart->litr2c_strg_THN	= cs->litr2c_strg_THN;
-	restart->litr3c_strg_THN	= cs->litr3c_strg_THN;
-	restart->litr4c_strg_THN	= cs->litr4c_strg_THN;
-	restart->litr_aboveground	= cs->litr_aboveground;
-	restart->litr_belowground	= cs->litr_belowground;
+	restart->litr1cA_STDB		= cs->litr1cA_STDB;
+	restart->litr1cB_STDB		= cs->litr1cB_STDB;
+	restart->litr2cA_STDB		= cs->litr2cA_STDB;
+	restart->litr2cB_STDB		= cs->litr2cB_STDB;
+	restart->litr3cA_STDB		= cs->litr3cA_STDB;
+	restart->litr3cB_STDB		= cs->litr3cB_STDB;
+	restart->litr4cA_STDB		= cs->litr4cA_STDB;
+	restart->litr4cB_STDB		= cs->litr4cB_STDB;
+	restart->cwdcA_STDB         = cs->cwdcA_STDB;
+	restart->cwdcB_STDB         = cs->cwdcB_STDB;
+	restart->litr1cA_CTDB		= cs->litr1cA_CTDB;
+	restart->litr1cB_CTDB		= cs->litr1cB_CTDB;
+	restart->litr2cA_CTDB		= cs->litr2cA_CTDB;
+	restart->litr2cB_CTDB		= cs->litr2cB_CTDB;
+	restart->litr3cA_CTDB		= cs->litr3cA_CTDB;
+	restart->litr3cB_CTDB		= cs->litr3cB_CTDB;
+	restart->litr4cA_CTDB		= cs->litr4cA_CTDB;
+	restart->litr4cB_CTDB		= cs->litr4cB_CTDB;
+	restart->cwdcA_CTDB         = cs->cwdcA_CTDB;
+	restart->cwdcB_CTDB         = cs->cwdcB_CTDB;
 
-	restart->soil1c 						  = cs->soil1c;
-	restart->soil2c 						  = cs->soil2c;
-	restart->soil3c 						  = cs->soil3c;
-	restart->soil4c 						  = cs->soil4c;
+	/* Hidy 2016 - multilayer soil */
+	for (layer=0; layer < N_SOILLAYERS; layer++)
+	{
+		restart->soil1c[layer] 	= cs->soil1c[layer];
+		restart->soil2c[layer]  = cs->soil2c[layer];
+		restart->soil3c[layer]  = cs->soil3c[layer];
+		restart->soil4c[layer]  = cs->soil4c[layer];
+		restart->litr1c[layer]  = cs->litr1c[layer];
+		restart->litr2c[layer]  = cs->litr2c[layer];
+		restart->litr3c[layer]  = cs->litr3c[layer];
+		restart->litr4c[layer]  = cs->litr4c[layer];
+		restart->cwdc[layer]	= cs->cwdc[layer];
+
+	}
 	restart->cpool  						  = cs->cpool;
 
 	restart->leafn  						  = ns->leafn;
@@ -361,44 +387,55 @@ int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar
 	restart->deadcrootn 					  = ns->deadcrootn;
 	restart->deadcrootn_storage 			  = ns->deadcrootn_storage;
 	restart->deadcrootn_transfer			  = ns->deadcrootn_transfer;
-	restart->cwdn							  = ns->cwdn;
-	restart->litr1n 						  = ns->litr1n;
-	restart->litr2n 						  = ns->litr2n;
-	restart->litr3n 						  = ns->litr3n;
-	restart->litr4n 						  = ns->litr4n;
-	
-	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
-	restart->litr1n_STDB		= ns->litr1n_STDB;
-	restart->litr2n_STDB		= ns->litr2n_STDB;
-	restart->litr3n_STDB		= ns->litr3n_STDB;
-	restart->litr4n_STDB		= ns->litr4n_STDB;
-	restart->litr1n_strg_HRV	= ns->litr1n_strg_HRV;
-	restart->litr2n_strg_HRV	= ns->litr2n_strg_HRV;
-	restart->litr3n_strg_HRV	= ns->litr3n_strg_HRV;
-	restart->litr4n_strg_HRV	= ns->litr4n_strg_HRV;
-	restart->litr1n_strg_MOW	= ns->litr1n_strg_MOW;
-	restart->litr2n_strg_MOW	= ns->litr2n_strg_MOW;
-	restart->litr3n_strg_MOW	= ns->litr3n_strg_MOW;
-	restart->litr4n_strg_MOW	= ns->litr4n_strg_MOW;
-	restart->litr1n_strg_THN	= ns->litr1n_strg_THN;
-	restart->litr2n_strg_THN	= ns->litr2n_strg_THN;
-	restart->litr3n_strg_THN	= ns->litr3n_strg_THN;
-	restart->litr4n_strg_THN	= ns->litr4n_strg_THN;
 
-	restart->soil1n 						  = ns->soil1n;
-	restart->soil2n 						  = ns->soil2n;
-	restart->soil3n 						  = ns->soil3n;
-	restart->soil4n 						  = ns->soil4n;
+	
+	/* Hidy 2016 - standing dead biomass, cut-down dead biomass and litter pools */
+	restart->litr1nA_STDB		= ns->litr1nA_STDB;
+	restart->litr1nB_STDB		= ns->litr1nB_STDB;
+	restart->litr2nA_STDB		= ns->litr2nA_STDB;
+	restart->litr2nB_STDB		= ns->litr2nB_STDB;
+	restart->litr3nA_STDB		= ns->litr3nA_STDB;
+	restart->litr3nB_STDB		= ns->litr3nB_STDB;
+	restart->litr4nA_STDB		= ns->litr4nA_STDB;
+	restart->litr4nB_STDB		= ns->litr4nB_STDB;
+	restart->cwdnA_STDB         = ns->cwdnA_STDB;
+	restart->cwdnB_STDB         = ns->cwdnB_STDB;
+	restart->litr1nA_CTDB		= ns->litr1nA_CTDB;
+	restart->litr1nB_CTDB		= ns->litr1nB_CTDB;
+	restart->litr2nA_CTDB		= ns->litr2nA_CTDB;
+	restart->litr2nB_CTDB		= ns->litr2nB_CTDB;
+	restart->litr3nA_CTDB		= ns->litr3nA_CTDB;
+	restart->litr3nB_CTDB		= ns->litr3nB_CTDB;
+	restart->litr4nA_CTDB		= ns->litr4nA_CTDB;
+	restart->litr4nB_CTDB		= ns->litr4nB_CTDB;
+	restart->cwdnA_CTDB         = ns->cwdnA_CTDB;
+	restart->cwdnB_CTDB         = ns->cwdnB_CTDB;
+
+	/*-----------------------------*/
+	/* Hidy 2016 - multilayer soil */
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		restart->soil1n[layer] 	= ns->soil1n[layer];
+		restart->soil2n[layer]  = ns->soil2n[layer];
+		restart->soil3n[layer]  = ns->soil3n[layer];
+		restart->soil4n[layer]  = ns->soil4n[layer];
+		restart->litr1n[layer]  = ns->litr1n[layer];
+		restart->litr2n[layer]  = ns->litr2n[layer];
+		restart->litr3n[layer]  = ns->litr3n[layer];
+		restart->litr4n[layer]  = ns->litr4n[layer];
+		restart->cwdn[layer]	= ns->cwdn[layer];
+	}
 	/*-----------------------------*/
 	/* Hidy 2011 - multilayer soil */
 	
 	for (layer =0; layer < N_SOILLAYERS; layer++)
 	{ 
 		restart->sminn[layer]                 = ns->sminn[layer];
+
 	}
 	/*-----------------------------*/
 	
-	restart->retransn						  = ns->retransn;
+	restart->retransn           			  = ns->retransn;
 	restart->npool  						  = ns->npool;
 
 	restart->day_leafc_litfall_increment	  = epv->day_leafc_litfall_increment;

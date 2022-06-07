@@ -49,6 +49,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	ws->canopyw_GRZsnk = 0.0;	
 	/* irrigation - Hidy 2015 */
 	ws->IRGsrc = 0.0;
+	ws->balance = 0.0;
 	
 	/* soil-water submodel- Hidy 2010.*/		
 	ws->runoff_snk = 0.0;		
@@ -80,28 +81,21 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	cs->soil3_hr_snk = 0.0;
 	cs->soil4_hr_snk = 0.0;
 	cs->fire_snk = 0.0;
-	/* senescence - Hidy 2010.*/
+	/* senescence, standig dead biome and cut-down - Hidy 2010.*/
 	cs->SNSCsnk = 0.0;
-	cs->SNSCsrc = 0.0;
+	cs->STDBsrc=0;
+	cs->CTDBsrc=0;
 	/* planting - Hidy 2008.*/
 	cs->PLTsrc = 0.0; 
 	/* thinning - Hidy 2012.*/
-	cs->THNsnk = 0.0; 
+	cs->THN_transportC = 0.0; 
 	/* mowing - Hidy 2008.*/
-	cs->MOWsnk = 0.0; 
 	cs->MOW_transportC = 0.0; 
 	/* grazing - Hidy 2008. */
 	cs->GRZsnk = 0.0;  
 	cs->GRZsrc = 0.0;
 	/* harvesting - Hidy 2012. */
-	cs->HRVsnk = 0.0;  
-	cs->HRVsrc = 0.0;
-	cs->HRVsnk = 0.0; 
 	cs->HRV_transportC = 0.0;
-	/* ploughing - Hidy 2012. */
-	cs->PLGsnk = 0.0;	
-	cs->PLGsrc = 0.0;
-	cs->PLG_cpool = 0.0;
 	/* fertilizing - Hidy 2012.  */
 	cs->FRZsrc = 0.0;
 	/* fruit simulation - Hidy 2013.  */
@@ -110,6 +104,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	/* softstem simulation - Hidy 2013.  */
 	cs->softstem_mr_snk = 0.0;
 	cs->softstem_gr_snk = 0.0;
+	cs->balance = 0.0;
 
 	/* zero the nitrogen sources and sinks */
 	ns->nfix_src = 0.0;
@@ -120,30 +115,26 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	ns->fire_snk = 0.0;
 	/* effect of boundary layer with constant N-content - Hidy 2015 */
 	ns->BNDRYsrc = 0.0;
+	ns->SPINUPsrc = 0.0;
 	ns->sum_ndemand = 0.0;
-	/* senescence - Hidy 2010.*/
+	/* senescence, standing dead biome, cut-down dead biome.*/
 	ns->SNSCsnk = 0.0;
-	ns->SNSCsrc = 0.0;
+	ns->STDBsrc = 0.0;
+	ns->CTDBsrc = 0.0;
 	/* planting - Hidy 2012.*/
 	ns->PLTsrc = 0.0; 
 	/* thinning - Hidy 2012.*/
-	ns->THNsnk = 0.0; 
+	ns->THN_transportN = 0.0; 
 	/* mowing - Hidy 2008.*/
-	ns->MOWsnk = 0.0; 
 	ns->MOW_transportN = 0.0; 
 	/* grazing - Hidy 2008. */
 	ns->GRZsnk = 0.0;  
 	ns->GRZsrc = 0.0;
 	/* harvesting - Hidy 2012. */
-	ns->HRVsnk = 0.0; 
-	ns->HRVsrc = 0.0;
 	ns->HRV_transportN = 0.0; 
-	/* ploughing - Hidy 2012. */
-	ns->PLGsnk = 0.0;	
-	ns->PLGsrc = 0.0;
-	ns->PLG_npool = 0.0;
 	/* fertilizing - Hidy 2012. */
-	ns->FRZsrc = 0.0;
+	ns->FRZsrc = 0.0; 
+	ns->balance = 0.0;
 	
 	/* zero the summary variables */
 	summary->cum_npp_ann = 0.0;
@@ -157,32 +148,44 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	summary->cum_hr = 0.0;
 	summary->cum_ET	= 0.0;
 	summary->cum_fire = 0.0;
-	summary->cum_nplus = 0.0;
 	summary->cum_n2o = 0.0;
-	summary->Cchange_FRZ = 0.0;
-	summary->Cchange_GRZ = 0.0;
-	summary->Cchange_MOW = 0.0;
-	summary->Cchange_THN = 0.0;
-	summary->Cchange_PLG = 0.0;
-	summary->Cchange_PLT = 0.0;
-	summary->daily_nbp = 0.0;
-	summary->Cchange_HRV = 0.0;
-	summary->Cchange_SNSC = 0.0;
+	
+	summary->Closs_MOW = 0.0;
+	summary->Closs_THN = 0.0;
+	summary->Closs_PLG = 0.0;
+	summary->Closs_HRV = 0.0;
+	summary->Closs_GRZ = 0.0;
+	summary->Cplus_GRZ = 0.0;
+	summary->Cplus_FRZ = 0.0;
+	summary->Cplus_PLT = 0.0;
+	summary->Nplus_FRZ = 0.0;
+	summary->Nplus_GRZ = 0.0;
+	summary->Closs_SNSC = 0.0;
+	summary->Cplus_CTDB = 0.0;
+	summary->Cplus_STDB = 0.0;
 	summary->daily_litdecomp = 0.0;
 	summary->daily_litfallc = 0.0;
 	summary->daily_litfallc_above = 0.0;
 	summary->daily_litfallc_below = 0.0;
+	summary->daily_STDB_to_litr = 0.0;
+	summary->daily_CTDB_to_litr = 0.0;
 	summary->daily_litfire = 0.0;
 	summary->daily_nbp = 0.0;
 	summary->litrc = 0.0;
 	summary->Nplus_FRZ = 0.0;
 	summary->Nplus_GRZ = 0.0;
+	summary->daily_gross_nimmob = 0.0;
+	summary->daily_gross_nmin = 0.0;
+	summary->daily_net_nmin = 0.0;
 	summary->soilc = 0.0;
 	summary->vegc = 0.0;
 	summary->abgc = 0.0;
 	summary->totalc = 0.0;
 	summary->soiln = 0.0;
 	summary->sminn = 0.0;
+	summary->sminn_top10 = 0.0; 
+	summary->soiln_top10 = 0.0;
+	summary->sminn_top10 = 0.0;
 
 	return (!ok);
 }

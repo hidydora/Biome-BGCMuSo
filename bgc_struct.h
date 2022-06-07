@@ -1,4 +1,4 @@
-  /*
+   /*
 bgc_struct.h 
 header file for structure definitions
 
@@ -172,6 +172,7 @@ typedef struct
 	double canopyw_GRZsnk;				/* (kgH2O/m2) water stored on canopy is disappered because of grazing*/
 	/* irrigation - by Hidy 2015. */
     double IRGsrc;						/* (kgH2O/m2) planted N */
+    double balance;
 } wstate_struct;
 
 /* water flux variables */
@@ -192,6 +193,7 @@ typedef struct
 	double evapotransp;								/* (kgH2O/m2/d) Hidy 2013 - total water evaporation (canopyw_evap+soilw_evap+soilw_trans+snoww_subl) */
 	double prcp_to_pondw;
 	double pondw_to_soilw;
+	double soilw_to_pondw;
 	double soilw_percolated[N_SOILLAYERS];		    /* (kgH2O/m2/d) Hidy 2010 - percolation fluxes between soil layers */
 	double soilw_diffused[N_SOILLAYERS];			/* (kgH2O/m2/d) Hidy 2010 - diffusion flux between the soil layers (positive: downward) */
 	double soilw_from_GW[N_SOILLAYERS];				/* (kgH2O/m2/d) Hidy 2013 - soil water pélus from ground water */
@@ -217,7 +219,7 @@ typedef struct
 	double max_stemc;      /* (kgC/m2) first-year total stem carbon */
 } cinit_struct;
 
-/* carbon state variables (including sums for sources and sinks) */
+/* carbon state variables ( including sums for sources and sinks) */
 typedef struct 
 {
     double leafc;            /* (kgC/m2) leaf C */
@@ -238,26 +240,51 @@ typedef struct
     double deadcrootc;         /* (kgC/m2) dead coarse root C */
     double deadcrootc_storage; /* (kgC/m2) dead coarse root C storage */
     double deadcrootc_transfer;/* (kgC/m2) dead coarse root C transfer */
-	double gresp_storage;    /* (kgC/m2) growth respiration storage */
-	double gresp_transfer;   /* (kgC/m2) growth respiration transfer */
-    double cwdc;             /* (kgC/m2) coarse woody debris C */
-    double litr1c;           /* (kgC/m2) litter labile C */
-    double litr2c;           /* (kgC/m2) litter unshielded cellulose C */
-    double litr3c;           /* (kgC/m2) litter shielded cellulose C */
-    double litr4c;           /* (kgC/m2) litter lignin C */
-	double litr_aboveground; /* (kgC/m2) total belowground litter (due to ploughing) - Hidy 2015*/
-	double litr_belowground; /* (kgC/m2) total belowground litter (due to ploughing) - Hidy 2015*/
+	double gresp_storage;      /* (kgC/m2) growth respiration storage */
+	double gresp_transfer;     /* (kgC/m2) growth respiration transfer */
+    double cwdc[N_SOILLAYERS];		/* (kgN/m2) ARRAY - coarse woody debris N */
+    double litr1c[N_SOILLAYERS];	/* (kgC/m2) litter labile C */
+    double litr2c[N_SOILLAYERS];	/* (kgC/m2) litter unshielded cellulose C */
+    double litr3c[N_SOILLAYERS];	/* (kgC/m2) litter shielded cellulose C */
+    double litr4c[N_SOILLAYERS];	/* (kgC/m2) litter lignin C */
+	double litr1c_total;            /* (kgC/m2) litter labile C */
+    double litr2c_total;            /* (kgC/m2) litter unshielded cellulose C */
+    double litr3c_total;            /* (kgC/m2) litter shielded cellulose C */
+    double litr4c_total;            /* (kgC/m2) litter lignin C */
+	double cwdc_total;              /* (kgN/m2) ARRAY - coarse woody debris N */
 	/* Hidy 2013: senescence */
-	double litr1c_STDB; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double litr2c_STDB; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double litr3c_STDB; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double litr4c_STDB; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double STDBc;/* (kgC/m2)  amount of standing dead biomass */
-	double CTDBc;/* (kgC/m2)  amount of cut-down dead biomass */
-    double soil1c;           /* (kgC/m2) microbial recycling pool C (fast) */
-    double soil2c;           /* (kgC/m2) microbial recycling pool C (medium) */
-    double soil3c;           /* (kgC/m2) microbial recycling pool C (slow) */
-    double soil4c;           /* (kgC/m2) recalcitrant SOM C (humus, slowest) */
+	double litr1cA_STDB;				/* (kgC/m2)  amount of wilted aboveground plant biomass before turning into litter pool */
+	double litr1cB_STDB;				/* (kgC/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr2cA_STDB;				/* (kgC/m2)  amount of wilted abovegroundplant biomass before turning into litter pool */
+	double litr2cB_STDB;				/* (kgC/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr3cA_STDB;				/* (kgC/m2)  amount of wilted abovegroundplant biomass before turning into litter pool */
+	double litr3cB_STDB;				/* (kgC/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr4cA_STDB;				/* (kgC/m2)  amount of wilted abovegroundplant biomass before turning into litter pool */
+	double litr4cB_STDB;				/* (kgC/m2)  amount of wilted belowground plant woody biomass before turning into litter pool */
+	double cwdcA_STDB;					/* (kgC/m2)  amount of wilted abovegroundplant woody biomass before turning into litter pool */
+	double cwdcB_STDB;					/* (kgC/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr1cA_CTDB;				/* (kgC/m2)  amount of cut-down aboveground plant biomass before turning into litter pool */
+	double litr1cB_CTDB;				/* (kgC/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double litr2cA_CTDB;				/* (kgC/m2)  amount of cut-down abovegroundplant biomass before turning into litter pool */
+	double litr2cB_CTDB;				/* (kgC/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double litr3cA_CTDB;				/* (kgC/m2)  amount of cut-down abovegroundplant biomass before turning into litter pool */
+	double litr3cB_CTDB;				/* (kgC/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double litr4cA_CTDB;				/* (kgC/m2)  amount of cut-down abovegroundplant biomass before turning into litter pool */
+	double litr4cB_CTDB;				/* (kgC/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double cwdcA_CTDB;					/* (kgC/m2)  amount of wilted abovegroundplant woody biomass before turning into litter pool */
+	double cwdcB_CTDB;					/* (kgC/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double STDBc_above;					/* (kgC/m2)  amount of standing dead biomass */
+	double STDBc_below;					/* (kgC/m2)  amount of standing dead biomass */
+	double CTDBc_above;					/* (kgC/m2)  amount of cut-down dead biomass */
+	double CTDBc_below;					/* (kgC/m2)  amount of cut-down dead biomass */
+    double soil1c[N_SOILLAYERS];    /* (kgC/m2) ARRAY - microbial recycling pool C (fast) */
+    double soil2c[N_SOILLAYERS];    /* (kgC/m2) ARRAY - microbial recycling pool C (medium) */
+    double soil3c[N_SOILLAYERS];    /* (kgC/m2) ARRAY - microbial recycling pool C (slow) */
+    double soil4c[N_SOILLAYERS];    /* (kgC/m2) ARRAY - recalcitrant SOM C (humus, slowest) */
+	double soil1c_total;            /* (kgC/m2) microbial recycling pool C (fast) */
+    double soil2c_total;            /* (kgC/m2) microbial recycling pool C (medium) */
+    double soil3c_total;            /* (kgC/m2) microbial recycling pool C (slow) */
+    double soil4c_total;            /* (kgC/m2) recalcitrant SOM C (humus, slowest) */
 	double cpool;            /* (kgC/m2) temporary photosynthate C pool */
     double psnsun_src;       /* (kgC/m2) SUM of gross PSN from sulit canopy */
     double psnshade_src;     /* (kgC/m2) SUM of gross PSN from shaded canopy */
@@ -279,39 +306,17 @@ typedef struct
     double soil3_hr_snk;     /* (kgC/m2) SUM of slow microbial respiration */
     double soil4_hr_snk;     /* (kgC/m2) SUM of recalcitrant SOM respiration */
 	double fire_snk;         /* (kgC/m2) SUM of fire losses */
-	double SNSCsnk;		 /* (kgC/m2) SUM of senescence losses */
-	double SNSCsrc;		 /* (kgC/m2) SUM of wilted plant material which turns into the litter pool */
+	double SNSCsnk;			 /* (kgC/m2) SUM of senescence losses */
+	double STDBsrc;			 /* (kgC/m2) SUM of standing dead biome which turns into the litter pool */
+	double CTDBsrc;			 /* (kgC/m2) SUM of cut-down dead biome which turns into the litter pool */
 	/* planting - by Hidy 2012. */
     double PLTsrc;     /* (kgN/m2) planted N */
 	/* thinning - by Hidy 2012.  */
-	double THNsnk;              /* (kgC/m2) thinned leaf C */
-	double THNsrc;			    /* (kgC/m2) thinned plant material (C content) returns to the litter  */
 	double THN_transportC;      /* (kgC/m2) thinned and transported plant material (C content)  */
-	double litr1c_strg_THN;     /* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
-	double litr2c_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
-	double litr3c_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
-	double litr4c_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
-	double cwdc_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
 	/* mowing - by Hidy 2008.   */
-	double MOWsnk;              /* (kgC/m2) mowed leaf C */
-	double MOWsrc;			    /* (kgC/m2) mowed plant material (C content) returns to the litter */
 	double MOW_transportC;      /* (kgC/m2) mowed and transported plant material (C content)  */
-	double litr1c_strg_MOW;     /* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
-	double litr2c_strg_MOW;		/* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
-	double litr3c_strg_MOW;		/* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
-	double litr4c_strg_MOW;		/* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
 	/* harvesting - Hidy 2012.  */
-	double HRVsnk;              /* (kgC/m2) harvested leaf C */
-	double HRVsrc;			    /* (kgC/m2) harvested plant material (C content) returns to the litter */
 	double HRV_transportC;      /* (kgC/m2) harvested and transported plant material (C content)  */
-	double litr1c_strg_HRV;     /* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	double litr2c_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	double litr3c_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	double litr4c_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	/* ploughing - Hidy 2012.   */
-	double PLGsnk;              /* (kgC/m2) ploughed leaf C */
-	double PLGsrc;			    /* (kgC/m2) ploughed plant material (C content)to the soil (labile litter) */
-	double PLG_cpool;			/* (kgC/m2) temporary pool of ploughed plant material (C content) before entering litter  */
 	/* grazing - by Hidy 2009.  */
 	double GRZsnk;              /* (kgC/m2) grazed leaf C */
 	double GRZsrc;              /* (kgC/m2) added carbon from fertilizer */
@@ -329,6 +334,7 @@ typedef struct
      double softstemc_transfer;    /* (kgC/m2) SUM of softstemc */
 	 double softstem_gr_snk;       /* (kgC/m2) SUM of softstem growth resp. */
 	 double softstem_mr_snk;       /* (kgC/m2) SUM of softstem maint resp.*/
+	 double balance;
 } cstate_struct;
 
 /* daily carbon flux variables */
@@ -420,10 +426,26 @@ typedef struct
 	double m_gresp_storage_to_SNSC;
 	double m_gresp_transfer_to_SNSC;
 	double m_STDBc_to_SNSC;
-	double SNSC_to_litr1c;
-	double SNSC_to_litr2c;
-	double SNSC_to_litr3c;
-	double SNSC_to_litr4c;
+	double STDB_to_litr1cA;
+	double STDB_to_litr2cA;
+	double STDB_to_litr3cA;
+	double STDB_to_litr4cA;
+	double STDB_to_cwdcA;
+	double STDB_to_litr1cB;
+	double STDB_to_litr2cB;
+	double STDB_to_litr3cB;
+	double STDB_to_litr4cB;
+	double STDB_to_cwdcB;
+	double CTDB_to_litr1cA;
+	double CTDB_to_litr2cA;
+	double CTDB_to_litr3cA;
+	double CTDB_to_litr4cA;
+	double CTDB_to_cwdcA;
+	double CTDB_to_litr1cB;
+	double CTDB_to_litr2cB;
+	double CTDB_to_litr3cB;
+	double CTDB_to_litr4cB;
+	double CTDB_to_cwdcB;
 	/* senescence fluxes  - fruit simulation (Hidy 2013.) */
 	double m_fruitc_to_SNSC;                /* (kgC/m2/d) */
 	double m_fruitc_storage_to_SNSC;        /* (kgC/m2/d) */
@@ -476,23 +498,23 @@ typedef struct
 	double psnsun_to_cpool;              /* (kgC/m2/d) */
 	double psnshade_to_cpool;            /* (kgC/m2/d) */
 	/* litter decomposition fluxes */
-	double cwdc_to_litr2c;               /* (kgC/m2/d) */
-	double cwdc_to_litr3c;               /* (kgC/m2/d) */
-	double cwdc_to_litr4c;               /* (kgC/m2/d) */
-	double litr1_hr;                     /* (kgC/m2/d) */
-	double litr1c_to_soil1c;             /* (kgC/m2/d) */
-	double litr2_hr;                     /* (kgC/m2/d) */
-	double litr2c_to_soil2c;             /* (kgC/m2/d) */
-	double litr3c_to_litr2c;             /* (kgC/m2/d) */
-	double litr4_hr;                     /* (kgC/m2/d) */
-	double litr4c_to_soil3c;             /* (kgC/m2/d) */
-	double soil1_hr;                     /* (kgC/m2/d) */
-	double soil1c_to_soil2c;             /* (kgC/m2/d) */
-	double soil2_hr;                     /* (kgC/m2/d) */
-	double soil2c_to_soil3c;             /* (kgC/m2/d) */
-	double soil3_hr;                     /* (kgC/m2/d) */
-	double soil3c_to_soil4c;             /* (kgC/m2/d) */
-	double soil4_hr;                     /* (kgC/m2/d) */
+	double cwdc_to_litr2c[N_SOILLAYERS];	/* (kgC/m2/d) */
+	double cwdc_to_litr3c[N_SOILLAYERS];	/* (kgC/m2/d) */
+	double cwdc_to_litr4c[N_SOILLAYERS];	/* (kgC/m2/d) */
+	double litr1_hr[N_SOILLAYERS];			/* (kgC/m2/d) */
+	double litr1c_to_soil1c[N_SOILLAYERS];  /* (kgC/m2/d) */
+	double litr2_hr[N_SOILLAYERS];			/* (kgC/m2/d) */
+	double litr2c_to_soil2c[N_SOILLAYERS];  /* (kgC/m2/d) */
+	double litr3c_to_litr2c[N_SOILLAYERS];  /* (kgC/m2/d) */
+	double litr4_hr[N_SOILLAYERS];			/* (kgC/m2/d) */
+	double litr4c_to_soil3c[N_SOILLAYERS];  /* (kgC/m2/d) */
+	double soil1_hr[N_SOILLAYERS];			/* (kgC/m2/d) */
+	double soil1c_to_soil2c[N_SOILLAYERS];	/* (kgC/m2/d) */
+	double soil2_hr[N_SOILLAYERS];			/* (kgC/m2/d) */
+	double soil2c_to_soil3c[N_SOILLAYERS];	/* (kgC/m2/d) */
+	double soil3_hr[N_SOILLAYERS];			/* (kgC/m2/d) */
+	double soil3c_to_soil4c[N_SOILLAYERS];	/* (kgC/m2/d) */
+	double soil4_hr[N_SOILLAYERS];			/* (kgC/m2/d) */
 	/* daily allocation fluxes from current GPP */
 	double cpool_to_leafc;               /* (kgC/m2/d) */
 	double cpool_to_leafc_storage;       /* (kgC/m2/d) */
@@ -561,18 +583,18 @@ typedef struct
 	double fruitc_transfer_from_PLT;		/* (kgC/m2/d) */
 	double softstemc_transfer_from_PLT;		/* (kgC/m2/d) */
 	/* thinning - Hidy 2012. */
-	double leafc_to_THN;				 /* (kgC/m2/d) */
-	double leafc_storage_to_THN;         /* (kgC/m2/d) */
-	double leafc_transfer_to_THN;        /* (kgC/m2/d) */
-	double frootc_to_THN;				 /* (kgC/m2/d) */
-	double frootc_storage_to_THN;         /* (kgC/m2/d) */
-	double frootc_transfer_to_THN;        /* (kgC/m2/d) */
+	double leafc_to_THN;				    /* (kgC/m2/d) */
+	double leafc_storage_to_THN;            /* (kgC/m2/d) */
+	double leafc_transfer_to_THN;           /* (kgC/m2/d) */
+	double frootc_to_THN;				    /* (kgC/m2/d) */
+	double frootc_storage_to_THN;            /* (kgC/m2/d) */
+	double frootc_transfer_to_THN;           /* (kgC/m2/d) */
 	double livecrootc_to_THN;				 /* (kgC/m2/d) */
-	double livecrootc_storage_to_THN;         /* (kgC/m2/d) */
-	double livecrootc_transfer_to_THN;        /* (kgC/m2/d) */
+	double livecrootc_storage_to_THN;        /* (kgC/m2/d) */
+	double livecrootc_transfer_to_THN;       /* (kgC/m2/d) */
 	double deadcrootc_to_THN;				 /* (kgC/m2/d) */
-	double deadcrootc_storage_to_THN;         /* (kgC/m2/d) */
-	double deadcrootc_transfer_to_THN;        /* (kgC/m2/d) */
+	double deadcrootc_storage_to_THN;        /* (kgC/m2/d) */
+	double deadcrootc_transfer_to_THN;       /* (kgC/m2/d) */
 	double livestemc_to_THN;				 /* (kgC/m2/d) */
 	double livestemc_storage_to_THN;         /* (kgC/m2/d) */
 	double livestemc_transfer_to_THN;        /* (kgC/m2/d) */
@@ -581,12 +603,21 @@ typedef struct
 	double deadstemc_transfer_to_THN;        /* (kgC/m2/d) */
 	double gresp_storage_to_THN;         /* (kgC/m2/d) */
 	double gresp_transfer_to_THN;        /* (kgC/m2/d) */
-	double THN_to_litr1c;				 /* (kgC/m2/d) */
-	double THN_to_litr2c;				 /* (kgC/m2/d) */
-	double THN_to_litr3c;				 /* (kgC/m2/d) */
-	double THN_to_litr4c;				 /* (kgC/m2/d) */
-	double THN_to_cwdc;			    	 /* (kgC/m2/d) */
-	double STDBc_to_THN;
+	double THN_to_CTDB_litr1cA;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_litr2cA;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_litr3cA;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_litr4cA;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_cwdcA;			     /* (kgC/m2/d) */
+	double THN_to_CTDB_litr1cB;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_litr2cB;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_litr3cB;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_litr4cB;				 /* (kgC/m2/d) */
+	double THN_to_CTDB_cwdcB;			    	 /* (kgC/m2/d) */
+	double litr1c_STDB_to_THN;
+	double litr2c_STDB_to_THN;
+	double litr3c_STDB_to_THN;
+	double litr4c_STDB_to_THN;
+	double cwdc_STDB_to_THN;
 	/* thinning  - fruit simulation (Hidy 2013.)  */
 	double fruitc_to_THN;				 /* (kgC/m2/d) */
 	double fruitc_storage_to_THN;         /* (kgC/m2/d) */
@@ -595,13 +626,16 @@ typedef struct
 	double leafc_to_MOW;				 /* (kgC/m2/d) */
 	double leafc_storage_to_MOW;         /* (kgC/m2/d) */
 	double leafc_transfer_to_MOW;        /* (kgC/m2/d) */
-	double STDBc_to_MOW;
+	double litr1c_STDB_to_MOW;
+	double litr2c_STDB_to_MOW;
+	double litr3c_STDB_to_MOW;
+	double litr4c_STDB_to_MOW;
 	double gresp_storage_to_MOW;         /* (kgC/m2/d) */
 	double gresp_transfer_to_MOW;        /* (kgC/m2/d) */
-	double MOW_to_litr1c;				 /* (kgC/m2/d) */
-	double MOW_to_litr2c;				 /* (kgC/m2/d) */
-	double MOW_to_litr3c;				 /* (kgC/m2/d) */
-	double MOW_to_litr4c;				 /* (kgC/m2/d) */
+	double MOW_to_CTDB_litr1cA;				 /* (kgC/m2/d) */
+	double MOW_to_CTDB_litr2cA;				 /* (kgC/m2/d) */
+	double MOW_to_CTDB_litr3cA;				 /* (kgC/m2/d) */
+	double MOW_to_CTDB_litr4cA;				 /* (kgC/m2/d) */
 	/* mowing  - fruit simulation (Hidy 2013.)  */
 	double fruitc_to_MOW;				 /* (kgC/m2/d) */
 	double fruitc_storage_to_MOW;         /* (kgC/m2/d) */
@@ -614,13 +648,16 @@ typedef struct
 	double leafc_to_HRV;				 /* (kgC/m2/d) */
 	double leafc_storage_to_HRV;         /* (kgC/m2/d) */
 	double leafc_transfer_to_HRV;        /* (kgC/m2/d) */
-	double STDBc_to_HRV;
+	double litr1c_STDB_to_HRV;
+	double litr2c_STDB_to_HRV;
+	double litr3c_STDB_to_HRV;
+	double litr4c_STDB_to_HRV;
 	double gresp_storage_to_HRV;         /* (kgC/m2/d) */
 	double gresp_transfer_to_HRV;        /* (kgC/m2/d) */
-	double HRV_to_litr1c;				 /* (kgC/m2/d) */
-	double HRV_to_litr2c;				 /* (kgC/m2/d) */
-	double HRV_to_litr3c;				 /* (kgC/m2/d) */
-	double HRV_to_litr4c;				 /* (kgC/m2/d) */
+	double HRV_to_CTDB_litr1cA;				 /* (kgC/m2/d) */
+	double HRV_to_CTDB_litr2cA;				 /* (kgC/m2/d) */
+	double HRV_to_CTDB_litr3cA;				 /* (kgC/m2/d) */
+	double HRV_to_CTDB_litr4cA;				 /* (kgC/m2/d) */
 	/* harvesting  - fruit simulation (Hidy 2013.)  */
 	double fruitc_to_HRV;				 /* (kgC/m2/d) */
 	double fruitc_storage_to_HRV;         /* (kgC/m2/d) */
@@ -633,17 +670,27 @@ typedef struct
 	double leafc_to_PLG;					 /* (kgC/m2/d) */
 	double leafc_storage_to_PLG;          /* (kgC/m2/d) */
 	double leafc_transfer_to_PLG;         /* (kgC/m2/d) */
-	double STDBc_to_PLG;				/* standing dead biome to PLG */
-	double CTDBc_to_PLG;				/* cut-down biome to PLG */
+	double litr1c_STDB_to_PLG;
+	double litr2c_STDB_to_PLG;
+	double litr3c_STDB_to_PLG;
+	double litr4c_STDB_to_PLG;
+	double litr1c_CTDB_AtoB_PLG;
+	double litr2c_CTDB_AtoB_PLG;
+	double litr3c_CTDB_AtoB_PLG;
+	double litr4c_CTDB_AtoB_PLG;
 	double gresp_storage_to_PLG;          /* (kgC/m2/d) */
 	double gresp_transfer_to_PLG;         /* (kgC/m2/d) */
 	double frootc_to_PLG;					/* (kgC/m2/d) */
 	double frootc_storage_to_PLG;         /* (kgC/m2/d) */
 	double frootc_transfer_to_PLG;        /* (kgC/m2/d) */
-	double PLG_to_litr1c;
-	double PLG_to_litr2c;
-	double PLG_to_litr3c;
-	double PLG_to_litr4c;
+	double PLG_to_CTDB_litr1cA;
+	double PLG_to_CTDB_litr2cA;
+	double PLG_to_CTDB_litr3cA;
+	double PLG_to_CTDB_litr4cA;
+	double PLG_to_CTDB_litr1cB;
+	double PLG_to_CTDB_litr2cB;
+	double PLG_to_CTDB_litr3cB;
+	double PLG_to_CTDB_litr4cB;
 	/* ploughing  - fruit simulation (Hidy 2013.)  */
 	double fruitc_to_PLG;				 /* (kgC/m2/d) */
 	double fruitc_storage_to_PLG;         /* (kgC/m2/d) */
@@ -658,7 +705,10 @@ typedef struct
 	double leafc_transfer_to_GRZ;        /* (kgC/m2/d) */
 	double gresp_storage_to_GRZ;         /* (kgC/m2/d) */
 	double gresp_transfer_to_GRZ;        /* (kgC/m2/d) */
-	double STDBc_to_GRZ;
+	double litr1c_STDB_to_GRZ;
+	double litr2c_STDB_to_GRZ;
+	double litr3c_STDB_to_GRZ;
+	double litr4c_STDB_to_GRZ;
 	double GRZ_to_litr1c;				 /* (kgC/m2/d) */
 	double GRZ_to_litr2c;				 /* (kgC/m2/d) */
 	double GRZ_to_litr3c;				 /* (kgC/m2/d) */
@@ -704,33 +754,61 @@ typedef struct
     double deadcrootn;         /* (kgN/m2) dead coarse root N */
     double deadcrootn_storage; /* (kgN/m2) dead coarse root N */
     double deadcrootn_transfer;/* (kgN/m2) dead coarse root N */
-    double cwdn;               /* (kgN/m2) coarse woody debris N */
-    double litr1n;             /* (kgN/m2) litter labile N */
-    double litr2n;             /* (kgN/m2) litter unshielded cellulose N */
-    double litr3n;             /* (kgN/m2) litter shielded cellulose N */
-    double litr4n;             /* (kgN/m2) litter lignin N */
+    double cwdn[N_SOILLAYERS];       /* (kgN/m2) ARRAY - coarse woody debris N */
+    double litr1n[N_SOILLAYERS];     /* (kgN/m2) ARRAY - litter labile N */
+    double litr2n[N_SOILLAYERS];     /* (kgN/m2) ARRAY - litter unshielded cellulose N */
+    double litr3n[N_SOILLAYERS];     /* (kgN/m2) ARRAY - litter shielded cellulose N */
+    double litr4n[N_SOILLAYERS];     /* (kgN/m2) ARRAY - litter lignin N */
+	double litr1n_total;             /* (kgN/m2) litter labile N */
+    double litr2n_total;             /* (kgN/m2) litter unshielded cellulose N */
+    double litr3n_total;             /* (kgN/m2) litter shielded cellulose N */
+    double litr4n_total;             /* (kgN/m2) litter lignin N */
+	double cwdn_total;				 /* (kgN/m2) coarse woody debris N */
 	/* fruit simulation (Hidy 2013.) */
-	double fruitn;              /* (kgN/m2) fruit N */
-    double fruitn_storage;      /* (kgN/m2) fruit N */
-    double fruitn_transfer;     /* (kgN/m2) fruit N */
+	double fruitn;					/* (kgN/m2) fruit N */
+    double fruitn_storage;			/* (kgN/m2) fruit N */
+    double fruitn_transfer;			/* (kgN/m2) fruit N */
 	/* softstem simulation (Hidy 2013.) */
-	double softstemn;              /* (kgN/m2) softstem N */
-    double softstemn_storage;      /* (kgN/m2) softstem N */
-    double softstemn_transfer;     /* (kgN/m2) softstem N */
-	/* Hidy 2013: senescence */
-	double litr1n_STDB;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double litr2n_STDB;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double litr3n_STDB;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double litr4n_STDB;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
-	double STDBn;  /* (kgC/m2)  amount of standing dead biomass */
-    double soil1n;             /* (kgN/m2) microbial recycling pool N (fast) */
-    double soil2n;             /* (kgN/m2) microbial recycling pool N (medium) */
-    double soil3n;             /* (kgN/m2) microbial recycling pool N (slow) */
-    double soil4n;             /* (kgN/m2) recalcitrant SOM N (humus, slowest) */
+	double softstemn;				/* (kgN/m2) softstem N */
+    double softstemn_storage;		/* (kgN/m2) softstem N */
+    double softstemn_transfer;		/* (kgN/m2) softstem N */
+	/* standing dead and cut-down biomass - Hidy 2016*/
+	double litr1nA_STDB;				/* (kgN/m2)  amount of wilted aboveground plant biomass before turning into litter pool */
+	double litr1nB_STDB;				/* (kgN/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr2nA_STDB;				/* (kgN/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr2nB_STDB;				/* (kgN/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr3nA_STDB;				/* (kgN/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr3nB_STDB;				/* (kgN/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr4nA_STDB;            	/* (kgN/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr4nB_STDB;				/* (kgN/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double cwdnA_STDB;					/* (kgN/m2)  amount of wilted plant biomass before turning into litter pool */
+	double cwdnB_STDB;					/* (kgN/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double litr1nA_CTDB;				/* (kgN/m2)  amount of cut-down aboveground plant biomass before turning into litter pool */
+	double litr1nB_CTDB;				/* (kgN/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double litr2nA_CTDB;				/* (kgN/m2)  amount of cut-down plant biomass before turning into litter pool */
+	double litr2nB_CTDB;				/* (kgN/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double litr3nA_CTDB;				/* (kgN/m2)  amount of cut-down plant biomass before turning into litter pool */
+	double litr3nB_CTDB;				/* (kgN/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double litr4nA_CTDB;            	/* (kgN/m2)  amount of cut-down plant biomass before turning into litter pool */
+	double litr4nB_CTDB;				/* (kgN/m2)  amount of cut-down belowground plant biomass before turning into litter pool */
+	double cwdnA_CTDB;					/* (kgN/m2)  amount of wilted plant biomass before turning into litter pool */
+	double cwdnB_CTDB;					/* (kgN/m2)  amount of wilted belowground plant biomass before turning into litter pool */
+	double STDBn_above;					/* (kgC/m2)  amount of standing dead biomass */
+	double STDBn_below;					/* (kgC/m2)  amount of standing dead biomass */
+	double CTDBn_above;					/* (kgC/m2)  amount of cut-down dead biomass */
+	double CTDBn_below;					/* (kgC/m2)  amount of cut-down dead biomass */
+    double soil1n[N_SOILLAYERS];		/* (kgN/m2) ARRAY - microbial recycling pool N (fast) */
+    double soil2n[N_SOILLAYERS];		/* (kgN/m2) ARRAY - microbial recycling pool N (medium) */
+    double soil3n[N_SOILLAYERS];		/* (kgN/m2) ARRAY - microbial recycling pool N (slow) */
+    double soil4n[N_SOILLAYERS];		/* (kgN/m2) ARRAY - recalcitrant SOM N (humus, slowest) */
+	double soil1n_total;				/* (kgN/m2) microbial recycling pool C (fast) */
+    double soil2n_total;				/* (kgN/m2) microbial recycling pool C (medium) */
+    double soil3n_total;				/* (kgN/m2) microbial recycling pool C (slow) */
+    double soil4n_total;				/* (kgN/m2) recalcitrant SOM C (humus, slowest) */
 	/* multilayer soil - Hidy 2011 */
-    double sminn[N_SOILLAYERS];		    /* (kgN/m2) soil mineral N in multilayer soil */
-	double sminn_RZ;					/* (kgN/m2) sum of the soil mineral N in the rootzone on actual day */
 	double retransn;					/* (kgN/m2) plant pool of retranslocated N */
+    double sminn[N_SOILLAYERS];		    /* (kgN/m2) soil mineral N in multilayer soil */
+	double sminn_total;                 /* (kgN/m2) sum of the soil mineral N in the total soil */
 	double npool;						/* (kgN/m2) temporary plant N pool */
     double nfix_src;					/* (kgN/m2) SUM of biological N fixation */
     double ndep_src;					/* (kgN/m2) SUM of N deposition inputs */
@@ -740,47 +818,27 @@ typedef struct
 	/* upward movement of SMINN - Hidy 2015 */
 	 double ndiffused_snk;				/* (kgN/m2) SUM of N leached */
 	/* sensescence simulation - Hidy 2011 */
-	double SNSCsnk;				/* (kgN/m2) SUM of senescence losses */
-	double SNSCsrc;				/* (kgN/m2) SUM of wilted plant material which turns into the litter pool */
+	double SNSCsnk;						/* (kgN/m2) SUM of senescence losses */
+	double STDBsrc;						/* (kgN/m2) SUM of standing dead biome which turns into the litter pool */
+	double CTDBsrc;						/* (kgN/m2) SUM of standing dead biome which turns into the litter pool */
 	/* fertilization - by Hidy 2008. */
-	double FRZsrc;				 /*(kgN/m2) SUM of N fertilization inputs */	
+	double FRZsrc;						/*(kgN/m2) SUM of N fertilization inputs */	
 	/* planting - by Hidy 2012. */
-    double PLTsrc;				 /* (kgN/m2) planted leaf N */
+    double PLTsrc;						 /* (kgN/m2) planted leaf N */
 	/* thinning - by Hidy 2008. */
-	double THNsnk;				 /* (kgN/m2) thinned leaf N */
-	double THNsrc;				 /* (kgC/m2) thinned plant material (N content) returns to the soil (labile litter) */
-	double THN_transportN; 		/* (kgC/m2) thinned and transported plant material (N content)  */
-	double litr1n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
-	double litr2n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
-	double litr3n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
-	double litr4n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
-	double cwdn_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
+	double THN_transportN; 				/* (kgC/m2) thinned and transported plant material (N content)  */
 	/* mowing - by Hidy 2008. */
-	double MOWsnk;              /* (kgN/m2) mowed leaf N */
-	double MOWsrc;				/* (kgC/m2) mowed plant material (N content) returns to the soil (labile litter) */
-	double MOW_transportN; 		/* (kgC/m2) harvested and transported plant material (N content)  */
-	double litr1n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
-	double litr2n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
-	double litr3n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
-	double litr4n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
+	double MOW_transportN; 				/* (kgC/m2) harvested and transported plant material (N content)  */
 	/* harvesting - by Hidy 2012. */
-	double HRVsnk;
-	double HRVsrc;				/* (kgN/m2) harvested leaf N */
-	double HRV_transportN; 		/* (kgC/m2) harvested and transported plant material (N content)  */
-	double litr1n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	double litr2n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	double litr3n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	double litr4n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
-	/* ploughing - Hidy 2012.    */
-	double PLGsnk;				/* (kgN/m2) plouhged leaf N */
-	double PLGsrc;				/* (kgC/m2) ploughed plant material (N content) returns to the soil (labile litter) */
-	double PLG_npool;			/* (kgC/m2) temporary pool of ploughed plant material (N content) before entering litter  */
+	double HRV_transportN; 				/* (kgC/m2) harvested and transported plant material (N content)  */
 	/* grazing - by Hidy 2009.   */
-	double GRZsnk;              /* (kgN/m2) grazed leaf N */
-	double GRZsrc;              /* (kgN/m2) leaf N from fertilizer*/
+	double GRZsnk;						/* (kgN/m2) grazed leaf N */
+	double GRZsrc;						/* (kgN/m2) leaf N from fertilizer*/
 	/* effect of boundary layer with constant N-content - Hidy 2015 */
-	double BNDRYsrc;             /* (kgN/m2) leaf N from fertilizer*/
-	double sum_ndemand;          /* (kgN/m2) leaf N from fertilizer*/
+	double BNDRYsrc;					/* (kgN/m2) leaf N from boundary layer*/
+	double SPINUPsrc;					/* (kgN/m2) leaf N from spinup correction*/
+	double sum_ndemand;					/* (kgN/m2) leaf N from fertilizer*/
+    double balance;
 } nstate_struct;
 
 /* daily nitrogen flux variables */
@@ -807,13 +865,13 @@ typedef struct
 	double m_deadstemn_transfer_to_litr1n; /* (kgN/m2/d) */
 	double m_livecrootn_transfer_to_litr1n;/* (kgN/m2/d) */
 	double m_deadcrootn_transfer_to_litr1n;/* (kgN/m2/d) */
-        double m_livestemn_to_litr1n;          /* (kgN/m2/d) */
+    double m_livestemn_to_litr1n;          /* (kgN/m2/d) */
 	double m_livestemn_to_cwdn;            /* (kgN/m2/d) */
 	double m_deadstemn_to_cwdn;            /* (kgN/m2/d) */
 	double m_livecrootn_to_litr1n;         /* (kgN/m2/d) */
 	double m_livecrootn_to_cwdn;           /* (kgN/m2/d) */
 	double m_deadcrootn_to_cwdn;           /* (kgN/m2/d) */
-	double m_retransn_to_litr1n;           /* (kgN/m2/d) */
+	double m_retransn_to_litr1n;     /* (kgN/m2/d) */       
 	/* mortality - fruit simulation (Hidy 2013.) */
 	double m_fruitn_to_litr1n;              /* (kgN/m2/d) */
 	double m_fruitn_to_litr2n;              /* (kgN/m2/d) */
@@ -829,6 +887,7 @@ typedef struct
 	double m_softstemn_storage_to_litr1n;      /* (kgN/m2/d) */
 	double m_softstemn_transfer_to_litr1n;      /* (kgN/m2/d) */
 	/* 2010 Hidy - senescence fluxes */
+	double m_vegn_to_SNSC;                /* (kgN/m2/d) */
 	double m_leafn_to_SNSC;                /* (kgN/m2/d) */
 	double m_frootn_to_SNSC;               /* (kgN/m2/d) */
 	double m_leafn_storage_to_SNSC;		   /* (kgN/m2/d) */
@@ -837,10 +896,26 @@ typedef struct
 	double m_frootn_transfer_to_SNSC;      /* (kgN/m2/d) */
 	double m_retransn_to_SNSC;
 	double m_STDBn_to_SNSC;
-	double SNSC_to_litr1n;
-	double SNSC_to_litr2n;
-	double SNSC_to_litr3n;
-	double SNSC_to_litr4n;	
+	double STDB_to_litr1nA;
+	double STDB_to_litr2nA;
+	double STDB_to_litr3nA;
+	double STDB_to_litr4nA;	
+	double STDB_to_cwdnA;	
+	double STDB_to_litr1nB;
+	double STDB_to_litr2nB;
+	double STDB_to_litr3nB;
+	double STDB_to_litr4nB;	
+	double STDB_to_cwdnB;
+	double CTDB_to_litr1nA;
+	double CTDB_to_litr2nA;
+	double CTDB_to_litr3nA;
+	double CTDB_to_litr4nA;
+	double CTDB_to_cwdnA;
+	double CTDB_to_litr1nB;
+	double CTDB_to_litr2nB;
+	double CTDB_to_litr3nB;
+	double CTDB_to_litr4nB;	
+	double CTDB_to_cwdnB;
 	/* senescence - fruit simulation (Hidy 2013.) */
 	double m_fruitn_to_SNSC;                /* (kgN/m2/d) */
 	double m_fruitn_storage_to_SNSC;		   /* (kgN/m2/d) */
@@ -917,43 +992,43 @@ typedef struct
 	double ndep_to_sminn;                 /* (kgN/m2/d) */
 	double nfix_to_sminn;                 /* (kgN/m2/d) */
 	/* litter and soil decomposition fluxes */
-	double cwdn_to_litr2n;                /* (kgN/m2/d) */
-	double cwdn_to_litr3n;                /* (kgN/m2/d) */
-	double cwdn_to_litr4n;                /* (kgN/m2/d) */
-	double litr1n_to_soil1n;              /* (kgN/m2/d) */
-	double sminn_to_soil1n_l1;            /* (kgN/m2/d) */
-	double litr2n_to_soil2n;              /* (kgN/m2/d) */
-	double sminn_to_soil2n_l2;            /* (kgN/m2/d) */
-	double litr3n_to_litr2n;              /* (kgN/m2/d) */
-	double litr4n_to_soil3n;              /* (kgN/m2/d) */
-	double sminn_to_soil3n_l4;            /* (kgN/m2/d) */
-	double soil1n_to_soil2n;              /* (kgN/m2/d) */
-	double sminn_to_soil2n_s1;            /* (kgN/m2/d) */
-	double soil2n_to_soil3n;              /* (kgN/m2/d) */
-	double sminn_to_soil3n_s2;            /* (kgN/m2/d) */
-	double soil3n_to_soil4n;              /* (kgN/m2/d) */
-	double sminn_to_soil4n_s3;            /* (kgN/m2/d) */
-	double soil4n_to_sminn;               /* (kgN/m2/d) */
+	double cwdn_to_litr2n[N_SOILLAYERS];                /* (kgN/m2/d) */
+	double cwdn_to_litr3n[N_SOILLAYERS];                /* (kgN/m2/d) */
+	double cwdn_to_litr4n[N_SOILLAYERS];                /* (kgN/m2/d) */
+	double litr1n_to_soil1n[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double sminn_to_soil1n_l1[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double litr2n_to_soil2n[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double sminn_to_soil2n_l2[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double litr3n_to_litr2n[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double litr4n_to_soil3n[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double sminn_to_soil3n_l4[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double soil1n_to_soil2n[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double sminn_to_soil2n_s1[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double soil2n_to_soil3n[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double sminn_to_soil3n_s2[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double soil3n_to_soil4n[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double sminn_to_soil4n_s3[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double soil4n_to_sminn[N_SOILLAYERS];               /* (kgN/m2/d) */
 	/* denitrification (volatilization) fluxes */
-	double sminn_to_nvol_l1s1;            /* (kgN/m2/d) */
-	double sminn_to_nvol_l2s2;            /* (kgN/m2/d) */
-	double sminn_to_nvol_l4s3;            /* (kgN/m2/d) */
-	double sminn_to_nvol_s1s2;            /* (kgN/m2/d) */
-	double sminn_to_nvol_s2s3;            /* (kgN/m2/d) */
-	double sminn_to_nvol_s3s4;            /* (kgN/m2/d) */
-	double sminn_to_nvol_s4;              /* (kgN/m2/d) */
-	double sminn_to_denitrif;             /* (kgN/m2/d) */
+	double sminn_to_nvol_l1s1[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double sminn_to_nvol_l2s2[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double sminn_to_nvol_l4s3[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double sminn_to_nvol_s1s2[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double sminn_to_nvol_s2s3[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double sminn_to_nvol_s3s4[N_SOILLAYERS];            /* (kgN/m2/d) */
+	double sminn_to_nvol_s4[N_SOILLAYERS];              /* (kgN/m2/d) */
+	double sminn_to_nvol_SUM[N_SOILLAYERS];
 	/* SMINN change caused by soil process - Hidy 2011 */
-	double sminn_to_soil_SUM;
-	double sminn_to_soil[N_SOILLAYERS];    /* (kgN/m2/d) */
+	double sminn_to_soil_SUM[N_SOILLAYERS];
 	double sminn_leached[N_SOILLAYERS];    /* (kgN/m2/d) */
-	double sminn_diffused[N_SOILLAYERS];    /* (kgN/m2/d) */
+	double sminn_diffused[N_SOILLAYERS];   /* (kgN/m2/d) */
+	double sminn_change[N_SOILLAYERS];    /* (kgN/m2/d) */
 	/* daily allocation fluxes */
 	double retransn_to_npool;             /* (kgN/m2/d) */
-	double sminn_to_npool;                /* (kgN/m2/d) */
+	double sminn_to_denitrif;
+	double sminn_to_npool;  /* (kgN/m2/d) */
 	double npool_to_leafn;                /* (kgN/m2/d) */
 	double npool_to_leafn_storage;        /* (kgN/m2/d) */
-	double nplus;                         /* (kgN/m2/d) */
 	/* fruit simulation (Hidy 2013.)  */
 	double npool_to_fruitn;                /* (kgN/m2/d) */
 	double npool_to_fruitn_storage;        /* (kgN/m2/d) */
@@ -1012,12 +1087,21 @@ typedef struct
 	double deadstemn_storage_to_THN;         /* (kgN/m2/d) */
 	double deadstemn_transfer_to_THN;        /* (kgN/m2/d) */
 	double retransn_to_THN;
-	double THN_to_litr1n;				 /* (kgN/m2/d) */
-	double THN_to_litr2n;				 /* (kgN/m2/d) */
-	double THN_to_litr3n;				 /* (kgN/m2/d) */
-	double THN_to_litr4n;				 /* (kgN/m2/d) */
-	double THN_to_cwdn;
-	double STDBn_to_THN;
+	double THN_to_CTDB_litr1nA;					/* (kgN/m2/d) */
+	double THN_to_CTDB_litr2nA;					/* (kgN/m2/d) */
+	double THN_to_CTDB_litr3nA;					/* (kgN/m2/d) */
+	double THN_to_CTDB_litr4nA;					/* (kgN/m2/d) */
+	double THN_to_CTDB_cwdnA;
+	double THN_to_CTDB_litr1nB;					/* (kgN/m2/d) */
+	double THN_to_CTDB_litr2nB;					/* (kgN/m2/d) */
+	double THN_to_CTDB_litr3nB;					/* (kgN/m2/d) */
+	double THN_to_CTDB_litr4nB;					/* (kgN/m2/d) */
+	double THN_to_CTDB_cwdnB;
+	double litr1n_STDB_to_THN;
+	double litr2n_STDB_to_THN;
+	double litr3n_STDB_to_THN;
+	double litr4n_STDB_to_THN;
+	double cwdn_STDB_to_THN;
 	/* thinning - fruit simulation (Hidy 2013.)  */
 	double fruitn_to_THN;				 /* (kgN/m2/d) */
 	double fruitn_storage_to_THN;         /* (kgN/m2/d) */
@@ -1026,12 +1110,15 @@ typedef struct
 	double leafn_to_MOW;                 /* (kgN/m2/d) */
 	double leafn_storage_to_MOW;         /* (kgN/m2/d) */
 	double leafn_transfer_to_MOW;        /* (kgN/m2/d) */
-	double STDBn_to_MOW;
+	double litr1n_STDB_to_MOW;
+	double litr2n_STDB_to_MOW;
+	double litr3n_STDB_to_MOW;
+	double litr4n_STDB_to_MOW;
 	double retransn_to_MOW;
-	double MOW_to_litr1n;				 /* (kgN/m2/d) */
-	double MOW_to_litr2n;				 /* (kgN/m2/d) */
-	double MOW_to_litr3n;				 /* (kgN/m2/d) */
-	double MOW_to_litr4n;				 /* (kgN/m2/d) */
+	double MOW_to_CTDB_litr1nA;				 /* (kgN/m2/d) */
+	double MOW_to_CTDB_litr2nA;				 /* (kgN/m2/d) */
+	double MOW_to_CTDB_litr3nA;				 /* (kgN/m2/d) */
+	double MOW_to_CTDB_litr4nA;				 /* (kgN/m2/d) */
 	/* mowing - fruit simulation (Hidy 2013.)  */
 	double fruitn_to_MOW;				 /* (kgN/m2/d) */
 	double fruitn_storage_to_MOW;         /* (kgN/m2/d) */
@@ -1044,12 +1131,15 @@ typedef struct
 	double leafn_to_HRV;                 /* (kgN/m2/d) */
 	double leafn_storage_to_HRV;         /* (kgN/m2/d) */
 	double leafn_transfer_to_HRV;        /* (kgN/m2/d) */
-	double STDBn_to_HRV;
+	double litr1n_STDB_to_HRV;
+	double litr2n_STDB_to_HRV;
+	double litr3n_STDB_to_HRV;
+	double litr4n_STDB_to_HRV;
 	double retransn_to_HRV;
-	double HRV_to_litr1n;				 /* (kgN/m2/d) */
-	double HRV_to_litr2n;				 /* (kgN/m2/d) */
-	double HRV_to_litr3n;				 /* (kgN/m2/d) */
-	double HRV_to_litr4n;				 /* (kgN/m2/d) */
+	double HRV_to_CTDB_litr1nA;				 /* (kgN/m2/d) */
+	double HRV_to_CTDB_litr2nA;				 /* (kgN/m2/d) */
+	double HRV_to_CTDB_litr3nA;				 /* (kgN/m2/d) */
+	double HRV_to_CTDB_litr4nA;				 /* (kgN/m2/d) */
 	/* harvesting - fruit simulation (Hidy 2013.)  */
 	double fruitn_to_HRV;				 /* (kgN/m2/d) */
 	double fruitn_storage_to_HRV;         /* (kgN/m2/d) */
@@ -1062,16 +1152,22 @@ typedef struct
 	double leafn_to_PLG;                 /* (kgN/m2/d) */
 	double leafn_storage_to_PLG;         /* (kgN/m2/d) */
 	double leafn_transfer_to_PLG;        /* (kgN/m2/d) */
-	double STDBn_to_PLG;
-	double CTDBn_to_PLG;
+	double litr1n_STDB_to_PLG;
+	double litr2n_STDB_to_PLG;
+	double litr3n_STDB_to_PLG;
+	double litr4n_STDB_to_PLG;
+	double litr1n_CTDB_AtoB_PLG;
+	double litr2n_CTDB_AtoB_PLG;
+	double litr3n_CTDB_AtoB_PLG;
+	double litr4n_CTDB_AtoB_PLG;
 	double frootn_to_PLG;				/* (kgN/m2/d) */
 	double frootn_storage_to_PLG;         /* (kgN/m2/d) */
 	double frootn_transfer_to_PLG;        /* (kgN/m2/d) */
 	double retransn_to_PLG;
-	double PLG_to_litr1n;
-	double PLG_to_litr2n;
-	double PLG_to_litr3n;
-	double PLG_to_litr4n;
+	double PLG_to_CTDB_litr1nB;
+	double PLG_to_CTDB_litr2nB;
+	double PLG_to_CTDB_litr3nB;
+	double PLG_to_CTDB_litr4nB;
 	/* ploughing - fruit simulation (Hidy 2013.)  */
 	double fruitn_to_PLG;				 /* (kgN/m2/d) */
 	double fruitn_storage_to_PLG;         /* (kgN/m2/d) */
@@ -1084,7 +1180,10 @@ typedef struct
 	double leafn_to_GRZ;                 /* (kgN/m2/d) */
 	double leafn_storage_to_GRZ;         /* (kgN/m2/d) */
 	double leafn_transfer_to_GRZ;        /* (kgN/m2/d) */
-	double STDBn_to_GRZ;
+	double litr1n_STDB_to_GRZ;
+	double litr2n_STDB_to_GRZ;
+	double litr3n_STDB_to_GRZ;
+	double litr4n_STDB_to_GRZ;
 	double retransn_to_GRZ;
 	double GRZ_to_litr1n;				 /* (kgN/m2/d) */
 	double GRZ_to_litr2n;				 /* (kgN/m2/d) */
@@ -1114,25 +1213,25 @@ typedef struct
 immobilization fluxes and plant growth N demands */
 typedef struct 
 {
-	double mineralized;
-	double potential_immob;
-	double plant_ndemand;		// Hidy 2009.
 	double excess_c;
 	double day_gpp;
-	double plitr1c_loss;
-	double pmnf_l1s1;
-	double plitr2c_loss;
-	double pmnf_l2s2;
-	double plitr4c_loss;
-	double pmnf_l4s3;
-	double psoil1c_loss;
-	double pmnf_s1s2;
-	double psoil2c_loss;
-	double pmnf_s2s3;
-	double psoil3c_loss;
-	double pmnf_s3s4;
-	double psoil4c_loss;
-	double kl4;
+	double mineralized[N_SOILLAYERS];
+	double potential_immob[N_SOILLAYERS];
+	double plant_ndemand[N_SOILLAYERS];		// Hidy 2009.
+	double plitr1c_loss[N_SOILLAYERS];
+	double pmnf_l1s1[N_SOILLAYERS];
+	double plitr2c_loss[N_SOILLAYERS];
+	double pmnf_l2s2[N_SOILLAYERS];
+	double plitr4c_loss[N_SOILLAYERS];
+	double pmnf_l4s3[N_SOILLAYERS];
+	double psoil1c_loss[N_SOILLAYERS];
+	double pmnf_s1s2[N_SOILLAYERS];
+	double psoil2c_loss[N_SOILLAYERS];
+	double pmnf_s2s3[N_SOILLAYERS];
+	double psoil3c_loss[N_SOILLAYERS];
+	double pmnf_s3s4[N_SOILLAYERS];
+	double psoil4c_loss[N_SOILLAYERS];
+	double kl4[N_SOILLAYERS];
 } ntemp_struct;
 	
 /* phenological control arrays */
@@ -1205,7 +1304,6 @@ typedef struct
 	double vwc_crit2[N_SOILLAYERS];					/* (DIM) volumetric water content at stomatal closure - Hidy 2012*/
 	double psi_crit1[N_SOILLAYERS];					/* (DIM) soil water potential at start of conductance reduction - Hidy 2012*/
 	double psi_crit2[N_SOILLAYERS];					/* (DIM) soil water potential at stomatal closure - Hidy 2012*/
-	double hydr_conduct_sat[N_SOILLAYERS];			/* conductance value of conductivity which can be 0 if groundwater table is availabe */
 	int flowering;									/* (yday) start of flowering (fruit allocation) - Hidy 2015 */
 	int maturity;									/* (yday) start of leaf senenscence (maturity) - Hidy 2015 */
 
@@ -1220,9 +1318,9 @@ typedef struct
     double w_scalar[N_SOILLAYERS];			/* (DIM) decomp water scalar */
     double rate_scalar[N_SOILLAYERS];		/* (DIM) decomp combined scalar */
 	double rate_scalar_avg;					/* (DIM) decomp combined and averaged scalar */
-	double daily_gross_nmin;				/* (kgN/m2/d) daily gross N mineralization */
-	double daily_gross_nimmob;				/* (kgN/m2/d) daily gross N immobilization */ 
-	double daily_net_nmin;					/* (kgN/m2/d) daily net N mineralization */
+	double daily_gross_nmin[N_SOILLAYERS];	/* (kgN/m2/d) daily gross N mineralization */
+	double daily_gross_nimmob[N_SOILLAYERS];/* (kgN/m2/d) daily gross N immobilization */ 
+	double daily_net_nmin[N_SOILLAYERS];	/* (kgN/m2/d) daily net N mineralization */
 
     /* the following are optional outputs, usually set if the appropriate
     functions are called with the flag verbose = 1 */
@@ -1245,8 +1343,8 @@ typedef struct
     double gc_sh;          /* (m/s) canopy conductance to sensible heat */
 	
 	/* diagnostic variables for ouput purposes only */
-	double ytd_maxplai;    /* (DIM) year-to-date maximum projected LAI */
-	double n_limitation;	     /* Hidy 2010 - flag for nitrogen limitation */
+	double ytd_maxplai;                     /* (DIM) year-to-date maximum projected LAI */
+	double n_limitation[N_SOILLAYERS];	     /* Hidy 2016 - flag for nitrogen limitation in multilayer soil */
 } epvar_struct;
 
 /* soil and site constants */
@@ -1358,6 +1456,7 @@ typedef struct
 	double mort_SNSC_leafphen;	/* Hidy 2011 - leaf phenology mortality parameter */
     double mort_SNSC_to_litter; /* Hidy 2013 - turnover rate of wilted standing biomass to litter*/
 	double mort_CnW_to_litter;  /* Hidy 2013 - turnover rate of cut-down non-woody biomass to litter*/
+	double mort_CW_to_litter;  /* Hidy 2013 - turnover rate of cut-down woody biomass to litter*/
 	double GR_ratio;            /* Hidy 2013 - (DIM) growth resp per unit of C grown */
 	double denitrif_prop;		/* Hidy 2013 - fraction of mineralization to volatile */
 	double bulkN_denitrif_prop_WET;
@@ -1611,10 +1710,12 @@ typedef struct
 	double daily_tr;       /* kgC/m2/day  Hidy 2013 - total respiration */
 	double daily_fire;     /* kgC/m2/day  fire losses */
 	double daily_litfallc; /* kgC/m2/day  total litterfall aboveground */
-	double daily_litfallc_above; /* kgC/m2/day  total litterfall aboveground */
-	double daily_litfallc_below; /* kgC/m2/day  total litterfall belowground*/
-	double daily_litter ;	/* kgC/m2  total litter*/
-	double daily_litdecomp;	/* kgC/m2/day  total litter decomposition*/
+	double daily_litfallc_above;		/* kgC/m2/day  total litterfall aboveground */
+	double daily_litfallc_below;		/* kgC/m2/day  total litterfall belowground*/
+	double daily_STDB_to_litr;			/* kgC/m2/day  total litterfall (standing dead and cut-down)*/
+	double daily_CTDB_to_litr;			/* kgC/m2/day  total litterfall (standing dead and cut-down)*/
+	double daily_litter ;				/* kgC/m2  total litter*/
+	double daily_litdecomp;				/* kgC/m2/day  total litter decomposition*/
 	double daily_litfire;
 	double cum_npp_ann;    /* kgC/m2  Summed over a year */
 	double cum_npp;        /* kgC/m2  Summed over entire simulation */
@@ -1625,7 +1726,6 @@ typedef struct
 	double cum_gr;         /* kgC/m2  Summed over entire simulation */
 	double cum_hr;         /* kgC/m2  Summed over entire simulation */
 	double cum_fire;       /* kgC/m2  Summed over entire simulation */
-	double cum_nplus;	   /* kgN/m2 Summed over entire simulation */
 	double cum_n2o;        /* kgN/m2  Summed over entire simulation */
 	double vwc_annavg;
 	double vegc;           /* kgC/m2  total vegetation C */
@@ -1633,19 +1733,28 @@ typedef struct
 	double litrc;          /* kgC/m2  total litter C */
 	double soilc;          /* kgC/m2  total soil C */
 	double soiln;          /* kgC/m2  total soil N */
-	double totalc;         /* kgC/m2  total of vegc, litrc, and soilc */
 	double sminn;          /* kgC/m2  total soil mineralized N */
+	double totalc;         /* kgC/m2  total of vegc, litrc, and soilc */
+	double soilc_top10;      /* kgC/m2  total soil C in 0-10 cm */
+	double soiln_top10;      /* kgC/m2  total soil N in 0-10 cm */
+	double sminn_top10;      /* kgN/m2  total mineralized in 0-10 cm */
 	/*effect of planting, thinning, mowing, grazing, harvesting, ploughing and fertilizing   - Hidy 2012.*/
-	double Cchange_THN;    /* kgC/m2  total of thinning carbon change   */
-	double Cchange_MOW;    /* kgC/m2  total of mowing carbon change   */
-	double Cchange_HRV;    /* kgC/m2  total of harvesting carbon change   */
-	double Cchange_PLG;	   /* kgC/m2  total of plouging carbon change   */
-	double Cchange_GRZ;	   /* kgC/m2  total of grazing carbon change   */
-	double Cchange_PLT;    /* kgC/m2  total of planting carbon change   */
-	double Cchange_FRZ;    /* kgC/m2  total of fertilizing carbon change   */
-	double Cchange_SNSC;   /* kgC/m2  total of senescence carbon change   */
-	double Nplus_GRZ;      /* kgN/m2  N from grazing   */
-	double Nplus_FRZ;      /* kgN/m2  N from fertilizing   */
+	double Closs_THN;			/* kgC/m2  total of thinning carbon loss   */
+	double Closs_MOW;			/* kgC/m2  total of mowing carbon loss   */
+	double Closs_HRV;			/* kgC/m2  total of harvesting carbon loss   */
+	double Closs_PLG;			/* kgC/m2  total of plouging carbon loss   */
+	double Closs_GRZ;			/* kgC/m2  total of grazing carbon loss   */
+	double Cplus_GRZ;			/* kgC/m2  total of grazing carbon plus   */
+	double Cplus_FRZ;			/* kgC/m2  total of fertilizing carbon plus   */
+	double Cplus_PLT;			/* kgC/m2  total of planting carbon change   */
+	double Nplus_GRZ;			/* kgN/m2  N from grazing   */
+	double Nplus_FRZ;			/* kgN/m2  N from fertilizing   */
+	double Closs_SNSC;		    /* kgC/m2  total of senescence carbon change   */
+	double Cplus_STDB;
+	double Cplus_CTDB;
+	double daily_gross_nmin;	/* kgN/m2  gross N mineralization   */
+	double daily_gross_nimmob;	/* kgN/m2  gross N immobilization   */
+	double daily_net_nmin;		/* kgN/m2  net N mineralization   */
 	/* new tpye of output data - Hidy 2015 */
 	double cum_ET;			/* kgH2O/m2	ET summed over entire simulation */
 
@@ -1677,35 +1786,37 @@ typedef struct
 	double deadcrootc_transfer;
 	double gresp_storage;
 	double gresp_transfer;
-	double cwdc;
-	double litr1c;
-	double litr2c;
-	double litr3c;
-	double litr4c;
-	/* Hidy 2015: standing dead biome, cut-dowd dead biome and litter */
-	double litr1c_STDB;
-	double litr2c_STDB;
-	double litr3c_STDB;
-	double litr4c_STDB;
-	double litr1c_strg_HRV;
-	double litr2c_strg_HRV;
-	double litr3c_strg_HRV;
-	double litr4c_strg_HRV;
-	double litr1c_strg_MOW;
-	double litr2c_strg_MOW;
-	double litr3c_strg_MOW;
-	double litr4c_strg_MOW;
-	double litr1c_strg_THN;
-	double litr2c_strg_THN;
-	double litr3c_strg_THN;
-	double litr4c_strg_THN;
-	double litr_aboveground;
-	double litr_belowground;
-	double soil1c;
-	double soil2c;
-	double soil3c;
-	double soil4c;
+	double cwdc[N_SOILLAYERS];
+	double litr1c[N_SOILLAYERS];
+	double litr2c[N_SOILLAYERS];
+	double litr3c[N_SOILLAYERS];
+	double litr4c[N_SOILLAYERS];
+	double litr1cA_STDB;				
+	double litr1cB_STDB;			
+	double litr2cA_STDB;			
+	double litr2cB_STDB;	
+	double litr3cA_STDB;			
+	double litr3cB_STDB;			
+	double litr4cA_STDB;            
+	double litr4cB_STDB;			
+	double cwdcA_STDB;				
+	double cwdcB_STDB;				
+	double litr1cA_CTDB;			
+	double litr1cB_CTDB;			
+	double litr2cA_CTDB;			
+	double litr2cB_CTDB;			
+	double litr3cA_CTDB;			
+	double litr3cB_CTDB;			
+	double litr4cA_CTDB;            
+	double litr4cB_CTDB;			
+	double cwdcA_CTDB;					
+	double cwdcB_CTDB;				
+	double soil1c[N_SOILLAYERS];
+	double soil2c[N_SOILLAYERS];
+	double soil3c[N_SOILLAYERS];
+	double soil4c[N_SOILLAYERS];
 	double cpool;
+
 	double leafn;
 	double leafn_storage;
 	double leafn_transfer;
@@ -1724,34 +1835,35 @@ typedef struct
 	double deadcrootn;
 	double deadcrootn_storage;
 	double deadcrootn_transfer;
-	double cwdn;
-	double litr1n;
-	double litr2n;
-	double litr3n;
-	double litr4n;
-	/* Hidy 2015: standing dead biome, cut-dowd dead biome and litter */
-	double litr1n_STDB;
-	double litr2n_STDB;
-	double litr3n_STDB;
-	double litr4n_STDB;
-	double litr1n_strg_HRV;
-	double litr2n_strg_HRV;
-	double litr3n_strg_HRV;
-	double litr4n_strg_HRV;
-	double litr1n_strg_MOW;
-	double litr2n_strg_MOW;
-	double litr3n_strg_MOW;
-	double litr4n_strg_MOW;
-	double litr1n_strg_THN;
-	double litr2n_strg_THN;
-	double litr3n_strg_THN;
-	double litr4n_strg_THN;
-	double CTDBc;
-
-	double soil1n;
-	double soil2n;
-	double soil3n;
-	double soil4n;
+	double cwdn[N_SOILLAYERS];
+	double litr1n[N_SOILLAYERS];
+	double litr2n[N_SOILLAYERS];
+	double litr3n[N_SOILLAYERS];
+	double litr4n[N_SOILLAYERS];
+	double litr1nA_STDB;			
+	double litr1nB_STDB;				
+	double litr2nA_STDB;		
+	double litr2nB_STDB;			
+	double litr3nA_STDB;			
+	double litr3nB_STDB;			
+	double litr4nA_STDB;            
+	double litr4nB_STDB;
+	double cwdnA_STDB;				
+	double cwdnB_STDB;
+	double litr1nA_CTDB;			
+	double litr1nB_CTDB;			
+	double litr2nA_CTDB;			
+	double litr2nB_CTDB;			
+	double litr3nA_CTDB;			
+	double litr3nB_CTDB;			
+	double litr4nA_CTDB;            
+	double litr4nB_CTDB;
+	double cwdnA_CTDB;				
+	double cwdnB_CTDB;
+	double soil1n[N_SOILLAYERS];
+	double soil2n[N_SOILLAYERS];
+	double soil3n[N_SOILLAYERS];
+	double soil4n[N_SOILLAYERS];
 	double retransn;
 	double npool;
 	double day_leafc_litfall_increment;

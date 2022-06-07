@@ -115,17 +115,16 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[67] = &cs->deadcrootc_transfer;
 		output_map[68] = &cs->gresp_storage;
 		output_map[69] = &cs->gresp_transfer;
-		output_map[70] = &cs->cwdc;
-		output_map[71] = &cs->litr1c;
-		output_map[72] = &cs->litr2c;
-		output_map[73] = &cs->litr3c;
-		output_map[74] = &cs->litr4c;
-		output_map[75] = &cs->soil1c;
-		output_map[76] = &cs->soil2c;
-		output_map[77] = &cs->soil3c;
-		output_map[78] = &cs->soil4c;
-		output_map[79] = &cs->STDBc;
-		output_map[80] = &cs->CTDBc;
+		output_map[70] = &cs->cwdc_total;
+		output_map[71] = &cs->litr1c_total;
+		output_map[72] = &cs->litr2c_total;
+		output_map[73] = &cs->litr3c_total;
+		output_map[74] = &cs->litr4c_total;
+		output_map[75] = &cs->soil1c_total;
+		output_map[76] = &cs->soil2c_total;
+		output_map[77] = &cs->soil3c_total;
+		output_map[78] = &cs->soil4c_total;
+	
 		output_map[81] = &cs->psnsun_src;
 		output_map[82] = &cs->leaf_mr_snk;
 		output_map[83] = &cs->leaf_gr_snk;
@@ -154,20 +153,15 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 
 
 		/* management and senescence - Hidy 2012. */
-		output_map[106] = &cs->THNsnk;
-		output_map[107] = &cs->THNsrc;	
-		output_map[108] = &cs->MOWsnk;	
-		output_map[109] = &cs->MOWsrc;
+		output_map[106] = &cs->THN_transportC;
+		output_map[107] = &cs->MOW_transportC;	
+		output_map[108] = &cs->HRV_transportC;	
 		output_map[110] = &cs->GRZsnk;	
 		output_map[111] = &cs->GRZsrc;	
-		output_map[112] = &cs->HRVsnk;	
-		output_map[113] = &cs->HRVsrc;
-		output_map[114] = &cs->PLGsnk;	
-		output_map[115] = &cs->PLGsrc;
 		output_map[116] = &cs->PLTsrc;
 		output_map[117] = &cs->FRZsrc;						
 		output_map[118] = &cs->SNSCsnk;		
-		output_map[119] = &cs->SNSCsrc;	
+		output_map[119] = &cs->STDBsrc;	
 
 		/* carbon flux variables */
 		output_map[120] = &cf->m_leafc_to_litr1c;
@@ -242,23 +236,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[189] = &cf->livecroot_mr;
 		output_map[190] = &cf->psnsun_to_cpool;
 		output_map[191] = &cf->psnshade_to_cpool;
-		output_map[192] = &cf->cwdc_to_litr2c;
-		output_map[193] = &cf->cwdc_to_litr3c;
-		output_map[194] = &cf->cwdc_to_litr4c;
-		output_map[195] = &cf->litr1_hr;
-		output_map[196] = &cf->litr1c_to_soil1c;
-		output_map[197] = &cf->litr2_hr;
-		output_map[198] = &cf->litr2c_to_soil2c;
-		output_map[199] = &cf->litr3c_to_litr2c;
-		output_map[200] = &cf->litr4_hr;
-		output_map[201] = &cf->litr4c_to_soil3c;
-		output_map[202] = &cf->soil1_hr;
-		output_map[203] = &cf->soil1c_to_soil2c;
-		output_map[204] = &cf->soil2_hr;
-		output_map[205] = &cf->soil2c_to_soil3c;
-		output_map[206] = &cf->soil3_hr;
-		output_map[207] = &cf->soil3c_to_soil4c;
-		output_map[208] = &cf->soil4_hr;
+	
 		output_map[209] = &cf->cpool_to_leafc;
 		output_map[210] = &cf->cpool_to_leafc_storage;
 		output_map[211] = &cf->cpool_to_frootc;
@@ -294,11 +272,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[241] = &cf->livestemc_to_deadstemc;
 		output_map[242] = &cf->livecrootc_to_deadcrootc;
 		output_map[243] = &cf->leafc_to_MOW;
-		output_map[244] = &cf->STDBc_to_GRZ;
-		output_map[245] = &cf->STDBc_to_MOW;
-		output_map[246] = &cf->STDBc_to_HRV;
-		output_map[247] = &cf->STDBc_to_PLG;
-		output_map[248] = &cf->CTDBc_to_PLG;
+	
 		output_map[249] = &cf->CH4_flux_soil;
 		output_map[250] = &cf->CH4_flux_FERMENT;
 		output_map[251] = &cf->CH4_flux_MANURE;
@@ -324,16 +298,16 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[295] = &ns->deadcrootn;
 		output_map[296] = &ns->deadcrootn_storage;
 		output_map[297] = &ns->deadcrootn_transfer;
-		output_map[298] = &ns->cwdn;
-		output_map[299] = &ns->litr1n;
-		output_map[300] = &ns->litr2n;
-		output_map[301] = &ns->litr3n;
-		output_map[302] = &ns->litr4n;
-		output_map[303] = &ns->soil1n;
-		output_map[304] = &ns->soil2n;
-		output_map[305] = &ns->soil3n;
-		output_map[306] = &ns->soil4n;
-		output_map[307] = &ns->sminn_RZ;
+		output_map[298] = &ns->cwdn_total;
+		output_map[299] = &ns->litr1n_total;
+		output_map[300] = &ns->litr2n_total;
+		output_map[301] = &ns->litr3n_total;
+		output_map[302] = &ns->litr4n_total;
+		output_map[303] = &ns->soil1n_total;
+		output_map[304] = &ns->soil2n_total;
+		output_map[305] = &ns->soil3n_total;
+		output_map[306] = &ns->soil4n_total;
+		output_map[307] = &ns->sminn_total;
 		output_map[308] = &ns->retransn;
 		output_map[309] = &ns->npool;
 		output_map[310] = &ns->nfix_src;
@@ -342,21 +316,22 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[313] = &ns->nvol_snk;
 		output_map[314] = &ns->fire_snk;
 		/* management and senescence - Hidy 2012. */
-		output_map[315] = &ns->THNsnk;	
-		output_map[316] = &ns->MOWsnk;			
+		output_map[315] = &ns->THN_transportN;	
+		output_map[316] = &ns->MOW_transportN;			
 		output_map[317] = &ns->GRZsnk;	
 		output_map[318] = &ns->GRZsrc;	
-		output_map[319] = &ns->HRVsnk;	
-		output_map[320] = &ns->HRVsrc;
-		output_map[321] = &ns->PLGsnk;	
-		output_map[322] = &ns->PLGsrc;
-		output_map[323] = &ns->PLTsrc;
-		output_map[324] = &ns->FRZsrc;						
+		output_map[319] = &ns->HRV_transportN;	
+		output_map[320] = &ns->PLTsrc;
+		output_map[321] = &ns->FRZsrc;	
+		
 		output_map[325] = &ns->SNSCsnk;		
-		output_map[326] = &ns->SNSCsrc;	
+		output_map[326] = &ns->STDBsrc;	
 		output_map[327] = &ns->BNDRYsrc;	
 		output_map[328] = &ns->ndiffused_snk;
-		output_map[329] = &ns->STDBn;
+		output_map[329] = &ns->STDBn_above;
+		output_map[330] = &ns->STDBn_below;
+		output_map[331] = &ns->CTDBn_above;
+		output_map[332] = &ns->CTDBn_below;
 		/* nitrogen flux variables */
 		output_map[340] = &nf->m_leafn_to_litr1n;
 		output_map[341] = &nf->m_leafn_to_litr2n;
@@ -426,32 +401,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[405] = &nf->frootn_to_litr4n;
 		output_map[406] = &nf->ndep_to_sminn;
 		output_map[407] = &nf->nfix_to_sminn;
-		output_map[408] = &nf->cwdn_to_litr2n;
-		output_map[409] = &nf->cwdn_to_litr3n;
-		output_map[410] = &nf->cwdn_to_litr4n;
-		output_map[411] = &nf->litr1n_to_soil1n;
-		output_map[412] = &nf->sminn_to_soil1n_l1;
-		output_map[413] = &nf->litr2n_to_soil2n;
-		output_map[414] = &nf->sminn_to_soil2n_l2;
-		output_map[415] = &nf->litr3n_to_litr2n;
-		output_map[416] = &nf->litr4n_to_soil3n;
-		output_map[417] = &nf->sminn_to_soil3n_l4;
-		output_map[418] = &nf->soil1n_to_soil2n;
-		output_map[419] = &nf->sminn_to_soil2n_s1;
-		output_map[420] = &nf->soil2n_to_soil3n;
-		output_map[421] = &nf->sminn_to_soil3n_s2;
-		output_map[422] = &nf->soil3n_to_soil4n;
-		output_map[423] = &nf->sminn_to_soil4n_s3;
-		output_map[424] = &nf->soil4n_to_sminn;
-		output_map[425] = &nf->sminn_to_nvol_l1s1;
-		output_map[426] = &nf->sminn_to_nvol_l2s2;
-		output_map[427] = &nf->sminn_to_nvol_l4s3;
-		output_map[428] = &nf->sminn_to_nvol_s1s2;
-		output_map[429] = &nf->sminn_to_nvol_s2s3;
-		output_map[430] = &nf->sminn_to_nvol_s3s4;
-		output_map[431] = &nf->sminn_to_nvol_s4;
-		output_map[433] = &nf->retransn_to_npool;
-		output_map[434] = &nf->sminn_to_npool;
+	
 		output_map[435] = &nf->npool_to_leafn;
 		output_map[436] = &nf->npool_to_leafn_storage;
 		output_map[437] = &nf->npool_to_frootn;
@@ -474,14 +424,12 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[454] = &nf->livestemn_to_retransn;
 		output_map[455] = &nf->livecrootn_to_deadcrootn;
 		output_map[456] = &nf->livecrootn_to_retransn;
-		output_map[457] = &nf->STDBn_to_GRZ;
-		output_map[458] = &nf->STDBn_to_HRV;
-		output_map[459] = &nf->STDBn_to_PLG;
-		output_map[460] = &nf->STDBn_to_MOW;
+	
 		output_map[461] = &nf->N2O_flux_soil;
 		output_map[462] = &nf->N2O_flux_GRZ;
 		output_map[463] = &nf->N2O_flux_FRZ;
-        output_map[464] = &nf->nplus;
+		output_map[464] = &nf->m_vegn_to_SNSC;
+		output_map[465] = &nf->m_STDBn_to_SNSC;
 		/* phenological variables */
 		output_map[480] = &phen->remdays_curgrowth;
 		output_map[481] = &phen->remdays_transfer;
@@ -514,9 +462,6 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[521] = &epv->assim_sun;
 		output_map[522] = &epv->assim_shade;
 
-		output_map[526] = &epv->daily_gross_nmin;
-		output_map[527] = &epv->daily_gross_nimmob;
-		output_map[528] = &epv->daily_net_nmin;
 		output_map[529] = &epv->m_tmin;
 		output_map[530] = &epv->m_soilstress;
 		output_map[531] = &epv->max_conduct;
@@ -541,8 +486,13 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[550] = &epv->vwc[4];
 		output_map[551] = &epv->vwc[5];
 		output_map[552] = &epv->vwc[6];
-		output_map[553] = &epv->n_limitation;
-		
+		output_map[553] = &epv->vwc[4];
+		output_map[554] = &epv->vwc[5];
+		output_map[555] = &epv->vwc[6];
+		output_map[556] = &epv->vwc[7];
+		output_map[557] = &epv->vwc[8];
+		output_map[558] = &epv->vwc[9];
+
 		/* photosynthesis variables */
 		/* sunlit canopy fraction */
 		output_map[560] = &psn_sun->pa;
@@ -588,15 +538,15 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[607] = &psn_shade->Av;
 		output_map[608] = &psn_shade->Aj;
 		output_map[609] = &psn_shade->A;
-		
-		output_map[611] = &summary->cum_n2o; /* Hidy 2016 */
-		output_map[612] = &summary->abgc;
-		output_map[613] = &summary->cum_npp_ann;
-		output_map[614] = &ns->sum_ndemand;
-		output_map[615] = &cs->PLG_cpool;
-		output_map[616] = &ns->PLG_npool;
-		output_map[617] = &cs->litr_aboveground;
-		output_map[618] = &cs->litr_belowground;
+		output_map[610] = &summary->cum_n2o; /* Hidy 2016 */
+		output_map[611] = &summary->abgc;
+		output_map[612] = &summary->cum_npp_ann;
+		output_map[613] = &summary->daily_gross_nimmob;
+		output_map[614] = &summary->daily_gross_nmin;
+		output_map[615] = &summary->daily_net_nmin;
+		output_map[616] = &summary->daily_litfallc_above;
+		output_map[617] = &summary->daily_litfallc_below;
+		output_map[618] = &summary->daily_litdecomp;
 		output_map[619] = &summary->daily_nbp;	/* Hidy 2009 (instead of nep = nee + fire). */
 		output_map[620] = &summary->daily_npp;
 		output_map[621] = &summary->daily_nep; 	
@@ -616,28 +566,31 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[635] = &summary->cum_fire;
 		output_map[636] = &summary->vegc;
 		output_map[637] = &summary->litrc;
-		output_map[638] = &summary->soilc;
-		output_map[639] = &summary->soiln;
-		output_map[640] = &summary->daily_litfallc;
-		output_map[641] = &summary->Cchange_MOW;	/* Hidy 2008. */
-		output_map[642] = &summary->Cchange_HRV;	/* Hidy 2008. */
-		output_map[643] = &summary->Cchange_PLG;	/* Hidy 2008. */
-		output_map[644] = &summary->Cchange_GRZ;	/* Hidy 2008. */
-		output_map[645] = &summary->Cchange_FRZ;	/* Hidy 2008. */
-		output_map[646] = &summary->Cchange_PLT;	/* Hidy 2008. */
-		output_map[647] = &summary->Cchange_SNSC;	/* Hidy 2013. */
+		output_map[638] = &summary->soilc_top10;
+		output_map[639] = &summary->soiln_top10;
+		output_map[640] = &summary->daily_STDB_to_litr;	/* STDB and CTDB to litter - Hidy 2016 */
+		output_map[641] = &summary->daily_CTDB_to_litr; /* STDB and CTDB to litter - Hidy 2016 */
+		output_map[642] = &summary->Closs_MOW;	/* Hidy 2008. */
+		output_map[643] = &summary->Closs_HRV;	/* Hidy 2008. */
+		output_map[644] = &summary->Closs_GRZ;	/* Hidy 2008. */
+		output_map[645] = &summary->Closs_SNSC;	/* Hidy 2008. */
+		output_map[646] = &summary->Cplus_CTDB;	/* Hidy 2013. */
+		output_map[647] = &summary->Cplus_STDB;	/* Hidy 2013. */
 		output_map[648] = &summary->daily_sr;		/* Hidy 2008. */
 		output_map[649] = &summary->daily_tr;		/* Hidy 2013 - merging output data */
 		output_map[650] = &summary->cum_ET;			/* Hidy 2015. - new type of ET output */
 		
-		output_map[651] = &metv->tsoil[0];	/* Hidy 2015 */
-		output_map[652] = &metv->tsoil[1];	/* Hidy 2015 */
-		output_map[653] = &metv->tsoil[2];	/* Hidy 2015 */
-		output_map[654] = &metv->tsoil[3];	/* Hidy 2015 */
-		output_map[655] = &metv->tsoil[4];	/* Hidy 2015 */
-		output_map[656] = &metv->tsoil[5];	/* Hidy 2015 */
-		output_map[657] = &metv->tsoil[6];	/* Hidy 2015 */
-		output_map[658] = &metv->tsoil_surface;	/* Hidy 2015 */
+		output_map[651] = &metv->tsoil_surface;	/* Hidy 2015 */
+		output_map[652] = &metv->tsoil[0];	/* Hidy 2015 */
+		output_map[653] = &metv->tsoil[1];	/* Hidy 2015 */
+		output_map[654] = &metv->tsoil[2];	/* Hidy 2015 */
+		output_map[655] = &metv->tsoil[3];	/* Hidy 2015 */
+		output_map[656] = &metv->tsoil[4];	/* Hidy 2015 */
+		output_map[657] = &metv->tsoil[5];	/* Hidy 2015 */
+		output_map[658] = &metv->tsoil[6];	/* Hidy 2015 */
+		output_map[659] = &metv->tsoil[7];	/* Hidy 2015 */
+		output_map[659] = &metv->tsoil[8];	/* Hidy 2015 */
+		output_map[659] = &metv->tsoil[9];	/* Hidy 2015 */
 
 		
 		

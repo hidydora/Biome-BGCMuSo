@@ -63,10 +63,9 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 
 	rate_scalar_avg=0;
 
-	potential_immob=mineralized=kl4=N2O_flux=CH4_flux=0;
+
 
 	/* initialize the potential loss and mineral N flux variables */
-
 	potential_immob=mineralized=kl4=N2O_flux=CH4_flux=0;
 	plitr1c_loss=plitr2c_loss=plitr4c_loss=psoil1c_loss=psoil2c_loss=psoil3c_loss=psoil4c_loss=0.0;
 	pmnf_l1s1=pmnf_l2s2=pmnf_l4s3=pmnf_s1s2=pmnf_s2s3=pmnf_s3s4=pmnf_s4=0.0;
@@ -75,8 +74,8 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 
 
 	
-	/* Hidy 2015 - calculate the rate constant scalar in multilayer soil: layer by layer */
-	for (layer=0; layer < epv->n_maxrootlayers; layer++)
+	/* Hidy 2016 - calculate the rate constant scalar in multilayer soil: layer by layer */
+	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
 		tsoil = metv->tsoil[layer];
 
@@ -156,209 +155,216 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 		epv->t_scalar[layer]	= t_scalar;
 		epv->w_scalar[layer]	= w_scalar;
 		epv->rate_scalar[layer] = rate_scalar;
-		rate_scalar_avg        += rate_scalar * (sitec->soillayer_thickness[layer]/sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-
-	}
-
-	epv->rate_scalar_avg = rate_scalar_avg;
+		rate_scalar_avg        += rate_scalar * (sitec->soillayer_thickness[layer]/sitec->soillayer_depth[layer-1]);
 
 
-	litr1c = cs->litr1c;
-	litr2c = cs->litr2c;
-	litr3c = cs->litr3c;
-	litr4c = cs->litr4c;
-	soil1c = cs->soil1c;
-	soil2c = cs->soil2c;
-	soil3c = cs->soil3c;
-	soil4c = cs->soil4c;
-	litr1n = ns->litr1n;
-	litr2n = ns->litr2n;
-	litr3n = ns->litr3n;
-	litr4n = ns->litr4n;
-	soil1n = ns->soil1n;
-	soil2n = ns->soil2n;
-	soil3n = ns->soil3n;
-	soil4n = ns->soil4n;
-	cwdc   = cs->cwdc  ;
-	
+		epv->rate_scalar_avg = rate_scalar_avg;
 
-	/* calculate compartment C:N ratios */
-	cn_l1 = litr1c/litr1n;
-	cn_l2 = litr2c/litr2n;
-	cn_l4 = litr4c/litr4n;
-	cn_s1 = SOIL1_CN;
-	cn_s2 = SOIL2_CN;
-	cn_s3 = SOIL3_CN;
-	cn_s4 = SOIL4_CN;
-	
-	/* respiration fractions for fluxes between compartments */
-	rfl1s1 = epc->rfl1s1;
-	rfl2s2 = epc->rfl2s2;
-	rfl4s3 = epc->rfl4s3;
-	rfs1s2 = epc->rfs1s2;
-	rfs2s3 = epc->rfs2s3;
-	rfs3s4 = epc->rfs3s4;
-	
-	/* calculate the corrected rate constants from the rate scalar and their
-	base values. All rate constants are (1/day) */
-	kl1_base	= epc->kl1_base;   /* labile litter pool */
-	kl2_base	= epc->kl2_base;   /* cellulose litter pool */
-	kl4_base	= epc->kl4_base;   /* lignin litter pool */
-	ks1_base	= epc->ks1_base;   /* fast microbial recycling pool */
-	ks2_base	= epc->ks2_base;   /* medium microbial recycling pool */
-	ks3_base	= epc->ks3_base;   /* slow microbial recycling pool */
-	ks4_base	= epc->ks4_base;   /* recalcitrant SOM (humus) pool */
-	kfrag_base	= epc->kfrag_base; /* physical fragmentation of coarse woody debris */
-	kl1 = kl1_base * epv->rate_scalar_avg;
-	kl2 = kl2_base * epv->rate_scalar_avg;
-	kl4 = kl4_base * epv->rate_scalar_avg;
-	ks1 = ks1_base * epv->rate_scalar_avg;
-	ks2 = ks2_base * epv->rate_scalar_avg;
-	ks3 = ks3_base * epv->rate_scalar_avg;
-	ks4 = ks4_base * epv->rate_scalar_avg;
-	kfrag = kfrag_base * epv->rate_scalar_avg;
-	
-	/* woody vegetation type fluxes */
-	if (epc->woody)
-	{
-		/* calculate the flux from CWD to litter lignin and cellulose
-		compartments, due to physical fragmentation */
-		cwdc_loss	   = kfrag * cwdc;
-		cwdc_to_litr2c = cwdc_loss * epc->deadwood_fucel;
-		cwdc_to_litr3c = cwdc_loss * epc->deadwood_fscel;
-		cwdc_to_litr4c = cwdc_loss * epc->deadwood_flig;
-		cwdn_to_litr2n = cwdc_to_litr2c/epc->deadwood_cn;
-		cwdn_to_litr3n = cwdc_to_litr3c/epc->deadwood_cn;
-		cwdn_to_litr4n = cwdc_to_litr4c/epc->deadwood_cn;
-	}
-	
 
-	
-	/* calculate the non-nitrogen limited fluxes between litter and
-	soil compartments. These will be ammended for N limitation if it turns
-	out the potential gross immobilization is greater than potential gross
-	mineralization. */
-	/* 1. labile litter to fast microbial recycling pool */
-	if (litr1c > 0.0)
-	{
-		plitr1c_loss = kl1 * litr1c;
-		if (litr1n > 0.0) ratio = cn_s1/cn_l1;
-		else ratio = 0.0;
-		pmnf_l1s1 = (plitr1c_loss * (1.0 - rfl1s1 - (ratio)))/cn_s1;
-	}
-	
-	/* 2. cellulose litter to medium microbial recycling pool */
-	if (litr2c > 0.0)
-	{
-		plitr2c_loss = kl2 * litr2c;
-		if (litr2n > 0.0) ratio = cn_s2/cn_l2;
-		else ratio = 0.0;
-		pmnf_l2s2 = (plitr2c_loss * (1.0 - rfl2s2 - (ratio)))/cn_s2;
-	}
-	
-	/* 3. lignin litter to slow microbial recycling pool */
-	if (litr4c > 0.0)
-	{
-		plitr4c_loss = kl4 * litr4c;
-		if (litr4n > 0.0) ratio = cn_s3/cn_l4;
-		else ratio = 0.0;
-		pmnf_l4s3 = (plitr4c_loss * (1.0 - rfl4s3 - (ratio)))/cn_s3;
-	}
-	
-	/* 4. fast microbial recycling pool to medium microbial recycling pool */
-	if (soil1c > 0.0)
-	{
-		psoil1c_loss = ks1 * soil1c;
-		pmnf_s1s2 = (psoil1c_loss * (1.0 - rfs1s2 - (cn_s2/cn_s1)))/cn_s2;
-	}
-	
-	/* 5. medium microbial recycling pool to slow microbial recycling pool */
-	if (soil2c > 0.0)
-	{
-		psoil2c_loss = ks2 * soil2c;
-		pmnf_s2s3 = (psoil2c_loss * (1.0 - rfs2s3 - (cn_s3/cn_s2)))/cn_s3;
-	}
-	
-	/* 6. slow microbial recycling pool to recalcitrant SOM pool */
-	if (soil3c > 0.0)
-	{
-		psoil3c_loss = ks3 * soil3c;
-		pmnf_s3s4 = (psoil3c_loss * (1.0 - rfs3s4 - (cn_s4/cn_s3)))/cn_s4;
-	}
-	
-	/* 7. mineralization of recalcitrant SOM */
-	if (soil4c > 0.0)
-	{
-		psoil4c_loss = ks4 * soil4c;
-		pmnf_s4 = -psoil4c_loss/cn_s4;
-	}
-	
-	/* determine if there is sufficient mineral N to support potential
-	immobilization. Immobilization fluxes are positive, mineralization fluxes
-	are negative */
-
-	if (pmnf_l1s1 > 0.0) potential_immob += pmnf_l1s1;
-	else mineralized += -pmnf_l1s1;
-	if (pmnf_l2s2 > 0.0) potential_immob += pmnf_l2s2;
-	else mineralized += -pmnf_l2s2;
-	if (pmnf_l4s3 > 0.0) potential_immob += pmnf_l4s3;
-	else mineralized += -pmnf_l4s3;
-	if (pmnf_s1s2 > 0.0) potential_immob += pmnf_s1s2;
-	else mineralized += -pmnf_s1s2;
-	if (pmnf_s2s3 > 0.0) potential_immob += pmnf_s2s3;
-	else mineralized += -pmnf_s2s3;
-	if (pmnf_s3s4 > 0.0) potential_immob += pmnf_s3s4;
-	else mineralized += -pmnf_s3s4;
-	mineralized += -pmnf_s4;
-
-	/* OTHER GHG FLUX - only from the first layer (Hidy 2016. )*/
-	CNR = (soil1c + soil2c + soil3c + soil4c)/(soil1n + soil2n + soil3n + soil4n);
-	BD  = sitec->BD[0];
-	if (ok && otherGHGflux_estimation(epc, CNR, BD, epv->vwc[0], metv->tsoil[0], &N2O_flux, &CH4_flux))
-	{
-		printf("Error: otherGHGflux_estimation() in decomp.c\n");
-		ok=0;
-	}	
-	nf->N2O_flux_soil = N2O_flux;
-	cf->CH4_flux_soil = CH4_flux;
+		litr1c = cs->litr1c[layer];
+		litr2c = cs->litr2c[layer];
+		litr3c = cs->litr3c[layer];
+		litr4c = cs->litr4c[layer];
+		soil1c = cs->soil1c[layer];
+		soil2c = cs->soil2c[layer];
+		soil3c = cs->soil3c[layer];
+		soil4c = cs->soil4c[layer];
+		litr1n = ns->litr1n[layer];
+		litr2n = ns->litr2n[layer];
+		litr3n = ns->litr3n[layer];
+		litr4n = ns->litr4n[layer];
+		soil1n = ns->soil1n[layer];
+		soil2n = ns->soil2n[layer];
+		soil3n = ns->soil3n[layer];
+		soil4n = ns->soil4n[layer];
+		cwdc   = cs->cwdc[layer] ;
 		
 
+		/* calculate compartment C:N ratios */
+		cn_l1 = litr1c/litr1n;
+		cn_l2 = litr2c/litr2n;
+		cn_l4 = litr4c/litr4n;
+		cn_s1 = SOIL1_CN;
+		cn_s2 = SOIL2_CN;
+		cn_s3 = SOIL3_CN;
+		cn_s4 = SOIL4_CN;
+		
+		/* respiration fractions for fluxes between compartments */
+		rfl1s1 = epc->rfl1s1;
+		rfl2s2 = epc->rfl2s2;
+		rfl4s3 = epc->rfl4s3;
+		rfs1s2 = epc->rfs1s2;
+		rfs2s3 = epc->rfs2s3;
+		rfs3s4 = epc->rfs3s4;
+		
+		/* calculate the corrected rate constants from the rate scalar and their
+		base values. All rate constants are (1/day) */
+		kl1_base	= epc->kl1_base;   /* labile litter pool */
+		kl2_base	= epc->kl2_base;   /* cellulose litter pool */
+		kl4_base	= epc->kl4_base;   /* lignin litter pool */
+		ks1_base	= epc->ks1_base;   /* fast microbial recycling pool */
+		ks2_base	= epc->ks2_base;   /* medium microbial recycling pool */
+		ks3_base	= epc->ks3_base;   /* slow microbial recycling pool */
+		ks4_base	= epc->ks4_base;   /* recalcitrant SOM (humus) pool */
+		kfrag_base	= epc->kfrag_base; /* physical fragmentation of coarse woody debris */
+		kl1 = kl1_base * epv->rate_scalar[layer];
+		kl2 = kl2_base * epv->rate_scalar[layer];
+		kl4 = kl4_base * epv->rate_scalar[layer];
+		ks1 = ks1_base * epv->rate_scalar[layer];
+		ks2 = ks2_base * epv->rate_scalar[layer];
+		ks3 = ks3_base * epv->rate_scalar[layer];
+		ks4 = ks4_base * epv->rate_scalar[layer];
+		kfrag = kfrag_base * epv->rate_scalar[layer];
+		
+		/* woody vegetation type fluxes */
+		if (epc->woody)
+		{
+			/* calculate the flux from CWD to litter lignin and cellulose
+			compartments, due to physical fragmentation */
+			cwdc_loss	   = kfrag * cwdc;
+			cwdc_to_litr2c = cwdc_loss * epc->deadwood_fucel;
+			cwdc_to_litr3c = cwdc_loss * epc->deadwood_fscel;
+			cwdc_to_litr4c = cwdc_loss * epc->deadwood_flig;
+			cwdn_to_litr2n = cwdc_to_litr2c/epc->deadwood_cn;
+			cwdn_to_litr3n = cwdc_to_litr3c/epc->deadwood_cn;
+			cwdn_to_litr4n = cwdc_to_litr4c/epc->deadwood_cn;
+		}
+		
+
+		
+		/* calculate the non-nitrogen limited fluxes between litter and
+		soil compartments. These will be ammended for N limitation if it turns
+		out the potential gross immobilization is greater than potential gross
+		mineralization. */
+		/* 1. labile litter to fast microbial recycling pool */
+		if (litr1c > 0.0)
+		{
+			plitr1c_loss = kl1 * litr1c;
+			if (litr1n > 0.0) ratio = cn_s1/cn_l1;
+			else ratio = 0.0;
+			pmnf_l1s1 = (plitr1c_loss * (1.0 - rfl1s1 - (ratio)))/cn_s1;
+		}
+		
+		/* 2. cellulose litter to medium microbial recycling pool */
+		if (litr2c > 0.0)
+		{
+			plitr2c_loss = kl2 * litr2c;
+			if (litr2n > 0.0) ratio = cn_s2/cn_l2;
+			else ratio = 0.0;
+			pmnf_l2s2 = (plitr2c_loss * (1.0 - rfl2s2 - (ratio)))/cn_s2;
+		}
+		
+		/* 3. lignin litter to slow microbial recycling pool */
+		if (litr4c > 0.0)
+		{
+			plitr4c_loss = kl4 * litr4c;
+			if (litr4n > 0.0) ratio = cn_s3/cn_l4;
+			else ratio = 0.0;
+			pmnf_l4s3 = (plitr4c_loss * (1.0 - rfl4s3 - (ratio)))/cn_s3;
+		}
+		
+		/* 4. fast microbial recycling pool to medium microbial recycling pool */
+		if (soil1c > 0.0)
+		{
+			psoil1c_loss = ks1 * soil1c;
+			pmnf_s1s2 = (psoil1c_loss * (1.0 - rfs1s2 - (cn_s2/cn_s1)))/cn_s2;
+		}
+		
+		/* 5. medium microbial recycling pool to slow microbial recycling pool */
+		if (soil2c > 0.0)
+		{
+			psoil2c_loss = ks2 * soil2c;
+			pmnf_s2s3 = (psoil2c_loss * (1.0 - rfs2s3 - (cn_s3/cn_s2)))/cn_s3;
+		}
+		
+		/* 6. slow microbial recycling pool to recalcitrant SOM pool */
+		if (soil3c > 0.0)
+		{
+			psoil3c_loss = ks3 * soil3c;
+			pmnf_s3s4 = (psoil3c_loss * (1.0 - rfs3s4 - (cn_s4/cn_s3)))/cn_s4;
+		}
+		
+		/* 7. mineralization of recalcitrant SOM */
+		if (soil4c > 0.0)
+		{
+			psoil4c_loss = ks4 * soil4c;
+			pmnf_s4 = -psoil4c_loss/cn_s4;
+		}
+		
+		/* determine if there is sufficient mineral N to support potential
+		immobilization. Immobilization fluxes are positive, mineralization fluxes
+		are negative */
+
+		if (pmnf_l1s1 > 0.0) potential_immob += pmnf_l1s1;
+		else mineralized += -pmnf_l1s1;
+		if (pmnf_l2s2 > 0.0) potential_immob += pmnf_l2s2;
+		else mineralized += -pmnf_l2s2;
+		if (pmnf_l4s3 > 0.0) potential_immob += pmnf_l4s3;
+		else mineralized += -pmnf_l4s3;
+		if (pmnf_s1s2 > 0.0) potential_immob += pmnf_s1s2;
+		else mineralized += -pmnf_s1s2;
+		if (pmnf_s2s3 > 0.0) potential_immob += pmnf_s2s3;
+		else mineralized += -pmnf_s2s3;
+		if (pmnf_s3s4 > 0.0) potential_immob += pmnf_s3s4;
+		else mineralized += -pmnf_s3s4;
+		mineralized += -pmnf_s4;
+
+		/* OTHER GHG FLUX - only from the first layer (Hidy 2016. )*/
+		if ((soil1n + soil2n + soil3n + soil4n) != 0)
+			CNR = (soil1c + soil2c + soil3c + soil4c)/(soil1n + soil2n + soil3n + soil4n);
+		else
+			CNR = 0;
+		BD  = sitec->BD[layer];
+		if (ok && otherGHGflux_estimation(epc, CNR, BD, epv->vwc[layer], metv->tsoil[layer], &N2O_flux, &CH4_flux))
+		{
+			printf("Error: otherGHGflux_estimation() in decomp.c\n");
+			ok=0;
+		}	
+		nf->N2O_flux_soil += N2O_flux;
+		cf->CH4_flux_soil += CH4_flux;
+			
 
 
 
 
 
-	/* save the potential fluxes until plant demand has been assessed,
-	to allow competition between immobilization fluxes and plant growth
-	demands */
-	nt->mineralized		= mineralized;
-	nt->potential_immob = potential_immob;
-	nt->plitr1c_loss	= plitr1c_loss;
-	nt->pmnf_l1s1		= pmnf_l1s1;
-	nt->plitr2c_loss	= plitr2c_loss;
-	nt->pmnf_l2s2		= pmnf_l2s2;
-	nt->plitr4c_loss	= plitr4c_loss;
-	nt->pmnf_l4s3		= pmnf_l4s3;
-	nt->psoil1c_loss	= psoil1c_loss;
-	nt->pmnf_s1s2		= pmnf_s1s2;
-	nt->psoil2c_loss	= psoil2c_loss;
-	nt->pmnf_s2s3		= pmnf_s2s3;
-	nt->psoil3c_loss	= psoil3c_loss;
-	nt->pmnf_s3s4		= pmnf_s3s4;
-	nt->psoil4c_loss	= psoil4c_loss;
-	nt->kl4				= kl4;
+
+		/* save the potential fluxes until plant demand has been assessed,
+		to allow competition between immobilization fluxes and plant growth
+		demands */
+		nt->mineralized[layer]		= mineralized;
+		nt->potential_immob[layer]  = potential_immob;
+		nt->plitr1c_loss[layer]		= plitr1c_loss;
+		nt->pmnf_l1s1[layer]		= pmnf_l1s1;
+		nt->plitr2c_loss[layer]		= plitr2c_loss;
+		nt->pmnf_l2s2[layer]		= pmnf_l2s2;
+		nt->plitr4c_loss[layer]		= plitr4c_loss;
+		nt->pmnf_l4s3[layer]		= pmnf_l4s3;
+		nt->psoil1c_loss[layer]		= psoil1c_loss;
+		nt->pmnf_s1s2[layer]		= pmnf_s1s2;
+		nt->psoil2c_loss[layer]		= psoil2c_loss;
+		nt->pmnf_s2s3[layer]		= pmnf_s2s3;
+		nt->psoil3c_loss[layer]		= psoil3c_loss;
+		nt->pmnf_s3s4[layer]		= pmnf_s3s4;
+		nt->psoil4c_loss[layer]		= psoil4c_loss;
+		nt->kl4[layer]				= kl4;
+
 	
-	/* store the day's gross mineralization */
-	epv->daily_gross_nmin = mineralized;
 
-	cf->cwdc_to_litr2c = cwdc_to_litr2c;
-	cf->cwdc_to_litr3c = cwdc_to_litr3c;
-	cf->cwdc_to_litr4c = cwdc_to_litr4c;
+		/* store the day's gross mineralization */
+		epv->daily_gross_nmin[layer] = mineralized;
+
+		cf->cwdc_to_litr2c[layer]  = cwdc_to_litr2c;
+		cf->cwdc_to_litr3c[layer]  = cwdc_to_litr3c;
+		cf->cwdc_to_litr4c[layer]  = cwdc_to_litr4c;
 
 
-	nf->cwdn_to_litr2n = cwdn_to_litr2n;
-	nf->cwdn_to_litr3n = cwdn_to_litr3n;
-	nf->cwdn_to_litr4n = cwdn_to_litr4n;
+		nf->cwdn_to_litr2n[layer]  = cwdn_to_litr2n;
+		nf->cwdn_to_litr3n[layer]  = cwdn_to_litr3n;
+		nf->cwdn_to_litr4n[layer]  = cwdn_to_litr4n;
+
+
+	}
 	
 	
 	return (!ok);

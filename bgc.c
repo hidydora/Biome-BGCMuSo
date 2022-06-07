@@ -147,8 +147,9 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	/* simple annual variables for text output  - Hidy 2008. */
 	double annmaxlai,annet,annrunoff,annnpp, annnee, annnbp, annprcp,anntavg, 
-		ann_Cchange_SNSC, ann_Cchange_THN,  ann_Cchange_MOW,  ann_Cchange_HRV,ann_Cchange_PLG, ann_Cchange_GRZ, 
-		ann_Cchange_FRZ, ann_Cchange_PLT, ann_Nplus_GRZ, ann_Nplus_FRZ;
+		ann_Closs_SNSC, ann_Closs_THN,  ann_Closs_MOW,  ann_Closs_HRV, ann_Closs_GRZ, ann_Closs_PLG, 
+		ann_Cplus_PLT, ann_Nplus_GRZ, ann_Nplus_FRZ, ann_Cplus_STDB, ann_Cplus_CTDB;
+
 
 	/* copy the input structures into local structures */
 	ws = bgcin->ws;
@@ -194,9 +195,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
 			
-		fprintf(bgcout->control_file.ptr, "simyr yday tsoil0 tsoil3 tsoil5 GDD pondw vwc0 vwc3 vwc5 SMSI STDBc CTDBc sminn soilc litr_aboveground litr_belowground leafc fruitc softstemC cumNPP GPP TER evapotransp\n");
+		fprintf(bgcout->control_file.ptr, "simyr yday evapotransp soilw_evap soilw_trans_SUM vwc0 vwc1 vwc2 vwc3 vwc4\n");
 
-	
 	}
 
 
@@ -513,18 +513,17 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		annnbp = 0.0;		/* by Hidy 2009. - including effect of management strategies */
 		annprcp = 0.0;
 		anntavg = 0.0;
-		ann_Cchange_SNSC = 0.0;	
-		ann_Cchange_THN = 0.0;     /* by Hidy 2012. - calculation effect of management strategies and senescence */
-		ann_Cchange_MOW = 0.0;       
-		ann_Cchange_HRV = 0.0;       
-		ann_Cchange_PLG = 0.0;       
-		ann_Cchange_GRZ = 0.0;       
-		ann_Cchange_FRZ= 0.0;		 
-		ann_Cchange_PLT = 0.0;		 
+		ann_Closs_SNSC = 0.0;	
+		ann_Closs_THN = 0.0;     /* by Hidy 2012. - calculation effect of management strategies and senescence */
+		ann_Closs_MOW = 0.0;       
+		ann_Closs_HRV = 0.0;       
+		ann_Closs_GRZ = 0.0;       
+		ann_Cplus_PLT = 0.0;		 
 		ann_Nplus_GRZ = 0.0;		 
-		ann_Nplus_FRZ = 0.0;		
+		ann_Nplus_FRZ = 0.0;
+		ann_Cplus_STDB = 0.0;
+		ann_Cplus_CTDB = 0.0;
 			 
-
 	
 		/* set current month to 0 (january) at the beginning of each year */
 		curmonth = 0;
@@ -620,7 +619,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 			/* daily meteorological variables from metarrays */
-			if (ok && daymet(&ctrl, &metarr, &sitec, &epc, &PLT, &ws, &epv, &metv, &tair_annavg, metday))
+			if (ok && daymet(&ctrl, &metarr, &sitec, &epc, &PLT, &HRV, &ws, &epv, &metv, &tair_annavg, metday))
 			{
 				printf("Error in daymet() from bgc()\n");
 				ok=0;
@@ -676,7 +675,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hidy 2011 - MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
 			/* rooting depth */
- 			 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &PLT, &HRV, &epv, &ns, &metv))
+ 			 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &PLT, &HRV, &epv,  &metv))
 			 {
 				printf("Error in multilayer_rootdepth() from bgc()\n");
 				ok=0;
@@ -739,6 +738,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone bare_soil evap\n",simyr,yday);
 #endif
+
+
 
 		     /* conductance - Hidy 2011 */
 			if (ok && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
@@ -888,6 +889,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone waterstress_days\n",simyr,yday);
 #endif
 
+	
+
 			/* !!!!!!!!!!!!!!!!!!!!!! TRANSPIRATION AND SOILPSI IN MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 		
 			/* Hidy 2010 - calculate the part-transpiration from total transpiration */
@@ -904,7 +907,11 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* nitrogen deposition and fixation */
 			nf.ndep_to_sminn = daily_ndep;
 			nf.nfix_to_sminn = epc.nfix / NDAY_OF_YEAR;
-			
+if (ctrl.simyr == 1 && ctrl.yday == 7)
+{
+	int balus=6;
+}
+ 		
 
 			/* daily litter and soil decomp and nitrogen fluxes */
 			if (ok && decomp(&metv,&epc,&epv,&sitec,&cs,&cf,&ns,&nf,&nt))
@@ -925,7 +932,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			immobilization fluxes are updated normally */
 
 
-			if (ok && daily_allocation(&epc,&sitec, &cf,&cs,&nf,&ns,&epv,&nt))
+			if (ok && daily_allocation(&epc,&sitec, &cf,&cs,&nf,&ns,&epv,&nt,0))
 			{
 				printf("Error in daily_allocation() from bgc.c\n");
 				ok=0;
@@ -978,7 +985,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				
 
 
-		 /* ground water calculation */
+		    /* ground water calculation */
 			if (ok && groundwater(&ctrl, &sitec, &epv, &ws, &wf))
 			{
 				printf("Error in groundwater() from bgc()\n");
@@ -1018,7 +1025,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 
 			/* daily update of carbon state variables */
-			if (ok && daily_carbon_state_update(&cf, &cs, annual_alloc, epc.woody, epc.evergreen))
+			if (ok && daily_carbon_state_update(&epv, &cf, &cs, annual_alloc, epc.woody, epc.evergreen))
 			{
 				printf("Error in daily_carbon_state_update() from bgc()\n");
 				ok=0;
@@ -1029,7 +1036,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 			/* daily update of nitrogen state variables */
-			if (ok && daily_nitrogen_state_update(&epc, &nf, &ns, annual_alloc, epc.woody, epc.evergreen))
+			if (ok && daily_nitrogen_state_update(&epc, &epv, &nf, &ns, annual_alloc, epc.woody, epc.evergreen))
 			{
 				printf("Error in daily_nitrogen_state_update() from bgc()\n");
 				ok=0;
@@ -1038,12 +1045,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone nitrogen state update\n",simyr,yday);
 #endif
-
+	
 
 
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MANAGEMENT SUBMODULES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-		
 			
 			/* PLANTING - Hidy 2009. */
 			if (ok && planting(&ctrl, &epc, &PLT, &cf, &nf, &cs, &ns))
@@ -1093,21 +1098,23 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				printf("Error in fertilizing() from bgc()\n");
 				ok=0;
 			}	
-			
+				
+			/* cut-down plant material (due to management) - Hidy 2016 */
+			if (ok && cutdown2litter(&epc, &cs, &cf, &ns, &nf, &epv))
+			{
+				printf("Error in cutdown2litter() from bgc()\n");
+				ok=0;
+			}
 
-			cs.CTDBc =  cs.litr1c_strg_HRV + cs.litr1c_strg_MOW + cs.litr1c_strg_THN + 
-						cs.litr2c_strg_HRV + cs.litr2c_strg_MOW + cs.litr2c_strg_THN + 
-						cs.litr3c_strg_HRV + cs.litr3c_strg_MOW + cs.litr3c_strg_THN + 
-						cs.litr4c_strg_HRV + cs.litr4c_strg_MOW + cs.litr4c_strg_THN;
+
+		
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-	
 
 		    /* calculate daily mortality fluxes and update state variables */
 			/* this is done last, with a special state update procedure, to
 			insure that pools don't go negative due to mortality fluxes
 			conflicting with other proportional fluxes */
-			if (ok && mortality(&ctrl, &epc, &cs, &cf, &ns, &nf, simyr))
+			if (ok && mortality(&ctrl, &epc, &epv, &cs, &cf, &ns, &nf, simyr))
 			{
 				printf("Error in mortality() from bgc()\n");
 				ok=0;
@@ -1136,7 +1143,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
                         This is a special state variable update routine, done after the other fluxes and states are
                         reconciled (nleaching is included) */
 
-			if (ok && multilayer_sminn(&epc, &sitec, &epv, &ns, &nf, &ws, &wf))
+			if (ok && multilayer_sminn(&epc, &epv, &ns, &nf, &ws, &wf))
 			{
 				printf("Error in multilayer_sminn() from bgc()\n");
 				ok=0;
@@ -1217,17 +1224,13 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */
 			if (ctrl.onscreen && simyr < 40)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %i %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n",
-		                    ctrl.simyr,yday,metv.tsoil[0], metv.tsoil[3], metv.tsoil[5], metv.GDD,
-							ws.pond_water, epv.vwc[0], epv.vwc[3], epv.vwc[5],
-							epv.m_soilstress, 
-							cs.STDBc, cs.CTDBc,
-							(ns.sminn[0]+ns.sminn[1]+ns.sminn[2]+ns.sminn[3]+ns.sminn[4]+ns.sminn[5]+ns.sminn[6]+ns.sminn[7]+ns.sminn[8]), 
-				            summary.soilc, cs.litr_aboveground, cs.litr_belowground, 
-							cs.leafc, cs.fruitc, cs.softstemc, summary.cum_npp_ann, 
-							summary.daily_gpp, summary.daily_tr, wf.evapotransp); 
-			
+				fprintf(bgcout->control_file.ptr, "%i %i %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n",
+		                    ctrl.simyr,yday, wf.evapotransp, wf.soilw_evap,wf.soilw_trans_SUM, epv.vwc[0],epv.vwc[1],epv.vwc[2],epv.vwc[3],epv.vwc[4]); 
+ 
+  
 			} 
+
+				
 		
 
 			/* DAILY OUTPUT HANDLING */
@@ -1354,18 +1357,20 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			annnbp += summary.daily_nbp * 1000.0;
 			annprcp += metv.prcp;
 			anntavg += metv.tavg / NDAY_OF_YEAR;
-			ann_Cchange_SNSC += summary.Cchange_SNSC * 1000.0	;	/* (kgC/m2 -> gN/m2) ;  Hidy 2013. */
-			ann_Cchange_THN += summary.Cchange_THN * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2012. */
-			ann_Cchange_MOW += summary.Cchange_MOW * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_Cchange_HRV += summary.Cchange_HRV * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_Cchange_PLG += summary.Cchange_PLG * 1000.0;        /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_Cchange_GRZ += summary.Cchange_GRZ * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_Cchange_FRZ += summary.Cchange_FRZ * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_Cchange_PLT += summary.Cchange_PLT * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_Nplus_GRZ += summary.Nplus_GRZ * 1000.0	;			/* (kgN/m2 -> gN/m2) ;  Hidy 2013. */	
-			ann_Nplus_FRZ += summary.Nplus_FRZ * 1000.0	;			/* (kgN/m2 -> gN/m2) ;  Hidy 2013. */
+			ann_Closs_SNSC += summary.Closs_SNSC * 1000.0	;	/* (kgC/m2 -> gN/m2) ;  Hidy 2013. */
+			ann_Closs_THN  += summary.Closs_THN * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2012. */
+			ann_Closs_MOW  += summary.Closs_MOW * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Closs_HRV  += summary.Closs_HRV * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Closs_GRZ  += summary.Closs_GRZ * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Closs_PLG  += summary.Closs_PLG * 1000.0;
+			ann_Cplus_PLT  += summary.Cplus_PLT * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Nplus_GRZ  += summary.Nplus_GRZ * 1000.0;			/* (kgN/m2 -> gN/m2) ;  Hidy 2013. */	
+			ann_Nplus_FRZ  += summary.Nplus_FRZ * 1000.0;			/* (kgN/m2 -> gN/m2) ;  Hidy 2013. */
+			ann_Cplus_STDB += summary.Cplus_STDB * 1000.0;
+			ann_Cplus_CTDB += summary.Cplus_CTDB * 1000.0;
 
-	
+
+
 			/* at the end of first day of simulation, turn off the 
 			first_balance switch */
 			if (first_balance) first_balance = 0;
@@ -1395,9 +1400,9 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 		}
 		/* write the simple annual text output - Hidy 2008. */
-		fprintf(bgcout->anntext.ptr,"%i %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
+		fprintf(bgcout->anntext.ptr,"%i %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 			ctrl.simstartyear+simyr,annprcp,anntavg,annmaxlai,annet,annrunoff,annnee,annnbp,
-			ann_Cchange_SNSC,ann_Cchange_PLT, ann_Cchange_THN, ann_Cchange_MOW, ann_Cchange_GRZ, ann_Cchange_HRV, ann_Cchange_FRZ,  
+			ann_Closs_SNSC, ann_Closs_THN,ann_Closs_MOW, ann_Closs_GRZ, ann_Closs_HRV, ann_Closs_PLG, 
 			ann_Nplus_GRZ, ann_Nplus_FRZ);
 
 		metyr++;
@@ -1411,14 +1416,19 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	fprintf(bgcout->log_file.ptr, "Some important annual outputs\n");
 	fprintf(bgcout->log_file.ptr, "Mean annual GPP (gC/m2/year):                           %12.1f\n",summary.cum_gpp/ctrl.simyears*1000);
 	fprintf(bgcout->log_file.ptr, "Mean annual NEE (gC/m2/year):                           %12.1f\n",summary.cum_nee/ctrl.simyears*1000);
+	fprintf(bgcout->log_file.ptr, "Mean annual LHF (kgH2O/m2/year):                        %12.1f\n",summary.cum_ET/ctrl.simyears);
 	fprintf(bgcout->log_file.ptr, "Mean annual N2O (mgN/m2/year):                          %12.1f\n",summary.cum_n2o/ctrl.simyears);
 	fprintf(bgcout->log_file.ptr, "Maximum projected LAI (m2/m2):                          %12.2f\n",epv.ytd_maxplai);
-	fprintf(bgcout->log_file.ptr, "Recalcitrant SOM carbon content (kgC/m2):               %12.1f\n",cs.soil4c);
-	fprintf(bgcout->log_file.ptr, "Total soil carbon content (kgC/m2):                     %12.1f\n",summary.soilc);
-	fprintf(bgcout->log_file.ptr, "Total soil mineralized nitrogen content (gN/m2):        %12.2f\n",summary.sminn*1000);
-	fprintf(bgcout->log_file.ptr, "Annual mean SWC in rootzone (m3/m3):                    %12.3f\n",summary.vwc_annavg/(ctrl.simyears*NDAY_OF_YEAR));
+	fprintf(bgcout->log_file.ptr, "Recalcitrant SOM carbon content (0-10 cm) (kgC/m2):     %12.1f\n",cs.soil4c[0]+cs.soil4c[1]+cs.soil4c[2]);
+	fprintf(bgcout->log_file.ptr, "Soil carbon content (0-10 cm) (kgC/m2):                 %12.1f\n",summary.soilc_top10);
+	fprintf(bgcout->log_file.ptr, "Soil nitrogen content (0-10 cm) (kgN/m2):               %12.2f\n",summary.soiln_top10);
+	fprintf(bgcout->log_file.ptr, "Soil mineralized nitrogen content (0-10 cm) (gN/m2):    %12.2f\n",summary.sminn_top10*1000);
+	fprintf(bgcout->log_file.ptr, "Mean annual SWC (0-4 m) (m3/m3):                        %12.3f\n",summary.vwc_annavg/(ctrl.simyears*NDAY_OF_YEAR));
 	fprintf(bgcout->log_file.ptr, " \n");
-
+	fprintf(bgcout->log_file.ptr, "Total carbon balance difference:                        %12.3f\n",cs.balance/CRIT_PREC);
+	fprintf(bgcout->log_file.ptr, "Total nitrogen balance difference:                      %12.3f\n",ns.balance/CRIT_PREC);
+	fprintf(bgcout->log_file.ptr, "Total water balance difference:                         %12.3f\n",ws.balance/CRIT_PREC);
+	fprintf(bgcout->log_file.ptr, " \n");
 	/********************************************************************************************************* */
 
 	

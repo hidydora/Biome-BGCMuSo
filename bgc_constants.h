@@ -44,11 +44,11 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 /* precision control */
 /* This constant determines the lower limit of state variables before they
 are set to 0.0 to control rounding and overflow errors */
-#define CRIT_PREC 1e-12
+#define CRIT_PREC 1e-10
 
 /* spinup control */
-/* maximum allowable trend in slow soil carbon at steady-state (kgC/m2/yr) */
-#define SPINUP_TOLERANCE 0.005
+/* maximum allowable trend in slow soil carbon at steady-state (kgC/m2/yr) 0.005 */
+#define SPINUP_TOLERANCE 0.008 
 
 /* output control constants */
 #define NMAP 700

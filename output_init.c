@@ -165,30 +165,29 @@ int output_init(file init, output_struct* output)
 		}
 		/* write the header info for simple text file */
 		fprintf(output->anntext.ptr,"Annual summary output from BBGC MuSo v5\n");
-		fprintf(output->anntext.ptr,"COLUMN1: simulation year\n");
-		fprintf(output->anntext.ptr,"COLUMN2: ann_PRCP = annual total precipitation (mm/yr)\n");
-		fprintf(output->anntext.ptr,"COLUMN3: ann_Tavg = annual average air temperature (deg C)\n");
-		fprintf(output->anntext.ptr,"COLUMN4: max_LAI = annual maximum value of projected leaf area index (m2/m2)\n");
-		fprintf(output->anntext.ptr,"COLUMN5: ann_ET = annual total evapotranspiration (mm/yr)\n");
-		fprintf(output->anntext.ptr,"COLUMN6: ann_RO = annual total runoff (mm/yr)\n");
-		fprintf(output->anntext.ptr,"COLUMN7: ann_NEE = annual net ecosystem exchange (positive: net source to the atmosphere; gC/m2/yr)\n");
-		fprintf(output->anntext.ptr,"COLUMN8: ann_NBP = annual net biome production (positive: net gain; gC/m2/yr)\n");
-		fprintf(output->anntext.ptr,"COLUMN9: ann_Cchg_SNSC = annual net change of ecosystem's carbon content caused by senescence (positive: net gain; gC/m2/yr)\n");             /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"COLUMN10: ann_Cchg_PLT = annual net change of ecosystem's carbon content caused by planting (positive: net gain; gC/m2/yr)\n");      /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"COLUMN11: ann_Cchg_THN = annual net change of ecosystem's carbon content caused by thinning (positive: net gain; gC/m2/yr)\n");         /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"COLUMN12: ann_Cchg_MOW = annual net change of ecosystem's carbon content caused by mowing (positive: net gain; gC/m2/yr)\n");         /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"COLUMN13: ann_Cchg_GRZ = annual net change of ecosystem's carbon content caused by grazing(positive: net gain; gC/m2/yr)\n");          /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"COLUMN14: ann_Cchg_HRV = annual net change of ecosystem's carbon content caused by harvesting (positive: net gain; gC/m2/yr)\n");         /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"COLUMN15: ann_Cchg_FRZ = annual net change of ecosystem's carbon content caused by fertilization (positive: net gain; gC/m2/yr)\n");      /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"COLUMN1:  simulation year\n");
+		fprintf(output->anntext.ptr,"COLUMN2:  ann_PRCP = annual total precipitation (mm/yr)\n");
+		fprintf(output->anntext.ptr,"COLUMN3:  ann_Tavg = annual average air temperature (deg C)\n");
+		fprintf(output->anntext.ptr,"COLUMN4:  max_LAI = annual maximum value of projected leaf area index (m2/m2)\n");
+		fprintf(output->anntext.ptr,"COLUMN5:  ann_ET = annual total evapotranspiration (mm/yr)\n");
+		fprintf(output->anntext.ptr,"COLUMN6:  ann_RO = annual total runoff (mm/yr)\n");
+		fprintf(output->anntext.ptr,"COLUMN7:  ann_NEE = annual net ecosystem exchange (positive: net source to the atmosphere; gC/m2/yr)\n");
+		fprintf(output->anntext.ptr,"COLUMN8:  ann_NBP = annual net biome production (positive: net gain; gC/m2/yr)\n");
+		fprintf(output->anntext.ptr,"COLUMN9:  ann_Closs_SNSC = annual carbon loss due to senescence (gC/m2/yr)\n");             /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"COLUMN10: ann_Closs_THN = annual carbon loss due to thinning (gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"COLUMN11: ann_Closs_MOW = annual carbon loss due to mowing (gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"COLUMN12: ann_Closs_GRZ = annual carbon loss due to grazing(gC/m2/yr)\n");          /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"COLUMN13: ann_Closs_HRV = annual carbon loss due to harvesting (gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"COLUMN14: ann_Closs_GRZ = annual carbon loss due to grazing (gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"COLUMN15: ann_Closs_PLG = annual carbon loss due to ploughing (gC/m2/yr)\n");      /* by Hidy 2008. */
 		fprintf(output->anntext.ptr,"COLUMN16: ann_N_plus_GRZ = annual total N input from grazing (gN/m2/yr)\n");             /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"COLUMN17: ann_N_plus_FRZ = annual total N input from fertilizing (gN/m2/yr)\n");             /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+		fprintf(output->anntext.ptr,"COLUMN17: ann_N_plus_FRZ = annual total N input from grazing (gN/m2/yr)\n");             /* by Hidy 2008. */           /* by Hidy 2008. */
+
+	fprintf(output->anntext.ptr,"---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
 		fprintf(output->anntext.ptr,"COLUMN1  COLUMN2    COLUMN3    COLUMN4    COLUMN5    COLUMN6    COLUMN7    COLUMN8    COLUMN9    COLUMN10    COLUMN11    COLUMN12    COLUMN13    COLUMN14    COLUMN15   COLUMN16    COLUMN17\n"); 
 		fprintf(output->anntext.ptr,"---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
 
 	}
-	
-
 	/********************************************************************
 	**                                                                 **
 	** Begin reading initialization file block starting with keyword:  **

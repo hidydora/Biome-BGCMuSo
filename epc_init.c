@@ -983,6 +983,12 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 		ok=0;
 	}
 
+	if (ok && scan_value(temp, &epc->mort_CW_to_litter, 'd'))
+	{
+		printf("Error reading turnover rate of cut-down woody biomass to litter parameter: epc_init()\n");
+		ok=0;
+	}
+
 	
 	/* Hidy 2013 - denetirification proportion and mobilen proportion
 		original: BBGC constant - new version: can be set in EPC file*/

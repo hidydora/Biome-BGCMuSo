@@ -20,7 +20,7 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 
 int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteconst_struct* sitec, const epconst_struct* epc,  
-		   planting_struct* PLT, wstate_struct* ws, epvar_struct* epv, metvar_struct* metv, double* tair_annavg_ptr, int metday)
+		   planting_struct* PLT, harvesting_struct* HRV, wstate_struct* ws, epvar_struct* epv, metvar_struct* metv, double* tair_annavg_ptr, int metday)
 {
 	/* generates daily meteorological variables from the metarray struct */
 	int ok=1;
@@ -48,6 +48,7 @@ int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteco
 	/* **********************************************************************************/
 	/* Hidy 2015 - growing degree day calculation for fruit allocation and leaf senescence */
 
+
 	if (ctrl->PLT_flag == 0)
 	{
 		if (ctrl->yday == 0) metv->GDD = 0;
@@ -55,6 +56,7 @@ int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteco
 	else
 	{
 		if (PLT->afterPLT == 0) metv->GDD = 0;
+		if (!HRV->HRV_flag && ctrl->yday == 0) metv->GDD = 0; // if no harvesting, only palnting, the start of the "new year" is the first day of year
 	}
 
 	/* start of GDD calucaltion - first day of vegetation period (if no planting), day of planting (if planting) */

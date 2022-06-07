@@ -145,20 +145,20 @@ int fertilizing(const control_struct* ctrl, fertilizing_struct* FRZ,
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/ 
 
 	/* 1. carbon */	
-	cs->litr1c += cf->FRZ_to_litr1c;
-	cs->litr2c += cf->FRZ_to_litr2c;
-	cs->litr3c += cf->FRZ_to_litr3c;
-	cs->litr4c += cf->FRZ_to_litr4c;
+	cs->litr1c[0] += cf->FRZ_to_litr1c;
+	cs->litr2c[0] += cf->FRZ_to_litr2c;
+	cs->litr3c[0] += cf->FRZ_to_litr3c;
+	cs->litr4c[0] += cf->FRZ_to_litr4c;
 	
 	cs->FRZsrc += cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
 
 	/* 2. nitrogen */
-	ns->litr1n += nf->FRZ_to_litr1n;
-	ns->litr2n += nf->FRZ_to_litr2n;
-	ns->litr3n += nf->FRZ_to_litr3n;
-	ns->litr4n += nf->FRZ_to_litr4n;
+	ns->litr1n[0] += nf->FRZ_to_litr1n;
+	ns->litr2n[0] += nf->FRZ_to_litr2n;
+	ns->litr3n[0] += nf->FRZ_to_litr3n;
+	ns->litr4n[0] += nf->FRZ_to_litr4n;
 
-	ns->sminn[0]	  += nf->FRZ_to_sminn;
+	ns->sminn[0]  += nf->FRZ_to_sminn;
 	
 	ns->FRZsrc += nf->FRZ_to_sminn + nf->FRZ_to_litr1n + nf->FRZ_to_litr2n + nf->FRZ_to_litr3n + nf->FRZ_to_litr4n;
 

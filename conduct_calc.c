@@ -105,7 +105,7 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	/* 2. Soil water content
 		  Hidy 2014 - calculate the multipiers for soil properties (soil water content ratio) in multilayer soil  - Jarvis (1989)*/	
 
-	for (layer = 0; layer < epv->n_rootlayers; layer++)
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 
 		if (epv->vwc[layer] > sitec->vwc_wp[layer])

@@ -62,7 +62,7 @@ int daily_water_state_update(wflux_struct* wf, wstate_struct* ws)
 	/* MODIFICATIONS -  Hidy 2011 */
 	
 	/* bare soil evaporation */
-	ws->soilevap_snk   += wf->soilw_evap + wf->canopyw_to_soilw;
+	ws->soilevap_snk   += wf->soilw_evap;
 	
 	/* transpiration */
 	ws->trans_snk      += wf->soilw_trans_SUM;
@@ -98,12 +98,12 @@ int daily_water_state_update(wflux_struct* wf, wstate_struct* ws)
 	return (!ok);
 }
 
-int daily_carbon_state_update(cflux_struct* cf, cstate_struct* cs,
-int alloc, int woody, int evergreen)
+int daily_carbon_state_update(epvar_struct* epv, cflux_struct* cf, cstate_struct* cs, int alloc, int woody, int evergreen)
 {
 	/* daily update of the carbon state variables */
 	
 	int ok=1;
+	int layer;
 	
 	/* C state variables are updated below in the order of the relevant
 	fluxes in the daily model loop */
@@ -144,32 +144,38 @@ int alloc, int woody, int evergreen)
 		cs->softstemc_transfer  -= cf->softstemc_transfer_to_softstemc;
 	
 	}
-	/* Leaf and fine root litterfall */
-	cs->litr1c     += cf->leafc_to_litr1c;
+	/* Hidy 2016 - multilayer soil: leaf litterfall to the first soil layer, fine root litterfall is distributed between the different soil layers */
+	/* Leaf litterfall */
+	cs->litr1c[0]  += cf->leafc_to_litr1c;
 	cs->leafc      -= cf->leafc_to_litr1c;
-	cs->litr2c     += cf->leafc_to_litr2c;
+	cs->litr2c[0]  += cf->leafc_to_litr2c;
 	cs->leafc      -= cf->leafc_to_litr2c;
-	cs->litr3c     += cf->leafc_to_litr3c;
+	cs->litr3c[0]  += cf->leafc_to_litr3c;
 	cs->leafc      -= cf->leafc_to_litr3c;
-	cs->litr4c     += cf->leafc_to_litr4c;
+	cs->litr4c[0]  += cf->leafc_to_litr4c;
 	cs->leafc      -= cf->leafc_to_litr4c;
-	cs->litr1c     += cf->frootc_to_litr1c;
-	cs->frootc     -= cf->frootc_to_litr1c;
-	cs->litr2c     += cf->frootc_to_litr2c;
-	cs->frootc     -= cf->frootc_to_litr2c;
-	cs->litr3c     += cf->frootc_to_litr3c;
-	cs->frootc     -= cf->frootc_to_litr3c;
-	cs->litr4c     += cf->frootc_to_litr4c;
-	cs->frootc     -= cf->frootc_to_litr4c;
 	/* fruit simulation - Hidy 2013. */
-	cs->litr1c     += cf->fruitc_to_litr1c;
+	cs->litr1c[0]  += cf->fruitc_to_litr1c;
 	cs->fruitc     -= cf->fruitc_to_litr1c;
-	cs->litr2c     += cf->fruitc_to_litr2c;
+	cs->litr2c[0]  += cf->fruitc_to_litr2c;
 	cs->fruitc     -= cf->fruitc_to_litr2c;
-	cs->litr3c     += cf->fruitc_to_litr3c;
+	cs->litr3c[0]  += cf->fruitc_to_litr3c;
 	cs->fruitc     -= cf->fruitc_to_litr3c;
-	cs->litr4c     += cf->fruitc_to_litr4c;
+	cs->litr4c[0]  += cf->fruitc_to_litr4c;
 	cs->fruitc     -= cf->fruitc_to_litr4c;
+
+	/* fine root litterfall */
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		cs->litr1c[layer]     += cf->frootc_to_litr1c * epv->rootlength_prop[layer];
+		cs->frootc			  -= cf->frootc_to_litr1c * epv->rootlength_prop[layer];
+		cs->litr2c[layer]     += cf->frootc_to_litr2c * epv->rootlength_prop[layer];
+		cs->frootc			  -= cf->frootc_to_litr2c * epv->rootlength_prop[layer];
+		cs->litr3c[layer]     += cf->frootc_to_litr3c * epv->rootlength_prop[layer];
+		cs->frootc			  -= cf->frootc_to_litr3c * epv->rootlength_prop[layer];
+		cs->litr4c[layer]     += cf->frootc_to_litr4c * epv->rootlength_prop[layer];
+		cs->frootc            -= cf->frootc_to_litr4c * epv->rootlength_prop[layer];
+	}
 
 	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
@@ -182,13 +188,13 @@ int alloc, int woody, int evergreen)
 	else
 	{
 		/* soft stem simulation - Hidy 2015. */
-		cs->litr1c     += cf->softstemc_to_litr1c;
+		cs->litr1c[0]  += cf->softstemc_to_litr1c;
 		cs->softstemc  -= cf->softstemc_to_litr1c;
-		cs->litr2c     += cf->softstemc_to_litr2c;
+		cs->litr2c[0]  += cf->softstemc_to_litr2c;
 		cs->softstemc  -= cf->softstemc_to_litr2c;
-		cs->litr3c     += cf->softstemc_to_litr3c;
+		cs->litr3c[0]  += cf->softstemc_to_litr3c;
 		cs->softstemc  -= cf->softstemc_to_litr3c;
-		cs->litr4c     += cf->softstemc_to_litr4c;
+		cs->litr4c[0]  += cf->softstemc_to_litr4c;
 		cs->softstemc  -= cf->softstemc_to_litr4c;
 	
 	}
@@ -228,52 +234,56 @@ int alloc, int woody, int evergreen)
 	cs->cpool        += cf->psnshade_to_cpool;
 	cs->psnshade_src += cf->psnshade_to_cpool;
 	
-	/* Litter decomposition fluxes */
-	/* Fluxes out of coarse woody debris into litter pools */
-	cs->litr2c       += cf->cwdc_to_litr2c;
-	cs->cwdc         -= cf->cwdc_to_litr2c;
-	cs->litr3c       += cf->cwdc_to_litr3c;
-	cs->cwdc         -= cf->cwdc_to_litr3c;
-	cs->litr4c       += cf->cwdc_to_litr4c;
-	cs->cwdc         -= cf->cwdc_to_litr4c;
-	/* Fluxes out of labile litter pool */
-	cs->litr1_hr_snk += cf->litr1_hr;
-	cs->litr1c       -= cf->litr1_hr;
-	cs->soil1c       += cf->litr1c_to_soil1c;
-	cs->litr1c       -= cf->litr1c_to_soil1c;
-	/* Fluxes out of cellulose litter pool */
-	cs->litr2_hr_snk += cf->litr2_hr;
-	cs->litr2c       -= cf->litr2_hr;
-	cs->soil2c       += cf->litr2c_to_soil2c;
-	cs->litr2c       -= cf->litr2c_to_soil2c;
-	/* Fluxes from shielded to unshielded cellulose pools */
-	cs->litr2c       += cf->litr3c_to_litr2c;
-	cs->litr3c       -= cf->litr3c_to_litr2c;
-	/* Fluxes out of lignin litter pool */
-	cs->litr4_hr_snk += cf->litr4_hr;
-	cs->litr4c       -= cf->litr4_hr;
-	cs->soil3c       += cf->litr4c_to_soil3c;
-	cs->litr4c       -= cf->litr4c_to_soil3c;
-	/* Fluxes out of fast soil pool */
-	cs->soil1_hr_snk += cf->soil1_hr;
-	cs->soil1c       -= cf->soil1_hr;
-	cs->soil2c       += cf->soil1c_to_soil2c;
-	cs->soil1c       -= cf->soil1c_to_soil2c;
-	/* Fluxes out of medium soil pool */
-	cs->soil2_hr_snk += cf->soil2_hr;
-	cs->soil2c       -= cf->soil2_hr;
-	cs->soil3c       += cf->soil2c_to_soil3c;
-	cs->soil2c       -= cf->soil2c_to_soil3c;
-	/* Fluxes out of slow soil pool */
-	cs->soil3_hr_snk += cf->soil3_hr;
-	cs->soil3c       -= cf->soil3_hr;
-	cs->soil4c       += cf->soil3c_to_soil4c;
-	cs->soil3c       -= cf->soil3c_to_soil4c;
-	/* Fluxes out of recalcitrant SOM pool */
-	cs->soil4_hr_snk += cf->soil4_hr;
-	cs->soil4c       -= cf->soil4_hr;
+	/* Litter decomposition fluxes - MULTILAYER SOIL HIDY 2016*/
 
-	
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		/* Fluxes out of coarse woody debris into litter pools */
+		cs->litr2c[layer]       += cf->cwdc_to_litr2c[layer];
+		cs->cwdc[layer]         -= cf->cwdc_to_litr2c[layer];
+		cs->litr3c[layer]       += cf->cwdc_to_litr3c[layer];
+		cs->cwdc[layer]         -= cf->cwdc_to_litr3c[layer];
+		cs->litr4c[layer]       += cf->cwdc_to_litr4c[layer];
+		cs->cwdc[layer]         -= cf->cwdc_to_litr4c[layer];
+		/* Fluxes out of labile litter pool */
+		cs->litr1_hr_snk		+= cf->litr1_hr[layer];
+		cs->litr1c[layer]       -= cf->litr1_hr[layer];
+		cs->soil1c[layer]       += cf->litr1c_to_soil1c[layer];
+		cs->litr1c[layer]       -= cf->litr1c_to_soil1c[layer];
+		/* Fluxes out of cellulose litter pool */
+		cs->litr2_hr_snk		+= cf->litr2_hr[layer];
+		cs->litr2c[layer]       -= cf->litr2_hr[layer];
+		cs->soil2c[layer]       += cf->litr2c_to_soil2c[layer];
+		cs->litr2c[layer]       -= cf->litr2c_to_soil2c[layer];
+		/* Fluxes from shielded to unshielded cellulose pools */
+		cs->litr2c[layer]       += cf->litr3c_to_litr2c[layer];
+		cs->litr3c[layer]       -= cf->litr3c_to_litr2c[layer];
+		/* Fluxes out of lignin litter pool */
+		cs->litr4_hr_snk		+= cf->litr4_hr[layer];
+		cs->litr4c[layer]       -= cf->litr4_hr[layer];
+		cs->soil3c[layer]       += cf->litr4c_to_soil3c[layer];
+		cs->litr4c[layer]       -= cf->litr4c_to_soil3c[layer];
+		/* Fluxes out of fast soil pool */
+		cs->soil1_hr_snk		+= cf->soil1_hr[layer];
+		cs->soil1c[layer]       -= cf->soil1_hr[layer];
+		cs->soil2c[layer]       += cf->soil1c_to_soil2c[layer];
+		cs->soil1c[layer]       -= cf->soil1c_to_soil2c[layer];
+		/* Fluxes out of medium soil pool */
+		cs->soil2_hr_snk		+= cf->soil2_hr[layer];
+		cs->soil2c[layer]       -= cf->soil2_hr[layer];
+		cs->soil3c[layer]       += cf->soil2c_to_soil3c[layer];
+		cs->soil2c[layer]       -= cf->soil2c_to_soil3c[layer];
+		/* Fluxes out of slow soil pool */
+		cs->soil3_hr_snk		+= cf->soil3_hr[layer];
+		cs->soil3c[layer]       -= cf->soil3_hr[layer];
+		cs->soil4c[layer]       += cf->soil3c_to_soil4c[layer];
+		cs->soil3c[layer]       -= cf->soil3c_to_soil4c[layer];
+		/* Fluxes out of recalcitrant SOM pool */
+		cs->soil4_hr_snk		+= cf->soil4_hr[layer];
+		cs->soil4c[layer]       -= cf->soil4_hr[layer];
+	}
+
+
 	/* Daily allocation fluxes */
 	/* daily leaf allocation fluxes */
 	cs->leafc          += cf->cpool_to_leafc;
@@ -465,10 +475,11 @@ int alloc, int woody, int evergreen)
 	return (!ok);
 }		
 
-int daily_nitrogen_state_update(const epconst_struct* epc, nflux_struct* nf, nstate_struct* ns,
+int daily_nitrogen_state_update(const epconst_struct* epc, epvar_struct* epv, nflux_struct* nf, nstate_struct* ns,
 int alloc, int woody, int evergreen)
 {
 	int ok=1;
+	int layer;
 
 	/* N state variables are updated below in the order of the relevant
 	fluxes in the daily model loop */
@@ -508,179 +519,187 @@ int alloc, int woody, int evergreen)
 		ns->softstemn           += nf->softstemn_transfer_to_softstemn;
 		ns->softstemn_transfer  -= nf->softstemn_transfer_to_softstemn;
 	}
-	/* Leaf and fine root litterfall */
-	ns->litr1n     += nf->leafn_to_litr1n;
-	ns->leafn      -= nf->leafn_to_litr1n;
-	ns->litr2n     += nf->leafn_to_litr2n;
-	ns->leafn      -= nf->leafn_to_litr2n;
-	ns->litr3n     += nf->leafn_to_litr3n;
-	ns->leafn      -= nf->leafn_to_litr3n;
-	ns->litr4n     += nf->leafn_to_litr4n;
-	ns->leafn      -= nf->leafn_to_litr4n;
-	ns->retransn   += nf->leafn_to_retransn;   /* N retranslocation */
-	ns->leafn      -= nf->leafn_to_retransn;
-	ns->litr1n     += nf->frootn_to_litr1n;
-	ns->frootn     -= nf->frootn_to_litr1n;
-	ns->litr2n     += nf->frootn_to_litr2n;
-	ns->frootn     -= nf->frootn_to_litr2n;
-	ns->litr3n     += nf->frootn_to_litr3n;
-	ns->frootn     -= nf->frootn_to_litr3n;
-	ns->litr4n     += nf->frootn_to_litr4n;
-	ns->frootn     -= nf->frootn_to_litr4n;
+	/* Leaf and fine root litterfall - MULTILAYER SOIL HIDY 2016: Aboveground into top soil layer, belowground divided between soil layers based on root content*/
+	ns->litr1n[0]     += nf->leafn_to_litr1n;
+	ns->leafn		  -= nf->leafn_to_litr1n;
+	ns->litr2n[0]     += nf->leafn_to_litr2n;
+	ns->leafn         -= nf->leafn_to_litr2n;
+	ns->litr3n[0]     += nf->leafn_to_litr3n;
+	ns->leafn         -= nf->leafn_to_litr3n;
+	ns->litr4n[0]     += nf->leafn_to_litr4n;
+	ns->leafn         -= nf->leafn_to_litr4n;
+	ns->retransn      += nf->leafn_to_retransn;   /* N retranslocation */
+	ns->leafn         -= nf->leafn_to_retransn;
 	/* fruit simulation - Hidy 2013. */
-	ns->litr1n     += nf->fruitn_to_litr1n;
-	ns->fruitn     -= nf->fruitn_to_litr1n;
-	ns->litr2n     += nf->fruitn_to_litr2n;
-	ns->fruitn     -= nf->fruitn_to_litr2n;
-	ns->litr3n     += nf->fruitn_to_litr3n;
-	ns->fruitn     -= nf->fruitn_to_litr3n;
-	ns->litr4n     += nf->fruitn_to_litr4n;
-	ns->fruitn     -= nf->fruitn_to_litr4n;
+	ns->litr1n[0]     += nf->fruitn_to_litr1n;
+	ns->fruitn        -= nf->fruitn_to_litr1n;
+	ns->litr2n[0]     += nf->fruitn_to_litr2n;
+	ns->fruitn        -= nf->fruitn_to_litr2n;
+	ns->litr3n[0]     += nf->fruitn_to_litr3n;
+	ns->fruitn        -= nf->fruitn_to_litr3n;
+	ns->litr4n[0]     += nf->fruitn_to_litr4n;
+	ns->fruitn        -= nf->fruitn_to_litr4n;
 	/* softstemn simulation - Hidy 2013. */
-	ns->litr1n     += nf->softstemn_to_litr1n;
-	ns->softstemn  -= nf->softstemn_to_litr1n;
-	ns->litr2n     += nf->softstemn_to_litr2n;
-	ns->softstemn  -= nf->softstemn_to_litr2n;
-	ns->litr3n     += nf->softstemn_to_litr3n;
-	ns->softstemn  -= nf->softstemn_to_litr3n;
-	ns->litr4n     += nf->softstemn_to_litr4n;
-	ns->softstemn  -= nf->softstemn_to_litr4n;
+	ns->litr1n[0]     += nf->softstemn_to_litr1n;
+	ns->softstemn     -= nf->softstemn_to_litr1n;
+	ns->litr2n[0]     += nf->softstemn_to_litr2n;
+	ns->softstemn     -= nf->softstemn_to_litr2n;
+	ns->litr3n[0]     += nf->softstemn_to_litr3n;
+	ns->softstemn     -= nf->softstemn_to_litr3n;
+	ns->litr4n[0]     += nf->softstemn_to_litr4n;
+	ns->softstemn     -= nf->softstemn_to_litr4n;
 
-	/* live wood turnover to dead wood */
-	ns->deadstemn  += nf->livestemn_to_deadstemn;
-	ns->livestemn  -= nf->livestemn_to_deadstemn;
-	ns->retransn   += nf->livestemn_to_retransn;   /* N retranslocation */
-	ns->livestemn  -= nf->livestemn_to_retransn;
-	ns->deadcrootn += nf->livecrootn_to_deadcrootn;
-	ns->livecrootn -= nf->livecrootn_to_deadcrootn;
-	ns->retransn   += nf->livecrootn_to_retransn;   /* N retranslocation */
-	ns->livecrootn -= nf->livecrootn_to_retransn;
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		ns->litr1n[layer]     += nf->frootn_to_litr1n * epv->rootlength_prop[layer];
+		ns->frootn			  -= nf->frootn_to_litr1n * epv->rootlength_prop[layer];
+		ns->litr2n[layer]     += nf->frootn_to_litr2n * epv->rootlength_prop[layer];
+		ns->frootn			  -= nf->frootn_to_litr2n * epv->rootlength_prop[layer];
+		ns->litr3n[layer]     += nf->frootn_to_litr3n * epv->rootlength_prop[layer];
+		ns->frootn			  -= nf->frootn_to_litr3n * epv->rootlength_prop[layer];
+		ns->litr4n[layer]     += nf->frootn_to_litr4n * epv->rootlength_prop[layer];
+		ns->frootn			  -= nf->frootn_to_litr4n * epv->rootlength_prop[layer];
+	}
+
+	/* live wood turnover to dead wood - MULTILAYER SOIL HIDY 2016: Aboveground into top soil layer, belowground divided between soil layers based on root content*/
+	ns->deadstemn     += nf->livestemn_to_deadstemn;
+	ns->livestemn     -= nf->livestemn_to_deadstemn;
+	ns->deadcrootn    += nf->livecrootn_to_deadcrootn;
+	ns->livecrootn    -= nf->livecrootn_to_deadcrootn;
+
+	ns->retransn      += nf->livestemn_to_retransn;  
+	ns->livestemn     -= nf->livestemn_to_retransn;
+	ns->retransn      += nf->livecrootn_to_retransn; 
+	ns->livecrootn    -= nf->livecrootn_to_retransn;
 
 
-	/* Litter and soil decomposition fluxes */
+	/* Litter and soil decomposition fluxes - MULTILAYER SOIL HIDY 2016*/
 	/* Fluxes out of coarse woody debris into litter pools */
-	ns->litr2n     += nf->cwdn_to_litr2n;
-	ns->cwdn       -= nf->cwdn_to_litr2n;
-	ns->litr3n     += nf->cwdn_to_litr3n;
-	ns->cwdn       -= nf->cwdn_to_litr3n;
-	ns->litr4n     += nf->cwdn_to_litr4n;
-	ns->cwdn       -= nf->cwdn_to_litr4n;
+	
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		ns->litr2n[layer]     += nf->cwdn_to_litr2n[layer];
+		ns->cwdn[layer]       -= nf->cwdn_to_litr2n[layer];
+		ns->litr3n[layer]     += nf->cwdn_to_litr3n[layer];
+		ns->cwdn[layer]       -= nf->cwdn_to_litr3n[layer];
+		ns->litr4n[layer]     += nf->cwdn_to_litr4n[layer];
+		ns->cwdn[layer]       -= nf->cwdn_to_litr4n[layer];
 
-	if (ns->cwdn < 0)
-	{
-		double cwdnflux=nf->cwdn_to_litr2n+nf->cwdn_to_litr3n+nf->cwdn_to_litr4n;
-		nf->cwdn_to_litr2n += ns->cwdn * nf->cwdn_to_litr2n/cwdnflux;
-		nf->cwdn_to_litr3n += ns->cwdn * nf->cwdn_to_litr3n/cwdnflux;
-		nf->cwdn_to_litr4n += ns->cwdn * nf->cwdn_to_litr4n/cwdnflux;
-		ns->cwdn = 0;
-	}
-	/* N fluxes for immobilization and mineralization */
-	ns->soil1n     += nf->litr1n_to_soil1n;
-	ns->litr1n     -= nf->litr1n_to_soil1n;
-	if (nf->sminn_to_soil1n_l1 < 0.0)
-	{
-		nf->sminn_to_nvol_l1s1 = -epc->denitrif_prop * nf->sminn_to_soil1n_l1;
-	}
-	else
-	{
-		nf->sminn_to_nvol_l1s1 = 0.0;
-	}
-	ns->soil1n             += nf->sminn_to_soil1n_l1;
-	nf->sminn_to_soil_SUM  += nf->sminn_to_soil1n_l1;
-	ns->nvol_snk	       += nf->sminn_to_nvol_l1s1;
-	nf->sminn_to_soil_SUM  += nf->sminn_to_nvol_l1s1;
-	
-	ns->soil2n     += nf->litr2n_to_soil2n;
-	ns->litr2n     -= nf->litr2n_to_soil2n;
-	if (nf->sminn_to_soil2n_l2 < 0.0)
-	{
-		nf->sminn_to_nvol_l2s2 = -epc->denitrif_prop * nf->sminn_to_soil2n_l2;
-	}
-	else
-	{
-		nf->sminn_to_nvol_l2s2 = 0.0;
-	}
-	ns->soil2n            += nf->sminn_to_soil2n_l2;
-	nf->sminn_to_soil_SUM += nf->sminn_to_soil2n_l2;
-	ns->nvol_snk          += nf->sminn_to_nvol_l2s2;
-	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_l2s2;
-	
-	ns->litr2n     += nf->litr3n_to_litr2n;
-	ns->litr3n     -= nf->litr3n_to_litr2n;
-	
-	ns->soil3n     += nf->litr4n_to_soil3n;
-	ns->litr4n     -= nf->litr4n_to_soil3n;
-	if (nf->sminn_to_soil3n_l4 < 0.0)
-	{
-		nf->sminn_to_nvol_l4s3 = -epc->denitrif_prop * nf->sminn_to_soil3n_l4;
-	}
-	else
-	{
-		nf->sminn_to_nvol_l4s3 = 0.0;
-	}
-	ns->soil3n            += nf->sminn_to_soil3n_l4;
-	nf->sminn_to_soil_SUM += nf->sminn_to_soil3n_l4;
-	ns->nvol_snk          += nf->sminn_to_nvol_l4s3;
-	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_l4s3;
-	
-	ns->soil2n     += nf->soil1n_to_soil2n;
-	ns->soil1n     -= nf->soil1n_to_soil2n;
-	if (nf->sminn_to_soil2n_s1 < 0.0)
-	{
-		nf->sminn_to_nvol_s1s2 = -epc->denitrif_prop * nf->sminn_to_soil2n_s1;
-	}
-	else
-	{
-		nf->sminn_to_nvol_s1s2 = 0.0;
-	}
-	ns->soil2n            += nf->sminn_to_soil2n_s1;
-	nf->sminn_to_soil_SUM += nf->sminn_to_soil2n_s1;
-	ns->nvol_snk          += nf->sminn_to_nvol_s1s2;
-	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s1s2;
-	
-	ns->soil3n     += nf->soil2n_to_soil3n;
-	ns->soil2n     -= nf->soil2n_to_soil3n;
-	if (nf->sminn_to_soil3n_s2 < 0.0)
-	{
-		nf->sminn_to_nvol_s2s3 = -epc->denitrif_prop * nf->sminn_to_soil3n_s2;
-	}
-	else
-	{
-		nf->sminn_to_nvol_s2s3 = 0.0;
-	}
-	ns->soil3n            += nf->sminn_to_soil3n_s2;
-	nf->sminn_to_soil_SUM += nf->sminn_to_soil3n_s2;
-	ns->nvol_snk          += nf->sminn_to_nvol_s2s3;
-	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s2s3;
-	
-	ns->soil4n     += nf->soil3n_to_soil4n;
-	ns->soil3n     -= nf->soil3n_to_soil4n;
-	if (nf->sminn_to_soil4n_s3 < 0.0)
-	{
-		nf->sminn_to_nvol_s3s4 = -epc->denitrif_prop * nf->sminn_to_soil4n_s3;
-	}
-	else
-	{
-		nf->sminn_to_nvol_s3s4 = 0.0;
-	}
-	ns->soil4n            += nf->sminn_to_soil4n_s3;
-	nf->sminn_to_soil_SUM += nf->sminn_to_soil4n_s3;
-	ns->nvol_snk          += nf->sminn_to_nvol_s3s4;
-	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s3s4;
-	
-	nf->sminn_to_nvol_s4  = epc->denitrif_prop * nf->soil4n_to_sminn;
-	nf->sminn_to_soil_SUM -= nf->soil4n_to_sminn;
-	ns->soil4n            -= nf->soil4n_to_sminn;
-	ns->nvol_snk          += nf->sminn_to_nvol_s4;
-	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s4;
+		if (ns->cwdn[layer] < 0)
+		{
+			double cwdnflux=nf->cwdn_to_litr2n[layer]+nf->cwdn_to_litr3n[layer]+nf->cwdn_to_litr4n[layer];
+			nf->cwdn_to_litr2n[layer] += ns->cwdn[layer] * nf->cwdn_to_litr2n[layer]/cwdnflux;
+			nf->cwdn_to_litr3n[layer] += ns->cwdn[layer] * nf->cwdn_to_litr3n[layer]/cwdnflux;
+			nf->cwdn_to_litr4n[layer] += ns->cwdn[layer] * nf->cwdn_to_litr4n[layer]/cwdnflux;
+			ns->cwdn[layer] = 0;
+		}
+		/* N fluxes for immobilization and mineralization */
+		/* SOIL1 - LITTER1 */
+		ns->soil1n[layer]     += nf->litr1n_to_soil1n[layer];
+		ns->litr1n[layer]     -= nf->litr1n_to_soil1n[layer];
+		if (nf->sminn_to_soil1n_l1[layer] < 0.0)
+		{
+			nf->sminn_to_nvol_l1s1[layer] = -epc->denitrif_prop * nf->sminn_to_soil1n_l1[layer];
+		}
+		else
+		{
+			nf->sminn_to_nvol_l1s1[layer] = 0.0;
+		}
+		ns->soil1n[layer]             += nf->sminn_to_soil1n_l1[layer];
+		nf->sminn_to_soil_SUM[layer]  += nf->sminn_to_soil1n_l1[layer];
+		ns->nvol_snk				  += nf->sminn_to_nvol_l1s1[layer];
+		nf->sminn_to_nvol_SUM[layer]  += nf->sminn_to_nvol_l1s1[layer];
+		
+		ns->soil2n[layer]     += nf->litr2n_to_soil2n[layer];
+		ns->litr2n[layer]     -= nf->litr2n_to_soil2n[layer];
+		if (nf->sminn_to_soil2n_l2[layer] < 0.0)
+		{
+			nf->sminn_to_nvol_l2s2[layer] = -epc->denitrif_prop * nf->sminn_to_soil2n_l2[layer];
+		}
+		else
+		{
+			nf->sminn_to_nvol_l2s2[layer] = 0.0;
+		}
+		ns->soil2n[layer]            += nf->sminn_to_soil2n_l2[layer];
+		nf->sminn_to_soil_SUM[layer] += nf->sminn_to_soil2n_l2[layer];
+		ns->nvol_snk				 += nf->sminn_to_nvol_l2s2[layer];
+		nf->sminn_to_nvol_SUM[layer] += nf->sminn_to_nvol_l2s2[layer];
+		
+		ns->litr2n[layer]     += nf->litr3n_to_litr2n[layer];
+		ns->litr3n[layer]     -= nf->litr3n_to_litr2n[layer];
+		
+		ns->soil3n[layer]     += nf->litr4n_to_soil3n[layer];
+		ns->litr4n[layer]     -= nf->litr4n_to_soil3n[layer];
+		if (nf->sminn_to_soil3n_l4[layer] < 0.0)
+		{
+			nf->sminn_to_nvol_l4s3[layer] = -epc->denitrif_prop * nf->sminn_to_soil3n_l4[layer];
+		}
+		else
+		{
+			nf->sminn_to_nvol_l4s3[layer] = 0.0;
+		}
+		ns->soil3n[layer]            += nf->sminn_to_soil3n_l4[layer];
+		nf->sminn_to_soil_SUM[layer] += nf->sminn_to_soil3n_l4[layer];
+		ns->nvol_snk			     += nf->sminn_to_nvol_l4s3[layer];
+		nf->sminn_to_nvol_SUM[layer] += nf->sminn_to_nvol_l4s3[layer];
+		
+		ns->soil2n[layer]     += nf->soil1n_to_soil2n[layer];
+		ns->soil1n[layer]     -= nf->soil1n_to_soil2n[layer];
+		if (nf->sminn_to_soil2n_s1[layer] < 0.0)
+		{
+			nf->sminn_to_nvol_s1s2[layer] = -epc->denitrif_prop * nf->sminn_to_soil2n_s1[layer];
+		}
+		else
+		{
+			nf->sminn_to_nvol_s1s2[layer] = 0.0;
+		}
+		ns->soil2n[layer]            += nf->sminn_to_soil2n_s1[layer];
+		nf->sminn_to_soil_SUM[layer] += nf->sminn_to_soil2n_s1[layer];
+		ns->nvol_snk				 += nf->sminn_to_nvol_s1s2[layer];
+		nf->sminn_to_nvol_SUM[layer] += nf->sminn_to_nvol_s1s2[layer];
+		
+		ns->soil3n[layer]     += nf->soil2n_to_soil3n[layer];
+		ns->soil2n[layer]     -= nf->soil2n_to_soil3n[layer];
+		if (nf->sminn_to_soil3n_s2[layer] < 0.0)
+		{
+			nf->sminn_to_nvol_s2s3[layer] = -epc->denitrif_prop * nf->sminn_to_soil3n_s2[layer];
+		}
+		else
+		{
+			nf->sminn_to_nvol_s2s3[layer] = 0.0;
+		}
+		ns->soil3n[layer]            += nf->sminn_to_soil3n_s2[layer];
+		nf->sminn_to_soil_SUM[layer] += nf->sminn_to_soil3n_s2[layer];
+		ns->nvol_snk			     += nf->sminn_to_nvol_s2s3[layer];
+		nf->sminn_to_nvol_SUM[layer] += nf->sminn_to_nvol_s2s3[layer];
+		
+		ns->soil4n[layer]     += nf->soil3n_to_soil4n[layer];
+		ns->soil3n[layer]     -= nf->soil3n_to_soil4n[layer];
+		if (nf->sminn_to_soil4n_s3[layer] < 0.0)
+		{
+			nf->sminn_to_nvol_s3s4[layer] = -epc->denitrif_prop * nf->sminn_to_soil4n_s3[layer];
+		}
+		else
+		{
+			nf->sminn_to_nvol_s3s4[layer] = 0.0;
+		}
+		ns->soil4n[layer]            += nf->sminn_to_soil4n_s3[layer];
+		nf->sminn_to_soil_SUM[layer] += nf->sminn_to_soil4n_s3[layer];
+		ns->nvol_snk				 += nf->sminn_to_nvol_s3s4[layer];
+		nf->sminn_to_nvol_SUM[layer] += nf->sminn_to_nvol_s3s4[layer];
+		
+		nf->sminn_to_nvol_s4[layer]  = epc->denitrif_prop * nf->soil4n_to_sminn[layer];
+		nf->sminn_to_soil_SUM[layer] -= nf->soil4n_to_sminn[layer];
+		ns->soil4n[layer]            -= nf->soil4n_to_sminn[layer];
+		ns->nvol_snk				 += nf->sminn_to_nvol_s4[layer];
+		nf->sminn_to_nvol_SUM[layer] += nf->sminn_to_nvol_s4[layer];
 
-	/* Bulk denitrification of soil mineral N */
-	ns->nvol_snk            += nf->sminn_to_denitrif;
-	
+	}
+
+
 	/* Plant allocation flux, from N retrans pool */
-	ns->npool     += nf->retransn_to_npool;
-	ns->retransn  -= nf->retransn_to_npool;
-
+	ns->npool		    += nf->retransn_to_npool;
+	ns->retransn        -= nf->retransn_to_npool;
 		
 	/* Daily allocation fluxes */
 	/* Daily leaf allocation fluxes */

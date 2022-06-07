@@ -50,7 +50,6 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	ns->deadstemn_storage = 0.0;
 	ns->livecrootn_storage = 0.0;
 	ns->deadcrootn_storage = 0.0;
-	ns->retransn = 0.0;
 	ns->npool = 0.0;
 	/* fruit simulation - Hidy 2013. */
 	cs->fruitc_storage = 0.0;
@@ -78,10 +77,11 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		epv->hydr_diffus_E[layer]	  = sitec->hydr_diffus_fc[layer];
 		epv->pF[layer]				  = log10(fabs(10000*sitec->psi_fc[layer]));	// dimension of psi: MPa to cm (10000 MPa = 1 cm)
 		epv->m_soilstress_layer[layer]= 1;
+		
 	}
 
-	epv->vwc_avg		    = sitec->vwc_fc[layer];
-	epv->psi_avg		    = sitec->psi_fc[layer];
+	epv->vwc_avg		    = sitec->vwc_fc[0];
+	epv->psi_avg		    = sitec->psi_fc[0];
 	metv->tsoil_avg	   	    = sitec->tair_annavg;
 	metv->tsoil_surface_pre	= sitec->tair_annavg;	
 	epv->m_soilstress	    = 1;
@@ -298,6 +298,14 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	epv->day_livestemc_turnover_increment = cs->livestemc * epc->livewood_turnover / NDAY_OF_YEAR;
 	epv->day_livecrootc_turnover_increment = cs->livecrootc * epc->livewood_turnover / NDAY_OF_YEAR;
 	
+	/* initalizing multilayer soil variables - Hidy 2016 */
+	ns->litr1n_total	= 0;
+	ns->litr2n_total	= 0;
+	ns->litr3n_total	= 0;
+	ns->litr4n_total	= 0;
+	ns->sminn_total		= 0;
+	ns->cwdn_total		= 0;
+
 
 	
 	return (!ok);

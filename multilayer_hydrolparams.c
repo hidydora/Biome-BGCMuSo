@@ -81,8 +81,7 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 		/* pF from psi: cm from MPa */
 		epv->pF[layer] =log10(fabs(10000*epv->psi[layer] ));
 	
-       /* MuSo5: saturation value of hydr.conduct - for groundwater calculation */
-		epv->hydr_conduct_sat[layer] = sitec->hydr_conduct_sat[layer];
+     
 
 		/* CONTROL - unrealistic VWC content (higher than saturation value) */
 		if (epv->vwc[layer] > sitec->vwc_sat[layer])       

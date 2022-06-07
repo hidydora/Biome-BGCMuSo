@@ -36,7 +36,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 
 /* Hidy 2010 - plus/new input variables */
 int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteconst_struct* sitec, const epconst_struct* epc, 
-		   planting_struct* PLT, wstate_struct* ws, epvar_struct* epv, metvar_struct* metv, double* tair_annavg_ptr, int metday);
+		   planting_struct* PLT, harvesting_struct* HRV, wstate_struct* ws, epvar_struct* epv, metvar_struct* metv, double* tair_annavg_ptr, int metday);
 int dayphen(const phenarray_struct* phenarr, phenology_struct* phen, int metday, int metyr);
 int phenology(const control_struct* ctrl, const epconst_struct* epc, const phenology_struct* phen,
 	epvar_struct* epv, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns,
@@ -75,22 +75,19 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt);
 
 /* Hidy 2010 - plus/new input variables */
 int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, 
-					 cflux_struct* cf, cstate_struct* cs,nflux_struct* nf, nstate_struct* ns, epvar_struct* epv, ntemp_struct* nt);
-int spinup_daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, 
-	                        cflux_struct* cf, cstate_struct* cs,nflux_struct* nf, nstate_struct* ns, 
-							epvar_struct* epv, ntemp_struct* nt, double naddfrac);
+					 cflux_struct* cf, cstate_struct* cs,nflux_struct* nf, nstate_struct* ns, epvar_struct* epv, ntemp_struct* nt, double naddfrac);
 int annual_rates(const epconst_struct* epc, epvar_struct* epv);
 int growth_resp(epconst_struct* epc, cflux_struct* cf);
 /* Hidy 2010 - plus/new input variables */
 int daily_water_state_update(wflux_struct* wf, wstate_struct* ws);
 /* Hidy 2010 - plus/new input variables */
-int daily_carbon_state_update(cflux_struct* cf, cstate_struct* cs, int alloc, int woody, int evergreen);
+int daily_carbon_state_update(epvar_struct* epv, cflux_struct* cf, cstate_struct* cs, int alloc, int woody, int evergreen);
 /* Hidy 2010 - plus/new input variables */
-int daily_nitrogen_state_update(const epconst_struct* epc, nflux_struct* nf, nstate_struct* ns, int alloc, int woody, int evergreen);
+int daily_nitrogen_state_update(const epconst_struct* epc, epvar_struct* epv, nflux_struct* nf, nstate_struct* ns, int alloc, int woody, int evergreen);
 
 
 /* Hidy 2010 - plus/new input variables */
-int mortality(const control_struct* ctrl, const epconst_struct* epc, cstate_struct* cs, cflux_struct* cf,
+int mortality(const control_struct* ctrl, const epconst_struct* epc, epvar_struct* epv, cstate_struct* cs, cflux_struct* cf,
 	nstate_struct* ns, nflux_struct* nf, int simyr);	
 
 /* Hidy 2010 - plus/new input variables */
@@ -111,7 +108,7 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv, epconst_struct* epc);
 
 /* change of mineralized N in multilayer soil */
-int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, const epvar_struct* epv, 
+int multilayer_sminn(const epconst_struct* epc, const epvar_struct* epv, 
 					 nstate_struct* ns, nflux_struct* nf, wstate_struct* ws, wflux_struct* wf);
 
 /* calculate the hydrological parameters in the multilayer soil */
@@ -138,7 +135,7 @@ int multilayer_tsoil(int yday, const epconst_struct* epc, const siteconst_struct
 /* calculating rooting depth in the multilayer soil  */
 int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, 
 						 phenology_struct* phen, planting_struct* PLT, harvesting_struct* HRV,
-						 epvar_struct* epv, nstate_struct* ns, metvar_struct* metv);
+						 epvar_struct* epv, metvar_struct* metv);
 
 /* planting - Hidy 2012 */
 int planting(const control_struct* ctrl,const epconst_struct* epc, 
@@ -146,7 +143,7 @@ int planting(const control_struct* ctrl,const epconst_struct* epc,
 			 cstate_struct* cs, nstate_struct*ns);
 
 /* thinning - Hidy 2012 */
-int thinning(const control_struct* ctrl, const epconst_struct* epc, 
+int thinning(const control_struct* ctrl, const epconst_struct* epc,
 		   thinning_struct* THN, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf, 
 	       cstate_struct* cs, nstate_struct* ns, wstate_struct* ws);
 
@@ -184,6 +181,9 @@ int management(const control_struct* ctrl, fertilizing_struct* FRZ, grazing_stru
 /* senescence mortality calculation */
 int senescence(const epconst_struct* epc, const grazing_struct* GRZ, 
 			   cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, epvar_struct* epv);
+
+/* cut-down mortality calculation */
+int cutdown2litter(const epconst_struct* epc, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, epvar_struct* epv);
 
 
 /* alternative estimation for soilb */

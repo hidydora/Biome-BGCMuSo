@@ -39,11 +39,11 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 
 	/* internal variables */
 	double prcp, evap_diff;
-	double soilw_hw0;  /* (kgH2O/m2/min) */
+	double soilw_hw0, soilw_before;  /* (kgH2O/m2/min) */
 	int layer;
 	double coeff_soiltype, coeff_soilmoist, RCN, coeff_runoff;
 	int ok=1;
-
+	soilw_before=0;
 
 	/* *****************************/
 	/* 1. PRECIPITATION AND RUNOFF*/
@@ -72,9 +72,6 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	{
 		wf->prcp_to_runoff = 0;
 	}
-
-
-
 
 
 	/* ********************************/
@@ -118,20 +115,22 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	if (evap_diff < 0)
 	{
 		wf->soilw_evap += evap_diff;
-	//	if (ctrl->onscreen && fabs(evap_diff) > CRIT_PREC) printf("WARNING: Limited evaporation due to dry soil (multilayer_hydrolprocess.c)\n");
 	}
 	
 	ws->soilw[0] -= wf->soilw_evap;
-
+	epv->vwc[0]  = ws->soilw[0] / water_density / sitec->soillayer_thickness[0];
 
 
 	/* ********************************/
 	/* BOTTOM LAYER IS SPECIAL: percolated water is net loss for the system, water content does not change */
 	
+	
 	if (sitec->gwd_act == DATA_GAP || ( sitec->gwd_act != DATA_GAP && sitec->gwd_act > sitec->soillayer_depth[N_SOILLAYERS-1]))
 	{
+		soilw_before              = ws->soilw[N_SOILLAYERS-1];
 		epv->vwc[N_SOILLAYERS-1]  = sitec->vwc_fc[N_SOILLAYERS-1];
 		ws->soilw[N_SOILLAYERS-1] = sitec->vwc_fc[N_SOILLAYERS-1] * (sitec->soillayer_thickness[N_SOILLAYERS-1]) * 1000.0;
+		ws->deeppercolation_snk += (soilw_before - ws->soilw[N_SOILLAYERS-1]);
 	}
 
 	

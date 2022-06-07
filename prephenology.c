@@ -632,8 +632,8 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 			/* fix the onday and offday value */
 			for (py=0 ; py<phenyears ; py++)
 			{
-				phenarr->onday_arr[py][0]  = py;
-				phenarr->offday_arr[py][0] = py;
+				phenarr->onday_arr[py][0]  = ctrl->simstartyear+py;
+				phenarr->offday_arr[py][0] = ctrl->simstartyear+py;
 
 				phenarr->onday_arr[py][1]  = onday_arr[py];
 				phenarr->offday_arr[py][1] = offday_arr[py];

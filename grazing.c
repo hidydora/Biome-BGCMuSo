@@ -208,7 +208,7 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ
 		/*----------------------------------------------------------*/
 		/* 3. CH4 and N2O emissions */ 
 
-		/*  dimension: db animal/m2 * kgN/(kg animal * day) * kg animal/db animal = gN/m2/day */
+		/*  dimension: db animal/m2 * kgN/(kg animal * day) * kg animal/db animal = kgN/m2/day */
 		nf->N2O_flux_GRZ     = stocking_rate * Nexrate * weight_LSU/1000 *  EFman_N2O * MS_N2O;
 
 		/* dimension: kgCH4/head/day * head / m2 * (C/CH4) * mg/kg = gC/m2/day */

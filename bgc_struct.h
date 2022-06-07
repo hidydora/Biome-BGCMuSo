@@ -1718,7 +1718,7 @@ typedef struct
 	double* DM_Ccontent_array;					/* (%) ARRAY of carbon content of dry matter*/
 	double* EXCR_Ncontent_array;				/* (%) ARRAY of nitrogen content of the fertilizer */
 	double* EXCR_Ccontent_array;				/* (%) ARRAY of carbon content of the fertilizer */
-	double* Nexrate;                           /* (kgN/1000 kg animal mass/day) ARRAY of default N excretion rate */
+	double* Nexrate;                            /* (kgN/1000 kg animal mass/day) ARRAY of default N excretion rate */
 	double* EFman_N2O;							/* (kgN2O-N:kgN) ARRAY of manure emission factor for N2O emission	 */
 	double* EFman_CH4;							/* (kgCH4/LSU/yr) ARRAY of manure emission factor for CH4 emission */
 	double* EFfer_CH4;							/* (kgCH4/LSU/yr) ARRAY of fermentation emission factor for CH4 emission */

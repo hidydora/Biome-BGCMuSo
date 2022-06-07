@@ -31,7 +31,7 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 
 	/* determining onday, offday, n_growthday, n_transferday and n_litfallday value on the first simulation day */
 
-	if (PLT->PLT_num)
+ 	if (PLT->PLT_num)
 		nyear = PLT->PLT_num;
 	else
 		nyear = ctrl->simyears;

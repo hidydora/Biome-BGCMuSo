@@ -235,6 +235,11 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	
 	plant_ndemand   = avail_c * (n_allometry / c_allometry);
 
+	if (plant_ndemand > 0)
+	{
+		int balus=6;
+	}
+
 	ns->sum_ndemand     = plant_ndemand + potential_immob_rootzone;
 
 	/* ONLY IN SPINUP PHASE: add N to sminn to meet demand: naddfrac scales N additions from 1.0 to 0.0 */

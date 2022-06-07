@@ -3,7 +3,7 @@ farquhar.c
 C3/C4 photosynthesis model
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -79,7 +79,9 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 
 	/* new stressfactor of photosynthesis */
 
+	
 	epv->assim_SScoeff = epv->m_SWCstress + (1-epv->m_SWCstress)*(1-epc->photoSTRESSeffect);
+
 
 	if (!errorCode && epv->n_actphen > epc->n_emerg_phenophase && cs->leafc && phen->remdays_curgrowth && metv->dayl && ws->snoww <= epc->snowcover_limit)
 	{	
@@ -127,7 +129,7 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 			else
 				b = 0.4;
 		
-			W_to_MJperDAY = 1e-6 * NSEC_IN_DAY; 
+			W_to_MJperDAY = 1e-6 * nSEC_IN_DAY; 
 
 			assim_CO2coeff = (1 + b * log(metv->co2/co2_ref));
 			RUE  = epc->potRUE * epv->assim_Tcoeff * assim_CO2coeff;             // [RUE] = g MJ-1

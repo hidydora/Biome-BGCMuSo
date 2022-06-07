@@ -3,7 +3,7 @@ bgc_constants.h
 Holds macro definitions for constants used in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -56,7 +56,7 @@ are set to 0.0 to control rounding and overflow errors */
 #define HC_water			4200000.	/* (J/m3/K) heat capacity of water */
 #define HC_soil				1260000.	/* (J/m3/K) heat capacity of soil */
 #define HC_air				1004.		/* (J/m3/K) heat capacity of air */
-#define water_density		1000		/* (kg/m3)  mean value of water density */
+#define water_density		1000.		/* (kg/m3)  mean value of water density */
 #define pF_hygroscopw		6.2			/* (dimless)  pF value at hygroscopic water point (dry air) */
 #define pF_wiltingpoint		4.2			/* (dimless)  pF value at wilting point */
 #define pF_fieldcapacity	2.5			/* (dimless)  pF value at field capacity */
@@ -70,10 +70,12 @@ are set to 0.0 to control rounding and overflow errors */
 
 #define nDAYS_OF_YEAR	    365	
 #define nMONTHS_OF_YEAR	    12	
-#define NSEC_IN_DAY		    86400					/* (s/day)  calculation of daily value from second values */
-#define NHOUR_IN_DAY		24.						/* (hour/day)  calculation of daily value from hourly values */
+#define nSEC_IN_DAY		    86400					/* (s/day)  calculation of daily value from second values */
+#define nHOURS_IN_DAY		24.						/* (hour/day)  calculation of daily value from hourly values */
 #define DATA_GAP			-9999
-
+#define Celsius2Kelvin      273.15
+#define m2_to_ha            10000
+#define kg_to_t            0.001
 
 /* constant for net radiation calculation */
 #define PI                  3.14159265358979323846
@@ -86,3 +88,5 @@ are set to 0.0 to control rounding and overflow errors */
 
 /* NO3 mobilen proportion */
 #define NO3_mobilen_prop    1
+
+

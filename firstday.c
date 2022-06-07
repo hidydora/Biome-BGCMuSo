@@ -4,7 +4,7 @@ Initializes the state variables for the first day of a simulation that
 is not using a restart file.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -24,8 +24,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc, 
-	         const planting_struct *PLT, cinit_struct* cinit, phenology_struct* phen, epvar_struct* epv, 
+int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epconst_struct* epc, const planting_struct *PLT, 
+	         siteconst_struct* sitec, cinit_struct* cinit, phenology_struct* phen, epvar_struct* epv, 
 			 cstate_struct* cs, nstate_struct* ns, metvar_struct* metv, psn_struct* psn_sun, psn_struct* psn_shade)
 {
 	int errorCode=0;
@@ -36,7 +36,7 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	/* *****************************************************************************- */
 	/* 1. Initialize ecophysiological variables */
 
-	epv->dsr = 0.0;
+	epv->DSR = 0.0;
 	epv->cumSWCstress = 0.0;
 	epv->cumNstress = 0.0;
 	epv->SWCstressLENGTH = 0.0;
@@ -45,7 +45,6 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->leafday_lastmort = -1;
 
 	epv->n_rootlayers = 0;
-	epv->n_maxrootlayers = 0;
 	epv->germ_layer = 0;
 	epv->germ_depth = 0.05;
     epv->proj_lai = 0;
@@ -72,7 +71,7 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->NDVI = 0;
 
 	epv->rootlength = 0;
-	epv->rate_scalar_avg = 0;
+	epv->rs_decomp_avg = 0;
 	epv->m_tmin = 0;
 	epv->m_co2 = 0;
 	epv->stomaCONDUCT_max = 0;
@@ -109,19 +108,28 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	psn_shade->Aj	    = 0;
 
 
+
+	/* initalize the number of the soil layers in which root can be found. It determines the rootzone depth (only on first day) */
 	
+	if (calc_nrootlayers(0, epc->max_rootzone_depth, cs->frootc, sitec, epv))
+	{
+		if (!errorCode) 
+		{
+			printf("\n");
+			printf("ERROR: calc_nrootlayers() for multilayer_rootdepth.c\n");
+		}
+		errorCode=1;
+	}
 
 	/* initialize multilayer variables (first approximation: field cap.) and multipliers for stomatal limitation calculation */
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		epv->vwc[layer]				    = sprop->vwc_fc[layer];
-		epv->WFPS[layer]	            = epv->vwc[layer] / sprop->vwc_sat[layer];	
-		epv->psi[layer]				    = sprop->psi_fc[layer];
-		epv->hydr_conductSTART[layer]	= sprop->hydr_conduct_fc[layer];
-		epv->hydr_diffusSTART[layer]	= sprop->hydr_diffus_fc[layer];
-		epv->hydr_conductEND[layer]	    = sprop->hydr_conduct_fc[layer];
-		epv->hydr_diffusEND[layer]	    = sprop->hydr_diffus_fc[layer];
-		epv->pF[layer]				    = log10(fabs(10000*sprop->psi_fc[layer]));	// dimension of psi: MPa to cm (10000 MPa = 1 cm)
+		epv->VWC[layer]				    = sprop->VWCfc[layer];
+		epv->WFPS[layer]	            = epv->VWC[layer] / sprop->VWCsat[layer];	
+		epv->PSI[layer]				    = sprop->PSIfc[layer];
+		epv->hydrCONDUCTact[layer]	    = sprop->hydrCONDUCTfc[layer];
+		epv->hydrDIFFUSact[layer]	    = sprop->hydrDIFFUSfc[layer];
+		epv->pF[layer]				    = log10(fabs(10000*sprop->PSIfc[layer]));	// dimension of PSI: MPa to cm (10000 MPa = 1 cm)
 		epv->m_SWCstress_layer[layer]  = 1;
 	    epv->rootlength_prop[layer]     = 0;
 		epv->rootlengthLandD_prop[layer]= 0;
@@ -173,20 +181,20 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 		epv->npool_to_leafnARRAY[day] = 0;
 		epv->gpSNSC_phenARRAY[day] = 0;
 	}
-	epv->vwc_avg		    = sprop->vwc_fc[0];
-	epv->vwc_RZ 		    = sprop->vwc_fc[0];  
-	epv->vwcSAT_RZ 		    = sprop->vwc_sat[0];  
-	epv->vwcFC_RZ 		    = sprop->vwc_fc[0];  
-	epv->vwcWP_RZ 		    = sprop->vwc_wp[0];  
-	epv->vwcHW_RZ 		    = sprop->vwc_hw[0];  
-	epv->psi_RZ		        = sprop->psi_fc[0];
+	epv->VWC_avg		    = sprop->VWCfc[0];
+	epv->VWC_RZ 		    = sprop->VWCfc[0];  
+	epv->hydrCONDUCTsat_avg = sprop->hydrCONDUCTsat[0];
+	epv->VWCsat_RZ 		    = sprop->VWCsat[0];  
+	epv->VWCfc_RZ 		    = sprop->VWCfc[0];  
+	epv->VWCwp_RZ 		    = sprop->VWCwp[0];  
+	epv->VWChw_RZ 		    = sprop->VWChw[0];  
+	epv->PSI_RZ		        = sprop->PSIfc[0];
 	epv->m_SWCstress	    = 1;
 	epv->SMSI               = 0;
 	epv->flower_date        = 0;
+	epv->winterEnd_date     = 0;
 	metv->tsoil_avg	   	    = sitec->tair_annavg;
 	metv->tsoil_surface_pre	= sitec->tair_annavg;	
-
-	metv->GDDpre            = 0;
 
 	phen->GDD_emergSTART = 0;
 	phen->GDD_emergEND   = 0;
@@ -202,7 +210,8 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	for (pp = 0; pp < N_PHENPHASES; pp++) 
 	{
 		cs->leafcSUM_phenphase[pp] = 0;
-		epv->phenphase_date[pp]=-1;
+		epv->phenphase_date[pp]    =-1;
+		epv->rootdepth_phen[pp]    = 0;
 	}
 
 

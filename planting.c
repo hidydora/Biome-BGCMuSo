@@ -3,7 +3,7 @@ planting.c
 planting  - planting seeds in soil - increase transfer pools
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -32,7 +32,7 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 	double seed_quantity,seed_Ccontent;					
 	double g_to_kg;
 	double prop_leaf, prop_froot, prop_fruit, prop_softstem;
-	
+	double propLAYER0, propLAYER1, propLAYER2;
 	double total_allocation = epc->alloc_leafc[epc->n_germ_phenophase-1]+epc->alloc_frootc[epc->n_germ_phenophase-1]+
 		                      epc->alloc_softstemc[epc->n_germ_phenophase-1]+epc->alloc_fruitc[epc->n_germ_phenophase-1];
 	
@@ -72,6 +72,13 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 				errorCode=1;
 			}
 
+			if (epc->n_emerg_phenophase == 0 || epc->n_germ_phenophase == 0)
+			{
+				printf("\n");
+				printf("ERROR in setting of emergence and/or germination phenophase. Please, check EPC files\n");
+				errorCode=1; 
+			} 
+
 			/* plant type determination based on EPC file header */
 			if (!errorCode && planttype_determination(ctrl, phen))
 			{
@@ -85,9 +92,59 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 
 			epv->germ_depth = PLT->germ_depth_array[md]; 
 
+			cs->fruitC_HRV        = 0;
+			cs->vegC_HRV          = 0;
+
+			/* resetting of storage variables */
+			if (cs->leafc_storage > 0)
+			{
+				cs->STDBc_nsc                   += cs->leafc_storage;
+				cs->SNSCsnk_C                   += cs->leafc_storage;
+				ns->STDBn_nsc                   += ns->leafn_storage;
+				ns->SNSCsnk_N                   += ns->leafn_storage;
+				cs->leafc_storage = 0;
+				ns->leafn_storage = 0;
+			}
+
+			if (cs->frootc_storage > 0)
+			{
+				cs->STDBc_nsc                   += cs->frootc_storage;
+				cs->SNSCsnk_C                   += cs->frootc_storage;
+				ns->STDBn_nsc                   += ns->frootn_storage;
+				ns->SNSCsnk_N                   += ns->frootn_storage;
+				cs->frootc_storage = 0;
+				ns->frootn_storage = 0;
+			}
+
+			if (cs->softstemc_storage > 0)
+			{
+				cs->STDBc_nsc                   += cs->softstemc_storage;
+				cs->SNSCsnk_C                   += cs->softstemc_storage;
+				ns->STDBn_nsc                   += ns->softstemn_storage;
+				ns->SNSCsnk_N                   += ns->softstemn_storage;
+				cs->softstemc_storage = 0;
+				ns->softstemn_storage = 0;
+			}
+
+			if (cs->fruitc_storage > 0)
+			{
+				cs->STDBc_nsc                   += cs->fruitc_storage;
+				cs->SNSCsnk_C                   += cs->fruitc_storage;
+				ns->STDBn_nsc                   += ns->fruitn_storage;
+				ns->SNSCsnk_N                   += ns->fruitn_storage;
+				cs->fruitc_storage = 0;
+				ns->fruitn_storage = 0;
+			}
+
 			/* 2.2 germination depth and layer */
 			while (!flag_layerIMP)
 			{
+				if (epv->germ_depth < sitec->soillayer_depth[0])
+				{
+					epv->germ_layer = 0;
+					flag_layerIMP = 1;
+				}
+
 				if (epv->germ_depth >= sitec->soillayer_depth[layer-1] && epv->germ_depth < sitec->soillayer_depth[layer])
 				{
 					epv->germ_layer = layer;
@@ -113,6 +170,8 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		{
 			cf->leafc_transfer_from_PLT  = (seed_quantity * prop_leaf)  * seed_Ccontent;
 			nf->leafn_transfer_from_PLT  =  cf->leafc_transfer_from_PLT  / epc->leaf_cn;
+			cf->STDBc_leaf_to_PLT        = cs->STDBc_leaf;
+			nf->STDBn_leaf_to_PLT        = ns->STDBn_leaf;
 		}
 		
 		
@@ -120,6 +179,8 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		{
 			cf->frootc_transfer_from_PLT = (seed_quantity * prop_froot) * seed_Ccontent;
 			nf->frootn_transfer_from_PLT =  cf->frootc_transfer_from_PLT / epc->froot_cn;
+			cf->STDBc_froot_to_PLT        = cs->STDBc_froot;
+			nf->STDBn_froot_to_PLT        = ns->STDBn_froot;
 		}
 		
 		
@@ -127,6 +188,8 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		{
 			cf->fruitc_transfer_from_PLT = (seed_quantity * prop_fruit) * seed_Ccontent;
 			nf->fruitn_transfer_from_PLT =  cf->fruitc_transfer_from_PLT / epc->fruit_cn;
+			cf->STDBc_fruit_to_PLT        = cs->STDBc_fruit;
+			nf->STDBn_fruit_to_PLT        = ns->STDBn_fruit;
 		}
 		
 		
@@ -134,9 +197,10 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		{
 			cf->softstemc_transfer_from_PLT = (seed_quantity * prop_softstem) * seed_Ccontent;
 			nf->softstemn_transfer_from_PLT =  cf->softstemc_transfer_from_PLT / epc->softstem_cn;
+			cf->STDBc_softstem_to_PLT        = cs->STDBc_softstem;
+			nf->STDBn_softstem_to_PLT        = ns->STDBn_softstem;
 		}
 		
-
 			
 		/* 2.4 STATE UPDATE */ 
 		/* carbon */
@@ -148,6 +212,12 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		cs->PLTsrc_C += cf->fruitc_transfer_from_PLT;
 		cs->softstemc_transfer += cf->softstemc_transfer_from_PLT;
 		cs->PLTsrc_C += cf->softstemc_transfer_from_PLT;
+		
+		cs->STDBc_leaf     -=cf->STDBc_leaf_to_PLT;
+		cs->STDBc_froot    -=cf->STDBc_froot_to_PLT;
+		cs->STDBc_fruit    -=cf->STDBc_fruit_to_PLT;
+		cs->STDBc_softstem -=cf->STDBc_softstem_to_PLT;
+
 
 		/* nitrogen */
 		ns->leafn_transfer += nf->leafn_transfer_from_PLT;
@@ -159,7 +229,107 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		ns->softstemn_transfer += nf->softstemn_transfer_from_PLT;
 		ns->PLTsrc_N += nf->softstemn_transfer_from_PLT;
 
+		ns->STDBn_leaf     -=nf->STDBn_leaf_to_PLT;
+		ns->STDBn_froot    -=nf->STDBn_froot_to_PLT;
+		ns->STDBn_fruit    -=nf->STDBn_fruit_to_PLT;
+		ns->STDBn_softstem -=nf->STDBn_softstem_to_PLT;
 
+		/* 2.5. mortality fluxes turn into litter pools: 	aboveground biomass into the top soil layer, belowground biomass divided between soil layers based on their root content */
+	
+		/* new feature: litter turns into the first AND the second soil layer */
+		propLAYER0 = sitec->soillayer_thickness[0]/sitec->soillayer_depth[2];
+		propLAYER1 = sitec->soillayer_thickness[1]/sitec->soillayer_depth[2];
+		propLAYER2 = sitec->soillayer_thickness[2]/sitec->soillayer_depth[2];
+
+
+		/* 9.1 aboveground biomass into the top soil layer */
+
+		cs->litr1c[0] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_flab  + cf->STDBc_fruit_to_PLT * epc->fruitlitr_flab  + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_flab) * propLAYER0;
+		cs->litr2c[0] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_fucel + cf->STDBc_fruit_to_PLT * epc->fruitlitr_fucel + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_fucel) * propLAYER0;
+		cs->litr3c[0] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_fscel + cf->STDBc_fruit_to_PLT * epc->fruitlitr_fscel + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_fscel) * propLAYER0;
+		cs->litr4c[0] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_flig  + cf->STDBc_fruit_to_PLT * epc->fruitlitr_flig  + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_flig) * propLAYER0;
+
+		ns->litr1n[0] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_flab  + nf->STDBn_fruit_to_PLT * epc->fruitlitr_flab  + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_flab) * propLAYER0;
+		ns->litr2n[0] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_fucel + nf->STDBn_fruit_to_PLT * epc->fruitlitr_fucel + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_fucel) * propLAYER0;
+		ns->litr3n[0] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_fscel + nf->STDBn_fruit_to_PLT * epc->fruitlitr_fscel + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_fscel) * propLAYER0;
+		ns->litr4n[0] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_flig  + nf->STDBn_fruit_to_PLT * epc->fruitlitr_flig  + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_flig) * propLAYER0;
+
+		cs->litr1c[1] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_flab  + cf->STDBc_fruit_to_PLT * epc->fruitlitr_flab  + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_flab) * propLAYER1;
+		cs->litr2c[1] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_fucel + cf->STDBc_fruit_to_PLT * epc->fruitlitr_fucel + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_fucel) * propLAYER1;
+		cs->litr3c[1] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_fscel + cf->STDBc_fruit_to_PLT * epc->fruitlitr_fscel + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_fscel) * propLAYER1;
+		cs->litr4c[1] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_flig  + cf->STDBc_fruit_to_PLT * epc->fruitlitr_flig  + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_flig) * propLAYER1;
+
+		ns->litr1n[1] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_flab  + nf->STDBn_fruit_to_PLT * epc->fruitlitr_flab  + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_flab) * propLAYER1;
+		ns->litr2n[1] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_fucel + nf->STDBn_fruit_to_PLT * epc->fruitlitr_fucel + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_fucel) * propLAYER1;
+		ns->litr3n[1] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_fscel + nf->STDBn_fruit_to_PLT * epc->fruitlitr_fscel + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_fscel) * propLAYER1;
+		ns->litr4n[1] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_flig  + nf->STDBn_fruit_to_PLT * epc->fruitlitr_flig  + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_flig) * propLAYER1;
+	
+		cs->litr1c[2] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_flab  + cf->STDBc_fruit_to_PLT * epc->fruitlitr_flab  + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_flab) * propLAYER2;
+		cs->litr2c[2] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_fucel + cf->STDBc_fruit_to_PLT * epc->fruitlitr_fucel + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_fucel) * propLAYER2;
+		cs->litr3c[2] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_fscel + cf->STDBc_fruit_to_PLT * epc->fruitlitr_fscel + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_fscel) * propLAYER2;
+		cs->litr4c[2] += (cf->STDBc_leaf_to_PLT * epc->leaflitr_flig  + cf->STDBc_fruit_to_PLT * epc->fruitlitr_flig  + 
+						  cf->STDBc_softstem_to_PLT * epc->softstemlitr_flig) * propLAYER2;
+
+		ns->litr1n[2] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_flab  + nf->STDBn_fruit_to_PLT * epc->fruitlitr_flab  + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_flab) * propLAYER2;
+		ns->litr2n[2] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_fucel + nf->STDBn_fruit_to_PLT * epc->fruitlitr_fucel + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_fucel) * propLAYER2;
+		ns->litr3n[2] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_fscel + nf->STDBn_fruit_to_PLT * epc->fruitlitr_fscel + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_fscel) * propLAYER2;
+		ns->litr4n[2] += (nf->STDBn_leaf_to_PLT * epc->leaflitr_flig  + nf->STDBn_fruit_to_PLT * epc->fruitlitr_flig  + 
+						  nf->STDBn_softstem_to_PLT * epc->softstemlitr_flig) * propLAYER2;
+
+		/* 9.2 	belowground biomass divided between soil layers based on their root content */ 
+	
+		if (epv->rootdepth > CRIT_PREC)
+		{
+			for (layer=0; layer < N_SOILLAYERS; layer++)
+			{
+				cs->litr1c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flab  * epv->rootlength_prop[layer];
+				cs->litr2c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fucel * epv->rootlength_prop[layer];
+				cs->litr3c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fscel * epv->rootlength_prop[layer];
+				cs->litr4c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flig  * epv->rootlength_prop[layer];
+
+				ns->litr1n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flab  * epv->rootlength_prop[layer];
+				ns->litr2n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fucel * epv->rootlength_prop[layer];
+				ns->litr3n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fscel * epv->rootlength_prop[layer];
+				ns->litr4n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flig  * epv->rootlength_prop[layer];
+			}
+		}
+		else
+		{
+			for (layer=0; layer < N_SOILLAYERS; layer++)
+			{
+				cs->litr1c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flab  * epv->rootlengthLandD_prop[layer];
+				cs->litr2c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fucel * epv->rootlengthLandD_prop[layer];
+				cs->litr3c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fscel * epv->rootlengthLandD_prop[layer];
+				cs->litr4c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flig  * epv->rootlengthLandD_prop[layer];
+
+				ns->litr1n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flab  * epv->rootlengthLandD_prop[layer];
+				ns->litr2n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fucel * epv->rootlengthLandD_prop[layer];
+				ns->litr3n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fscel * epv->rootlengthLandD_prop[layer];
+				ns->litr4n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flig  * epv->rootlengthLandD_prop[layer];
+			}
+		}
 	}
 	
 
@@ -197,7 +367,7 @@ int planttype_determination(control_struct* ctrl, phenology_struct* phen)
 	char pt22[] = "shrub";
 	char pt23[] = "deciduous_forest";
 	char pt24[] = "evergreen_forest";
-	
+	char pt25[] = "mustard";
 	
 	phen->planttype =-1;
 
@@ -251,7 +421,7 @@ int planttype_determination(control_struct* ctrl, phenology_struct* phen)
 
 	if (!errorCode && !strcmp(ctrl->planttypeName, pt24)) phen->planttype = 24;
 
-
+	if (!errorCode && !strcmp(ctrl->planttypeName, pt25)) phen->planttype = 25;
 
 	return (errorCode);
 }

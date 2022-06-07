@@ -4,7 +4,7 @@ Calculating the change in content of soil mineral nitrogen in multilayer soil (p
 depostion and fixing). 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -23,13 +23,13 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-int multilayer_sminn(const control_struct* ctrl, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, const cflux_struct* cf, 
+int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const soilprop_struct* sprop, const siteconst_struct* sitec, const cflux_struct* cf, 
 	                 epvar_struct* epv, nstate_struct* ns, nflux_struct* nf)
 {
 	int errorCode=0;
 	int layer=0;
 	double NH4_prop,SOMresp,sminNO3avail,sminNO3avail_ppm;
-	double pH, WFPS, net_miner,t_scalar, sminNH4avail, N2O_flux_NITRIF,sminNH4_to_nitrif, pH_scalar, wfps_scalar;
+	double pH, tsoil, WFPS, net_miner,sminNH4avail, N2O_flux_NITRIF,sminNH4_to_nitrif;
 	double weight,g_per_cm3_to_kg_per_m3;
 	double sminn_layer[N_SOILLAYERS];
 	double sminNH4_change[N_SOILLAYERS];
@@ -116,10 +116,10 @@ int multilayer_sminn(const control_struct* ctrl, const epconst_struct* epc, cons
 		
 	 	WFPS         = epv->WFPS[layer];
 		sminNH4avail = ns->sminNH4avail[layer];
-		t_scalar     = epv->t_scalar[layer];
+		tsoil        = metv->tsoil[layer]; 
 		pH           = sprop->pH[layer];
 
-		if (!errorCode && nitrification(sprop, net_miner,pH,WFPS,t_scalar,sminNH4avail, &pH_scalar, &wfps_scalar, &N2O_flux_NITRIF, &sminNH4_to_nitrif))
+		if (!errorCode && nitrification(layer, sprop, net_miner,tsoil,pH,WFPS,sminNH4avail, epv, &N2O_flux_NITRIF, &sminNH4_to_nitrif))
 		{
 			printf("\n");
 			printf("ERROR in nitrification() for multilayer_sminn.c \n");
@@ -146,14 +146,14 @@ int multilayer_sminn(const control_struct* ctrl, const epconst_struct* epc, cons
 		}
 		
 		
-		if (epv->vwc[layer] / sprop->vwc_sat[layer] > sprop->critWFPS_denitr && sminNO3avail > 0)
-			nf->sminNO3_to_denitr[layer] = sprop->denitr_coeff * SOMresp * sminNO3avail * (epv->vwc[layer] / sprop->vwc_sat[layer]);
+		if (epv->VWC[layer] / sprop->VWCsat[layer] > sprop->critWFPS_denitr && sminNO3avail > 0)
+			nf->sminNO3_to_denitr[layer] = sprop->denitr_coeff * SOMresp * sminNO3avail * (epv->VWC[layer] / sprop->VWCsat[layer]);
 		else
 			nf->sminNO3_to_denitr[layer] = 0;
 		
 		
 	
-		nf->N2O_flux_DENITR[layer]  = nf->sminNO3_to_denitr[layer] / (1 + ratioN2_N2O *  sprop->texDEP_N2Oratio);
+		nf->N2O_flux_DENITR[layer]  = nf->sminNO3_to_denitr[layer] / (1 + ratioN2_N2O *  sprop->N2Oratio_denitr);
 		nf->N2_flux_DENITR[layer]   = nf->sminNO3_to_denitr[layer] - nf->N2O_flux_DENITR[layer];
 
 
@@ -304,39 +304,54 @@ int multilayer_sminn(const control_struct* ctrl, const epconst_struct* epc, cons
 	return (errorCode);
 }
 
-int nitrification(const soilprop_struct* sprop, double net_miner, double pH, double WFPS, double t_scalar, double sminNH4avail, 
-	              double* pH_scalar, double* wfps_scalar, double* N2O_flux_NITRIF, double* sminNH4_to_nitrif)
+int nitrification(int layer, const soilprop_struct* sprop, double net_miner, double tsoil, double pH, double WFPS, double sminNH4avail, 
+	                  epvar_struct* epv, double* N2O_flux_NITRIF, double* sminNH4_to_nitrif)
 {
 	int errorCode = 0;
-	double p1_pH,p2_pH,p3_pH,p4_pH, pH_sc, wfps_sc,sminNH4_to_nit,N2O_flux_NIT;
+	double sminNH4_to_nit,N2O_flux_NIT;
 	
-	p1_pH=0.15563;
-	p2_pH=0.97859;
-	p3_pH=2.91355;
-	p4_pH=0.75220;
-	
-	pH_sc = p2_pH + (p1_pH-p2_pH)/(1 + exp((pH-p3_pH)/p4_pH));	
+	/* calculation of scalar functions: Tsoil response function, ps_nitrif and WFPS_scalar */
 
+	epv->ps_nitrif[layer] = sprop->pHp2_nitrif + (sprop->pHp1_nitrif-sprop->pHp2_nitrif)/(1 + exp((pH-sprop->pHp3_nitrif)/sprop->pHp4_nitrif));	
 
-	if (WFPS < sprop->minWFPS)
+				
+	if (sprop->Tp1_decomp == DATA_GAP)
 	{
-		wfps_sc = 0;
+		/* no decomp processes for tsoil < -10.0 C */
+		if (tsoil < sprop->Tmin_decomp)	
+				epv->ts_nitrif[layer] = 0.0;
+		else
+			epv->ts_nitrif[layer] = exp(sprop->Tp2_nitrif*((1.0/sprop->Tp3_nitrif)-(1.0/((tsoil+Celsius2Kelvin)-sprop->Tp4_nitrif))));
 	}
 	else
 	{
-		if (WFPS < sprop->opt1WFPS)
+		/* no decomp processes for tsoil < -10.0 C */
+		if (tsoil < sprop->Tmin_decomp)	
+				epv->ts_nitrif[layer] = 0.0;
+		else
+			epv->ts_nitrif[layer] = sprop->Tp1_nitrif/(1+pow(fabs((tsoil-sprop->Tp4_nitrif)/sprop->Tp2_nitrif),sprop->Tp3_nitrif));
+			
+	}
+
+	if (WFPS < sprop->minWFPS_nitrif)
+	{
+		epv->ws_nitrif[layer] = 0;
+	}
+	else
+	{
+		if (WFPS < sprop->opt1WFPS_nitrif)
 		{
-			wfps_sc = (WFPS - sprop->minWFPS) / (sprop->opt1WFPS - sprop->minWFPS);	
+			epv->ws_nitrif[layer] = (WFPS - sprop->minWFPS_nitrif) / (sprop->opt1WFPS_nitrif - sprop->minWFPS_nitrif);	
 		}
 		else
 		{
-			if (WFPS < sprop->opt2WFPS)
+			if (WFPS < sprop->opt2WFPS_nitrif)
 			{
-				wfps_sc = 1;
+				epv->ws_nitrif[layer] = 1;
 			}
 			else
 			{
-				wfps_sc = (1 - WFPS) / (1 - sprop->opt2WFPS) + (WFPS-sprop->opt2WFPS)/(1-sprop->opt2WFPS)* sprop->WFPSscalar_min;
+				epv->ws_nitrif[layer] = (1 - WFPS) / (1 - sprop->opt2WFPS_nitrif) + (WFPS-sprop->opt2WFPS_nitrif)/(1-sprop->opt2WFPS_nitrif)* sprop->scalarWFPSmin_nitrif;
 			}
 		}
 	}
@@ -344,19 +359,18 @@ int nitrification(const soilprop_struct* sprop, double net_miner, double pH, dou
 	if (net_miner > 0)
 	{
 		sminNH4_to_nit= sprop->netMiner_to_nitrif * net_miner + 
-										sprop->maxNitrif_rate * sminNH4avail * t_scalar * wfps_sc * pH_sc;
+										sprop->maxNitrif_rate * sminNH4avail * epv->ts_nitrif[layer] * epv->ws_nitrif[layer] * epv->ps_nitrif[layer];
 	}
 	else
 	{
-		sminNH4_to_nit = sprop->maxNitrif_rate * sminNH4avail *  t_scalar * wfps_sc * pH_sc;
+		sminNH4_to_nit = sprop->maxNitrif_rate * sminNH4avail *  epv->ts_nitrif[layer] * epv->ws_nitrif[layer] * epv->ps_nitrif[layer];
 	}
 		
 	N2O_flux_NIT   = sminNH4_to_nit * sprop->N2Ocoeff_nitrif;
 
 
 
-	*pH_scalar         = pH_sc;	
-	*wfps_scalar       = wfps_sc;
+	
 	*sminNH4_to_nitrif = sminNH4_to_nit;
 	*N2O_flux_NITRIF   =  N2O_flux_NIT;
 

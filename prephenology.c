@@ -3,7 +3,7 @@ prephenology.c
 Initialize phenology arrays, called prior to annual loop in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -24,9 +24,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 #include "misc_func.h"
 
-int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct* sitec, const metarr_struct* metarr, 
+int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* metarr, 
 	             planting_struct* PLT, harvesting_struct* HRV, control_struct* ctrl, phenarray_struct* phenarr)
-
 {
 	int errorCode=0;
 	
@@ -186,12 +185,12 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 			{
 	
 				if (ctrl->varSGS_flag)
-					onday = (int) epc->sgs_array[py];
+					onday = (int) epc->SGS_array[py];
 				else
 					onday = epc->onday;
 			
 				if (ctrl->varEGS_flag)
-					offday = (int) epc->egs_array[py];
+					offday = (int) epc->EGS_array[py];
 				else
 					offday = epc->offday;
 

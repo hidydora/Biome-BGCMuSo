@@ -3,7 +3,7 @@ check_balance.c
 daily test of mass balance (water, carbon, and nitrogen state variables)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -22,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int check_water_balance(wstate_struct* ws, const epvar_struct* epv, const siteconst_struct *sitec, int first_balance)
+int check_water_balance(wstate_struct* ws, int first_balance)
 {
 	int errorCode=0;
 	static double old_balance;
@@ -49,7 +49,7 @@ int check_water_balance(wstate_struct* ws, const epvar_struct* epv, const siteco
 	ws->soilw_SUM = soilw_SUM;
 	ws->soilw_2m = soilw_2m;
 
-	if (ws->snoww < 0.0 || ws->canopyw < 0  || ws->soilw_SUM < 0 || ws->pond_water < 0)
+	if (ws->snoww < 0.0 || ws->canopyw < 0  || ws->soilw_SUM < 0 || ws->pondw < 0)
 	{
 		printf("\n");
 		printf("ERROR: negative water storage\n");
@@ -60,18 +60,19 @@ int check_water_balance(wstate_struct* ws, const epvar_struct* epv, const siteco
 	ws->inW = ws->prcp_src + ws->groundwater_src + ws->IRGsrc_W +  ws->FRZsrc_W;
 	
 	/* sum of sinks */
-	ws->outW = ws->soilevap_snk + ws->snowsubl_snk + 
-		ws->canopyevap_snk + ws->trans_snk + ws->pondwevap_snk +
+	ws->outW = ws->soilEvap_snk + ws->snowsubl_snk + ws->groundwater_snk +
+		ws->canopyevap_snk + ws->trans_snk +
 		ws->canopyw_THNsnk +			/* thinning */
 		ws->canopyw_MOWsnk +			/* mowing */
 		ws->canopyw_HRVsnk +			/* harvesting */
 		ws->canopyw_PLGsnk +			/* ploughing */
 		ws->canopyw_GRZsnk +			/* grazing */
 		ws->runoff_snk     +			/* soil-water submodel */
-		ws->deeppercolation_snk;		/* soil-water submodel .*/
+		ws->deeppercolation_snk +		/* soil-water submodel .*/
+		ws->pondEvap_snk;
 
 	/* sum of current storage */
-	ws->storeW = ws->soilw_SUM + ws->pond_water + ws->snoww + ws->canopyw;
+	ws->storeW = ws->soilw_SUM + ws->pondw + ws->snoww + ws->canopyw;
 	
 	/* calculate current balance */
 	balance = ws->inW - ws->outW - ws->storeW;
@@ -149,7 +150,6 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		if (cs->litr1c[layer] < 0.0 || cs->litr2c[layer] < 0.0 || cs->litr3c[layer] < 0.0 || cs-> litr4c[layer] < 0.0  || 
 			cs->cwdc[layer] < 0.0)
 		{	
-			printf("\n");
 			printf("ERROR: negative litter carbon stock\n");
 			errorCode=1;
 		}
@@ -157,7 +157,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		cs->litr2c_total += cs->litr2c[layer];
 		cs->litr3c_total += cs->litr3c[layer];
 		cs->litr4c_total += cs->litr4c[layer];
-		cs->litrC[layer]     = cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
+		cs->litrC[layer] = cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
 		cs->cwdc_total   += cs->cwdc[layer];
 	}
 
@@ -174,7 +174,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	/* DAILY CHECK ON CARBON BALANCE */
 	
 	/* sum of sources: photosynthesis and managenet */
-	cs->inC = cs->psnsun_src + cs->psnshade_src + cs->PLTsrc_C + cs->GRZsrc_C  + cs->FRZsrc_C ;
+	cs->inC = cs->psnsun_src + cs->psnshade_src + cs->PLTsrc_C + cs->GRZsrc_C  + cs->FRZsrc_C;
 	
 	/* sum of sinks: respiration, fire and management */
 	cs->outC = cs->leaf_mr_snk      + cs->leaf_gr_snk      + cs->froot_mr_snk     + cs->froot_gr_snk + 

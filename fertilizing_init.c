@@ -3,7 +3,7 @@ fertilizing_init.c
 read fertilizing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -143,7 +143,7 @@ int fertilizing_init(file init, const control_struct* ctrl, fertilizing_struct* 
 			n_FRZparam = 16;
 
 			mgmread = fscanf(FRZ_file.ptr, "%c%d%c%d%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%*[^\n]",
-				             &tempvar,&p2,&tempvar,&p3,&ferttype,&p4,&p5,&p6,&p7,&p8,&p9,&p10,&p11,&p12,&p13,&p14);
+				             &tempvar,&p2,&tempvar,&p3,(char*)&ferttype,&p4,&p5,&p6,&p7,&p8,&p9,&p10,&p11,&p12,&p13,&p14);
 			
 			if (mgmread != n_FRZparam)
 			{
@@ -226,6 +226,9 @@ int fertilizing_init(file init, const control_struct* ctrl, fertilizing_struct* 
 		/* close FERTILIZING file  and free temporary memory */
 		if (okFILE) fclose (FRZ_file.ptr);
 
+		free(FRZyear_array);	
+		free(FRZmonth_array);	
+		free(FRZday_array);	
 		free(FRZdepth_array);					
 		free(fertilizer_array);				
 		free(DM_array);				          

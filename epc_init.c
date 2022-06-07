@@ -3,7 +3,7 @@ epc_init.c
 read epc file for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -36,14 +36,25 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	double t3 = 0;
 	double t4,r1;
 	double sum;
-	int i, phenphase, scanflag;
-	file epc_file, wpm_file, msc_file, sgs_file, egs_file; 	
+	int phenphase, scanflag;
+	file epc_file, WPM_file, MSC_file, SGS_file, EGS_file; 	
 	char key[] = "EPC_FILE";
 	char keyword[STRINGSIZE];
 	char header[STRINGSIZE];
 
-	
+	int p1;
+	double p2;
+
+	int* OPTINyear_array;							
+	int dataread;
+	int ndata = 0;
+
+
 	ctrl->planttypeName = (char*) malloc(STRINGSIZE * sizeof(char));
+			
+	/* allocate space for the optional input temporal variables */
+	OPTINyear_array    = (int*) malloc(ctrl->simyears*sizeof(int));  
+	
 	
 	/********************************************************************
 	**                                                                 **
@@ -146,6 +157,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	/* PLANT FUNCTIONING PARAMETERS */
 	/****************************************************************************************************************/
 	
+	/*-------------------------------------------------------------*/
 	/* using varying onday values (in transient or in normal run)*/
 	if (!errorCode && scan_value(epc_file, &epc->onday, 'i'))
 	{
@@ -153,59 +165,72 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		errorCode=20906;
 	}
 
-
 	if (ctrl->spinup == 0) 
-		strcpy(sgs_file.name,  "onday_normal.txt");
+		strcpy(SGS_file.name,  "onday_normal.txt");
 	else
 	{
 		if (ctrl->spinup == 1) 
-			strcpy(sgs_file.name,  "onday_spinup.txt");
+			strcpy(SGS_file.name,  "onday_spinup.txt");
 		else
-			strcpy(sgs_file.name,  "onday_transient.txt");
+			strcpy(SGS_file.name,  "onday_transient.txt");
 	}
 	
 	/* SGS flag: constans or varying SGS from file */
-	if (!errorCode && !file_open(&sgs_file,'j',1)) 
+	if (!errorCode && !file_open(&SGS_file,'j',1)) 
 		ctrl->varSGS_flag = 1;
 	else
 		ctrl->varSGS_flag = 0;
 
+	if (ctrl->varSGS_flag == 1 && epc->onday ==  DATA_GAP)
+	{
+		printf("ERROR in using annual varying onday data, if user-defined bareground simulation is defined (onday=-9999), epc_init()\n");
+		errorCode=20906;
+	}
 
 	if (!errorCode && ctrl->varSGS_flag) 
 	{
 		/* allocate space for the annual SGS array */
-		epc->sgs_array = (double*) malloc(ctrl->simyears * sizeof(double));
-		if (!epc->sgs_array)
+		epc->SGS_array = (double*) malloc(ctrl->simyears * sizeof(double));
+		if (!epc->SGS_array)
 		{
 			printf("ERROR allocating for annual SGS array, epc_init()\n");
 			errorCode=20906;
 		}
-
-		/* read year and SGS for each simyear */
-		for (i=0 ; !errorCode && i<ctrl->simyears ; i++)
+	
+		/* initialization with default value */
+		for (ndata = 0; ndata < ctrl->simyears; ndata++) epc->SGS_array[ndata] = epc->onday;
+		
+		ndata=0;
+		while (!errorCode && !(dataread = scan_array (SGS_file, &p1, 'i', 0, 0)))
 		{
-			if (fscanf(sgs_file.ptr,"%*i%lf", &(epc->sgs_array[i]))==EOF)
+			dataread = fscanf(SGS_file.ptr, "%lf%*[^\n]", &p2);
+				
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
-				printf("ERROR reading annual SGS array, epc_init()\n");
-				printf("Note: file must contain a pair of values for each\n");
-				printf("simyear: year and SGS.\n");
-				errorCode=20906;
-			}
-			if (epc->sgs_array[i] < 0.0 && epc->sgs_array[i] != DATA_GAP)
-			{
-				printf("ERROR in epc_init(): sgs must be positive\n");
-				errorCode=20906;
+				OPTINyear_array[ndata] = p1;
+				epc->SGS_array[ndata]  = p2;
+
+				if (epc->SGS_array[ndata] < 0.0 && epc->SGS_array[ndata] != DATA_GAP)
+				{
+					printf("ERROR in epc_init(): sgs must be positive\n");
+					errorCode=20906;
+				}
+			
+				ndata += 1;
 			}
 		}
-		fclose(sgs_file.ptr);
+		/* read year and SGS for each simday in each simyear */
+		
+		fclose(SGS_file.ptr);
 	}	
 	else /* if no changing data constant EPC parameter are used */
 	{
-		epc->sgs_array = 0;
+		epc->SGS_array = 0;
 	}	
 
-
+	/*-------------------------------------------------------------*/
 	/* using varying offday values (in transient or in normal run)*/
+
 	if (!errorCode && scan_value(epc_file, &epc->offday, 'i'))
 	{
 		printf("ERROR reading offday, epc_init()\n");
@@ -213,56 +238,70 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 	if (ctrl->spinup == 0) 
-		strcpy(egs_file.name, "offday_normal.txt");
+		strcpy(EGS_file.name, "offday_normal.txt");
 	else
 	{
 		if (ctrl->spinup == 1) 
-			strcpy(egs_file.name, "offday_spinup.txt");
+			strcpy(EGS_file.name, "offday_spinup.txt");
 		else
-			strcpy(egs_file.name, "offday_transient.txt");
+			strcpy(EGS_file.name, "offday_transient.txt");
 	}
 	
-	/* SGS flag: constans or varying SGS from file */
-	if (!errorCode && !file_open(&egs_file,'j',1)) 
+	/* EGS flag: constans or varying EGS from file */
+	if (!errorCode && !file_open(&EGS_file,'j',1)) 
 		ctrl->varEGS_flag = 1;
 	else
 		ctrl->varEGS_flag = 0;
 
 
+	if (ctrl->varEGS_flag == 1 && epc->offday ==  DATA_GAP)
+	{
+		printf("ERROR in using annual varying offday data, if user-defined bareground simulation is defined (offday=-9999), epc_init()\n");
+		errorCode=20906;
+	}
+
 	if (!errorCode && ctrl->varEGS_flag) 
-	{	
+	{
 		/* allocate space for the annual EGS array */
-		epc->egs_array = (double*) malloc(ctrl->simyears * sizeof(double));
-		if (!epc->egs_array)
+		epc->EGS_array = (double*) malloc(ctrl->simyears * sizeof(double));
+		if (!epc->EGS_array)
 		{
 			printf("ERROR allocating for annual EGS array, epc_init()\n");
 			errorCode=20907;
 		}
-
-		/* read year and EGS for each simyear */
-		for (i=0 ; !errorCode && i<ctrl->simyears ; i++)
+	
+		/* initialization with default value */
+		for (ndata = 0; ndata < ctrl->simyears; ndata++) epc->EGS_array[ndata] = epc->offday;
+		
+		ndata=0;
+		while (!errorCode && !(dataread = scan_array (EGS_file, &p1, 'i', 0, 0)))
 		{
-			if (fscanf(egs_file.ptr,"%*i%lf", &(epc->egs_array[i]))==EOF)
+			dataread = fscanf(EGS_file.ptr, "%lf%*[^\n]", &p2);
+				
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
-				printf("ERROR reading annual EGS array, epc_init()\n");
-				printf("Note: file must contain a pair of values for each\n");
-				printf("simyear: year and EGS.\n");
-				errorCode=20907;
-			}
-			if (epc->egs_array[i] < 0.0 && epc->egs_array[i] != DATA_GAP)
-			{
-				printf("ERROR in epc_init(): egs must be positive\n");
-				errorCode=20907;
+				OPTINyear_array[ndata] = p1;
+				epc->EGS_array[ndata]  = p2;
+
+				if (epc->EGS_array[ndata] < 0.0 && epc->EGS_array[ndata] != DATA_GAP)
+				{
+					printf("ERROR in epc_init(): EGS must be positive\n");
+					errorCode=20907;
+				}
+			
+				ndata += 1;
 			}
 		}
-		fclose(egs_file.ptr);
+		/* read year and EGS for each simday in each simyear */
+		
+		fclose(EGS_file.ptr);
 	}	
 	else /* if no changing data constant EPC parameter are used */
 	{
- 		epc->egs_array = 0;
+		epc->EGS_array = 0;
 	}	
-
 	
+	/*-------------------------------------------------------------*/
 	/* transfer growth and litterfall period */
 	if (!errorCode && scan_value(epc_file, &epc->transfer_pdays, 'd'))
 	{
@@ -274,7 +313,8 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		printf("ERROR reading litfall_pdays, epc_init()\n");
 		errorCode=20909;
 	}
-
+	
+	/*-------------------------------------------------------------*/
 	/* base temperature for calculation GDD / heatsum  */
 	if (!errorCode && scan_value(epc_file, &epc->base_temp, 'd'))
 	{
@@ -282,6 +322,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		errorCode=20910;
 	}
 
+	/*-------------------------------------------------------------*/
 	/* minimum/optimal/maximum temperature for growth displayed on current day (-9999: no T-dependence of allocation) */
 	if (!errorCode && scan_value(epc_file, &epc->pnow_minT, 'd'))
 	{
@@ -324,6 +365,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		}
 	}
 
+	/*-------------------------------------------------------------*/
 	/* minimum/optimal/maximum temperature for C-assimilation displayed on current day (-9999: no limitation) */
 	
 	if (!errorCode && scan_value(epc_file, &epc->assim_minT, 'd'))
@@ -366,7 +408,8 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 				errorCode=2091202;
 		}
 	}
-	
+
+	/*-------------------------------------------------------------*/
 	/*  leaf turnover fraction */
 	if (!errorCode && scan_value(epc_file, &epc->nonwoody_turnover, 'd'))
 	{
@@ -393,63 +436,71 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 	if (!errorCode) epc->daily_fire_turnover = t1/nDAYS_OF_YEAR;
 
+	/*-------------------------------------------------------------*/
+	/* whole plant mortality */
+
 	if (!errorCode && scan_value(epc_file, &epc->wholeplant_mortality, 'd'))
 	{
 		printf("ERROR reading whole-plant mortality, epc_init()\n");
 		errorCode=20916;
 	}
 
-	
-	
 	/* using varying whole plant mortality values */
 	if (ctrl->spinup == 0)
-		strcpy(wpm_file.name, "mortality_normal.txt");
+		strcpy(WPM_file.name, "mortality_normal.txt");
 	else
 	{
 		if (ctrl->spinup == 1) 
-			strcpy(wpm_file.name, "mortality_spinup.txt");
+			strcpy(WPM_file.name, "mortality_spinup.txt");
 		else
-			strcpy(wpm_file.name, "mortality_transient.txt");
+			strcpy(WPM_file.name, "mortality_transient.txt");
 	}
-	
-	/* WPM flag: constans or varying WPM from file */
-	if (!errorCode && !file_open(&wpm_file,'j',1)) 
+
+	/* WPM flag: constans or varying EGS from file */
+	if (!errorCode && !file_open(&WPM_file,'j',1)) 
 		ctrl->varWPM_flag = 1;
 	else
 		ctrl->varWPM_flag = 0;
-
-
+	
 	if (!errorCode && ctrl->varWPM_flag) 
 	{
 		/* allocate space for the annual WPM array */
-		epc->wpm_array = (double*) malloc(ctrl->simyears * sizeof(double));
-		if (!epc->wpm_array)
+		epc->WPM_array = (double*) malloc(ctrl->simyears * sizeof(double));
+		if (!epc->WPM_array)
 		{
 			printf("ERROR allocating for annual WPM array, epc_init()\n");
-			errorCode=2091601;
+			errorCode=20916;
 		}
-
-		/* read year and WPM for each simyear */
-		for (i=0 ; !errorCode && i<ctrl->simyears ; i++)
+	
+		/* initialization with default value */
+		for (ndata = 0; ndata < ctrl->simyears; ndata++) epc->WPM_array[ndata] = epc->wholeplant_mortality;
+		
+		ndata=0;
+		while (!errorCode && !(dataread = scan_array (WPM_file, &p1, 'i', 0, 0)))
 		{
-			if (fscanf(wpm_file.ptr,"%*i%lf", &(epc->wpm_array[i]))==EOF)
+			dataread = fscanf(WPM_file.ptr, "%lf%*[^\n]", &p2);
+				
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
-				printf("ERROR reading annual WPM array, epc_init()\n");
-				printf("Note: file must contain a pair of values for each\n");
-				printf("simyear: year and WPM.\n");
-				errorCode=2091602;
-			}
-			if (epc->wpm_array[i] < 0.0)
-			{
-				printf("ERROR in epc_init(): wpm must be positive\n");
-				errorCode=2091603;
+				OPTINyear_array[ndata] = p1;
+				epc->WPM_array[ndata]  = p2;
+
+				if (epc->WPM_array[ndata] < 0.0 && epc->WPM_array[ndata] != DATA_GAP)
+				{
+					printf("ERROR in epc_init(): WPM must be positive\n");
+					errorCode=20916;
+				}
+			
+				ndata += 1;
 			}
 		}
-		fclose(wpm_file.ptr);
+		/* read year and WPM for each simday in each simyear */
+		
+		fclose(WPM_file.ptr);
 	}	
 	else /* if no changing data constant EPC parameter are used */
-	{		
-		epc->wpm_array = 0;
+	{
+		epc->WPM_array = 0;
 	}	
 	
 
@@ -850,6 +901,8 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 	/* ---------------------------------------------- */
+	/* radiation and LAI-parameters */
+
 	if (!errorCode && scan_value(epc_file, &epc->int_coef, 'd'))
 	{
 		printf("ERROR reading canopy water int coef, epc_init()\n");
@@ -902,65 +955,75 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		printf("ERROR reading PeP N fraction, epc_init()\n");
 		errorCode=20931;
 	}
-	if (!errorCode && scan_value(epc_file, &epc->gl_smax, 'd'))
+	
+
+	/* ------------------------------------------------------ */
+	/* maximum stomatal conductance (optional annual varying value) */
+
+	if (!errorCode && scan_value(epc_file, &epc->gl_sMAX, 'd'))
 	{
-		printf("ERROR reading gl_smax, epc_init()\n");
+		printf("ERROR reading gl_sMAX, epc_init()\n");
 		errorCode=20932;
 	}
 
-	/* ------------------------------------------------------ */
-	/* using varying maximum stomatal conductance values */
-
 	if (ctrl->spinup == 0)
-		strcpy(msc_file.name, "conductance_normal.txt");
+		strcpy(MSC_file.name, "conductance_normal.txt");
 	else
 	{
 		if (ctrl->spinup == 1) 
-			strcpy(msc_file.name, "conductance_spinup.txt");
+			strcpy(MSC_file.name, "conductance_spinup.txt");
 		else
-			strcpy(msc_file.name, "conductance_transient.txt");
+			strcpy(MSC_file.name, "conductance_transient.txt");
 	}
 	
 	/* MSC flag: constans or varying MSC from file */
-	if (!errorCode && !file_open(&msc_file,'j',1)) 
+	if (!errorCode && !file_open(&MSC_file,'j',1)) 
 		ctrl->varMSC_flag = 1;
 	else
 		ctrl->varMSC_flag = 0;
 
-
-
 	if (!errorCode && ctrl->varMSC_flag) 
 	{
 		/* allocate space for the annual MSC array */
-		epc->msc_array = (double*) malloc(ctrl->simyears * sizeof(double));
-		if (!epc->msc_array)
+		epc->MSC_array = (double*) malloc(ctrl->simyears * sizeof(double));
+		if (!epc->MSC_array)
 		{
 			printf("ERROR allocating for annual MSC array, epc_init()\n");
-			errorCode=2093201;
+			errorCode=20932;
 		}
-
-		/* read year and co2 concentration for each simyear */
-		for (i=0 ; !errorCode && i<ctrl->simyears ; i++)
+	
+		/* initialization with default value */
+		for (ndata = 0; ndata < ctrl->simyears; ndata++) epc->MSC_array[ndata] = epc->gl_sMAX;
+		
+		ndata=0;
+		while (!errorCode && !(dataread = scan_array (MSC_file, &p1, 'i', 0, 0)))
 		{
-			if (fscanf(msc_file.ptr,"%*i%lf", &(epc->msc_array[i]))==EOF)
+			dataread = fscanf(MSC_file.ptr, "%lf%*[^\n]", &p2);
+				
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
-				printf("ERROR reading annual MSC array, epc_init()\n");
-				printf("Note: file must contain a pair of values for each\n");
-				printf("simyear: year and MSC.\n");
-				errorCode=2093202;
-			}
-			if (epc->msc_array[i] < 0.0)
-			{
-				printf("ERROR in epc_init(): msc must be positive\n");
-				errorCode=2093203;
+				OPTINyear_array[ndata] = p1;
+				epc->MSC_array[ndata]  = p2;
+
+				if (epc->MSC_array[ndata] < 0.0 && epc->MSC_array[ndata] != DATA_GAP)
+				{
+					printf("ERROR in epc_init(): MSC must be positive\n");
+					errorCode=20932;
+				}
+			
+				ndata += 1;
 			}
 		}
-		fclose(msc_file.ptr);
+		/* read year and MSC for each simday in each simyear */
+		
+		fclose(MSC_file.ptr);
 	}	
 	else /* if no changing data constant EPC parameter are used */
 	{
-		epc->msc_array = 0;
+		epc->MSC_array = 0;
 	}	
+	
+
 	
 	/* ------------------------------------------------------ */
 	if (!errorCode && scan_value(epc_file, &epc->gl_c, 'd'))
@@ -1702,7 +1765,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 
 	
 
-	
+	free(OPTINyear_array);		
 
 	/* -------------------------------------------*/
 	if (dofilecloseEPC) fclose(epc_file.ptr);

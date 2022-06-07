@@ -2,7 +2,7 @@
 transfer one day of meteorological data from metarr struct to metv struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -21,7 +21,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int daymet(const metarr_struct* metarr, const epconst_struct* epc, const siteconst_struct* sitec, metvar_struct* metv, double* tair_annavg_ptr, double snoww, int metday)
+int daymet(const control_struct* ctrl,const metarr_struct* metarr, const epconst_struct* epc, const siteconst_struct* sitec, 
+	       metvar_struct* metv, double* tair_annavg_ptr, double snoww)
 {
 	/* generates daily meteorological variables from the metarray struct */
 	double tmax,tmin,tavg,tavg11_ra,tavg30_ra,tavg10_ra,tday,tdiff, tsoil_top;
@@ -29,24 +30,25 @@ int daymet(const metarr_struct* metarr, const epconst_struct* epc, const sitecon
 
 
 	/* convert prcp from cm --> kg/m2 */
-	metv->prcp = metarr->prcp[metday] * 10.0;
+	metv->prcp = metarr->prcp[ctrl->metday] * 10.0;
+	
 
 	/* air temperature calculations (all temperatures deg C) */
-	metv->tmax			= tmax    = metarr->tmax[metday];
-	metv->tmin			= tmin    = metarr->tmin[metday];
-	metv->tavg		    = tavg  = metarr->tavg[metday];
+	metv->tmax			= tmax    = metarr->tmax[ctrl->metday];
+	metv->tmin			= tmin    = metarr->tmin[ctrl->metday];
+	metv->tavg		    = tavg  = metarr->tavg[ctrl->metday];
 
-	metv->tday			= tday	= metarr->tday[metday];
+	metv->tday			= tday	= metarr->tday[ctrl->metday];
 
 	metv->tnight		= (tday + tmin) / 2.0;
-	metv->tavg11_ra	= tavg11_ra = metarr->tavg11_ra[metday];
-	metv->tavg30_ra	= tavg30_ra = metarr->tavg30_ra[metday];
-	metv->tavg10_ra	= tavg10_ra = metarr->tavg10_ra[metday];
+	metv->tavg11_ra	= tavg11_ra = metarr->tavg11_ra[ctrl->metday];
+	metv->tavg30_ra	= tavg30_ra = metarr->tavg30_ra[ctrl->metday];
+	metv->tavg10_ra	= tavg10_ra = metarr->tavg10_ra[ctrl->metday];
 
-	metv->F_temprad     = metarr->F_temprad[metday];
-	metv->F_temprad_ra  = metarr->F_temprad_ra[metday];
+	metv->F_temprad     = metarr->F_temprad[ctrl->metday];
+	metv->F_temprad_ra  = metarr->F_temprad_ra[ctrl->metday];
 
-	if (!metday)
+	if (!ctrl->metday)
 	{
 		metv->tACCLIM            = metv->tday;
 		metv->tACCLIMpre         = metv->tday;
@@ -69,7 +71,7 @@ int daymet(const metarr_struct* metarr, const epconst_struct* epc, const sitecon
 	For days 1-10, a 1-10 day running weighted average is used instead.The tail of the running average is weighted linearly from 1 to 11.
 	There are no corrections for snowpack or vegetation cover.	*/
 
-	if (metday < 1)
+	if (ctrl->metday < 1)
 	{
 		tsoil_top = metv->tavg11_ra;
 		/* soil temperature correction using difference from annual average tair */
@@ -97,16 +99,16 @@ int daymet(const metarr_struct* metarr, const epconst_struct* epc, const sitecon
 	/* **********************************************************************************/
 	
 	/* daylight average vapor pressure deficit (Pa) */
-	metv->vpd = metarr->vpd[metday];
+	metv->vpd = metarr->vpd[ctrl->metday];
 
 	/* daylight average	shortwave flux density (W/m2) */
-	metv->swavgfd =  metarr->swavgfd[metday];
+	metv->swavgfd =  metarr->swavgfd[ctrl->metday];
 	
 	/* PAR (W/m2) */
-	metv->par = metarr->par[metday];
+	metv->par = metarr->par[ctrl->metday];
 
 	/* daylength (s) */
-	metv->dayl = metarr->dayl[metday];
+	metv->dayl = metarr->dayl[ctrl->metday];
 
 
 	return (errorCode);

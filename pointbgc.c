@@ -4,7 +4,7 @@ front-end to BIOME-BGC for single-point, single-biome simulations
 Uses BBGC MuSo v6 library function
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -71,8 +71,6 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.spinyears = 0;							
 	bgcin.ctrl.month = 1;								
 	bgcin.ctrl.day = 1;									
-	bgcin.ctrl.CNerror = 0;
-	bgcin.ctrl.gwd_act=DATA_GAP;
 	bgcin.ctrl.limitevap_flag = 0;
 	bgcin.ctrl.limittransp_flag = 0;
 	bgcin.ctrl.limitMR_flag = 0;
@@ -88,8 +86,13 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.prephen1_flag = 0;         
 	bgcin.ctrl.prephen2_flag = 0;          
 	bgcin.ctrl.bareground_flag = 0;
+	bgcin.ctrl.GW_flag = 0;
+	bgcin.ctrl.oldSOIfile_flag = 0;
 	bgcin.ctrl.vegper_flag = 0;
 	bgcin.ctrl.south_shift = 0;
+	bgcin.ctrl.NaddSPINUP_flag = 0;
+	bgcin.ctrl.soiltype = 0;
+
 
 	/******************************
 	**                           **
@@ -102,7 +105,7 @@ int main(int argc, char *argv[])
 	{
         if(!strcmp(argv[1],"-v"))
 		{
-           	printf("Model version: Biome-BGCMuSo6.1 OR Biome-BGCMAg2.1\n");
+           	printf("Model version: Biome-BGCMuSo6.2alfa (Biome-BGCMAg2.2alfa)\n");
 			exit(0);
         }
     }
@@ -190,7 +193,7 @@ int main(int argc, char *argv[])
 	}
 	
 	/* read soil properties */
-	errorCode = sprop_init(init, &bgcin.sprop, &bgcin.ctrl);
+	errorCode = sprop_init(init,  &bgcin.sitec, &bgcin.sprop, &bgcin.ctrl);
 	if (errorCode)
 	{
 		printf("ERROR in call to sprop_init() from pointbgc.c... Exiting\n");
@@ -208,7 +211,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* read management file with management information */
-	errorCode = mgm_init(init, &bgcin.ctrl, &bgcin.epc, &bgcin.FRZ, &bgcin.GRZ, &bgcin.HRV, &bgcin.MOW, &bgcin.PLT, &bgcin.PLG, &bgcin.THN, &bgcin.IRG, &output);
+	errorCode = mgm_init(init, &bgcin.ctrl, &bgcin.epc, &bgcin.FRZ, &bgcin.GRZ, &bgcin.HRV, &bgcin.MOW, &bgcin.PLT, &bgcin.PLG, &bgcin.THN, &bgcin.IRG);
 	if (errorCode)
 	{
 		printf("ERROR in call to mgm_init() from pointbgc.c... Exiting\n");
@@ -263,7 +266,7 @@ int main(int argc, char *argv[])
 
 	/* read the output control information */
 	if ((bgcin.co2.varco2 == 1 || bgcin.ndep.varndep == 1) && bgcin.ctrl.spinup == 1) transient = 1;
-	errorCode = output_init(init, transient, &output);
+	errorCode = output_init(init, transient, &bgcin.HRV, &output);
 	if (errorCode)
 	{
 		printf("ERROR in call to output_init() from pointbgc.c... Exiting\n");
@@ -296,7 +299,7 @@ int main(int argc, char *argv[])
 	fclose(point.metf.ptr);
 
 	/* read groundwater depth if it is available */
-	errorCode = groundwater_init(&bgcin.sitec, &bgcin.ctrl);
+	errorCode = groundwater_init(&bgcin.gws, &bgcin.ctrl);
 	if (errorCode)
 	{
 		printf("ERROR in call to groundwater_init() from pointbgc.c... Exiting\n");
@@ -338,6 +341,7 @@ int main(int argc, char *argv[])
 	bgcout.annoutT = output.annoutT;
 
 	bgcout.log_file = output.log_file;
+	bgcout.econout_file = output.econout_file;
 	
 	
 	
@@ -522,16 +526,23 @@ int main(int argc, char *argv[])
 		free(bgcin.IRG.IRGday_array); 
 		free(bgcin.IRG.IRGquantity_array); 
 	}
+
+	if (bgcin.gws.GWD_num)
+	{
+		free(bgcin.gws.GWyear_array);	
+		free(bgcin.gws.GWmonth_array);	
+		free(bgcin.gws.GWday_array);	
+        free(bgcin.gws.GWdepth_array);	
+	}
 	if (bgcin.co2.varco2) free(bgcin.co2.co2ppm_array);
 	if (bgcin.co2.varco2) free(bgcin.co2.co2yrs_array);
 	if (bgcin.ndep.varndep) free(bgcin.ndep.Ndep_array);
 	if (bgcin.ndep.varndep) free(bgcin.ndep.Nyrs_array);
 
-	if (bgcin.ctrl.varSGS_flag) free(bgcin.epc.sgs_array);
-	if (bgcin.ctrl.varEGS_flag) free(bgcin.epc.egs_array);
-	if (bgcin.ctrl.varWPM_flag) free(bgcin.epc.wpm_array);
-	if (bgcin.ctrl.varMSC_flag) free(bgcin.epc.msc_array);
-	if (bgcin.ctrl.GWD_flag)    free(bgcin.sitec.gwd_array);
+	if (bgcin.ctrl.varSGS_flag) free(bgcin.epc.SGS_array);
+	if (bgcin.ctrl.varEGS_flag) free(bgcin.epc.EGS_array);
+	if (bgcin.ctrl.varWPM_flag) free(bgcin.epc.WPM_array);
+	if (bgcin.ctrl.varMSC_flag) free(bgcin.epc.MSC_array);
 
 	if (output.ndayout != 0) free(output.daycodes);
 	if (output.ndayout != 0) free(output.daynames);
@@ -563,6 +574,7 @@ int main(int argc, char *argv[])
 	}
 
 	fclose(output.log_file.ptr);
+	if (bgcin.HRV.HRV_num) fclose(output.econout_file.ptr);
 
 	return (errorCode); 
 

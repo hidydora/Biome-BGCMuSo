@@ -3,7 +3,7 @@ ploughing.c
 do ploughing  - decrease the plant material (leafc, leafn, canopy water)
 
  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -116,7 +116,7 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 			metv->tsoil[layer] = tsoil_SUM;
 
 			ws->soilw[layer]   = soilw_SUM * sitec->soillayer_thickness[layer] / sitec->soillayer_depth[PLGlayer-1];
-			epv->vwc[layer]    = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
+			epv->VWC[layer]    = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 
 			sprop->sand[layer] = sand_SUM/PLGdepth;
 			sprop->silt[layer] = silt_SUM/PLGdepth;
@@ -145,6 +145,10 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		/* update TSOIL values */
 		metv->tsoil_surface_pre = metv->tsoil[0];
 		metv->tsoil_surface     = metv->tsoil[0];
+
+
+		/* estimating aboveground litter and cwdc */
+		cs->litrc_above = 0;
 
 
 

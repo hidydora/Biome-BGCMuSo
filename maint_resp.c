@@ -3,7 +3,7 @@ maint_resp.c
 daily maintenance respiration
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -76,7 +76,7 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 		
 		/* leaf, day */
 		exponent = (metv->tday - 20.0) / 10.0;
-		cf->leaf_day_mr = t1 * pow(q10, exponent) * metv->dayl / NSEC_IN_DAY;
+		cf->leaf_day_mr = t1 * pow(q10, exponent) * metv->dayl / nSEC_IN_DAY;
 
 		/* for day respiration, also determine rates of maintenance respiration
 		per unit of projected leaf area in the sunlit and shaded portions of
@@ -91,12 +91,12 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 		dlmr_area_shade = n_area_shade * mrpern * pow(q10, exponent);
 		/* finally, convert from mass to molar units, and from a daily rate to 
 		a rate per second */
-		epv->dlmr_area_sun = dlmr_area_sun/(NSEC_IN_DAY * 12.011e-9);
-		epv->dlmr_area_shade = dlmr_area_shade/(NSEC_IN_DAY * 12.011e-9);
+		epv->dlmr_area_sun = dlmr_area_sun/(nSEC_IN_DAY * 12.011e-9);
+		epv->dlmr_area_shade = dlmr_area_shade/(nSEC_IN_DAY * 12.011e-9);
 		
 		/* leaf, night */
 		exponent = (metv->tnight - 20.0) / 10.0;
-		cf->leaf_night_mr = t1 * pow(q10, exponent) * (NSEC_IN_DAY - metv->dayl) / NSEC_IN_DAY;
+		cf->leaf_night_mr = t1 * pow(q10, exponent) * (nSEC_IN_DAY - metv->dayl) / nSEC_IN_DAY;
 	}
 	else /* no leaves on */
 	{
@@ -182,6 +182,7 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 	
 	/* ********************************************************* */
 	/* 7. acclimation (acc_flag=1 - only respiration is acclimated, acc_flag=3 - respiration and photosynt. are acclimated) */
+	
 	
 	if (epc->resp_acclim_flag)
 	{

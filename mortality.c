@@ -3,7 +3,7 @@ mortality.c
 daily mortality fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -32,7 +32,7 @@ The deadstem material that is not wilted (95%) is sent to CWD pools. CWD that is
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, const phenology_struct* phen, 
+int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, 
 	          epvar_struct* epv, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, int simyr)
 {
 	int errorCode=0;
@@ -43,6 +43,11 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 	/* dead stem and coarse woody biomass combustion proportion */
 	double dscp = 0.2;
 	double cwcp = 0.3;
+	
+	/* estimating aboveground litter and cwdc*/
+	double cwdc_total1, cwdc_total2, litrc_total1, litrc_total2;
+	cwdc_total1=cwdc_total2=litrc_total1=litrc_total2=0;
+
 	/******************************************************************/
 	/* I. Non-fire mortality: these fluxes all enter litter or CWD pools */
 	/******************************************************************/
@@ -52,7 +57,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 
 	if (ctrl->varWPM_flag)
 	{
-		mort = epc->wpm_array[simyr]/nDAYS_OF_YEAR;
+		mort = epc->WPM_array[simyr]/nDAYS_OF_YEAR;
 	}
 	else
 	{
@@ -65,6 +70,8 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 
 	if (mort)
 	{
+
+
 		/* in order to save the C:N ratio: N-fluxes are calculated from C-fluxes using C:N ratio parameters */
 		if (epc->leaf_cn)
 		{
@@ -152,11 +159,11 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 
 
 		/* woody biomass */
-		if (epc->deadwood_cn)
+		if (epc->livewood_cn)
 		{
 			/* stem */
 			cf->m_livestemc_to_cwdc    = mort * cs->livestemc;	
-			nf->m_livestemn_to_cwdn    = cf->m_livestemc_to_cwdc  / epc->deadwood_cn;	
+			nf->m_livestemn_to_cwdn    = cf->m_livestemc_to_cwdc  / epc->livewood_cn;	
 			nf->m_livestemn_to_litr1n  = (mort * ns->livestemn) - nf->m_livestemn_to_cwdn;
 			
 			cf->m_livestemc_storage_to_litr1c	= mort * cs->livestemc_storage;
@@ -167,7 +174,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 
 			/* root */
 			cf->m_livecrootc_to_cwdc   = mort * cs->livecrootc;   
-			nf->m_livecrootn_to_cwdn   = cf->m_livecrootc_to_cwdc / epc->deadwood_cn;  
+			nf->m_livecrootn_to_cwdn   = cf->m_livecrootc_to_cwdc / epc->livewood_cn;  
 			nf->m_livecrootn_to_litr1n = (mort * ns->livecrootn) - nf->m_livecrootn_to_cwdn;
 
 			cf->m_livecrootc_storage_to_litr1c  = mort * cs->livecrootc_storage;
@@ -176,7 +183,9 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 			nf->m_livecrootn_storage_to_litr1n  = cf->m_livecrootc_storage_to_litr1c  / epc->livewood_cn;
 			nf->m_livecrootn_transfer_to_litr1n = cf->m_livecrootc_transfer_to_litr1c / epc->livewood_cn;
 			
-
+		}
+		if (epc->deadwood_cn)
+		{
 			/* deadwood */
 			cf->m_deadstemc_to_cwdc    = (mort + (1.0-dscp)*epc->daily_fire_turnover) * cs->deadstemc;	 
 			cf->m_deadcrootc_to_cwdc   = (mort + (1.0-dscp)*epc->daily_fire_turnover) * cs->deadcrootc;   
@@ -215,7 +224,6 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		propLAYER0 = sitec->soillayer_thickness[0]/sitec->soillayer_depth[2];
 		propLAYER1 = sitec->soillayer_thickness[1]/sitec->soillayer_depth[2];
 		propLAYER2 = sitec->soillayer_thickness[2]/sitec->soillayer_depth[2];
-
 
 
 		cs->litr1c[0]   += (cf->m_leafc_to_litr1c     + cf->m_fruitc_to_litr1c    + cf->m_softstemc_to_litr1c) * propLAYER0;
@@ -354,6 +362,8 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		ns->deadcrootn_transfer -= nf->m_deadcrootn_transfer_to_litr1n;
 			
 		ns->retransn       -= nf->m_retransn_to_litr1n;
+
+
 	
 		/* 3.3 BELOWGROUND BIOMASS  - DIVIDED BETWEEN THE DIFFERENT SOIL LAYERS in multilayer soil  */
 	
@@ -400,8 +410,13 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 			}
 		}
 		
+		/* estimating aboveground litter and cwdc */
+		cs->cwdc_above += cf->m_livestemc_to_cwdc + cf->m_deadstemc_to_cwdc;
+		cs->litrc_above += cf->m_leafc_to_litr1c            + cf->m_fruitc_to_litr1c           + cf->m_softstemc_to_litr1c +
+		                   cf->m_leafc_storage_to_litr1c    + cf->m_fruitc_storage_to_litr1c   + cf->m_softstemc_storage_to_litr1c +
+						   cf->m_leafc_transfer_to_litr1c   + cf->m_fruitc_transfer_to_litr1c  + cf->m_softstemc_transfer_to_litr1c;
 
-		}
+	}
 
 
 	
@@ -409,11 +424,18 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 	/* II. Fire mortality: these fluxes all enter atmospheric sinks */
 	/************************************************************/
 
-	
+
 	mort = epc->daily_fire_turnover;
 	
 	if (mort)
 	{
+		/* +: estimating aboveground cwdc: calculation of cwdc_total1 (before mortality decreased value) -> ratio */
+		for (layer = 0; layer < N_SOILLAYERS; layer++) 
+		{
+			cwdc_total1 += cs->cwdc[layer];
+			litrc_total1 += cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
+		}
+		
 		/* 1. Daily fluxes due to mortality */
 
 		/* 1.1 non-woody pools */
@@ -730,6 +752,15 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 			ns->FIREsnk_N += nf->m_litr1n_to_fire[layer]  + nf->m_litr2n_to_fire[layer]  + nf->m_litr3n_to_fire[layer]  + nf->m_litr4n_to_fire[layer]  + nf->m_cwdn_to_fire[layer] ;
 	
 		}
+
+		/* +: estimating aboveground cwdc: calculation of cwdc_total2 (after mortality decreased value) -> ratio */
+		for (layer = 0; layer < N_SOILLAYERS; layer++) 
+		{
+			cwdc_total2 += cs->cwdc[layer];
+			litrc_total2 += cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
+		}
+		if (cwdc_total1 > 0) cs->cwdc_above *= cwdc_total2/cwdc_total1;
+		if (litrc_total1 > 0) cs->litrc_above *= litrc_total2/litrc_total1;
 	}
 	
 	return (errorCode);

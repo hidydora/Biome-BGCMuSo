@@ -3,7 +3,7 @@ state_update.c
 Resolve the fluxes in bgc() daily loop to update state variables
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -26,7 +26,7 @@ for complete description of this change.
 #include "bgc_constants.h"
 
 
-int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws)
+int daily_water_state_update(const epconst_struct* epc, const wflux_struct* wf, wstate_struct* ws)
 {
 	/* daily update of the water state variables */
 	 
@@ -47,23 +47,24 @@ int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws)
 	ws->canopyw        -= wf->canopyw_evap;
 	ws->canopyw        -= wf->canopyw_to_soilw;
 
-	/* pond water evaporation */
-	ws->pondwevap_snk  += wf->pondw_evap;
-	ws->pond_water     -= wf->pondw_evap;
-
 	/* snowmelt fluxes */
 	ws->snoww          -= wf->snoww_to_soilw;
 	ws->snowsubl_snk   += wf->snoww_subl;
 	ws->snoww          -= wf->snoww_subl;
 	
 	/* bare soil evaporation */
-	ws->soilevap_snk   += wf->soilw_evap;
+	ws->soilEvap_snk   += wf->soilw_evap;
 	
 	/* transpiration */
-	ws->trans_snk      += wf->soilw_trans_SUM;
+	ws->trans_snk      += wf->soilw_transp_SUM;
 	
 	/* runoff - from the top soil layer (net loss) */
-	ws->runoff_snk	   += wf->prcp_to_runoff;
+	ws->runoff_snk	   += wf->prcp_to_runoff + wf->pondw_to_runoff;;
+
+	/* pond water filling - from precipitiation (only in case of tipping) */
+	if (epc->SHCM_flag == 0 || epc->SHCM_flag == 2) ws->pondw -= wf->pondw_evap;
+
+	ws->pondEvap_snk += wf->pondw_evap; 
 
 	/* deep percolation: percolation of the bottom layer is net loss for the sytem*/
 	ws->deeppercolation_snk += wf->soilw_percolated[N_SOILLAYERS-1] + wf->soilw_diffused[N_SOILLAYERS-1];
@@ -72,6 +73,7 @@ int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws)
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		ws->groundwater_src += wf->soilw_from_GW[layer];
+		ws->groundwater_snk += wf->GW_recharge[layer];
 	}
 
 
@@ -82,7 +84,7 @@ int daily_water_state_update(const wflux_struct* wf, wstate_struct* ws)
 }
 
 int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* epc, control_struct* ctrl, epvar_struct* epv, 
-	                      cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns, int alloc, int woody, int evergreen)
+	                      cflux_struct* cf, nflux_struct* nf, cstate_struct* cs, nstate_struct* ns, int alloc, int evergreen)
 {
 	/* daily update of the carbon state variables */
 	
@@ -90,6 +92,16 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	int layer, pp;
 	double leafc_to_litr, leafn_to_litr, frootc_to_litr, frootn_to_litr, fruitc_to_litr, fruitn_to_litr, softstemc_to_litr, softstemn_to_litr;
 	double propLAYER0, propLAYER1, propLAYER2;
+
+	/* estimating aboveground litter and cwdc*/
+	double cwdc_total1, cwdc_total2, litrc_total1, litrc_total2;
+	cwdc_total1=cwdc_total2=litrc_total1=litrc_total2=0;
+			
+	for (layer = 0; layer < N_SOILLAYERS; layer++) 
+	{
+		cwdc_total1 += cs->cwdc[layer];
+		litrc_total1 += cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
+	}
 	
 	/* C state variables are updated below in the order of the relevant fluxes in the daily model loop */
 	
@@ -99,7 +111,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	
 
 	/* 1. Phenology fluxes */
-	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, cf->leafc_transfer_to_leafc, nf->leafn_transfer_to_leafn, 0)) 
+	if (!errorCode && epc->leaf_cn && CNratio_control(cs, epc->leaf_cn, cs->leafc, ns->leafn, cf->leafc_transfer_to_leafc, nf->leafn_transfer_to_leafn, 0)) 
 	{
 		cs->leafc               += cf->leafc_transfer_to_leafc;
 		cs->leafc_transfer      -= cf->leafc_transfer_to_leafc;
@@ -112,7 +124,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, cf->frootc_transfer_to_frootc, nf->frootn_transfer_to_frootn, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(cs, epc->froot_cn, cs->frootc, ns->frootn, cf->frootc_transfer_to_frootc, nf->frootn_transfer_to_frootn, 0)) 
 	{
 		cs->frootc               += cf->frootc_transfer_to_frootc;
 		cs->frootc_transfer      -= cf->frootc_transfer_to_frootc;
@@ -125,7 +137,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->fruitc_transfer_to_fruitc, nf->fruitn_transfer_to_fruitn, 0)) 
+	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->fruitc_transfer_to_fruitc, nf->fruitn_transfer_to_fruitn, 0)) 
 	{
 		cs->fruitc               += cf->fruitc_transfer_to_fruitc;
 		cs->fruitc_transfer      -= cf->fruitc_transfer_to_fruitc;
@@ -138,7 +150,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->softstemc_transfer_to_softstemc, nf->softstemn_transfer_to_softstemn, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(cs, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->softstemc_transfer_to_softstemc, nf->softstemn_transfer_to_softstemn, 0)) 
 	{
 		cs->softstemc               += cf->softstemc_transfer_to_softstemc;
 		cs->softstemc_transfer      -= cf->softstemc_transfer_to_softstemc;
@@ -151,7 +163,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 	
-	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->livestemc_transfer_to_livestemc, nf->livestemn_transfer_to_livestemn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(cs, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->livestemc_transfer_to_livestemc, nf->livestemn_transfer_to_livestemn, 0)) 
 	{
 		cs->livestemc               += cf->livestemc_transfer_to_livestemc;
 		cs->livestemc_transfer      -= cf->livestemc_transfer_to_livestemc;
@@ -164,7 +176,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->livecrootc_transfer_to_livecrootc, nf->livecrootn_transfer_to_livecrootn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(cs, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->livecrootc_transfer_to_livecrootc, nf->livecrootn_transfer_to_livecrootn, 0)) 
 	{
 		cs->livecrootc               += cf->livecrootc_transfer_to_livecrootc;
 		cs->livecrootc_transfer      -= cf->livecrootc_transfer_to_livecrootc;
@@ -177,7 +189,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->deadstemc_transfer_to_deadstemc, nf->deadstemn_transfer_to_deadstemn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(cs, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->deadstemc_transfer_to_deadstemc, nf->deadstemn_transfer_to_deadstemn, 0)) 
 	{
 		cs->deadstemc               += cf->deadstemc_transfer_to_deadstemc;
 		cs->deadstemc_transfer      -= cf->deadstemc_transfer_to_deadstemc;
@@ -190,7 +202,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->deadcrootc_transfer_to_deadcrootc, nf->deadcrootn_transfer_to_deadcrootn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(cs, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->deadcrootc_transfer_to_deadcrootc, nf->deadcrootn_transfer_to_deadcrootn, 0)) 
 	{
 		cs->deadcrootc               += cf->deadcrootc_transfer_to_deadcrootc;
 		cs->deadcrootc_transfer      -= cf->deadcrootc_transfer_to_deadcrootc;
@@ -215,7 +227,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 
 	
 
-	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, leafc_to_litr, leafn_to_litr, epc->leaflitr_cn)) 
+	if (!errorCode && epc->leaf_cn && CNratio_control(cs, epc->leaf_cn, cs->leafc, ns->leafn, leafc_to_litr, leafn_to_litr, epc->leaflitr_cn)) 
 	{
 		cs->litr1c[0]  += (cf->leafc_to_litr1c) * propLAYER0;
 		cs->litr2c[0]  += (cf->leafc_to_litr2c) * propLAYER0;
@@ -263,7 +275,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	
 	fruitc_to_litr = cf->fruitc_to_litr1c + cf->fruitc_to_litr2c + cf->fruitc_to_litr3c + cf->fruitc_to_litr4c;
 	fruitn_to_litr = nf->fruitn_to_litr1n + nf->fruitn_to_litr2n + nf->fruitn_to_litr3n + nf->fruitn_to_litr4n;
-	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, fruitc_to_litr, fruitn_to_litr, 0)) 
+	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc, ns->fruitn, fruitc_to_litr, fruitn_to_litr, 0)) 
 	{
 		cs->litr1c[0]  += (cf->fruitc_to_litr1c) * propLAYER0;
 		cs->litr2c[0]  += (cf->fruitc_to_litr2c) * propLAYER0;
@@ -307,7 +319,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 
 	softstemc_to_litr = cf->softstemc_to_litr1c + cf->softstemc_to_litr2c + cf->softstemc_to_litr3c + cf->softstemc_to_litr4c;
 	softstemn_to_litr = nf->softstemn_to_litr1n + nf->softstemn_to_litr2n + nf->softstemn_to_litr3n + nf->softstemn_to_litr4n;
-	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, softstemc_to_litr, softstemn_to_litr, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(cs, epc->softstem_cn, cs->softstemc, ns->softstemn, softstemc_to_litr, softstemn_to_litr, 0)) 
 	{
 		cs->litr1c[0]  += (cf->softstemc_to_litr1c) * propLAYER0;
 		cs->litr2c[0]  += (cf->softstemc_to_litr2c) * propLAYER0;
@@ -352,7 +364,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	
 	frootc_to_litr = cf->frootc_to_litr1c + cf->frootc_to_litr2c + cf->frootc_to_litr3c + cf->frootc_to_litr4c;
 	frootn_to_litr = nf->frootn_to_litr1n + nf->frootn_to_litr2n + nf->frootn_to_litr3n + nf->frootn_to_litr4n;
-	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, frootc_to_litr, frootn_to_litr, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(cs, epc->froot_cn, cs->frootc, ns->frootn, frootc_to_litr, frootn_to_litr, 0)) 
 	{
 		for (layer = 0; layer < N_SOILLAYERS; layer++)
 		{
@@ -480,7 +492,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	/* 9. Daily allocation fluxes */
 	/* daily leaf allocation fluxes */
 	
-	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc, ns->leafn, cf->cpool_to_leafc, nf->npool_to_leafn, 0)) 
+	if (!errorCode && epc->leaf_cn && CNratio_control(cs, epc->leaf_cn, cs->leafc, ns->leafn, cf->cpool_to_leafc, nf->npool_to_leafn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_leafc;
 		cs->leafc          += cf->cpool_to_leafc;
@@ -494,7 +506,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->leaf_cn && CNratio_control(ctrl, epc->leaf_cn, cs->leafc_storage, ns->leafn_storage, cf->cpool_to_leafc_storage, nf->npool_to_leafn_storage, 0)) 
+	if (!errorCode && epc->leaf_cn && CNratio_control(cs, epc->leaf_cn, cs->leafc_storage, ns->leafn_storage, cf->cpool_to_leafc_storage, nf->npool_to_leafn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_leafc_storage;
 		cs->leafc_storage  += cf->cpool_to_leafc_storage;
@@ -509,7 +521,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	}
 
 	/* Daily fine root allocation fluxes */
-	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc, ns->frootn, cf->cpool_to_frootc, nf->npool_to_frootn, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(cs, epc->froot_cn, cs->frootc, ns->frootn, cf->cpool_to_frootc, nf->npool_to_frootn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_frootc;
 		cs->frootc         += cf->cpool_to_frootc;
@@ -523,7 +535,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->froot_cn && CNratio_control(ctrl, epc->froot_cn, cs->frootc_storage, ns->frootn_storage, cf->cpool_to_frootc_storage, nf->npool_to_frootn_storage, 0)) 
+	if (!errorCode && epc->froot_cn && CNratio_control(cs, epc->froot_cn, cs->frootc_storage, ns->frootn_storage, cf->cpool_to_frootc_storage, nf->npool_to_frootn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_frootc_storage;
 		cs->frootc_storage += cf->cpool_to_frootc_storage;
@@ -537,8 +549,8 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	/* Daily fruit allocation fluxes + EXTRA: effect of heat stress during flowering in grain filling phenophase */
-	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->cpool_to_fruitc, nf->npool_to_fruitn, 0)) 
+	/* Daily fruit allocation fluxes + EXTRA: effect of heat stress during flowering in yield filling phenophase */
+	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->cpool_to_fruitc, nf->npool_to_fruitn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_fruitc;
 		cs->fruitc         += cf->cpool_to_fruitc;
@@ -566,7 +578,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->fruit_cn && CNratio_control(ctrl, epc->fruit_cn, cs->fruitc_storage, ns->fruitn_storage, cf->cpool_to_fruitc_storage, nf->npool_to_fruitn_storage, 0)) 
+	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc_storage, ns->fruitn_storage, cf->cpool_to_fruitc_storage, nf->npool_to_fruitn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_fruitc_storage;
 		cs->fruitc_storage += cf->cpool_to_fruitc_storage;
@@ -581,7 +593,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	}
 	
 	/* Daily sofstem allocation fluxes */
-	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->cpool_to_softstemc, nf->npool_to_softstemn, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(cs, epc->softstem_cn, cs->softstemc, ns->softstemn, cf->cpool_to_softstemc, nf->npool_to_softstemn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_softstemc;
 		cs->softstemc       += cf->cpool_to_softstemc;
@@ -595,7 +607,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->softstem_cn && CNratio_control(ctrl, epc->softstem_cn, cs->softstemc_storage, ns->softstemn_storage, cf->cpool_to_softstemc_storage, nf->npool_to_softstemn_storage, 0)) 
+	if (!errorCode && epc->softstem_cn && CNratio_control(cs, epc->softstem_cn, cs->softstemc_storage, ns->softstemn_storage, cf->cpool_to_softstemc_storage, nf->npool_to_softstemn_storage, 0)) 
 	{
 		cs->cpool              -= cf->cpool_to_softstemc_storage;
 		cs->softstemc_storage  += cf->cpool_to_softstemc_storage;
@@ -610,7 +622,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	}			
 
 	/* Daily live stem wood allocation fluxes */
-	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->cpool_to_livestemc, nf->npool_to_livestemn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(cs, epc->livewood_cn, cs->livestemc, ns->livestemn, cf->cpool_to_livestemc, nf->npool_to_livestemn, 0)) 
 	{
 		cs->cpool      -= cf->cpool_to_livestemc;
 		cs->livestemc  += cf->cpool_to_livestemc;
@@ -624,7 +636,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livestemc_storage, ns->livestemn_storage, cf->cpool_to_livestemc_storage, nf->npool_to_livestemn_storage, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(cs, epc->livewood_cn, cs->livestemc_storage, ns->livestemn_storage, cf->cpool_to_livestemc_storage, nf->npool_to_livestemn_storage, 0)) 
 	{
 		cs->cpool              -= cf->cpool_to_livestemc_storage;
 		cs->livestemc_storage  += cf->cpool_to_livestemc_storage;
@@ -639,7 +651,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	}
 	
 	/* Daily dead stem wood allocation fluxes */
-	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->cpool_to_deadstemc, nf->npool_to_deadstemn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(cs, epc->deadwood_cn, cs->deadstemc, ns->deadstemn, cf->cpool_to_deadstemc, nf->npool_to_deadstemn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadstemc;
 		cs->deadstemc          += cf->cpool_to_deadstemc;
@@ -653,7 +665,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadstemc_storage, ns->deadstemn_storage, cf->cpool_to_deadstemc_storage, nf->npool_to_deadstemn_storage, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(cs, epc->deadwood_cn, cs->deadstemc_storage, ns->deadstemn_storage, cf->cpool_to_deadstemc_storage, nf->npool_to_deadstemn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadstemc_storage;
 		cs->deadstemc_storage  += cf->cpool_to_deadstemc_storage;
@@ -668,7 +680,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	}
 	
 	/* Daily live coarse root wood allocation fluxes */
-	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->cpool_to_livecrootc, nf->npool_to_livecrootn, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(cs, epc->livewood_cn, cs->livecrootc, ns->livecrootn, cf->cpool_to_livecrootc, nf->npool_to_livecrootn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_livecrootc;
 		cs->livecrootc          += cf->cpool_to_livecrootc;
@@ -682,7 +694,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->livewood_cn && CNratio_control(ctrl, epc->livewood_cn, cs->livecrootc_storage, ns->livecrootn_storage, cf->cpool_to_livecrootc_storage, nf->npool_to_livecrootn_storage, 0)) 
+	if (!errorCode && epc->livewood_cn && CNratio_control(cs, epc->livewood_cn, cs->livecrootc_storage, ns->livecrootn_storage, cf->cpool_to_livecrootc_storage, nf->npool_to_livecrootn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_livecrootc_storage;
 		cs->livecrootc_storage  += cf->cpool_to_livecrootc_storage;
@@ -697,7 +709,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	}
 
 	/* Daily dead coarse root wood allocation fluxes */
-	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->cpool_to_deadcrootc, nf->npool_to_deadcrootn, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(cs, epc->deadwood_cn, cs->deadcrootc, ns->deadcrootn, cf->cpool_to_deadcrootc, nf->npool_to_deadcrootn, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadcrootc;
 		cs->deadcrootc          += cf->cpool_to_deadcrootc;
@@ -711,7 +723,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->deadwood_cn && CNratio_control(ctrl, epc->deadwood_cn, cs->deadcrootc_storage, ns->deadcrootn_storage, cf->cpool_to_deadcrootc_storage, nf->npool_to_deadcrootn_storage, 0)) 
+	if (!errorCode && epc->deadwood_cn && CNratio_control(cs, epc->deadwood_cn, cs->deadcrootc_storage, ns->deadcrootn_storage, cf->cpool_to_deadcrootc_storage, nf->npool_to_deadcrootn_storage, 0)) 
 	{
 		cs->cpool          -= cf->cpool_to_deadcrootc_storage;
 		cs->deadcrootc_storage  += cf->cpool_to_deadcrootc_storage;
@@ -915,10 +927,19 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		}
 	} /* end if allocation day */
 
+	/* +: estimating aboveground cwdc: calculation of cwdc_total2 (after mortality decreased value) -> ratio */
+	for (layer = 0; layer < N_SOILLAYERS; layer++) 
+	{
+		cwdc_total2 += cs->cwdc[layer];
+		litrc_total2 += cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
+	}
+	if (cwdc_total1 > 0) cs->cwdc_above *= cwdc_total2/cwdc_total1;
+	if (litrc_total1 > 0) cs->litrc_above *= litrc_total2/litrc_total1;
+
 	return (errorCode);
 }			
 
-int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double npool, double cflux, double nflux, double CNratio_flux)
+int CNratio_control(cstate_struct* cs, double CNratio, double cpool, double npool, double cflux, double nflux, double CNratio_flux)
 {
 	int errorCode = 0;
 	double CNdiff = 0;
@@ -938,9 +959,9 @@ int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double n
 	if(fabs(CNdiff) > 0)
 	{
 		npool = cpool / CNratio;
-		if (fabs(CNdiff) > ctrl->CNerror) 
+		if (fabs(CNdiff) > cs->CNratioERR) 
 		{
-			ctrl->CNerror = fabs(CNdiff);
+			cs->CNratioERR = fabs(CNdiff);
 		}
 	
 	
@@ -961,7 +982,7 @@ int CNratio_control(control_struct* ctrl, double CNratio, double cpool, double n
 	if(fabs(CNdiff) > 0)
 	{
 		nflux = cflux / CNratio_flux;
-		if (fabs(CNdiff) > ctrl->CNerror) ctrl->CNerror = fabs(CNdiff);
+		if (fabs(CNdiff) > cs->CNratioERR) cs->CNratioERR = fabs(CNdiff);
 		
 		CNdiff = cflux/nflux - CNratio;
 

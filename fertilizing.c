@@ -3,7 +3,7 @@ fertilizing.c
 do fertilization  - increase the mineral soil nitrogen (sminn)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -61,6 +61,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 	{
 		if (year == FRZ->FRZyear_array[md] && ctrl->month == FRZ->FRZmonth_array[md] && ctrl->day == FRZ->FRZday_array[md]) 
 		{
+
 
 			/* 2. input parameters in actual year from array */
 			FRZdepth   = FRZ->FRZdepth_array[md]; 
@@ -180,13 +181,13 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 				ns->sminNO3[layer]  += nf->FRZ_to_sminNO3 * ratio;
 
 				ws->soilw[layer]  += wf->FRZ_to_soilw * ratio;
-				epv->vwc[layer]   = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
+				epv->VWC[layer]   = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 
 				/* control to avoid VWC above saturation */
-				if (epv->vwc[layer] > sprop->vwc_sat[layer])       
+				if (epv->VWC[layer] > sprop->VWCsat[layer])       
 				{
-					diff              = (epv->vwc[layer] - sprop->vwc_sat[layer]) * (water_density * sitec->soillayer_thickness[layer]);
-					epv->vwc[layer]   = sprop->vwc_sat[layer];
+					diff              = (epv->VWC[layer] - sprop->VWCsat[layer]) * (water_density * sitec->soillayer_thickness[layer]);
+					epv->VWC[layer]   = sprop->VWCsat[layer];
 					ws->soilw[layer] -= diff;
 			
 					layerCTRL = layer + 1;
@@ -194,12 +195,12 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 					while (layerCTRL < N_SOILLAYERS && diff > 0)
 					{
 						ws->soilw[layerCTRL] += diff;
-						epv->vwc[layerCTRL]   = ws->soilw[layerCTRL] / (water_density * sitec->soillayer_thickness[layerCTRL]);
+						epv->VWC[layerCTRL]   = ws->soilw[layerCTRL] / (water_density * sitec->soillayer_thickness[layerCTRL]);
 
-						diff = (epv->vwc[layerCTRL] - sprop->vwc_sat[layerCTRL]) * (water_density * sitec->soillayer_thickness[layerCTRL]);
+						diff = (epv->VWC[layerCTRL] - sprop->VWCsat[layerCTRL]) * (water_density * sitec->soillayer_thickness[layerCTRL]);
 						if (diff > 0)
 						{
-							epv->vwc[layerCTRL]   = sprop->vwc_sat[layerCTRL];
+							epv->VWC[layerCTRL]   = sprop->VWCsat[layerCTRL];
 							ws->soilw[layerCTRL] -= diff;
 						}
 
@@ -226,6 +227,9 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 		
 
 		} /* endif  */
+
+		/* estimating aboveground litter and cwdc */
+		cs->litrc_above += cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
 
 	}
    return (errorCode);

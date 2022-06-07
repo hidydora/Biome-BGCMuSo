@@ -4,7 +4,7 @@ functions called to copy restart info between restart structure and
 active structures
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -36,7 +36,7 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 		for (layer =0; layer < N_SOILLAYERS; layer++)
 		{ 
 			ws->soilw[layer]                  = restart->soilw[layer];
-			soilw_sat = sprop->vwc_sat[layer] * sitec->soillayer_thickness[layer] * water_density;
+			soilw_sat = sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
 			if (soilw_sat < ws->soilw[layer]) ws->soilw[layer] = soilw_sat;
 		}
 	}

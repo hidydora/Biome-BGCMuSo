@@ -4,7 +4,7 @@ calculation of soil temperature in the different soil layers based on the change
 to top soil layer and based on empirical function of temperature gradient in soil (Zheng et al.1993)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -88,7 +88,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 		STv1 = 1000 + 2500 * sprop->BD[layer]/((sprop->BD[layer] + 686 * exp(-5.63*sprop->BD[layer])));
 		STv2 = log(500/STv1);
-		WC = epv->vwc_avg / ((0.356-0.144*sprop->BD[layer]) * sitec->soillayer_depth[N_SOILLAYERS-2]*100); // rootzone_depth: m to cm 
+		WC = epv->VWC_avg / ((0.356-0.144*sprop->BD[layer]) * sitec->soillayer_depth[N_SOILLAYERS-2]*100); // rootzone_depth: m to cm 
 		FX = exp(STv2*pow((1-WC)/(1+WC),2));
 		f1 = 1/(FX*STv1);
 

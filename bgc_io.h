@@ -4,7 +4,7 @@ header file to hold the structures used to communicate with bgc()
 also contains the function prototype for bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -29,6 +29,7 @@ typedef struct
 	siteconst_struct sitec;		/* site constants */
 	epconst_struct epc;			/* ecophysiological constants */
 	soilprop_struct sprop;      /* soil properties */
+	groundwater_struct gws;		/* groundwater parameters */
 	planting_struct PLT;			/* parameters for planting */
 	thinning_struct THN;			/* parameters for thinning */
     mowing_struct MOW;				/* parameters for mowing */
@@ -37,6 +38,7 @@ typedef struct
 	ploughing_struct PLG;			/* parameters for ploughing */
 	fertilizing_struct FRZ;			/* parameters for fertilizing */
 	irrigating_struct IRG;			/* parameters for irrigating */
+
 } bgcin_struct;
 
 /* structure for output handling from bgc() */
@@ -54,6 +56,7 @@ typedef struct
 	double spinup_resid_trend; /* kgC/m2/yr remaining trend after spinup */
 	int spinup_years;       /* number of years before reaching steady-state */
 	file log_file;
+	file econout_file;
 } bgcout_struct;
 
 /* function prototypes for calling bgc */

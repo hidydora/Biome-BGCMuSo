@@ -2,7 +2,7 @@
 conduct_calc.c
 Calculation of conductance values based on limitation factors (in original BBGC this subroutine is partly included in canopy_et.c)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -21,8 +21,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, 
-                 epvar_struct* epv, wflux_struct* wf, int simyr)
+int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, epvar_struct* epv, int simyr)
 {
 	int errorCode=0;	
 	
@@ -62,9 +61,9 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	/*-----------------------*/
 	/* 2.2 changing MSC value taking into account the effect of CO2 concentration */
 	if (ctrl->varMSC_flag)
-		epv->stomaCONDUCT_max=epc->msc_array[simyr] *  epv->gcorr  * epv->m_co2;
+		epv->stomaCONDUCT_max=epc->MSC_array[simyr] *  epv->gcorr  * epv->m_co2;
 	else
-		epv->stomaCONDUCT_max=epc->gl_smax * epv->gcorr * epv->m_co2;
+		epv->stomaCONDUCT_max=epc->gl_sMAX * epv->gcorr * epv->m_co2;
 
 	/*-----------------------*/
 	/* 2.3 photosynthetic photon flux density conductance control (radiation multiplier) */

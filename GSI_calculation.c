@@ -5,7 +5,7 @@ based on literure (Jolly et al, 2005) and own method. The goal is to replace pre
 of the model-defined onset and offset day does not work correctly
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -66,8 +66,8 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	double tmin_index = 0;
 	double vpd_index = 0; 
 	double dayl_index = 0; 
+	double gsi_index = 0; 
 	double heatsum_index = 0; 
-	double epc_index = 0; 
 
 	/* at the presence of snow cover no vegetation period (calculating snow cover from precipitation, Tavg and srad) */
 	double snowcover, snowcover_limit, prcp_act, srad_act;
@@ -75,9 +75,9 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	double albedo_sw = sitec->albedo_sw;
 	
 	/* to calculate moving average from total index values */
-	double epc_index_SUM = 0;
-	double epc_index_avg = 0;
-	double epc_index_total = 0;
+	double gsi_indexSUM = 0;
+	double gsi_indexAVG = 0;
+	double hsgsi_index = 0;
 	
 	onday_flag = 0;
 	offday_flag = 1;
@@ -95,30 +95,43 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 		phenarr->onday_arr  = (int**) malloc(nyears*sizeof(int*));  
         phenarr->offday_arr = (int**) malloc(nyears*sizeof(int*));  
 
+		phenarr->tmin_index     = (double**) malloc(nyears*sizeof(int*));  
+		phenarr->vpd_index      = (double**) malloc(nyears*sizeof(int*));  
+		phenarr->dayl_index     = (double**) malloc(nyears*sizeof(int*));  
+		phenarr->gsi_indexAVG   = (double**) malloc(nyears*sizeof(int*));  
+		phenarr->heatsum_index  = (double**) malloc(nyears*sizeof(int*));  
+		phenarr->heatsum        = (double**) malloc(nyears*sizeof(int*));  
+
 		for (ny = 0; ny<nyears; ny++)
 		{
 			phenarr->onday_arr[ny]  = (int*) malloc(2*sizeof(int));  
 			phenarr->offday_arr[ny] = (int*) malloc(2*sizeof(int));  
 			phenarr->onday_arr[ny]  = (int*) malloc(2*sizeof(int));  
-			phenarr->offday_arr[ny] = (int*) malloc(2*sizeof(int));  
+			phenarr->offday_arr[ny] = (int*) malloc(2*sizeof(int)); 
+
+			phenarr->tmin_index[ny]     = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
+			phenarr->vpd_index[ny]      = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
+			phenarr->dayl_index[ny]     = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
+			phenarr->gsi_indexAVG[ny]   = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
+			phenarr->heatsum_index[ny]  = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
+			phenarr->heatsum[ny]        = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
 		}
 	
 		if (!phenarr->onday_arr)
 		{
 			printf("\n");
-			printf("ERROR allocating for onday_arr, prephenology()\n");
+			printf("ERROR allocating for onday_arr, GSI_calculation()\n");
 			errorCode=1;
 		}
 
 		if (!phenarr->offday_arr)
 		{
 			printf("\n");
-			printf("ERROR allocating for offday_arr, prephenology()\n");
+			printf("ERROR allocating for offday_arr, GSI_calculation()\n");
 			errorCode=1;
 		}
 	}
 	
-
 	for (ny=0; ny<nyears; ny++)
 	{
 		onday  = 0;
@@ -176,13 +189,15 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 			{
 				heatsum_act     = 0;
 				tmin_index      = 0;
+				vpd_index       = 0;
+				dayl_index      = 0;
+				gsi_indexAVG   = 0;
 				heatsum_index   = 0;
-				epc_index_avg   = 0;
-				epc_index_total = 0;
+				hsgsi_index = 0;
 			}
 			else
 			{
-				epc_index_SUM = 0;
+				gsi_indexSUM = 0;
 				heatsum_act = 0;
 				for (back=0; back<=n_moving_avg; back++)
 				{
@@ -256,8 +271,8 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 					}
 						
 					
-					epc_index = tmin_index * vpd_index * dayl_index;
-					epc_index_SUM += epc_index;
+					gsi_index = tmin_index * vpd_index * dayl_index;
+					gsi_indexSUM += gsi_index;
 
 				} /* endfor - calculating indexes for the n_moving_average long period  */
 
@@ -279,12 +294,14 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 
 				}
 
-				epc_index_avg = epc_index_SUM / (n_moving_avg+1);
-				epc_index_total = epc_index_avg * heatsum_index;
+				gsi_indexAVG = gsi_indexSUM / (n_moving_avg+1);
+				hsgsi_index   = gsi_indexAVG * heatsum_index;
+
+
 				
 			} /* endelse - calculating indexes */
 
-			if (onday_flag == 0 && offday_flag == 1 && epc_index_total > epc_limit_SGS && yday < firstdayLP && snowcover <= snowcover_limit) 
+			if (onday_flag == 0 && offday_flag == 1 && hsgsi_index > epc_limit_SGS && yday < firstdayLP && snowcover <= snowcover_limit) 
 			{
 				onday_flag    = 1;
 				offday_flag   = 0;
@@ -294,7 +311,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 				if (ctrl->onscreen && ctrl->spinup == 0) printf("onday  - %i\n", onday);
 			}
 
-			if (onday_flag == 1 && offday_flag == 0 && epc_index_total < epc_limit_EGS && yday > firstdayLP) 
+			if (onday_flag == 1 && offday_flag == 0 && hsgsi_index < epc_limit_EGS && yday > firstdayLP) 
 			{
  				onday_flag     = 0;
 				offday_flag    = 1;
@@ -318,6 +335,14 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 
 			
 			}
+
+
+			phenarr->tmin_index[ny][yday]     = tmin_index;  
+			phenarr->vpd_index[ny][yday]      = vpd_index;  
+			phenarr->dayl_index[ny][yday]     = dayl_index;  
+			phenarr->gsi_indexAVG[ny][yday]   = gsi_indexAVG;  
+			phenarr->heatsum_index[ny][yday]  = heatsum_index;  
+			phenarr->heatsum[ny][yday]        = heatsum_act;  
 
 		}/* endfor - simdays */
 		

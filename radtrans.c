@@ -5,7 +5,7 @@ leaf area for sun and shade canopy fractions, then calculate
 canopy radiation interception and transmission 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -195,7 +195,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	Task Committee on Standardization of Reference Evapotranspiration of the Environmental and Water Resources Institute */
 
 	/* 2.1. constant values */
-	W_to_MJperDAY = 1e-6 * metv->dayl; //(NSEC_IN_DAY); 
+	W_to_MJperDAY = 1e-6 * metv->dayl; //(nSEC_IN_DAY); 
 
 	/* (rad) latitude */
 	fi= sitec->lat * (PI/180);   

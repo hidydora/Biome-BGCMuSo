@@ -3,7 +3,7 @@ phenology.c
 daily phenology fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -179,7 +179,7 @@ int phenology(const control_struct* ctrl, const epconst_struct* epc, const cstat
 		
 		if (epc->transferGDD_flag)
 		{
-			if (!errorCode && transfer_fromGDD(ctrl, epc, cs, ns, phen, metv, epv, cf, nf))
+			if (!errorCode && transfer_fromGDD(epc, cs, ns, phen, metv, epv, cf, nf))
 			{
 				printf("ERROR: transfer_fromGDD() for sitec_init \n");
 				errorCode=1;
@@ -251,6 +251,7 @@ int phenology(const control_struct* ctrl, const epconst_struct* epc, const cstat
 		
 				/* calculating transfer ratio */
 				if (cs->leafc_transfer) epv->transfer_ratio = cf->leafc_transfer_to_leafc / cs->leafc_transfer;
+					
 			}
 		}
 
@@ -517,7 +518,7 @@ int softstem_litfall(const epconst_struct* epc, double litfallc, cflux_struct* c
 }
 
 
-int transfer_fromGDD(const control_struct* ctrl, const epconst_struct* epc, const cstate_struct* cs, const nstate_struct* ns, 
+int transfer_fromGDD(const epconst_struct* epc, const cstate_struct* cs, const nstate_struct* ns, 
 	                 phenology_struct *phen, metvar_struct *metv, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf)
 
 {
@@ -546,10 +547,7 @@ int transfer_fromGDD(const control_struct* ctrl, const epconst_struct* epc, cons
 
 		
 		epv->transfer_ratio    = (metv->GDD_wMOD-phen->GDD_emergSTART)/(phen->GDD_emergEND-phen->GDD_emergSTART);
-	
-
-		metv->GDDpre = metv->GDD_wMOD;
-			
+		
 		if (epv->transfer_ratio < 0 || epv->transfer_ratio > 1)
 		{
 			printf("\n");
@@ -584,9 +582,8 @@ int transfer_fromGDD(const control_struct* ctrl, const epconst_struct* epc, cons
 	}
 	else
 	{
-		
 		/* first day after EMERGNECE period */
-		if (metv->GDDpre > 0 && epv->transfer_ratio > 0)
+		if (metv->GDD_wMOD == phen->GDD_crit[epc->n_emerg_phenophase-1])
 		{
 			epv->transfer_ratio = 1;
 			cf->leafc_transfer_to_leafc = cs->leafc_transfer * epv->transfer_ratio;
@@ -605,8 +602,9 @@ int transfer_fromGDD(const control_struct* ctrl, const epconst_struct* epc, cons
 			if (nf->softstemn_transfer_to_softstemn > ns->softstemn_transfer) nf->softstemn_transfer_to_softstemn = ns->softstemn_transfer;
 			
 		}
- 		epv->transfer_ratio    = 0;
-		metv->GDDpre = 0;
+		else
+			epv->transfer_ratio = 0;
+		
 	}
 	
 

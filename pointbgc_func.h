@@ -4,7 +4,7 @@ function prototypes for pointbgc
 for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -24,14 +24,14 @@ int co2_init(file init, co2control_struct* co2, control_struct *ctrl);
 int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl);
 int ndep_init(file init, ndep_control_struct* ndep, control_struct *ctrl);
 int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromINI);
-int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl);
+int sprop_init(file init, siteconst_struct* sitec, soilprop_struct* sprop, control_struct* ctrl);
 int mgm_init(file init, control_struct *ctrl, epconst_struct* epc, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, mowing_struct* MOW, 
-	         planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN, irrigating_struct* IRG, output_struct* output);
+	         planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN, irrigating_struct* IRG);
 int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_struct* PLT);
 int wstate_init(file init, const siteconst_struct* sitec, const soilprop_struct* sprop, wstate_struct* ws);
 int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, 
 	             cstate_struct* cs, cinit_struct* cinit, nstate_struct* ns);
-int output_init(file init, int transient, output_struct* output);
+int output_init(file init, int transient, harvesting_struct* HRV, output_struct* output);
 int end_init(file init);
 int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_struct* scc, const siteconst_struct* sitec, const control_struct* ctrl);
 int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns,
@@ -43,7 +43,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 
 int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilprop_struct* sprop, const epconst_struct* epc, epvar_struct* epv);
 
-int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct* sitec, const metarr_struct* metarr, 
+int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* metarr, 
 	             planting_struct* PLT, harvesting_struct* HRV, control_struct* ctrl, phenarray_struct* phenarr);
 	
 	int date_to_doy(int month, int day);
@@ -64,7 +64,7 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst_struct* epc);
 int conditionalMGM_init(file init, control_struct* ctrl, irrigating_struct* IRG, mowing_struct* MOW);
 int read_mgmarray(int simyr, int varMGM, file MGM_file, double*** mgmarray);
-int groundwater_init(siteconst_struct* sitec, control_struct* ctrl);
+int groundwater_init(groundwater_struct* gws, control_struct* ctrl);
 
 
 

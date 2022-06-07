@@ -4,7 +4,7 @@ Initialize water, carbon, and nitrogen state variables to 0.0 before
 each simulation.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020 D. Hidy [dori.hidy@gmail.com]
@@ -40,31 +40,34 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->soilw_RZ = 0;
 	ws->soilw_RZ_avail=0;
 	ws->soilw_2m = 0;
-	ws->pond_water = 0;
+	ws->pondw = 0;
 	ws->snoww = 0;
 	ws->canopyw = 0;
 	ws->prcp_src = 0;
-	ws->soilevap_snk = 0;
+	ws->soilEvap_snk = 0;
 	ws->snowsubl_snk = 0;
 	ws->canopyevap_snk = 0;
-	ws->pondwevap_snk = 0;
 	ws->trans_snk = 0;
 	ws->runoff_snk = 0;
+	ws->pondEvap_snk = 0;
 	ws->deeppercolation_snk = 0;
 	ws->groundwater_src = 0;
+	ws->groundwater_snk = 0;
 	ws->canopyw_THNsnk = 0;
 	ws->canopyw_MOWsnk = 0;
 	ws->canopyw_HRVsnk = 0;
 	ws->canopyw_PLGsnk = 0;
 	ws->canopyw_GRZsnk = 0;
 	ws->IRGsrc_W = 0;
+	ws->condIRGsrc = 0;
 	ws->FRZsrc_W = 0;
 	ws->WbalanceERR = 0;
 	ws->inW = 0;
 	ws->outW = 0;
 	ws->storeW = 0;
-	ws->soil_evapCUM1 = 0.0;
-	ws->soil_evapCUM2 = 0.0;
+	ws->soilEvapCUM1 = 0.0;
+	ws->soilEvapCUM2 = 0.0;
+	ws->timestepRichards = 0;
 	cs->leafc = 0;
 	cs->leafc_storage = 0;
 	cs->leafc_transfer = 0;
@@ -96,6 +99,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->litr3c_total = 0;
 	cs->litr4c_total = 0;
 	cs->cwdc_total = 0;
+	cs->cwdc_above = 0;
+	cs->litrc_above = 0;
 	cs->STDBc_leaf = 0;
 	cs->STDBc_froot = 0;
 	cs->STDBc_fruit = 0;
@@ -155,6 +160,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->fruitC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
 	cs->CbalanceERR = 0;
+	cs->CNratioERR = 0.0;
 	cs->inC = 0;
 	cs->outC = 0;
 	cs->storeC = 0;

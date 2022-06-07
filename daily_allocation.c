@@ -4,7 +4,7 @@ daily allocation of carbon and nitrogen, as well as the final reconciliation
 of N immobilization by microbes (see decomp.c)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -320,9 +320,9 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 				plant_nalloc                   += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];	
 			}
 			if (n_allometry)
-				plant_calloc       += plant_nalloc * (c_allometry / n_allometry);
+				plant_calloc       = plant_nalloc * (c_allometry / n_allometry);
 			else
-				plant_calloc       += avail_c * epv->rootlength_prop[layer];
+				plant_calloc       = 0;
 			
 		}
 		nf->retransn_to_npoolTOTAL += nf->retransn_to_npool[layer] ;

@@ -3,7 +3,7 @@ output_init.c
 Reads output control information from initialization file
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v5.0.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -25,7 +25,7 @@ temperature to the formatted annual ascii output file.
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
 
-int output_init(file init, int transient, output_struct* output)
+int output_init(file init, int transient, harvesting_struct* HRV, output_struct* output)
 {
 	int errorCode=0;
 	int i;
@@ -100,6 +100,19 @@ int output_init(file init, int transient, output_struct* output)
 	{
 		printf("ERROR opening log_file (%s) in output_init()\n",output->log_file.name);
 		errorCode=21603;
+	}
+
+	/* open outfiles if specified */
+	strcpy(output->econout_file.name,output->outprefix);
+	strcat(output->econout_file.name,".econout");
+
+	if (HRV->HRV_num)
+	{
+		if (file_open(&(output->econout_file),'o',1))
+		{
+			printf("ERROR opening econout_file (%s) in output_init()\n",output->log_file.name);
+			errorCode=21603;
+		}
 	}
 
 
@@ -277,6 +290,8 @@ int output_init(file init, int transient, output_struct* output)
 			}
 		}
 	}
+
+	
 
 	/********************************************************************
 	**                                                                 **

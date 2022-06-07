@@ -3,7 +3,7 @@ state_init.c
 Initialize water, carbon, and nitrogen state variables for pointbgc simulation  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -67,14 +67,14 @@ int wstate_init(file init, const siteconst_struct* sitec, const soilprop_struct*
 		field capacity volumetric water content, depth, and density of water */
 		for (layer = 0; layer < N_SOILLAYERS; layer ++)
 		{
-			if (prop_fc > sprop->vwc_sat[layer]/sprop->vwc_sat[layer])
+			if (prop_fc > sprop->VWCsat[layer]/sprop->VWCfc[layer])
 			{
-				printf("ERROR: initial soil water proportion must less than saturation proportion: %lf\n", sprop->vwc_sat[layer]/sprop->vwc_fc[layer]);
+				printf("ERROR: initial soil water proportion must less than saturation proportion: %lf\n", sprop->VWCsat[layer]/sprop->VWCfc[layer]);
 				errorCode=21402;
 			}
 			else
 			{
-				ws->soilw[layer] = prop_fc * sprop->vwc_fc[layer] * (sitec->soillayer_thickness[layer]) * 1000.0;
+				ws->soilw[layer] = prop_fc * sprop->VWCfc[layer] * (sitec->soillayer_thickness[layer]) * 1000.0;
 				ws->soilw_SUM += ws->soilw[layer];
 			}
 				

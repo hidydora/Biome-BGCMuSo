@@ -4,7 +4,7 @@ calcultion of soil water potential, hydr. conductivity and hydr. diffusivity as 
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -21,21 +21,21 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* sitec, const soilprop_struct* sprop, wstate_struct* ws, epvar_struct* epv)
+int multilayer_hydrolparams(const siteconst_struct* sitec, const soilprop_struct* sprop, wstate_struct* ws, epvar_struct* epv)
 {
 	/* given a list of site constants and the soil water mass (kg/m2),
 	this function returns the soil water potential (MPa)
 	inputs:
 	ws.soilw				     (kg/m2) water mass per unit area
 	sprop.max_rootzone_depth     (m)     maximum depth of rooting zone               
-	sprop.soil_b				 (dimless)   slope of log(psi) vs log(rwc)
-	sprop.vwc_sat				 (m3/m3)   volumetric water content at saturation
-	sprop.psi_sat			   	(MPa)   soil matric potential at saturation
+	sprop.soilB				 (dimless)   slope of log(PSI) vs log(rwc)
+	sprop.VWCsat				 (m3/m3)   volumetric water content at saturation
+	sprop.PSIsat			   	(MPa)   soil matric potential at saturation
 
 	uses the relation:
-	psi = psi_sat * (vwc/vwc_sat)^(-b)
-	hydr_conduct = hydr_conduct_sat * (vwc/vwc_sat)^(2b+3)
-	hydr_diffus = b* hydr_diffus * (-1*psi) * (vwc/vwc_sat)^(b+2)
+	PSI = PSIsat * (VWC/VWCsat)^(-b)
+	hydrCONDUCT = hydrCONDUCTsat * (VWC/VWCsat)^(2b+3)
+	hydrDIFFUS = b* hydrDIFFUS * (-1*PSI) * (VWC/VWCsat)^(b+2)
 
 	For further discussion see:
 	Cosby, B.J., G.M. Hornberger, R.B. Clapp, and T.R. Ginn, 1984.  A     
@@ -61,30 +61,30 @@ int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* si
 
 
 	/* ***************************************************************************************************** */
-	/* calculating vwc psi and hydr. cond. to every layer */
+	/* calculating VWC PSI and hydr. cond. to every layer */
 
 
 	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
 		
 		/* convert kg/m2 --> m3/m2 --> m3/m3 */
-		epv->vwc[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
+		epv->VWC[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 		
-		epv->WFPS[layer]	            = epv->vwc[layer] / sprop->vwc_sat[layer];	
+		epv->WFPS[layer]	            = epv->VWC[layer] / sprop->VWCsat[layer];	
    
-		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
-		epv->psi[layer]  = sprop->psi_sat[layer] * pow( (epv->vwc[layer] /sprop->vwc_sat[layer]), -1* sprop->soil_b[layer]);
+		/* PSI, hydrCONDUCT and hydrDIFFUS ( Cosby et al.) from VWC ([1MPa=100m] [m/s] [m2/s] */
+		epv->PSI[layer]  = sprop->PSIsat[layer] * pow( (epv->VWC[layer] /sprop->VWCsat[layer]), -1* sprop->soilB[layer]);
 		
 	
-		/* pF from psi: cm from MPa */
-		epv->pF[layer] =log10(fabs(10000*epv->psi[layer] ));
+		/* pF from PSI: cm from MPa */
+		epv->pF[layer] =log10(fabs(10000*epv->PSI[layer] ));
 	
 
 
 		/* CONTROL - unrealistic VWC content (higher than saturation value) */
-		if (epv->vwc[layer] > sprop->vwc_sat[layer])       
+		if (epv->VWC[layer] > sprop->VWCsat[layer])       
 		{
-			if (epv->vwc[layer] - sprop->vwc_sat[layer] > 0.001)       
+			if (epv->VWC[layer] - sprop->VWCsat[layer] > 0.001)       
 			{
 				printf("\n");
 				printf("ERROR: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
@@ -92,9 +92,9 @@ int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* si
 			}
 			else
 			{
-				ws->deeppercolation_snk += epv->vwc[layer] - sprop->vwc_sat[layer];
-				epv->vwc[layer]         = sprop->vwc_sat[layer];
-				ws->soilw[layer]        = epv->vwc[layer] * sitec->soillayer_thickness[layer] * water_density;
+				ws->deeppercolation_snk += epv->VWC[layer] - sprop->VWCsat[layer];
+				epv->VWC[layer]         = sprop->VWCsat[layer];
+				ws->soilw[layer]        = epv->VWC[layer] * sitec->soillayer_thickness[layer] * water_density;
 			}
 		}
 

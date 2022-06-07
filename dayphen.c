@@ -3,7 +3,7 @@ dayphen.c
 transfer one day of phenological data from phenarr struct to phen struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -22,8 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_struct* phenarr, const planting_struct* PLT, 
-	        epvar_struct* epv, phenology_struct* phen)
+int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_struct* phenarr, const planting_struct* PLT, phenology_struct* phen)
 {
 	int errorCode=0;
 	int nyear;
@@ -42,6 +41,24 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 		ctrl->plantyr = -1;
 	}
 
+	if (ctrl->GSI_flag)
+	{
+		phen->tmin_index        = phenarr->tmin_index[ctrl->simyr][ctrl->yday];
+		phen->vpd_index         = phenarr->vpd_index[ctrl->simyr][ctrl->yday];
+		phen->dayl_index        = phenarr->dayl_index[ctrl->simyr][ctrl->yday];
+		phen->gsi_indexAVG      = phenarr->gsi_indexAVG[ctrl->simyr][ctrl->yday];
+		phen->heatsum_index     = phenarr->heatsum_index[ctrl->simyr][ctrl->yday];
+		phen->heatsum           = phenarr->heatsum[ctrl->simyr][ctrl->yday];
+	}
+	else
+	{
+		phen->tmin_index        = DATA_GAP;
+		phen->vpd_index         = DATA_GAP;
+		phen->dayl_index        = DATA_GAP;
+		phen->gsi_indexAVG      = DATA_GAP;
+		phen->heatsum_index     = DATA_GAP;
+	}
+
 	/* start of year: when onday or in the first siulation day in year in case of bareground simulation (onday == DATA_GAP and offday ==  DATA_GAP) */
 	if (ctrl->plantyr+1 < nyear && phen->onday == -1 && 
 		((ctrl->simyr+ctrl->simstartyear == phenarr->onday_arr[ctrl->plantyr+1][0] && 
@@ -49,6 +66,8 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 	{
 		ctrl->plantyr += 1;
 		
+
+
 		if (epc->onday == DATA_GAP)
 		{
 			if (epc->offday != DATA_GAP)
@@ -57,7 +76,7 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 				errorCode=1;
 			}
 			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
-			phen->offday        = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
+			phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1]);
 		}
 		else
 		{

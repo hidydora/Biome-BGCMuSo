@@ -6,7 +6,7 @@ method: Vuichard et al, 2007
 NOTE: LSU: livestock unit = unit used to compare or aggregate different species and it is equivalnet to the liveweight of an average cattle (1 adult cattle = 1 LSU)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -24,7 +24,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ, epvar_struct* epv,
+int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, grazing_struct* GRZ, epvar_struct* epv,
 			cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf)
 {
 
@@ -43,6 +43,8 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ
 	double daily_C_loss = 0;				/* daily carbon loss due to grazing */
 	double Cplus_from_excrement = 0;		/* daily carbon plus from excrement */
 	double Nplus_from_excrement = 0;        /* daily nitrogen plus from excrement */
+
+	double propLAYER0, propLAYER1, propLAYER2;
 	
 	int GRZyday_start, GRZyday_end;
 	
@@ -278,16 +280,45 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ
 		ws->canopyw        -= wf->canopyw_to_GRZ;
 
 	
-		/* 4. aboveground biomass into top soil layer */
-		cs->litr1c[0] += cf->GRZ_to_litr1c;
-		cs->litr2c[0] += cf->GRZ_to_litr2c;
-		cs->litr3c[0] += cf->GRZ_to_litr3c;
-		cs->litr4c[0] += cf->GRZ_to_litr4c;
+		/* 4. aboveground biomass into top soil layers */
 
-		ns->litr1n[0] += nf->GRZ_to_litr1n;
-		ns->litr2n[0] += nf->GRZ_to_litr2n;
-		ns->litr3n[0] += nf->GRZ_to_litr3n;
-		ns->litr4n[0] += nf->GRZ_to_litr4n;
+		/* new feature: litter turns into the first AND the second soil layer */
+		propLAYER0 = sitec->soillayer_thickness[0]/sitec->soillayer_depth[2];
+		propLAYER1 = sitec->soillayer_thickness[1]/sitec->soillayer_depth[2];
+		propLAYER2 = sitec->soillayer_thickness[2]/sitec->soillayer_depth[2];
+
+		cs->litr1c[0] += cf->GRZ_to_litr1c * propLAYER0;
+		cs->litr2c[0] += cf->GRZ_to_litr2c * propLAYER0;
+		cs->litr3c[0] += cf->GRZ_to_litr3c * propLAYER0;
+		cs->litr4c[0] += cf->GRZ_to_litr4c * propLAYER0;
+
+		ns->litr1n[0] += nf->GRZ_to_litr1n * propLAYER0;
+		ns->litr2n[0] += nf->GRZ_to_litr2n * propLAYER0;
+		ns->litr3n[0] += nf->GRZ_to_litr3n * propLAYER0;
+		ns->litr4n[0] += nf->GRZ_to_litr4n * propLAYER0;
+
+		cs->litr1c[1] += cf->GRZ_to_litr1c * propLAYER1;
+		cs->litr2c[1] += cf->GRZ_to_litr2c * propLAYER1;
+		cs->litr3c[1] += cf->GRZ_to_litr3c * propLAYER1;
+		cs->litr4c[1] += cf->GRZ_to_litr4c * propLAYER1;
+
+		ns->litr1n[1] += nf->GRZ_to_litr1n * propLAYER1;
+		ns->litr2n[1] += nf->GRZ_to_litr2n * propLAYER1;
+		ns->litr3n[1] += nf->GRZ_to_litr3n * propLAYER1;
+		ns->litr4n[1] += nf->GRZ_to_litr4n * propLAYER1;
+
+		cs->litr1c[2] += cf->GRZ_to_litr1c * propLAYER2;
+		cs->litr2c[2] += cf->GRZ_to_litr2c * propLAYER2;
+		cs->litr3c[2] += cf->GRZ_to_litr3c * propLAYER2;
+		cs->litr4c[2] += cf->GRZ_to_litr4c * propLAYER2;
+
+		ns->litr1n[2] += nf->GRZ_to_litr1n * propLAYER2;
+		ns->litr2n[2] += nf->GRZ_to_litr2n * propLAYER2;
+		ns->litr3n[2] += nf->GRZ_to_litr3n * propLAYER2;
+		ns->litr4n[2] += nf->GRZ_to_litr4n * propLAYER2;
+
+		/* estimating aboveground litter and cwdc */
+		cs->litrc_above += cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c;
 
 	
 		cs->GRZsrc_C += cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c;

@@ -4,7 +4,7 @@ Detects very low values in state variable structures, and forces them to
 0.0, in order to avoid rounding and overflow errors.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -428,6 +428,14 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 			ns->litr4n[layer] = 0.0;
 		}	
 
+		if ((cs->cwdc[layer] != 0 && fabs(cs->cwdc[layer]) < CRIT_PREC) || (ns->cwdn[layer] != 0 && fabs(ns->cwdn[layer])  < CRIT_PREC))
+		{
+			cs->litr4_hr_snk += cs->cwdc[layer];
+			ns->Nprec_snk += ns->cwdn[layer];
+			cs->cwdc[layer] = 0.0;
+			ns->cwdn[layer] = 0.0;
+		}	
+
 		if ((cs->soil1_DOC[layer] != 0 && fabs(cs->soil1_DOC[layer]) < CRIT_PREC) || (ns->soil1_DON[layer] != 0 && fabs(ns->soil1_DON[layer])  < CRIT_PREC))
 		{
 			cs->soil1_hr_snk += cs->soil1_DOC[layer];
@@ -496,7 +504,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 	{
 		if (ws->soilw[layer] < 0 && fabs(ws->soilw[layer]) < CRIT_PREC)
 		{
-			ws->soilevap_snk += ws->soilw[layer];
+			ws->soilEvap_snk += ws->soilw[layer];
 			ws->soilw[layer] = 0.0;
 		}
 
@@ -513,10 +521,10 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ws->canopyw = 0.0;
 	}
 
-	if (ws->pond_water < 0 && fabs(ws->pond_water) < CRIT_PREC)
+	if (ws->pondw < 0 && fabs(ws->pondw) < CRIT_PREC)
 	{
-		ws->pondwevap_snk += ws->pond_water;
-		ws->pond_water = 0.0;
+		ws->pondEvap_snk += ws->pondw;
+		ws->pondw = 0.0;
 	}
 	
 	return(errorCode);

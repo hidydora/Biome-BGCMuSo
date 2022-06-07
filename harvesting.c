@@ -3,7 +3,7 @@ harvesting.c
 do harvesting  - decrease the plant material (leafc, leafn, canopy water)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -22,13 +22,14 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int harvesting(control_struct* ctrl, const epconst_struct* epc, const harvesting_struct* HRV, 
+int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const epconst_struct* epc, const harvesting_struct* HRV, const irrigating_struct* IRG, 
 	           epvar_struct* epv, cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf)
 {
 	int errorCode=0;
 		                                    
 	double HRVcoeff_leaf, HRVcoeff_fruit, HRVcoeff_softstem, remained_prop;	/* decrease of plant material caused by harvest: difference between plant material before and after harvesting */
 	double outc, outn, inc, inn, HRV_to_transpC, HRV_to_transpN;
+	double fruitC_HRV, leafstemC_HRV;
 	int md, year;
 
 	year = ctrl->simstartyear + ctrl->simyr;
@@ -195,7 +196,7 @@ int harvesting(control_struct* ctrl, const epconst_struct* epc, const harvesting
 		cs->STDBc_leaf     -= cf->STDBc_leaf_to_HRV;
 		cs->STDBc_fruit    -= cf->STDBc_fruit_to_HRV;
 		cs->STDBc_softstem -= cf->STDBc_softstem_to_HRV;
-		cs->STDBc_nsc -= cf->STDBc_nsc_to_HRV;
+		cs->STDBc_nsc      -= cf->STDBc_nsc_to_HRV;
 
 		ns->STDBn_leaf     -= nf->STDBn_leaf_to_HRV;
 		ns->STDBn_fruit    -= nf->STDBn_fruit_to_HRV;
@@ -224,11 +225,24 @@ int harvesting(control_struct* ctrl, const epconst_struct* epc, const harvesting
 
 		/* 4. after harvest, remaining softstem and froot and transfer pools transferred to standing dead biomass */
 		
+		if (cs->leafc_transfer || ns->leafn_transfer)
+		{
+			cf->HRV_leafc_transfer_to_SNSC      = cs->leafc_transfer;
+			cs->leafc_transfer                 -= cf->HRV_leafc_transfer_to_SNSC;
+			cs->STDBc_nsc                      += cf->HRV_leafc_transfer_to_SNSC;
+			cs->SNSCsnk_C                      += cf->HRV_leafc_transfer_to_SNSC;
+
+			nf->HRV_leafn_transfer_to_SNSC      = ns->leafn_transfer;
+			ns->leafn_transfer                 -= nf->HRV_leafn_transfer_to_SNSC;
+			ns->STDBn_nsc                      += nf->HRV_leafn_transfer_to_SNSC;
+			ns->SNSCsnk_N                      += nf->HRV_leafn_transfer_to_SNSC;
+		}
+
 		if (cs->leafc_storage || ns->leafn_storage)
 		{
 			cf->HRV_leafc_storage_to_SNSC      = cs->leafc_storage;
 			cs->leafc_storage                 -= cf->HRV_leafc_storage_to_SNSC;
-			cs->STDBc_nsc                += cf->HRV_leafc_storage_to_SNSC;
+			cs->STDBc_nsc                     += cf->HRV_leafc_storage_to_SNSC;
 			cs->SNSCsnk_C                     += cf->HRV_leafc_storage_to_SNSC;
 
 			nf->HRV_leafn_storage_to_SNSC      = ns->leafn_storage;
@@ -241,7 +255,7 @@ int harvesting(control_struct* ctrl, const epconst_struct* epc, const harvesting
 		{
 			cf->HRV_fruitc_transfer_to_SNSC    = cs->fruitc_transfer;
 			cs->fruitc_transfer               -= cf->HRV_fruitc_transfer_to_SNSC;
-			cs->STDBc_nsc                += cf->HRV_fruitc_transfer_to_SNSC;
+			cs->STDBc_nsc                     += cf->HRV_fruitc_transfer_to_SNSC;
 			cs->SNSCsnk_C                     += cf->HRV_fruitc_transfer_to_SNSC;
 
 			nf->HRV_fruitn_transfer_to_SNSC    = ns->fruitn_transfer;
@@ -379,9 +393,17 @@ int harvesting(control_struct* ctrl, const epconst_struct* epc, const harvesting
 		}
 
 		/* harvested fruit and leaf-stem carbon content */
-		cs->fruitC_HRV += cf->fruitc_to_HRV + cf->STDBc_fruit_to_HRV;
-		cs->vegC_HRV += cf->leafc_to_HRV + cf->STDBc_leaf_to_HRV + cf->softstemc_to_HRV + cf->STDBc_softstem_to_HRV + cf->fruitc_to_HRV + cf->STDBc_fruit_to_HRV;
+		fruitC_HRV      = cf->fruitc_to_HRV + cf->STDBc_fruit_to_HRV;
+		leafstemC_HRV   = cf->leafc_to_HRV + cf->STDBc_leaf_to_HRV + cf->softstemc_to_HRV + cf->STDBc_softstem_to_HRV;
+		
+		cs->fruitC_HRV += fruitC_HRV;
+		cs->vegC_HRV   += fruitC_HRV + leafstemC_HRV;
 
+		fprintf(econout.ptr, "%6i %12.0f %12.4f %12.4f %12.4f %6i\n", ctrl->simyr+ctrl->simstartyear, phen->planttype, 
+			                                                          fruitC_HRV * m2_to_ha * kg_to_t, leafstemC_HRV * m2_to_ha * kg_to_t,
+																	  ws->condIRGsrc, IRG->condIRG_flag);  
+
+		ws->condIRGsrc = 0;
 		/**********************************************************************************************/
 		/* IV. CONTROL */
 

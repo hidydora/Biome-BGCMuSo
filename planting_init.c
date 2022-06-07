@@ -3,7 +3,7 @@ planting_init.c
 read planting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Copyright 2020, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -131,14 +131,14 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 
 			n_PLTparam = 9;
 
-			mgmread = fscanf(PLT_file.ptr, "%c%d%c%d%lf%lf%lf%lf%s%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&p5,&p6,&p7,&cropfile);
+			mgmread = fscanf(PLT_file.ptr, "%c%d%c%d%lf%lf%lf%lf%s%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&p5,&p6,&p7,(char*)&cropfile);
 
 			if (mgmread != n_PLTparam)
 			{
 				printf("ERROR reading PLANTING parameters from PLANTING file\n");
 				errorCode=1;
 			}
-			if (sizeof(cropfile) > maxlen)
+			if ((int) sizeof(cropfile) > maxlen)
 			{
 				printf("ERROR reading length of filename in planting file (lenght must be in the range 1-100)\n");
 				errorCode=1;

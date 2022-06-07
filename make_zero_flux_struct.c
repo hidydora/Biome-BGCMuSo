@@ -4,7 +4,7 @@ create structures initialized with zero for forcing fluxes to zero
 between simulation days
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
+int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 {
 	int errorCode=0;
 	int layer;
@@ -32,6 +32,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->prcp_to_soilw = 0;
 	wf->prcp_to_snoww = 0;
 	wf->prcp_to_runoff = 0;
+	wf->pondw_to_runoff = 0;
 	wf->canopyw_evap = 0;
 	wf->canopyw_to_soilw = 0;
 	wf->pondw_evap = 0;
@@ -39,12 +40,16 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->snoww_to_soilw = 0;
 	wf->soilw_evap = 0;
 	wf->soilw_transPOT = 0;
-	wf->soilw_trans_SUM = 0;
-	wf->soilw_transDEMAND_SUM = 0;
+	wf->soilw_transp_SUM = 0;
+	wf->soilw_transpDEMAND_SUM = 0;
 	wf->evapotransp = 0;
 	wf->PET = 0;
 	wf->pondw_to_soilw = 0;
 	wf->soilw_to_pondw = 0;
+	wf->prcp_to_pondw = 0;
+	wf->infilt_to_soilw = 0;
+	wf->infilt_to_pondw = 0;
+	wf->GW_to_pondw = 0;
 	wf->soilw_leached_RZ = 0;
 	wf->canopyw_to_THN = 0;
 	wf->canopyw_to_MOW = 0;
@@ -53,8 +58,10 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->canopyw_to_GRZ = 0;
 	wf->IRG_to_prcp = 0;
 	wf->FRZ_to_soilw = 0;
-	wf->evapPOT = 0;
+	wf->soilw_evapPOT = 0;
 	wf->infiltPOT = 0;
+	if (ctrl->yday == 0) wf->soilw_from_GW0 = 0;
+
 	cf->m_leafc_to_litr1c = 0;
 	cf->m_leafc_to_litr2c = 0;
 	cf->m_leafc_to_litr3c = 0;
@@ -285,9 +292,16 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->frootc_transfer_from_PLT = 0;
 	cf->fruitc_transfer_from_PLT = 0;
 	cf->softstemc_transfer_from_PLT = 0;
+	cf->STDBc_leaf_to_PLT = 0;				 			 
+	cf->STDBc_fruit_to_PLT = 0;
+	cf->STDBc_froot_to_PLT = 0;	
+	cf->STDBc_softstem_to_PLT = 0;	
 	cf->leafc_to_THN = 0;
 	cf->leafc_storage_to_THN = 0;
 	cf->leafc_transfer_to_THN = 0;
+	cf->frootc_to_THN = 0;
+	cf->frootc_storage_to_THN = 0;
+	cf->frootc_transfer_to_THN = 0;
 	cf->fruitc_to_THN = 0;
 	cf->fruitc_storage_to_THN = 0;
 	cf->fruitc_transfer_to_THN = 0;
@@ -297,13 +311,22 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->deadstemc_to_THN = 0;
 	cf->deadstemc_storage_to_THN = 0;
 	cf->deadstemc_transfer_to_THN = 0;
+	cf->livecrootc_to_THN = 0;
+	cf->livecrootc_storage_to_THN = 0;
+	cf->livecrootc_transfer_to_THN = 0;
+	cf->deadcrootc_to_THN = 0;
+	cf->deadcrootc_storage_to_THN = 0;
+	cf->deadcrootc_transfer_to_THN = 0;
 	cf->gresp_storage_to_THN = 0;
 	cf->gresp_transfer_to_THN = 0;
 	cf->THN_to_CTDBc_leaf = 0;
+	cf->THN_to_CTDBc_froot = 0;
 	cf->THN_to_CTDBc_fruit = 0;
 	cf->THN_to_CTDBc_nsc = 0;
 	cf->THN_to_CTDBc_cstem = 0;
+	cf->THN_to_CTDBc_croot = 0;
 	cf->STDBc_leaf_to_THN = 0;
+	cf->STDBc_froot_to_THN = 0;
 	cf->STDBc_fruit_to_THN = 0;
 	cf->STDBc_nsc_to_THN = 0;
 	cf->leafc_to_MOW = 0;
@@ -461,6 +484,20 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->m_softstemn_storage_to_SNSC = 0;
 	nf->m_softstemn_transfer_to_SNSC = 0;
 	nf->m_retransn_to_SNSC = 0;
+	nf->SNSC_to_retrans = 0;
+	nf->leafSNSCgenprog_to_retrans = 0;
+	nf->leafSNSC_to_retrans = 0;
+	nf->frootSNSC_to_retrans = 0;
+	nf->fruitSNSC_to_retrans = 0;
+	nf->softstemSNSC_to_retrans = 0;
+	nf->leaf_transferSNSC_to_retrans = 0;
+	nf->froot_transferSNSC_to_retrans = 0;
+	nf->fruit_transferSNSC_to_retrans = 0;
+	nf->softstem_transferSNSC_to_retrans = 0;
+	nf->leaf_storageSNSC_to_retrans = 0;
+	nf->froot_storageSNSC_to_retrans = 0;
+	nf->fruit_storageSNSC_to_retrans = 0;
+	nf->softstem_storageSNSC_to_retrans = 0;
 	nf->HRV_leafn_storage_to_SNSC = 0;               
 	nf->HRV_leafn_transfer_to_SNSC = 0;    
 	nf->HRV_fruitn_storage_to_SNSC = 0;              
@@ -630,9 +667,16 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->frootn_transfer_from_PLT = 0;
 	nf->fruitn_transfer_from_PLT = 0;
 	nf->softstemn_transfer_from_PLT = 0;
+	nf->STDBn_leaf_to_PLT = 0;	
+	nf->STDBn_froot_to_PLT = 0;	
+	nf->STDBn_fruit_to_PLT = 0;	
+	nf->STDBn_softstem_to_PLT = 0;
 	nf->leafn_to_THN = 0;
 	nf->leafn_storage_to_THN = 0;
 	nf->leafn_transfer_to_THN = 0;
+	nf->frootn_to_THN = 0;
+	nf->frootn_storage_to_THN = 0;
+	nf->frootn_transfer_to_THN = 0;
 	nf->fruitn_to_THN = 0;
 	nf->fruitn_storage_to_THN = 0;
 	nf->fruitn_transfer_to_THN = 0;
@@ -642,12 +686,21 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->deadstemn_to_THN = 0;
 	nf->deadstemn_storage_to_THN = 0;
 	nf->deadstemn_transfer_to_THN = 0;
+	nf->livecrootn_to_THN = 0;
+	nf->livecrootn_storage_to_THN = 0;
+	nf->livecrootn_transfer_to_THN = 0;
+	nf->deadcrootn_to_THN = 0;
+	nf->deadcrootn_storage_to_THN = 0;
+	nf->deadcrootn_transfer_to_THN = 0;
 	nf->retransn_to_THN = 0;
 	nf->THN_to_CTDBn_leaf = 0;
+	nf->THN_to_CTDBn_froot = 0;
 	nf->THN_to_CTDBn_fruit = 0;
 	nf->THN_to_CTDBn_nsc = 0;
 	nf->THN_to_CTDBn_cstem = 0;
+	nf->THN_to_CTDBn_croot = 0;
 	nf->STDBn_leaf_to_THN = 0;
+	nf->STDBn_froot_to_THN = 0;
 	nf->STDBn_fruit_to_THN = 0;
 	nf->STDBn_nsc_to_THN = 0;
 	nf->leafn_to_MOW = 0;
@@ -741,11 +794,12 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->sminn_to_soil4n_s3_total = 0;
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		wf->soilw_trans[layer] = 0;
-		wf->soilw_transDEMAND[layer] = 0;
+		wf->soilw_transp[layer] = 0;
+		wf->soilw_transpDEMAND[layer] = 0;
 		wf->soilw_percolated[layer] = 0;
 		wf->soilw_diffused[layer] = 0;
 		wf->soilw_from_GW[layer] = 0;
+		wf->GW_recharge[layer] = 0;
 		cf->cwdc_to_litr2c[layer] = 0;
 		cf->cwdc_to_litr3c[layer] = 0;
 		cf->cwdc_to_litr4c[layer] = 0;

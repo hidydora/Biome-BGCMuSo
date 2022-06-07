@@ -6,7 +6,7 @@ end of the daily allocation function, in order to allow competition
 between microbes and plants for available N.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.1.
+Biome-BGCMuSo v6.2.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
@@ -32,12 +32,10 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 {
 	int errorCode=0;
 	int layer;
-	double t_scalar, w_scalar, z_scalar;
-	double rate_scalar = 0;
-	double rate_scalar_total = 0;
-	double rate_scalar_avg = 0;
-	double tk, tsoil;
-	double minvwc, maxvwc, opt1vwc, opt2vwc, vwc;
+	double ts_decomp, ws_decomp, z_scalar;
+	double rs_decomp, rs_decomp_avg;
+	double tsoil;
+	double minVWC, maxVWC, opt1VWC, opt2VWC, VWC;
 	double rfl1s1, rfl2s2,rfl4s3,rfs1s2,rfs2s3,rfs3s4;
 	double kl1_base,kl2_base,kl4_base,ks1_base,ks2_base,ks3_base,ks4_base,kfrag_base;
 	double kl1,kl2,kl4,ks1,ks2,ks3,ks4,kfrag;
@@ -60,12 +58,13 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 	/* empirical estimation of CH4 flux */
 	double CH4_flux;
 
+
 	
 	/* initialize partial carbon and nitrogen content in litter and soil pool */
 	litr1c=litr2c=litr3c=litr4c=soil1c=soil2c=soil3c=soil4c=0;
 	litr1n=litr2n=litr3n=litr4n=soil1n=soil2n=soil3n=soil4n=0;
 
-	rate_scalar_avg=0;
+	rs_decomp_avg=0;
 
 	cf->cwdc_to_litr2c_total = 0;					
 	cf->cwdc_to_litr3c_total = 0;					
@@ -86,74 +85,79 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 		tsoil = metv->tsoil[layer]; 
 	
-		/* 1.1: calculate the rate constant scalar for soil temperature,
-		assuming that the base rate constants are assigned for non-moisture
-		limiting conditions at 25 C. The function used here is taken from
-		Lloyd, J., and J.A. Taylor, 1994. On the temperature dependence of 
-		soil respiration. Functional Ecology, 8:315-323.
-		This equation is a modification of their eqn. 11, changing the base
-		temperature from 10 C to 25 C, since most of the microcosm studies
+		/* 1.1: calculate the rate constant scalar for soil temperature, assuming that the base rate constants are assigned for non-moisture
+		limiting conditions at 25 C. The function used here is taken from Lloyd, J., and J.A. Taylor, 1994. On the temperature dependence of 
+		soil respiration. Functional Ecology, 8:315-323. Function: 	t_scalar = exp(308.56*((1.0/71.02)-(1.0/(tk-227.13))));
+		This equation is a modification of their eqn. 11, changing the base temperature from 10 C to 25 C, since most of the microcosm studies
 		used to get the base decomp rates were controlled at 25 C. */
-		if (tsoil < -10.0)
+		
+		/* modification by Hidy 2021: new shape of tsoil function - similar to nitrification
+		                              parameter for no decomp lmitation */
+
+		
+		if (sprop->Tp1_decomp == DATA_GAP)
 		{
 			/* no decomp processes for tsoil < -10.0 C */
-			t_scalar = 0.0;
+			if (tsoil < sprop->Tmin_decomp)	
+					ts_decomp = 0.0;
+			else
+				ts_decomp = exp(sprop->Tp2_decomp*((1.0/sprop->Tp3_decomp)-(1.0/((tsoil+Celsius2Kelvin)-sprop->Tp4_decomp))));
 		}
 		else
 		{
-			tk = tsoil + 273.15;
-			t_scalar = exp(308.56*((1.0/71.02)-(1.0/(tk-227.13))));
+			/* no decomp processes for tsoil < -10.0 C */
+			if (tsoil < sprop->Tmin_decomp)	
+					ts_decomp = 0.0;
+			else
+				ts_decomp = sprop->Tp1_decomp/(1+pow(fabs((tsoil-sprop->Tp4_decomp)/sprop->Tp2_decomp),sprop->Tp3_decomp));
 			
 		}
+			
 
 		/* 1.2: calculate the rate constant scalar for soil water content.
-		Uses the log relationship with water potential given in
-		Andren, O., and K. Paustian, 1987. Barley straw decomposition in the field:
-		a comparison of models. Ecology, 68(5):1190-1200.
-		and supported by data in
-		Orchard, V.A., and F.J. Cook, 1983. Relationship between soil respiration
-		and soil moisture. Soil Biol. Biochem., 15(4):447-453.
-		*/
+		Uses the log relationship with water potential given in Andren, O., and K. Paustian, 1987. Barley straw decomposition in the field:
+		a comparison of models. Ecology, 68(5):1190-1200. and supported by data in Orchard, V.A., and F.J. Cook, 1983. Relationship between soil respiration
+		and soil moisture. Soil Biol. Biochem., 15(4):447-453.*/
 		/* set the maximum and minimum values for water content limits (m3/m3) */
 
-		minvwc = sprop->vwc_hw[layer];
-		maxvwc = sprop->vwc_sat[layer];
-		opt1vwc = sprop->vwc_fc[layer];
-		opt2vwc = epv->vwc_crit2[layer]; 
+		minVWC = sprop->VWChw[layer];
+		maxVWC = sprop->VWCsat[layer];
+		opt1VWC = sprop->VWCfc[layer];
+		opt2VWC = epv->VWC_crit2[layer]; 
 
-		vwc    = epv->vwc[layer];
+		VWC    = epv->VWC[layer];
 	
-		if (vwc < minvwc)
+		if (VWC < minVWC)
 		{
 			/* no decomp below  hygroscopic water */
-			w_scalar = 0.0;
+			ws_decomp = 0.0;
 		}
 		else
 		{
 			/* increasing decomp near to field capacity */
-			if (vwc < opt2vwc) 
+			if (VWC < opt2VWC) 
 			{
 				/* unlimited decomp between optimal VWC values */
-				if (vwc < opt1vwc)
-					w_scalar = (vwc - minvwc) / (opt1vwc - minvwc);	
+				if (VWC < opt1VWC)
+					ws_decomp = (VWC - minVWC) / (opt1VWC - minVWC);	
 				else
-					w_scalar = 1;	
+					ws_decomp = 1;	
 			}
 			else
 			{
 				/* decreasing decomp near to total saturation*/
-				w_scalar = (maxvwc - vwc) / (maxvwc - opt2vwc);
+				ws_decomp = (maxVWC - VWC) / (maxVWC - opt2VWC);
 
 				/* lower limit for saturation: m_fullstress2 */
-				if (w_scalar < epc->m_fullstress2) w_scalar = epc->m_fullstress2;}
+				if (ws_decomp < epc->m_fullstress2) ws_decomp = epc->m_fullstress2;}
 		}
 		
 	
-		/* CONTROL - w_scalar must be grater than 0 */
-		if (w_scalar < 0 || w_scalar > 1)
+		/* CONTROL - ws_decomp must be grater than 0 */
+		if (ws_decomp < 0 || ws_decomp > 1)
 		{
 			printf("\n");
- 			printf("ERROR in w_scalar calculation in decomp.c\n");
+ 			printf("ERROR in ws_decomp calculation in decomp.c\n");
 			errorCode=1;
 		}
 
@@ -163,17 +167,17 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 	
 		/* 1.4: calculate the final rate scalar as the product of the temperature water and depth scalars */
-		rate_scalar				= w_scalar * t_scalar * z_scalar;
+		rs_decomp				= ws_decomp * ts_decomp * z_scalar;
 		
-		rate_scalar_total       += rate_scalar; 
-
-		epv->t_scalar[layer]	= t_scalar;
-		epv->w_scalar[layer]	= w_scalar;
-		epv->rate_scalar[layer] = rate_scalar;
-		rate_scalar_avg        += rate_scalar * (sitec->soillayer_thickness[layer]/sitec->soillayer_depth[N_SOILLAYERS-1]);
 
 
-		epv->rate_scalar_avg = rate_scalar_avg;
+		epv->ts_decomp[layer]	= ts_decomp;
+		epv->ws_decomp[layer]	= ws_decomp;
+		epv->rs_decomp[layer] = rs_decomp;
+		rs_decomp_avg        += rs_decomp * (sitec->soillayer_thickness[layer]/sitec->soillayer_depth[N_SOILLAYERS-1]);
+
+
+		epv->rs_decomp_avg = rs_decomp_avg;
 
 
 		litr1c = cs->litr1c[layer];
@@ -222,14 +226,14 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		ks3_base	= sprop->ks3_base;   /* slow SOM pool  */
 		ks4_base	= sprop->ks4_base;   /* stable SOM pool  */
 		kfrag_base	= sprop->kfrag_base; /* physical fragmentation of coarse woody debris */
-		kl1 = kl1_base * epv->rate_scalar[layer];
-		kl2 = kl2_base * epv->rate_scalar[layer];
-		kl4 = kl4_base * epv->rate_scalar[layer];
-		ks1 = ks1_base * epv->rate_scalar[layer];
-		ks2 = ks2_base * epv->rate_scalar[layer];
-		ks3 = ks3_base * epv->rate_scalar[layer];
-		ks4 = ks4_base * epv->rate_scalar[layer];
-		kfrag = kfrag_base * epv->rate_scalar[layer];
+		kl1 = kl1_base * epv->rs_decomp[layer];
+		kl2 = kl2_base * epv->rs_decomp[layer];
+		kl4 = kl4_base * epv->rs_decomp[layer];
+		ks1 = ks1_base * epv->rs_decomp[layer];
+		ks2 = ks2_base * epv->rs_decomp[layer];
+		ks3 = ks3_base * epv->rs_decomp[layer];
+		ks4 = ks4_base * epv->rs_decomp[layer];
+		kfrag = kfrag_base * epv->rs_decomp[layer];
 		
 		/* woody vegetation type fluxes */
 		if (epc->woody)
@@ -256,6 +260,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		if (litr1c > 0)
 		{
 			plitr1c_loss = kl1 * litr1c;
+			if (plitr1c_loss > litr1c) plitr1c_loss = litr1c;
 			if (litr1n > 0.0) ratio = cn_s1/cn_l1;
 			else ratio = 0.0;
 			pmnf_l1s1 = (plitr1c_loss * (1.0 - rfl1s1 - (ratio)))/cn_s1;
@@ -265,6 +270,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		if (litr2c > 0)
 		{
 			plitr2c_loss = kl2 * litr2c;
+			if (plitr2c_loss > litr2c) plitr2c_loss = litr2c;
 			if (litr2n > 0.0) ratio = cn_s2/cn_l2;
 			else ratio = 0.0;
 			pmnf_l2s2 = (plitr2c_loss * (1.0 - rfl2s2 - (ratio)))/cn_s2;
@@ -274,6 +280,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		if (litr4c > 0)
 		{
 			plitr4c_loss = kl4 * litr4c;
+			if (plitr4c_loss > litr4c) plitr4c_loss = litr4c;
 			if (litr4n > 0.0) ratio = cn_s3/cn_l4;
 			else ratio = 0.0;
 			pmnf_l4s3 = (plitr4c_loss * (1.0 - rfl4s3 - (ratio)))/cn_s3;
@@ -283,6 +290,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		if (soil1c > 0)
 		{
 			psoil1c_loss = ks1 * soil1c;
+			if (psoil1c_loss > soil1c) psoil1c_loss = soil1c;
 			pmnf_s1s2 = (psoil1c_loss * (1.0 - rfs1s2 - (cn_s2/cn_s1)))/cn_s2;
 		}
 		
@@ -290,6 +298,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		if (soil2c > 0)
 		{
 			psoil2c_loss = ks2 * soil2c;
+			if (psoil2c_loss > soil2c) psoil2c_loss = soil2c;
 			pmnf_s2s3 = (psoil2c_loss * (1.0 - rfs2s3 - (cn_s3/cn_s2)))/cn_s3;
 		}
 		
@@ -297,6 +306,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		if (soil3c > 0)
 		{
 			psoil3c_loss = ks3 * soil3c;
+			if (psoil3c_loss > soil3c) psoil3c_loss = soil3c;
 			pmnf_s3s4 = (psoil3c_loss * (1.0 - rfs3s4 - (cn_s4/cn_s3)))/cn_s4;
 		}
 		
@@ -304,6 +314,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		if (soil4c > 0)
 		{
 			psoil4c_loss = ks4 * soil4c;
+			if (psoil4c_loss > soil4c) psoil4c_loss = soil4c;
 			pmnf_s4 = -psoil4c_loss/cn_s4;
 		}
 		
@@ -326,7 +337,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		mineralized += -pmnf_s4;
 
 		/* CH4 FLUX - only from the first layer */
-		if (!errorCode && CH4flux_estimation(sprop, layer, epv->vwc[layer], metv->tsoil[layer], &CH4_flux))
+		if (!errorCode && CH4flux_estimation(sprop, layer, epv->VWC[layer], metv->tsoil[layer], &CH4_flux))
 		{
 			printf("\n");
 			printf("ERROR: CH4flux_estimation() in decomp.c\n");

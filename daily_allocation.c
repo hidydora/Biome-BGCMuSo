@@ -287,8 +287,16 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 			plant_nalloc = nf->retransn_to_npool + nf->sminn_to_npool;
 			plant_calloc = plant_nalloc * (c_allometry / n_allometry);
 			excess_c = avail_c - plant_calloc;
-			cf->psnsun_to_cpool -= excess_c * (cf->psnsun_to_cpool/day_gpp);
-			cf->psnshade_to_cpool -= excess_c * (cf->psnshade_to_cpool/day_gpp);
+			if (day_gpp > 0)
+			{
+				cf->psnsun_to_cpool -= excess_c * cf->psnsun_to_cpool/day_gpp;
+				cf->psnshade_to_cpool -= excess_c * cf->psnshade_to_cpool/day_gpp;
+			}
+			else
+			{
+				printf("FATAL ERROR: Negative GPP value (daily_allocation.c)\n");
+				ok = 1;
+			}
 			
 			n_limitation = 2;		// Hidy 2009.
 		}

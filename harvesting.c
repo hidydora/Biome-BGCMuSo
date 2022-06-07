@@ -18,6 +18,7 @@ Copyright 2009, Hidy
 #include "pointbgc_struct.h"
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting_struct* HRV, 
 			cflux_struct* cf, nflux_struct* nf, wflux_struct* wf,  cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
@@ -27,16 +28,18 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 	double LAI_snag;
 	double befharv_LAI;						/* value of LAI before harvesting */
 	double HRVcoeff_leaf, HRVcoeff_fruit;	/* decrease of plant material caused by harvest: difference between plant material before and after harvesting */
-	double HRVcoeff_gresp;					/* coefficient determining the decrease of gresp pools caused by harvest */
-
-
+	double HRV_to_litr1c_strg, HRV_to_litr2c_strg, HRV_to_litr3c_strg, HRV_to_litr4c_strg, HRV_to_transpC;
+	double HRV_to_litr1n_strg, HRV_to_litr2n_strg, HRV_to_litr3n_strg, HRV_to_litr4n_strg, HRV_to_transpN;
+	double diffC, diffN;
 	/* local parameters */
 	int ok = 1;
 	int ny;
 	int mgmd = HRV->mgmd;
+	double HRV_to_litter_coeff = epc->mort_CnW_to_litter;
 
 	/* test variable */
 	int nonactpool_coeff=1;
+
 
 	/* yearly varied or constant management parameters */
 	if(HRV->HRV_flag == 2)
@@ -64,80 +67,100 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 		{	
 			HRVcoeff_leaf  = 1. - (LAI_snag/befharv_LAI);
 			HRVcoeff_fruit = 1.0;
-			HRVcoeff_gresp = (cs->leafc  / (cs->leafc + cs->frootc + cs->fruitc)) * HRVcoeff_leaf + 
-					         (cs->fruitc / (cs->leafc + cs->frootc + cs->fruitc)) * HRVcoeff_fruit;
+		
 		}
 		else
 		{
 			HRVcoeff_leaf = 0.0;
 			HRVcoeff_fruit = 0.0;
-			HRVcoeff_gresp =  0.0;
 			if (ctrl->onscreen) printf("value of LAI before harvesting is less than LAI_snag - no harvest\n");
 		}
-		
-	
-	
-
-	
 	}
 	else
 	{
 		HRVcoeff_leaf  = 0.0;
 		HRVcoeff_fruit = 0.0;
-		HRVcoeff_gresp =  0.0;
-
 		remained_prop = 0.0;
 	}
 
-	/* as results of the harvesting the carbon, nitrogen and water content of the leaf decreases*/
+	/**********************************************************************************************/
+	/* 1. as results of the harvesting the carbon, nitrogen and water content of the leaf decreases*/
+	/* fruit simulation - Hidy 2013.: harvested fruit is transported from the site  */
+	
 	cf->leafc_to_HRV          = cs->leafc * HRVcoeff_leaf;
 	cf->leafc_storage_to_HRV  = cs->leafc_storage * HRVcoeff_leaf * nonactpool_coeff;
 	cf->leafc_transfer_to_HRV = cs->leafc_transfer * HRVcoeff_leaf * nonactpool_coeff;
 
-	/* fruit simulation - Hidy 2013. */
 	cf->fruitc_to_HRV          = cs->fruitc * HRVcoeff_fruit;
-	cf->fruitc_storage_to_HRV  = cs->fruitc_storage * HRVcoeff_fruit * nonactpool_coeff;
-	cf->fruitc_transfer_to_HRV = cs->fruitc_transfer * HRVcoeff_fruit * nonactpool_coeff;
+	cf->fruitc_storage_to_HRV  = cs->fruitc_storage * HRVcoeff_fruit;
+	cf->fruitc_transfer_to_HRV = cs->fruitc_transfer * HRVcoeff_fruit;
 
-	cf->gresp_storage_to_HRV  = cs->gresp_storage * HRVcoeff_gresp * nonactpool_coeff;
-	cf->gresp_transfer_to_HRV = cs->gresp_transfer * HRVcoeff_gresp * nonactpool_coeff;
+	cf->gresp_storage_to_HRV  = cs->gresp_storage * HRVcoeff_leaf * nonactpool_coeff;
+	cf->gresp_transfer_to_HRV = cs->gresp_transfer * HRVcoeff_leaf * nonactpool_coeff;
 
 	nf->leafn_to_HRV          = ns->leafn * HRVcoeff_leaf;
 	nf->leafn_storage_to_HRV  = ns->leafn_storage * HRVcoeff_leaf * nonactpool_coeff;
 	nf->leafn_transfer_to_HRV = ns->leafn_transfer * HRVcoeff_leaf * nonactpool_coeff;
 
-	/* fruit simulation - Hidy 2013. */
 	nf->fruitn_to_HRV          = ns->fruitn * HRVcoeff_fruit;
-	nf->fruitn_storage_to_HRV  = ns->fruitn_storage * HRVcoeff_fruit * nonactpool_coeff;
-	nf->fruitn_transfer_to_HRV = ns->fruitn_transfer * HRVcoeff_fruit * nonactpool_coeff;
+	nf->fruitn_storage_to_HRV  = ns->fruitn_storage * HRVcoeff_fruit;
+	nf->fruitn_transfer_to_HRV = ns->fruitn_transfer * HRVcoeff_fruit;
 
-	/* restranslocated N pool is decreasing also */
 	nf->retransn_to_HRV        = ns->retransn * HRVcoeff_leaf * nonactpool_coeff;
 
 	wf->canopyw_to_HRV = ws->canopyw * HRVcoeff_leaf;
 
+    /**********************************************************************************************/
+	/* 2. part of the plant material is transported (HRV_to_transpC and HRV_to_transpN; transp_coeff = 1-remained_prop),
+	      the rest remains at the site (HRV_to_litrc_strg, HRV_to_litrn_strg)*/
 
-	/* if harvested plant material remains at the site, returns to the litter */
-	cf->HRV_to_litr1c = (cf->leafc_to_HRV * epc->leaflitr_flab   + cf->leafc_transfer_to_HRV + cf->leafc_storage_to_HRV + 
-						 cf->fruitc_to_HRV * epc->fruitlitr_flab + cf->fruitc_transfer_to_HRV + cf->fruitc_storage_to_HRV + 
-						 cf->gresp_storage_to_HRV  + cf->gresp_transfer_to_HRV) * remained_prop;
-	cf->HRV_to_litr2c = (cf->leafc_to_HRV * epc->leaflitr_fucel +
-						 cf->fruitc_to_HRV * epc->fruitlitr_fucel) * remained_prop;
-	cf->HRV_to_litr3c = (cf->leafc_to_HRV * epc->leaflitr_fscel +
-						 cf->fruitc_to_HRV * epc->fruitlitr_fscel) * remained_prop;
-	cf->HRV_to_litr4c = (cf->leafc_to_HRV * epc->leaflitr_flig +
-						 cf->fruitc_to_HRV * epc->fruitlitr_flig) * remained_prop;
+	HRV_to_transpC = (cf->leafc_to_HRV + cf->leafc_transfer_to_HRV + cf->leafc_storage_to_HRV +
+					  cf->gresp_storage_to_HRV + cf->gresp_storage_to_HRV) * (1-remained_prop) +
+				      cf->fruitc_to_HRV + cf->fruitc_transfer_to_HRV + cf->fruitc_storage_to_HRV;
+
+	HRV_to_transpN = (nf->leafn_to_HRV + nf->leafn_transfer_to_HRV + nf->leafn_storage_to_HRV + nf->retransn_to_HRV) * (1-remained_prop) +
+				      nf->fruitn_to_HRV + nf->fruitn_transfer_to_HRV + nf->fruitn_storage_to_HRV;
+	
+	HRV_to_litr1c_strg = (cf->leafc_to_HRV * epc->leaflitr_flab   + cf->leafc_transfer_to_HRV + cf->leafc_storage_to_HRV + 
+						  cf->gresp_storage_to_HRV  + cf->gresp_transfer_to_HRV) * remained_prop;
+	HRV_to_litr2c_strg = (cf->leafc_to_HRV * epc->leaflitr_fucel) * remained_prop;
+	HRV_to_litr3c_strg = (cf->leafc_to_HRV * epc->leaflitr_fscel) * remained_prop;
+	HRV_to_litr4c_strg = (cf->leafc_to_HRV * epc->leaflitr_flig) * remained_prop;
 
 
-	nf->HRV_to_litr1n = (nf->leafn_to_HRV * epc->leaflitr_flab   + nf->leafn_transfer_to_HRV + cf->leafc_storage_to_HRV +
-						 nf->fruitn_to_HRV * epc->fruitlitr_flab + nf->fruitn_transfer_to_HRV + cf->fruitc_storage_to_HRV+
-						 nf->retransn_to_HRV) * remained_prop;
-	nf->HRV_to_litr2n = (nf->leafn_to_HRV * epc->leaflitr_fucel +
-						 nf->fruitn_to_HRV * epc->fruitlitr_fucel) * remained_prop;
-	nf->HRV_to_litr3n = (nf->leafn_to_HRV * epc->leaflitr_fscel +
-						 nf->fruitn_to_HRV * epc->fruitlitr_fscel) * remained_prop;
-	nf->HRV_to_litr4n = (nf->leafn_to_HRV * epc->leaflitr_flig +
-						 nf->fruitn_to_HRV * epc->fruitlitr_flig) * remained_prop;
+	HRV_to_litr1n_strg =  (nf->leafn_to_HRV * epc->leaflitr_flab   + nf->leafn_transfer_to_HRV + cf->leafc_storage_to_HRV +
+							nf->retransn_to_HRV) * remained_prop;
+	HRV_to_litr2n_strg =  (nf->leafn_to_HRV * epc->leaflitr_fucel) * remained_prop;
+	HRV_to_litr3n_strg =  (nf->leafn_to_HRV * epc->leaflitr_fscel) * remained_prop;
+	HRV_to_litr4n_strg =  (nf->leafn_to_HRV * epc->leaflitr_flig) * remained_prop;
+   
+
+	cs->litr1c_strg_HRV += HRV_to_litr1c_strg;
+	cs->litr2c_strg_HRV += HRV_to_litr2c_strg;
+	cs->litr3c_strg_HRV += HRV_to_litr3c_strg;
+	cs->litr4c_strg_HRV += HRV_to_litr4c_strg;
+
+	cs->HRV_transportC  += HRV_to_transpC;
+
+	ns->litr1n_strg_HRV +=  HRV_to_litr1n_strg;
+	ns->litr2n_strg_HRV +=  HRV_to_litr2n_strg;
+	ns->litr3n_strg_HRV +=  HRV_to_litr3n_strg;
+	ns->litr4n_strg_HRV +=  HRV_to_litr4n_strg;
+
+	ns->HRV_transportN  += HRV_to_transpN;
+
+	/**********************************************************************************************/
+	/* 3.the remained part of the plant material gradually goes into the litter pool (litrc_strg_HRV, litrn_strg_HRV) */
+ 
+	cf->HRV_to_litr1c = cs->litr1c_strg_HRV * HRV_to_litter_coeff;
+	cf->HRV_to_litr2c = cs->litr2c_strg_HRV * HRV_to_litter_coeff;
+	cf->HRV_to_litr3c = cs->litr3c_strg_HRV * HRV_to_litter_coeff;
+	cf->HRV_to_litr4c = cs->litr4c_strg_HRV * HRV_to_litter_coeff;
+
+	nf->HRV_to_litr1n = ns->litr1n_strg_HRV * HRV_to_litter_coeff;
+	nf->HRV_to_litr2n = ns->litr2n_strg_HRV * HRV_to_litter_coeff;
+	nf->HRV_to_litr3n = ns->litr3n_strg_HRV * HRV_to_litter_coeff;
+	nf->HRV_to_litr4n = ns->litr4n_strg_HRV * HRV_to_litter_coeff;
 	
 
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -169,6 +192,13 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 	cs->litr3c += cf->HRV_to_litr3c;
 	cs->litr4c += cf->HRV_to_litr4c;
 	
+       /* decreasing litter storage state variables*/
+	cs->litr1c_strg_HRV -= cf->HRV_to_litr1c;
+	cs->litr2c_strg_HRV -= cf->HRV_to_litr2c;
+	cs->litr3c_strg_HRV -= cf->HRV_to_litr3c;
+	cs->litr4c_strg_HRV -= cf->HRV_to_litr4c;
+
+	/* litter plus because of mowing and returning of dead plant material */
 	cs->HRVsrc += cf->HRV_to_litr1c + cf->HRV_to_litr2c + cf->HRV_to_litr3c + cf->HRV_to_litr4c;
 
 
@@ -193,11 +223,51 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 	ns->litr2n += nf->HRV_to_litr2n;
 	ns->litr3n += nf->HRV_to_litr3n;
 	ns->litr4n += nf->HRV_to_litr4n;
+
+	/* decreasing litter storage state variables*/
+	ns->litr1n_strg_HRV -= nf->HRV_to_litr1n;
+	ns->litr2n_strg_HRV -= nf->HRV_to_litr2n;
+	ns->litr3n_strg_HRV -= nf->HRV_to_litr3n;
+	ns->litr4n_strg_HRV -= nf->HRV_to_litr4n;
+
 	ns->HRVsrc += nf->HRV_to_litr1n + nf->HRV_to_litr2n + nf->HRV_to_litr3n + nf->HRV_to_litr4n;
 
 	/* 3. water */
 	ws->canopyw_HRVsnk += wf->canopyw_to_HRV;
 	ws->canopyw -= wf->canopyw_to_HRV;
+
+		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                                    TEMPORARY POOLS
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+	/* temporary HRVed plant material pools: if litr1c_strg_HRV is less than a crit. value, the temporary pool becomes empty */
+
+	if (cs->litr1c_strg_HRV < CRIT_PREC && cs->litr1c_strg_HRV != 0) 
+	{
+		cs->HRVsrc += cs->litr1c_strg_HRV + cs->litr2c_strg_HRV + cs->litr3c_strg_HRV + cs->litr4c_strg_HRV;
+		cs->litr1c_strg_HRV = 0;
+		cs->litr2c_strg_HRV = 0;
+		cs->litr3c_strg_HRV = 0;
+		cs->litr4c_strg_HRV = 0;
+		ns->HRVsrc += ns->litr1n_strg_HRV + ns->litr2n_strg_HRV + ns->litr3n_strg_HRV + ns->litr4n_strg_HRV;
+		ns->litr1n_strg_HRV = 0;
+		ns->litr2n_strg_HRV = 0;
+		ns->litr3n_strg_HRV = 0;
+		ns->litr4n_strg_HRV = 0;
+	}
+		
+	/* CONTROL */
+	diffC = (cs->HRVsnk-cs->HRVsrc) - cs->HRV_transportC - 
+			(cs->litr1c_strg_HRV+cs->litr2c_strg_HRV+cs->litr3c_strg_HRV+cs->litr4c_strg_HRV);
+
+	diffN = (ns->HRVsnk-ns->HRVsrc) - ns->HRV_transportN - 
+		    (ns->litr1n_strg_HRV+ns->litr2n_strg_HRV+ns->litr3n_strg_HRV+ns->litr4n_strg_HRV) ;
+
+	if (fabs(diffC) > CRIT_PREC && fabs(diffN) > CRIT_PREC)
+	{
+		printf("Fatal error: harvesting pools are incorrect (harvesting.c)\n");
+		ok=0;
+	}
+	
 
    return (!ok);
 }

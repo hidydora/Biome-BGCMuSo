@@ -50,7 +50,7 @@ int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_s
 		ns->frootn = 0.0;
 	}
 
-	if (fabs(cs->fruitc) < 1e-7)
+	if (fabs(cs->fruitc) < CRIT_PREC)
 	{
 		cs->litr1c += cs->fruitc;
 		ns->litr1n += ns->fruitn;
@@ -165,11 +165,16 @@ int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_s
 	}
 	
 	/* additional tests for soil mineral N and retranslocated N */
-	if (fabs(ns->sminn_SUM) < CRIT_PREC)
+	
+	for (layer = 0; layer < N_SOILLAYERS;layer++)
 	{
-		ns->nvol_snk += ns->sminn_SUM;
-		ns->sminn_SUM = 0.0;
+		if (fabs(ns->sminn[layer]) < CRIT_PREC)
+		{
+			ns->nvol_snk     += ns->sminn[layer];
+			ns->sminn[layer] = 0.0;
+		}
 	}
+
 	if (fabs(ns->retransn) < CRIT_PREC)
 	{
 		ns->litr1n += ns->retransn;

@@ -182,8 +182,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
-		fprintf(bgcout->control_file.ptr, "yday vwc0  SNSC_str fruitC leafC gpp tr evapotransp\n");
-
+		fprintf(bgcout->control_file.ptr, "yday RD(m) vwc0(m3/m3) vwc1(m3/m3) vwc2(m3/m3) m_soilprop(prop.) leafc(gC/m2) fruitc(gC/m2) litr1c(gC/m2) soil1c(gC/m2) sminn0(gN/m3) sminn1(gN/m3) sminn2(gN/m3) gpp(gC/m2/d) ter(gC/m2/d)\n");
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -289,7 +288,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (ctrl.GSI_flag)
 	{
 		/* Hidy 2009. - calculate GSI to deterime onday and offday 	*/	
-		if (ok && GSI_calculation(&metarr, &ctrl, &GSI, &phenarr))
+		if (ok && GSI_calculation(&metarr, &ctrl, &sitec, &GSI, &phenarr))
 		{
 			printf("Error in call to GSI_calculation(), from bgc()\n");
 			ok=0;
@@ -496,11 +495,12 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone dayphen\n",simyr,yday);
 #endif
 	
+
 			/* test for the annual allocation day */
 			if (phen.remdays_litfall == 1) annual_alloc = 1;
 			else annual_alloc = 0;
 
-			
+
 			/* phenology fluxes */
 			if (ok && phenology(yday,&epc, &phen, &epv, &cs, &cf, &ns, &nf))
 			{
@@ -514,7 +514,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hidy 2011 - MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	
 
 			/* rooting depth */
  			 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &epv, &ns))
@@ -653,7 +652,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			keeps the occurrence of new growth consistent with the treatment
 			of litterfall and allocation */
 
-			if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl)
+			if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl && ws.snoww <= GSI.snowcover_limit)
 			{
 				/* SUNLIT canopy fraction photosynthesis */
 				/* set the input variables */
@@ -663,6 +662,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				psn_sun.t = metv.tday;
 				psn_sun.lnc = 1.0 / (epv.sun_proj_sla * epc.leaf_cn);
 				psn_sun.flnr = epc.flnr;
+				psn_sun.flnp = epc.flnp;
 				psn_sun.ppfd = metv.ppfd_per_plaisun;
 				/* convert conductance from m/s --> umol/m2/s/Pa, and correct
 				for CO2 vs. water vapor */
@@ -940,18 +940,9 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
 
-			/* Hidy 2010 - test again for very low state variable values and force them
-				to 0.0 to avoid rounding and floating point overflow errors */
-			if (ok && precision_control(&sitec, &ws, &cs, &ns))
-			{
-				printf("Error in call to precision_control() from bgc()\n");
-				ok=0;
-			} 
-				
-#ifdef DEBUG
-				printf("%d\t%d\tdone precision_control\n",simyr,yday);
-#endif
-			/* calculate daily mortality fluxes and update state variables */
+	
+
+		/* calculate daily mortality fluxes and update state variables */
 			/* this is done last, with a special state update procedure, to
 			insure that pools don't go negative due to mortality fluxes
 			conflicting with other proportional fluxes */
@@ -980,7 +971,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
                         This is a special state variable update routine, done after the other fluxes and states are
                         reconciled (nleaching is included) */
 
-		
 			if (ok && multilayer_sminn(&epc, &sitec, &epv, &ns, &nf, &ws, &wf))
 			{
 				printf("Error in multilayer_sminn() from bgc()\n");
@@ -991,6 +981,17 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone multilayer_sminn\n",simyr,yday);
 #endif
 
+			/* Hidy 2010 - test again for very low state variable values and force them
+				to 0.0 to avoid rounding and floating point overflow errors */
+			if (ok && precision_control(&sitec, &ws, &cs, &ns))
+			{
+				printf("Error in call to precision_control() from bgc()\n");
+				ok=0;
+			} 
+				
+#ifdef DEBUG
+				printf("%d\t%d\tdone precision_control\n",simyr,yday);
+#endif
 
 
 			/* test for water balance*/
@@ -1005,7 +1006,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone water balance\n",simyr,yday);
 #endif
 
-		
 	
 			if (ok  && check_carbon_balance(&cs, &ctrl, first_balance))
 			{
@@ -1048,14 +1048,20 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone carbon summary\n",simyr,yday);
 #endif
 
+
+ 		     
+		
 			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */
 			if (ctrl.onscreen && ctrl.simyr < 10)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f\n", 
-				yday, 
-				epv.vwc[0],(cs.litr1c_strg_SNSC+cs.litr2c_strg_SNSC+cs.litr3c_strg_SNSC+cs.litr4c_strg_SNSC), 
-				cs.fruitc, cs.leafc, summary.daily_gpp*1000, summary.daily_tr*1000, wf.evapotransp); 
- 
+		//		fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", 
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f\n", 
+				yday,
+				cs.leafc, cf.leafc_to_MOW, cs.MOWsnk, cs.MOWsrc, cs.MOW_transportC, cs.litr1c_strg_MOW, cs.litr2c_strg_MOW, cs.litr3c_strg_MOW, cs.litr4c_strg_MOW);
+	//			epv.rooting_depth, epv.vwc[0], epv.vwc[1], epv.vwc[2], epv.m_soilprop, 
+	//			cs.leafc*1000, cs.fruitc*1000, cs.litr1c*1000, cs.soil1c*1000, 
+	//			ns.sminn[0]*1000/sitec.soillayer_thickness[0], ns.sminn[1]*1000/sitec.soillayer_thickness[1], ns.sminn[2]*1000/sitec.soillayer_thickness[2], 
+	//			summary.daily_gpp*1000, summary.daily_tr*1000); 
 			}
 
 			/* DAILY OUTPUT HANDLING */

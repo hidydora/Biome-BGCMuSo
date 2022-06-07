@@ -133,7 +133,7 @@ metvar_struct* metv, epvar_struct* epv, double albedo)
 	parabs_plaisun = k_par * par * epv->plaisun;
 	parabs_plaishade = parabs - parabs_plaisun;
 	if (parabs_plaishade < 0.0)
-	{
+	{	
 		printf("FATAL ERROR: negative parabs_plaishade (%lf)\n",parabs_plaishade);
 		ok=0;
 	}

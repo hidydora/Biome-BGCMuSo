@@ -227,10 +227,10 @@ typedef struct
     double litr3c;           /* (kgC/m2) litter shielded cellulose C */
     double litr4c;           /* (kgC/m2) litter lignin C */
 	/* Hidy 2013: senescence */
-	double litr1c_strg_SNSC;
-	double litr2c_strg_SNSC;
-	double litr3c_strg_SNSC;
-	double litr4c_strg_SNSC;
+	double litr1c_strg_SNSC; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr2c_strg_SNSC; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr3c_strg_SNSC; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr4c_strg_SNSC; /* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
     double soil1c;           /* (kgC/m2) microbial recycling pool C (fast) */
     double soil2c;           /* (kgC/m2) microbial recycling pool C (medium) */
     double soil3c;           /* (kgC/m2) microbial recycling pool C (slow) */
@@ -256,8 +256,8 @@ typedef struct
     double soil3_hr_snk;     /* (kgC/m2) SUM of slow microbial respiration */
     double soil4_hr_snk;     /* (kgC/m2) SUM of recalcitrant SOM respiration */
 	double fire_snk;         /* (kgC/m2) SUM of fire losses */
-	double SNSC_snk;		 /* (kgC/m2) SUM of senescence losses */
-	double SNSC_src;		 /* (kgC/m2) SUM of wilted plant material which turns into the litter pool */
+	double SNSCsnk;		 /* (kgC/m2) SUM of senescence losses */
+	double SNSCsrc;		 /* (kgC/m2) SUM of wilted plant material which turns into the litter pool */
 	/* planting - by Hidy 2012. */
     double PLTsrc;     /* (kgN/m2) planted N */
 	/* thinning - by Hidy 2012.  */
@@ -266,9 +266,19 @@ typedef struct
 	/* mowing - by Hidy 2008.   */
 	double MOWsnk;              /* (kgC/m2) mowed leaf C */
 	double MOWsrc;			    /* (kgC/m2) mowed plant material (C content) returns to the litter */
+	double MOW_transportC;      /* (kgC/m2) mowed and transported plant material (C content)  */
+	double litr1c_strg_MOW;     /* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
+	double litr2c_strg_MOW;		/* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
+	double litr3c_strg_MOW;		/* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
+	double litr4c_strg_MOW;		/* (kgC/m2) amount of mowed plant biomass before turning into litter pool */
 	/* harvesting - Hidy 2012.  */
 	double HRVsnk;              /* (kgC/m2) harvested leaf C */
 	double HRVsrc;			    /* (kgC/m2) harvested plant material (C content) returns to the litter */
+	double HRV_transportC;      /* (kgC/m2) harvested and transported plant material (C content)  */
+	double litr1c_strg_HRV;     /* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
+	double litr2c_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
+	double litr3c_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
+	double litr4c_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
 	/* ploughing - Hidy 2012.   */
 	double PLGsnk;              /* (kgC/m2) ploughed leaf C */
 	double PLGsrc;			    /* (kgC/m2) ploughed plant material (C content)to the soil (labile litter) */
@@ -606,10 +616,10 @@ typedef struct
     double fruitn_storage;      /* (kgN/m2) fruit N */
     double fruitn_transfer;     /* (kgN/m2) fruit N */
 	/* Hidy 2013: senescence */
-	double litr1n_strg_SNSC;
-	double litr2n_strg_SNSC;
-	double litr3n_strg_SNSC;
-	double litr4n_strg_SNSC;
+	double litr1n_strg_SNSC;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr2n_strg_SNSC;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr3n_strg_SNSC;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
+	double litr4n_strg_SNSC;	/* (kgC/m2)  amount of wilted plant biomass before turning into litter pool */
     double soil1n;             /* (kgN/m2) microbial recycling pool N (fast) */
     double soil2n;             /* (kgN/m2) microbial recycling pool N (medium) */
     double soil3n;             /* (kgN/m2) microbial recycling pool N (slow) */
@@ -617,9 +627,6 @@ typedef struct
 	/* multilayer soil - Hidy 2011 */
     double sminn[N_SOILLAYERS];		    /* (kgN/m2) soil mineral N in multilayer soil */
 	double sminn_RZ;					/* (kgN/m2) sum of the soil mineral N in the rootzone on actual day */
-	double sminn_RZ_befsoilproc;		/* (kgN/m2) sum of the soil mineral N in the rootzone before taking acoount soil processes  */
-	double sminn_SUM;					/* (kgN/m2) sum of the soil mineral N in the soillayers */	
-
 	double retransn;					/* (kgN/m2) plant pool of retranslocated N */
 	double npool;						/* (kgN/m2) temporary plant N pool */
     double nfix_src;					/* (kgN/m2) SUM of biological N fixation */
@@ -628,8 +635,8 @@ typedef struct
     double nvol_snk;					/* (kgN/m2) SUM of N lost to volatilization */
 	double fire_snk;					/* (kgN/m2) SUM of N lost to fire */	
 	/* sensescence simulation - Hidy 2011 */
-	double SNSC_snk;				/* (kgN/m2) SUM of senescence losses */
-	double SNSC_src;				/* (kgN/m2) SUM of wilted plant material which turns into the litter pool */
+	double SNSCsnk;				/* (kgN/m2) SUM of senescence losses */
+	double SNSCsrc;				/* (kgN/m2) SUM of wilted plant material which turns into the litter pool */
 	/* fertilization - by Hidy 2008. */
 	double FRZsrc;				 /*(kgN/m2) SUM of N fertilization inputs */	
 	/* planting - by Hidy 2012. */
@@ -640,9 +647,19 @@ typedef struct
 	/* mowing - by Hidy 2008. */
 	double MOWsnk;              /* (kgN/m2) mowed leaf N */
 	double MOWsrc;				/* (kgC/m2) mowed plant material (N content) returns to the soil (labile litter) */
+	double MOW_transportN; 		/* (kgC/m2) harvested and transported plant material (N content)  */
+	double litr1n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
+	double litr2n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
+	double litr3n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
+	double litr4n_strg_MOW;		/* (kgC/m2)  amount of mowed plant biomass before turning into litter pool */
 	/* harvesting - by Hidy 2012. */
 	double HRVsnk;
-	double HRVsrc;			/* (kgN/m2) harvested leaf N */
+	double HRVsrc;				/* (kgN/m2) harvested leaf N */
+	double HRV_transportN; 		/* (kgC/m2) harvested and transported plant material (N content)  */
+	double litr1n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
+	double litr2n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
+	double litr3n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
+	double litr4n_strg_HRV;		/* (kgC/m2)  amount of harvested plant biomass before turning into litter pool */
 	/* ploughing - Hidy 2012. */
 	double PLGsnk;				/* (kgN/m2) plouhged leaf N */
 	double PLGsrc;				/* (kgC/m2) ploughed plant material (N content) returns to the soil (labile litter) */
@@ -791,7 +808,8 @@ typedef struct
 	double sminn_to_nvol_s4;              /* (kgN/m2/d) */
 	double sminn_to_denitrif;             /* (kgN/m2/d) */
 	/* SMINN change caused by soil process - Hidy 2011 */
-	double sminn_soilproc[N_SOILLAYERS];    /* (kgN/m2/d) */
+	double sminn_to_soil_SUM;
+	double sminn_to_soil[N_SOILLAYERS];    /* (kgN/m2/d) */
 	double sminn_leached[N_SOILLAYERS];    /* (kgN/m2/d) */
 	/* daily allocation fluxes */
 	double retransn_to_npool;             /* (kgN/m2/d) */
@@ -1113,6 +1131,7 @@ typedef struct
     double int_coef;       /* (kg/kg/LAI/d) canopy precip interception coef */
     double ext_coef;       /* (DIM) canopy light extinction coefficient */
     double flnr;           /* (kg NRub/kg Nleaf) leaf N in Rubisco */
+	double flnp;           /* (kg PeP/kg Nleaf) fraction of leaf N in PEP Carboxylase */
 	double vwc_ratio_open;			/* (%) Hidy 2011 - vwc ratio at start of conductance reduction */
     double vwc_ratio_close;			/* (%) Hidy 2011 - vwc at complete conductance */
 	double psi_open;			/* (%) Hidy 2011 - soil water potential at conductance reduction */
@@ -1141,6 +1160,7 @@ typedef struct
 	double mort_SNSC_abovebiom;	/* Hidy 2011 - mortality parameter of senescence of aboveground biomass */
 	double mort_SNSC_belowbiom;	/* Hidy 2011 - mortality parameter of senescence of belowground biomass */
     double mort_SNSC_to_litter; /* Hidy 2013 - turnover rate of wilted standing biomass to litter*/
+	double mort_CnW_to_litter;  /* Hidy 2013 - turnover rate of cut-down non-woody biomass to litter*/
 	double GR_ratio;            /* Hidy 2013 - (DIM) growth resp per unit of C grown */
 	double denitrif_prop;		/* Hidy 2013 - fraction of mineralization to volatile */
 	double mobilen_prop;		/* Hidy 2013 -fraction mineral N avail for leaching */
@@ -1267,6 +1287,7 @@ typedef struct
 	double t;               /* (deg C) temperature */
 	double lnc;             /* (kg Nleaf/m2) leaf N per unit sunlit leaf area */
 	double flnr;            /* (kg NRub/kg Nleaf) fract. of leaf N in Rubisco */
+	double flnp;            /* (kg NPep/kg Nleaf)fraction of leaf N in PEP Carboxylase */
 	double ppfd;            /* (umol/m2/s) PAR flux per unit sunlit leaf area */
 	double g;               /* (umol/m2/s/Pa) conductance to CO2 */
 	double dlmr;            /* (umol/m2/s) day leaf m. resp, proj. area basis */
@@ -1420,8 +1441,6 @@ typedef struct
 	double dsr;
 	int metyr;
 	/* Hidy 2011 - multilayer soil */
-	double sminn_RZ;
-	double sminn_RZ_befsoilproc;
 	double sminn[N_SOILLAYERS];
 	/* fruit simulation - Hidy 2013. */
 	double fruitc;

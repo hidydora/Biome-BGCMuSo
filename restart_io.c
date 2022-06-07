@@ -240,8 +240,6 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 	/*-----------------------------*/
 	/* Hidy 2011 - multilayer soil */
 	
-	restart->sminn_RZ                         = ns->sminn_RZ;
-	restart->sminn_RZ_befsoilproc             = ns->sminn_RZ_befsoilproc;
 	for (layer =0; layer < N_SOILLAYERS; layer++)
 	{ 
 		restart->sminn[layer]                 = ns->sminn[layer];

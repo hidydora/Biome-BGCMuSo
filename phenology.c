@@ -154,6 +154,9 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 			{
 				cf->fruitc_transfer_to_fruitc = 2.0*cs->fruitc_transfer / ndays;
 				nf->fruitn_transfer_to_fruitn = 2.0*ns->fruitn_transfer / ndays;
+				if (cf->fruitc_transfer_to_fruitc > cs->fruitc_transfer) cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer;
+				if (nf->fruitn_transfer_to_fruitn > ns->fruitn_transfer) nf->fruitn_transfer_to_fruitn = ns->fruitn_transfer;
+
 			}
 			else
 			{

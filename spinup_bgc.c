@@ -147,7 +147,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			file_open (&GSI.GSI_file, 'w');				/* file of GSI parameters - Hidy 2009.*/
 		}
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2010.*/
-		fprintf(bgcout->control_file.ptr, "yday vwc0  SNSC_str fruitC leafC gpp tr evapotransp\n");
+		fprintf(bgcout->control_file.ptr, "yday leafc fruitc gpp ter\n");
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,7 +255,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* Hidy 2009. - calculate GSI to deterime onday and offday 	*/
 	if (ctrl.GSI_flag)
 	{
-		if (ok && GSI_calculation(&metarr, &ctrl, &GSI, &phenarr))
+		if (ok && GSI_calculation(&metarr, &ctrl, &sitec, &GSI, &phenarr))
 		{
 			printf("Error in call to GSI_calculation(), from bgc()\n");
 			ok=0;
@@ -462,8 +462,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				/* test for the annual allocation day */
 				if (phen.remdays_litfall == 1) annual_alloc = 1;
 				else annual_alloc = 0;
-		
-
 
 				/* phenology fluxes */
 				if (ok && phenology(yday,&epc, &phen, &epv, &cs, &cf, &ns, &nf))
@@ -475,11 +473,12 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 				printf("%d\t%d\tdone phenology\n",simyr,yday);
 #endif
+			
 
-
-				
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hidy 2011 - MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 				/* rooting depth */
+
+	
  				 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &epv, &ns))
 				 {
 					printf("Error in multilayer_rootdepth() from bgc()\n");
@@ -500,7 +499,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone multilayer_tsoil\n",simyr,yday);
 #endif
-		
+
 				/* soil hydrological parameters: psi, vwc, conductivity */
  			   if (ok && multilayer_hydrolparams(&ctrl, &sitec, &ws, &epv))
 			     {
@@ -616,7 +615,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				growth season, as defined by the remdays_curgrowth flag.  This
 				keeps the occurrence of new growth consistent with the treatment
 				of litterfall and allocation */
-				if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl)
+				if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl && ws.snoww <= GSI.snowcover_limit)
 				{
 					/* SUNLIT canopy fraction photosynthesis */
 					/* set the input variables */
@@ -849,20 +848,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 
-
-			/* Hidy 2010 - test again for very low state variable values and force them
-			to 0.0 to avoid rounding and floating point overflow errors */
-			if (ok && precision_control(&sitec, &ws, &cs, &ns))
-			{
-				printf("Error in call to precision_control() from bgc()\n");
-				ok=0;
-			} 
-			
-#ifdef DEBUG
-			printf("%d\t%d\tdone precision_control\n",simyr,yday);
-#endif
-
-
             /* calculate daily mortality fluxes and update state variables */
 			/* this is done last, with a special state update procedure, to
 			insure that pools don't go negative due to mortality fluxes
@@ -894,6 +879,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			This is a special state variable update routine, done after the other fluxes and states are reconciled 
 			in order to avoid negative sminn */
 			
+
 			if (ok && multilayer_sminn(&epc, &sitec, &epv, &ns, &nf, &ws, &wf))
 			{
 				printf("Error in multilayer_sminn() from bgc()\n");
@@ -905,6 +891,17 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 		
 
+			/* Hidy 2010 - test again for very low state variable values and force them
+			to 0.0 to avoid rounding and floating point overflow errors */
+			if (ok && precision_control(&sitec, &ws, &cs, &ns))
+			{
+				printf("Error in call to precision_control() from bgc()\n");
+				ok=0;
+			} 
+			
+#ifdef DEBUG
+			printf("%d\t%d\tdone precision_control\n",simyr,yday);
+#endif
 
 			/* test for water balance */
 			if (ok && check_water_balance(&ws, &ctrl, first_balance))
@@ -957,12 +954,11 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 						
 				/* INTERNAL VARIALBE CONTROL - Hidy 2013 */		
-			if (ctrl.onscreen && ctrl.simyr<10)
+			if (ctrl.onscreen && ctrl.simyr < 2 && ctrl.spinyears < 2)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f\n", 
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f\n", 
 				yday, 
-				epv.vwc[0],(cs.litr1c_strg_SNSC+cs.litr2c_strg_SNSC+cs.litr3c_strg_SNSC+cs.litr4c_strg_SNSC), 
-				cs.fruitc, cs.leafc, summary.daily_gpp*1000, summary.daily_tr*1000, wf.evapotransp); 
+				cs.leafc*1000, cs.fruitc*1000, summary.daily_gpp*1000, summary.daily_tr*1000); 
 			}
 
 

@@ -44,7 +44,7 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 /* precision control */
 /* This constant determines the lower limit of state variables before they
 are set to 0.0 to control rounding and overflow errors */
-#define CRIT_PREC 1e-20
+#define CRIT_PREC 1e-15
 
 /* spinup control */
 /* maximum allowable trend in slow soil carbon at steady-state (kgC/m2/yr) */
@@ -58,13 +58,20 @@ are set to 0.0 to control rounding and overflow errors */
 #define HC_soil				1260000		/* (J/m3/K) heat capacity of soil */
 #define HC_air				1004		/* (J/m3/K) heat capacity of air */
 #define n_sec_in_hour		3600		/* (s/hour)  calculation of hourly value from second values */
-#define n_sec_in_min		60		/* (s/min)  calculation of hourly value from second values */
-#define n_hour_in_day		24		/* (hour/day)  calculation of daily value from hourly values */
-#define water_density		1000	/* (kg/m3)  mean value of water density */
-#define pF_hygroscopw		6.2		/* (dimless)  pF value at hygroscopic water point (dry air) */
-#define pF_wiltingpoint		4.2		/* (dimless)  pF value at wilting point */
-#define pF_fieldcapacity	2.5		/* (dimless)  pF value at field capacity */
+#define n_sec_in_min		60			/* (s/min)  calculation of hourly value from second values */
+#define n_hour_in_day		24			/* (hour/day)  calculation of daily value from hourly values */
+#define water_density		1000		/* (kg/m3)  mean value of water density */
+#define pF_hygroscopw		6.2			/* (dimless)  pF value at hygroscopic water point (dry air) */
+#define pF_wiltingpoint		4.2			/* (dimless)  pF value at wilting point */
+#define pF_fieldcapacity	2.5			/* (dimless)  pF value at field capacity */
+
+/* Hidy 2013 - contants for snow estimation in GSI calculation */
+#define sn_abs				0.6			/* absorptivity of snow */
+#define lh_fus				335.0		/* (kJ/kg) latent heat of fusion */
+#define lh_sub				2845.0		/* (kJ/kg) latent heal of sublimation */
+#define tcoef				0.65		/* (kg/m2/deg C/d) temp. snowmelt coef */
+
 
 #define NDAY_OF_YEAR	    365	
-#define DATA_GAP			-999.9	
+#define DATA_GAP			999.9	
 #define CAMPBELL_PARAM		200    /* (dimless) based on Cambell and Diaz 1988: Simplifiled soil-water balance model (runoff calc. in mm) */

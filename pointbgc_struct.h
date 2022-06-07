@@ -63,18 +63,19 @@ typedef struct
 typedef struct
 {
 	int GSI_flag;					/* flag for doing runoff or not */
-	double basic_temperature;			/* basic_temperature to calculate heatsum */
-	double heatsum_limit1;				/* lower limit of heatsum to calculate heatsum index */
+	double snowcover_limit;			/* critical amount of snow (above: no vegetation period) */
+	double basic_temperature;		/* basic_temperature to calculate heatsum */
+	double heatsum_limit1;			/* lower limit of heatsum to calculate heatsum index */
     double heatsum_limit2;			/* upper limit of heatsum to calculate heatsum index */
 	double tmin_limit1;				/* lower limit of tmin to calculate tmin index */
 	double tmin_limit2;				/* upper limit of tmin to calculate tmin index  */
 	double vpd_limit1;				/* lower limit of tmin to calculate vpd index  */
 	double vpd_limit2;				/* upper limit of tmin to calculate vpd index  */
-	double photoperiod_limit1;		/* lower limit of photoperiod to calculate vpd index  */
-	double photoperiod_limit2;		/* upper limit of photoperiod to calculate vpd index  */
-	int n_moving_avg;			/* moving average (calculated from indicatiors to avoid the effects of single extreme events)*/
+	double dayl_limit1;				/* lower limit of dayl to calculate vpd index  */
+	double dayl_limit2;				/* upper limit of dayl to calculate vpd index  */
+	int n_moving_avg;				/* moving average (calculated from indicatiors to avoid the effects of single extreme events)*/
 	double GSI_limit_SGS;			/* when GSI index fisrt time greater that limit -> start of the growing season */
 	double GSI_limit_EGS;			/* when GSI index fisrt time less that limit -> end of the growing season */
-	file GSI_file;					 /* file to write out th estimated start and the end of vegper */
+	file GSI_file;					/* file to write out th estimated start and the end of vegper */
 } GSI_struct;
 

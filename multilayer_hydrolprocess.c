@@ -49,7 +49,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	double hydr_conduct;  /* hydrological conduction coefficient (m/s) */
 	double hydr_diffus;	  /* hydrological diffusion coefficient (m2/s) */
 	
-	double diffus, percol, diffus_max, percol_max, soilw_hw; /* (kgH2O/m2/min) */
+	double diffus, percol, diffus_max, percol_max, soilw_hw, soilw_sat0; /* (kgH2O/m2/min) */
 
 	double soilw_i1 = 0;
 	double soilw_i0 = 0;
@@ -66,7 +66,6 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	double hydr_diffus_sat  = sitec->hydr_diffus_sat;
 	double psi_sat			= sitec->psi_sat;
 	double toplayer_depth   = sitec->soillayer_depths[0];
-	double soilw_sat_i0     = vwc_sat * sitec->soillayer_thickness[0] * water_density;
 
 
 	/* *****************************/
@@ -118,12 +117,12 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	
 
 	/* actual soil water content at theoretical lower limit of water content: hygroscopic water content */
-	soilw_hw = ws->soilw[0] * sitec->vwc_hw;
+	soilw_hw = sitec->vwc_hw * sitec->soillayer_thickness[0] * water_density;
 
 	/* evap_diff: control parameter to avoid negative soil water content (due to overestimated evaporation + dry soil) */
 	evap_diff = ws->soilw[0] - wf->soilw_evap - soilw_hw;
 
-	/* theoretical lower limit of water content: wilting point: if evap_diff less than 0, evaporation from the next layer  */
+	/* theoretical lower limit of water content: hygroscopic water content. */
 	if (evap_diff < 0)
 	{
 		wf->soilw_evap += evap_diff;
@@ -139,10 +138,12 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	
 
 	/* theoretical upper limit of water content: saturation value (amount above saturation is stored on the surface) */
-	if (ws->soilw[0] > soilw_sat_i0)
+	soilw_sat0     = vwc_sat * sitec->soillayer_thickness[0] * water_density;
+
+	if (ws->soilw[0] > soilw_sat0)
 	{
-		ws->pond_water   = ws->soilw[0] - soilw_sat_i0;
-		ws->soilw[0] = soilw_sat_i0;
+		ws->pond_water   = ws->soilw[0] - soilw_sat0;
+		ws->soilw[0] = soilw_sat0;
 	}
 
 	epv->vwc[0]  = ws->soilw[0] / sitec->soillayer_thickness[0] / water_density;
@@ -166,12 +167,13 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 		/* calculate processes layer to layer (i0: actual layer, i1:deeper layer)  - EXCEPT OF THE BOTTOM LAYER */
  		for (layer=0 ; layer < N_SOILLAYERS-2 ; layer++)
 		{
+			/* only in the first layer: in case of pont water possible water flux from pond to the first layer */
 			if (layer == 0 && step > 0 && ws->pond_water > 0)
 			{
-				if ((soilw_sat_i0 - ws->soilw[layer]) < ws->pond_water)
+				if ((soilw_sat0 - ws->soilw[0]) < ws->pond_water)
 				{
-					ws->pond_water -= (soilw_sat_i0 - ws->soilw[layer]);
-					ws->soilw[layer] = soilw_sat_i0;
+					ws->pond_water -= (soilw_sat0 - ws->soilw[0]);
+					ws->soilw[layer] = soilw_sat0;
 				}
 				else
 				{
@@ -189,7 +191,8 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 			vwc_i1	= epv->vwc[layer+1];
 
 			/* actual soil water content at theoretical lower limit of water content: hygroscopic water content */
-			soilw_hw = soilw_i0 * sitec->vwc_hw;
+			soilw_hw = sitec->vwc_hw * sitec->soillayer_thickness[layer] * water_density;
+
 			
 			/* -----------------------------*/
 			/* conductivity coefficient - theoretical upper limit: saturation value */

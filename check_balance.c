@@ -85,6 +85,7 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 	/* Hidy 2010 - control avoiding negative pools */
 	if (cs->leafc < 0.0 ||  cs->leafc_storage < 0.0 || cs->leafc_transfer < 0.0 || 
 	cs->frootc < 0.0 || cs->frootc_storage < 0.0 || cs->frootc_transfer < 0.0 || 
+	cs->fruitc < 0.0 || cs->fruitc_storage < 0.0 || cs->fruitc_transfer < 0.0 || 
 	cs->livestemc < 0.0 || cs->livestemc_storage < 0.0 || cs->livestemc_transfer < 0.0 || 
 	cs->deadstemc < 0.0 || cs->deadstemc_storage < 0.0 || cs->deadstemc_transfer < 0.0 || 
 	cs->livecrootc < 0.0 ||  cs->livecrootc_storage < 0.0 || cs->livecrootc_transfer < 0.0 || 
@@ -103,7 +104,7 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 	/* sum of sources */
 	in = cs->psnsun_src + cs->psnshade_src + 
 		/* senescence - Hidy 2012 */
-		 cs->SNSC_src +
+		 cs->SNSCsrc +
 		/* management - Hidy 2012. */
 		cs->PLTsrc + cs->THNsrc +  cs->MOWsrc + cs->GRZsrc + cs->HRVsrc + cs->PLGsrc + cs->FRZsrc;
 	
@@ -115,7 +116,7 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 		cs->litr4_hr_snk + cs->soil1_hr_snk + cs->soil2_hr_snk + 
 		cs->soil3_hr_snk + cs->soil4_hr_snk + cs->fire_snk + 
 		/* management and senescence - Hidy 2012. */
-		cs->SNSC_snk + cs->THNsnk + cs->MOWsnk + cs->GRZsnk + cs->HRVsnk + cs->PLGsnk + 
+		cs->SNSCsnk + cs->THNsnk + cs->MOWsnk + cs->GRZsnk + cs->HRVsnk + cs->PLGsnk + 
 		/* fruit simulation - Hidy 2013. */
 		cs->fruit_gr_snk + cs->fruit_mr_snk; 
 		     
@@ -168,6 +169,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 	/* Hidy 2010 -	CONTROL AVOIDING NITROGEN POOLS */
 	if (ns->leafn < 0.0 || ns->leafn < 0.0 ||  ns->leafn_storage < 0.0 || ns->leafn_transfer < 0.0 || 
 	ns->frootn < 0.0 || ns->frootn_storage < 0.0 || ns->frootn_transfer < 0.0 || 
+	ns->fruitn < 0.0 || ns->fruitn_storage < 0.0 || ns->fruitn_transfer < 0.0 || 
 	ns->livestemn < 0.0 || ns->livestemn_storage < 0.0 || ns->livestemn_transfer < 0.0 || 
 	ns->deadstemn < 0.0 || ns->deadstemn_storage < 0.0 || ns->deadstemn_transfer < 0.0 || 
 	ns->livecrootn < 0.0 ||  ns->livecrootn_storage < 0.0 || ns->livecrootn_transfer < 0.0 || 
@@ -188,7 +190,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 	/* sum of sources */
 	in = ns->nfix_src + ns->ndep_src + 
 		/*  senescence */
-		ns->SNSC_src +	/*  senescence */
+		ns->SNSCsrc +	/*  senescence */
 		/* management */
 		ns->PLTsrc + ns->THNsrc +  ns->MOWsrc + ns->GRZsrc + ns->HRVsrc + ns->PLGsrc + ns->FRZsrc;
 	
@@ -196,7 +198,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 	/* sum of sinks */
 	out = ns->nleached_snk + ns->nvol_snk + ns->fire_snk +
 		/*  senescence */
-		ns->SNSC_snk + 
+		ns->SNSCsnk + 
 		/* management */
 		ns->THNsnk + ns->MOWsnk + ns->GRZsnk + ns->HRVsnk + ns->PLGsnk;
 
@@ -210,7 +212,8 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 		ns->deadcrootn + ns->deadcrootn_storage + ns->deadcrootn_transfer + 
 		ns->cwdn + ns->litr1n + ns->litr2n + ns->litr3n + ns->litr4n +
 		ns->soil1n + ns->soil2n + ns->soil3n + ns->soil4n +
-		ns->sminn_SUM + ns->npool + ns->retransn +
+		ns->sminn[0] + ns->sminn[1] + ns->sminn[2] + ns->sminn[3] + ns->sminn[4] + 
+		ns->npool + ns->retransn +
 		/* fruit simulation */
 		ns->fruitn + ns->fruitn_storage + ns->fruitn_transfer;
 	

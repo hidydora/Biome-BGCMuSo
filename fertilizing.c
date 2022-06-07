@@ -153,9 +153,7 @@ int fertilizing(const control_struct* ctrl, fertilizing_struct* FRZ,
 	ns->litr3n += nf->FRZ_to_litr3n;
 	ns->litr4n += nf->FRZ_to_litr4n;
 
-	ns->sminn[0]			 += nf->FRZ_to_sminn;
-	ns->sminn_RZ			 += nf->FRZ_to_sminn;
-	ns->sminn_RZ_befsoilproc         += nf->FRZ_to_sminn;
+	ns->sminn[0]	  += nf->FRZ_to_sminn;
 	
 	ns->FRZsrc += nf->FRZ_to_sminn + nf->FRZ_to_litr1n + nf->FRZ_to_litr2n + nf->FRZ_to_litr3n + nf->FRZ_to_litr4n;
 

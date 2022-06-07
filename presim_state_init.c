@@ -124,20 +124,30 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* mowing - Hidy 2008.*/
 	cs->MOWsnk = 0.0; 
 	cs->MOWsrc = 0.0;
+	cs->MOW_transportC = 0.0;
+	cs->litr1c_strg_MOW = 0.0;
+	cs->litr2c_strg_MOW = 0.0;
+	cs->litr3c_strg_MOW = 0.0;
+	cs->litr4c_strg_MOW = 0.0;
 	/* grazing - Hidy 2008. */
 	cs->GRZsnk = 0.0;  
 	cs->GRZsrc = 0.0;
 	/* harvesting - Hidy 2012. */
 	cs->HRVsnk = 0.0;  
 	cs->HRVsrc = 0.0;
+	cs->HRV_transportC = 0.0;
+	cs->litr1c_strg_HRV = 0.0;
+	cs->litr2c_strg_HRV = 0.0;
+	cs->litr3c_strg_HRV = 0.0;
+	cs->litr4c_strg_HRV = 0.0;
 	/* ploughing - Hidy 2012. */
 	cs->PLGsnk = 0.0;	
 	cs->PLGsrc = 0.0;
 	/* fertilizing - Hidy 2009.*/
 	cs->FRZsrc = 0.0;
 	/* senescence - Hidy 2012.*/
-	cs->SNSC_snk= 0.0;
-	cs->SNSC_src= 0.0;
+	cs->SNSCsnk= 0.0;
+	cs->SNSCsrc= 0.0;
 	/* fruit simulation - Hidy 2013.*/
 	cs->fruitc = 0.0;
 	cs->fruitc_storage = 0.0;
@@ -183,8 +193,6 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 		ns->sminn[layer] = 0.0;
 	}
 	ns->sminn_RZ = 0.0;
-	ns->sminn_RZ_befsoilproc = 0.0;
-	ns->sminn_SUM = 0.0;
 	ns->retransn = 0.0;
 	ns->npool = 0.0;
 	ns->nfix_src = 0.0;
@@ -200,20 +208,30 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* mowing - Hidy 2008. */
 	ns->MOWsnk = 0.0;  
 	ns->MOWsrc = 0.0;
+	ns->MOW_transportN = 0.0;
+	ns->litr1n_strg_MOW = 0.0;
+	ns->litr2n_strg_MOW = 0.0;
+	ns->litr3n_strg_MOW = 0.0;
+	ns->litr4n_strg_MOW = 0.0;
 	 /* grazing - Hidy 2008. */
 	ns->GRZsnk = 0.0; 
 	ns->GRZsrc = 0.0;
 	/* harvesting - Hidy 2012. */
 	ns->HRVsnk = 0.0;  
 	ns->HRVsrc = 0.0;
+	ns->HRV_transportN = 0.0;
+	ns->litr1n_strg_HRV = 0.0;
+	ns->litr2n_strg_HRV = 0.0;
+	ns->litr3n_strg_HRV = 0.0;
+	ns->litr4n_strg_HRV = 0.0;
 	/* ploughing - Hidy 2012. */
 	ns->PLGsnk = 0.0;	
 	ns->PLGsrc = 0.0;
     /* fertilization - Hidy 2008. */
 	ns->FRZsrc = 0.0;  
 	/* senescence - Hidy 2012.*/
-	ns->SNSC_snk= 0.0;
-	ns->SNSC_src= 0.0;
+	ns->SNSCsnk= 0.0;
+	ns->SNSCsrc= 0.0;
 	/* fruit simulation - Hidy 2013.*/
 	ns->fruitn = 0.0;
 	ns->fruitn_storage = 0.0;

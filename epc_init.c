@@ -29,7 +29,7 @@ which gave an error.
 int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, control_struct* ctrl)
 {
 	int ok = 1;
-	double t1,t2,t3,t4,r1,sum;
+	double t1,t2,t3,t4,r1,sum, diff;
 	int i;
 	file temp, wpm_file, msc_file; 	// Hidy 2011.
 	char key1[] = "EPC_FILE";
@@ -309,13 +309,16 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}
 	epc->leaflitr_flig = t3;
 	/* test for litter fractions sum to 1.0 */
-	if (ok && (fabs(t1+t2+t3-1.0) > 1e-10))
+	diff=1.0 - (t1+t2+t3);
+
+	if (ok && (fabs(diff) > 1e-6))
 	{
-		printf("Error:\n");
+		printf("Error in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
 		printf("leaf litter proportions of labile, cellulose, and lignin\n");
 		printf("must sum to 1.0. Check initialization file and try again.\n");
 		ok=0;
 	}
+	else t1 += diff;
 	/* calculate shielded and unshielded cellulose fraction */
 	if (ok)
 	{
@@ -358,15 +361,17 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}
 	epc->frootlitr_flig = t3;
 	/* test for litter fractions sum to 1.0 */
-	sum=t1+t2+t3;		/* NEW 20.03.01*/
-	//printf("sum %.10f\n",sum);
-	if (ok && sum != 1.0)
+	sum=t1+t2+t3;	
+	diff=1.0 - (t1+t2+t3);
+
+	if (ok && (fabs(diff) > 1e-6))
 	{
 		printf("Error in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
 		printf("froot litter proportions of labile, cellulose, and lignin\n");
 		printf("must sum to 1.0. Check initialization file and try again.\n");
 		ok=0;
 	}
+	else t1 += diff;
 	/* calculate shielded and unshielded cellulose fraction */
 	if (ok)
 	{
@@ -409,13 +414,16 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}
 	epc->fruitlitr_flig = t3;
 	/* test for litter fractions sum to 1.0 */
-	if (ok && (fabs(t1+t2+t3-1.0) > 1e-10))
+	diff=1.0 - (t1+t2+t3);
+
+	if (ok && (fabs(diff) > 1e-6))
 	{
-		printf("Error:\n");
+		printf("Error in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
 		printf("fruit litter proportions of labile, cellulose, and lignin\n");
 		printf("must sum to 1.0. Check initialization file and try again.\n");
 		ok=0;
 	}
+	else t1 += diff;
 	/* calculate shielded and unshielded cellulose fraction */
 	if (ok)
 	{
@@ -510,6 +518,11 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	if (ok && scan_value(temp, &epc->flnr, 'd'))
 	{
 		printf("Error reading Rubisco N fraction, epc_init()\n");
+		ok=0;
+	}
+	if (ok && scan_value(temp, &epc->flnp, 'd'))
+	{
+		printf("Error reading PeP N fraction, epc_init()\n");
 		ok=0;
 	}
 	if (ok && scan_value(temp, &epc->gl_smax, 'd'))
@@ -617,7 +630,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	if ((epc->vwc_ratio_open != DATA_GAP || epc->vwc_ratio_close != DATA_GAP) && (epc->psi_open != DATA_GAP || epc->psi_close != DATA_GAP) )
 	{
 		printf("Warning: if any VWC_ratio data is available, VWC_ratio is used to calculate conductance limitation()\n");
-		printf("Check epc file, set PSI_close and PSI_open data to -999.9 and try again.\n");
+		printf("Check epc file, set PSI_close and PSI_open data to 999.9 and try again.\n");
 		ok=0;
 	}
 
@@ -651,6 +664,12 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	if (ok && scan_value(temp, &epc->mort_SNSC_to_litter, 'd'))
 	{
 		printf("Error reading turnover rate of wilted standing biomass to litter parameter: epc_init()\n");
+		ok=0;
+	}
+
+	if (ok && scan_value(temp, &epc->mort_CnW_to_litter, 'd'))
+	{
+		printf("Error reading turnover rate of cut-down non-woody biomass to litter parameter: epc_init()\n");
 		ok=0;
 	}
 

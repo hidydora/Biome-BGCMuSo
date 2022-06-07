@@ -1,6 +1,7 @@
 /* 
 multilayer_sminn.c
-Calculating the change in content of soil mineral nitrogen in multilayer soil (soil processes, nitrogen leaching, depostion and fixing)
+Calculating the change in content of soil mineral nitrogen in multilayer soil (plant N upate, soil processes, nitrogen leaching, 
+depostion and fixing). State update of sminn_RZ (mineral N content of rootzone).
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Biome-BGC version 4.1.1
@@ -26,67 +27,86 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 	int ok=1;
 	int layer;
 	double soilwater_nconc, wflux_downward, sminn_from_top;
-	double sminn_change_ctrl, weighting_factor_ctrl, sminn_SUM, sminn_RZ;
-	double weighting_factor = 1;
-	double sminn_toplayers = 0;
+	double sminn_SOILPROC_SUM, sminn_RZ;
+	double sminn_to_soil_ctrl, diff;
 
-	sminn_change_ctrl = weighting_factor_ctrl = sminn_SUM = sminn_RZ = 0;
+	sminn_SOILPROC_SUM = sminn_to_soil_ctrl = sminn_RZ = 0;
 
-	/* ****************************************************************************/
-	/* 1. Calculating the change in content of soil mineral nitrogen in multilayer soil and update state variables. 
 
-	/* In the rootlayers the change of SMINN_RZ (soil mineral N content if rootzone) is caused by soil processes, leaching, deposition
-		and nfix. The produced/consumed N (calculated by decomposition sburoutine) is divided into rootzone soil layers based on 
-		their soil mineral N content.In the further soil layers (where no root can be found) N content is changed only by leaching */
 
+	/* ***************************************************************************************************** */	
+	/* 1. SOILPROC:
+		1.A.Plant N uptake from SMINN (sminn_to_npool is determined in daily_allocation routine) - 
+	    1.B.Decomposition: due microbial soil processes SMINN (soil mineral N content) is changing in the soil (determined in daily_allocation).
+	    The produced/consumed N is divided between soil layers based on their N content. */
+
+	sminn_SOILPROC_SUM= 0;
+
+	for (layer = 0; layer < epv->n_rootlayers-1; layer++)
+	{	
+		nf->sminn_to_soil[layer] = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) * (ns->sminn[layer]/ns->sminn_RZ);
+		sminn_SOILPROC_SUM += nf->sminn_to_soil[layer];
+	}
+
+
+	/* the rest comes from the last layer */
+	nf->sminn_to_soil[epv->n_rootlayers-1] = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) - sminn_SOILPROC_SUM;
+	sminn_SOILPROC_SUM                     += nf->sminn_to_soil[epv->n_rootlayers-1];
+
+	diff = ns->sminn[epv->n_rootlayers-1] - nf->sminn_to_soil[epv->n_rootlayers-1];
+
+
+	/* calculation control */
+	diff = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) - sminn_SOILPROC_SUM;
+	if (fabs(diff) > CRIT_PREC)          
+	{
+		printf("Error in sminn change calculation in multilayer_sminn.c\n");
+		ok=0;
+	}
+	
+
+	/* ***************************************************************************************************** */	
+	/* 2. State update SMINN: soil processes (decomposition + plant uptake), deposition and fixation */
 
 	for (layer = 0; layer < epv->n_rootlayers; layer++)
 	{
-		/* weighting factor is calculated in order to divide the produced/consumed N into rootzone layers based on their N content */
-		if (epv->n_rootlayers > 1)
+		/* 1. soil processes (decomposition + plant uptake) */
+		diff = ns->sminn[layer] - nf->sminn_to_soil[layer];
+	
+		if (diff < 0.0 && fabs(diff) > CRIT_PREC)       
 		{
-			weighting_factor = (ns->sminn[layer] / ns->sminn_RZ_befsoilproc);
-			
-			if (layer == epv->n_rootlayers-1) 
-			{
-				weighting_factor = (ns->sminn_RZ_befsoilproc - sminn_toplayers) / ns->sminn_RZ_befsoilproc;
-			}
-			
-			sminn_toplayers  += ns->sminn[layer];
+ 			printf("Fatal error: negative N content (multilayer_sminn.c)\n");
+			ok = 0;
 		}
+		else
+		{
+			ns->sminn[layer] -= nf->sminn_to_soil[layer];
+		}
+		/* 2. deposition: only in top soil layer */
+		if (layer == 0) ns->sminn[0]     += nf->ndep_to_sminn;
+
+		/* 3. fixation: based on the quantity of the root mass in the given layer */
+		ns->sminn[layer] += nf->nfix_to_sminn * epv->soillayer_RZportion[layer];
 	
-	
-		nf->sminn_soilproc[layer] = (ns->sminn_RZ - ns->sminn_RZ_befsoilproc) * weighting_factor;
-		ns->sminn[layer]        += nf->sminn_soilproc[layer];
-		sminn_change_ctrl       += nf->sminn_soilproc[layer];
-		weighting_factor_ctrl   += weighting_factor;
-	}
-	
-	/* ****************************************************************************/
-	/* 2. CONTROL */
-	if (fabs(sminn_change_ctrl - (ns->sminn_RZ - ns->sminn_RZ_befsoilproc)) > 1e-8)
-	{
-		printf("Error in sminn change calculation in multilayer_sminn.c\n");
-		ok=0;
 	}
 
-	if (1.0 - weighting_factor_ctrl > 1e-8)
-	{
-		printf("Error in sminn change calculation in multilayer_sminn.c\n");
-		ok=0;
-	}
+	ns->npool     += nf->sminn_to_npool;
+	ns->nfix_src  += nf->nfix_to_sminn;
+	ns->ndep_src  += nf->ndep_to_sminn;
+
+	nf->sminn_to_soil_SUM = 0;
 
 	/* ****************************************************************************/
-	/* 3. N leaching flux is calculated after all the other nfluxes are reconciled to avoid the possibility of removing more N than is there. This follows
-	the implicit logic of precedence for soil mineral N resources:
-	A) microbial processes and plant uptake (competing)
-	B) leaching (as a function of the presumed proportion of the SMINN pool which is soluble (nitrates), the SWC and the percolation */
+	/* 3. N leaching:
+		  Leaching fluxes are calculated after all the other nfluxes are reconciled to avoid the possibility of removing more N than is 
+		  here. Leaching calculation based on the a function of the presumed proportion of the SMINN pool which is soluble (nitrates),
+		  the SWC and the percolation */
 
 	sminn_from_top = 0;
 	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
 	{
 		soilwater_nconc			= epc->mobilen_prop * ns->sminn[layer] / ws->soilw[layer];
-
+ 
 		wflux_downward			= wf->soilw_percolated[layer];
 
 		nf->sminn_leached[layer]= soilwater_nconc * wflux_downward;
@@ -94,14 +114,21 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 		ns->sminn[layer]        += sminn_from_top - nf->sminn_leached[layer];
 
 		sminn_from_top			= nf->sminn_leached[layer];
+	
+		/* control */
+		if (ns->sminn[layer] < 0.0 && fabs(ns->sminn[layer]) > CRIT_PREC)       
+		{
+ 			printf("Fatal error: negative N content (multilayer_sminn.c)\n");
+			ok=0;	
+		}
 	}
 	ns->nleached_snk	+= nf->sminn_leached[N_SOILLAYERS-2];
 	
-
-	/* ****************************************************************************/
-	/* 4. Update state variables */
-
-	/* 4.1: soil mineral N content of rootzone */
+	/* ***************************************************************************************************** */	
+	/* 4. Calculating the soil mineral N content of rooting zone taking into account changing rooting depth 
+		  N elimitated/added to rootzone Ncontent because of changes of the soil layer's N content */
+	
+	sminn_RZ = 0;
 	if (epv->n_rootlayers == 1)
 	{
 		sminn_RZ = ns->sminn[0];
@@ -111,29 +138,13 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 		for (layer = 0; layer < epv->n_rootlayers-1; layer++)
 		{
 			sminn_RZ	+= ns->sminn[layer];
-		}
-			
+		}	
 		sminn_RZ	+= ns->sminn[epv->n_rootlayers-1] * (epv->rooting_depth - sitec->soillayer_depths[layer-1]) / sitec->soillayer_thickness[layer];
 	}
+	ns->sminn_RZ	  = sminn_RZ;
 
-	ns->sminn_RZ = sminn_RZ;
 
-	/* 4.2: sum of the soil mineral N content of soil layers and control of negative Npools*/
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
-	{
-		if (ns->sminn[layer] < 0.0)       
-		{
-			printf("Fatal error: negative N content (multilayer_sminn.c)\n");
-			ok=0;	
-		}
-		
-		sminn_SUM += ns->sminn[layer];
-	}
-	ns->sminn_SUM = sminn_SUM;
 
-	/* 4.3: note the valeu of sminn_RZ to calculate the soil process effect */	
-	ns->sminn_RZ_befsoilproc = ns->sminn_RZ;	
-		
 	
 	return (!ok);
 }

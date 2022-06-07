@@ -50,14 +50,14 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 
 	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
 	{
-		/* actual soil water content at theoretical lowe limit of water content: hygroscopic water point */
-		soilw_hw = ws->soilw[layer] * sitec->vwc_hw;
+		/* actual soil water content at theoretical lower limit of water content: hygroscopic water point */
+		soilw_hw = sitec->vwc_hw * sitec->soillayer_thickness[layer] * water_density;
+
 
 		/* root water uptake is be possible from the layers where root is located  */
 		if (layer < epv->n_rootlayers)
 		{
-
-			/* if stomata is not closed - root water uptake is divided between soil layers where enough soil moisture is available */
+			/* if stomata is not closed - root water uptake is divided between soil layers whe enough soil moisture is available */
 			if (epv->m_soilprop > 0)
 			{
 				wf->soilw_trans[layer] = wf->soilw_trans_SUM * (epv->m_soilprop_layer[layer] / epv->m_soilprop) * epv->soillayer_RZportion[layer];
@@ -74,7 +74,7 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 		/* transp_diff: control parameter to avoid negative soil water content (due to overestimated transpiration + dry soil) */
 		transp_diff = ws->soilw[layer] - wf->soilw_trans[layer] - soilw_hw;
 
-		/* theoretical lower limit of water content: wilting point: if transp_diff less than 0, limited transpiration flux  */
+		/* theoretical lower limit of water content: hygroscopic water point (if transp_diff less than 0, limited transpiration flux)  */
 		if (transp_diff < 0)
 		{
 			wf->soilw_trans[layer] += transp_diff;

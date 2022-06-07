@@ -46,6 +46,14 @@ int GSI_init(file init, GSI_struct* GSI)
 		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
 		ok=0;
 	}
+
+	
+	/* snowcover_limit for calculation heatsum */
+	if (ok && scan_value(init, &GSI->snowcover_limit, 'd'))
+	{
+		printf("Error reading snowcover_limit parameter: GSI_init()\n");
+		ok=0;
+	}
 	
 	/* get flag of GSI flag */
 	if (ok && scan_value(init, &GSI->GSI_flag, 'i'))
@@ -57,21 +65,21 @@ int GSI_init(file init, GSI_struct* GSI)
 	/* basic_temperature for calculation heatsum */
 	if (ok && scan_value(init, &GSI->basic_temperature, 'd'))
 	{
-		printf("Error reading heatsum_limit parameter: GSI_init()\n");
+		printf("Error reading basic_temperature parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* heatsum_limit1 for calculation heatsum index */
 	if (ok && scan_value(init, &GSI->heatsum_limit1, 'd'))
 	{
-		printf("Error reading heatsum_limit parameter: GSI_init()\n");
+		printf("Error reading heatsum_limit1 parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* heatsum_limit2 for calculation heatsum index */
 	if (ok && scan_value(init, &GSI->heatsum_limit2, 'd'))
 	{
-		printf("Error reading heatsum_limit parameter: GSI_init()\n");
+		printf("Error reading heatsum_limit2 parameter: GSI_init()\n");
 		ok=0;
 	}
 
@@ -103,17 +111,17 @@ int GSI_init(file init, GSI_struct* GSI)
 		ok=0;
 	}
 
-	/* photoperiod_limit1 for calculation photoperiod index */
-	if (ok && scan_value(init, &GSI->photoperiod_limit1, 'd'))
+	/* dayl_limit1 for calculation dayl index */
+	if (ok && scan_value(init, &GSI->dayl_limit1, 'd'))
 	{
-		printf("Error reading photoperiod_limit parameter: GSI_init()\n");
+		printf("Error reading dayl_limit parameter: GSI_init()\n");
 		ok=0;
 	}
 
-	/* photoperiod_limit2 for calculation photoperiod index */
-	if (ok && scan_value(init, &GSI->photoperiod_limit2, 'd'))
+	/* dayl_limit2 for calculation dayl index */
+	if (ok && scan_value(init, &GSI->dayl_limit2, 'd'))
 	{
-		printf("Error reading photoperiod_limit parameter: GSI_init()\n");
+		printf("Error reading dayl_limit parameter: GSI_init()\n");
 		ok=0;
 	}
 

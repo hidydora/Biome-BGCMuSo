@@ -48,7 +48,7 @@ int GSI_init(file init, GSI_struct* GSI);
 int read_mgmarray(int simyr, int varMGM, file MGM_file, double*** mgmarray);
 
 /* model corrections - Hidy 2009. */
-int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, 
+int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, const siteconst_struct* sitec,
 	GSI_struct* GSI, phenarray_struct* phenarr);
 
 

@@ -1,6 +1,6 @@
 /* 
 multilayer_rootdepth.c
-Hidy 2011 - calculation of changing rooting depth based on empirical function
+Hidy 2011 - calculation of changing rooting depth based on empirical function and state update of rootzone sminn content (sminn_RZ)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Biome-BGC version vHD2
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -30,7 +30,6 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 
 	/* soil mineral N in changing rooting zone */
 	double sminn_RZ = 0;
-	double sminn_SUM = 0;
 	int layer;
 
 	/* important dayw of year */
@@ -39,13 +38,13 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	double offday = phen->offday;
 	
 	/* ***************************************************************************************************** */	
-	/* 1. calculating planting date and maturity date (Campbell and Diaz) based on empirical function */
+	/* 1. Calculating planting date and maturity date (Campbell and Diaz) based on empirical function */
 
 	plant_day = onday;
 	matur_day = onday + maturity_coeff * (offday - onday);
 	
 	/* ***************************************************************************************************** */	
-	/* 2. calculating rooting depth in case of non-wwody ecosystems (based on Campbell and Diaz, 1988) 
+	/* 2. Calculating rooting depth in case of non-wwody ecosystems (based on Campbell and Diaz, 1988) 
 	      actual rooting depth determines the rootzone depth (epv->n_rootlayers) */
 	
 	if (!epc->woody)
@@ -60,8 +59,9 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 		}
 	}
 	else epv->rooting_depth = sitec->max_rootzone_depth;
+
 	/* ***************************************************************************************************** */	
-	/* 3. calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
+	/* 3. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
 	
 	if (epv->rooting_depth > 0)
 	{
@@ -103,7 +103,7 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	}
 
 	/* ***************************************************************************************************** */	
-	/* 4. calculating the relative soillayer thickness: ratio of actual thickness and active soil depth */
+	/* 4. Calculating the relative soillayer thickness: ratio of actual thickness and active soil depth */
 	
 	
 	if (epv->n_rootlayers == 1)
@@ -136,23 +136,25 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 		}
 	}
 
-	/* ****************************************************************************/
-	/* 5. CONTROL */
+	/* control */
 	for (layer =0; layer < N_SOILLAYERS; layer++)
 	{
 		soillayer_RZportion_ctrl += epv->soillayer_RZportion[layer];
 	}
-
+	
+	/* control */
 	if (1. - soillayer_RZportion_ctrl > 1e-8)
 	{
 		printf("Error in multilayer_rootdepth: sum of soillayer_RZportion is not equal to 1.0\n");
 		ok=0;
 	}
 
+
 	/* ***************************************************************************************************** */	
-	/* 6. calculating the soil mineral N content of rooting zone taking into account changing rooting depth 
-		R: SUM of N elimitated/added to rootzone Ncontent because of the decrease/increase of rootzone depth */
+	/* 5. Calculating the soil mineral N content of rooting zone taking into account changing rooting depth 
+		  N elimitated/added to rootzone Ncontent because of the decrease/increase of rootzone depth */
 	
+	sminn_RZ = 0;
 	if (epv->n_rootlayers == 1)
 	{
 		sminn_RZ = ns->sminn[0];
@@ -162,13 +164,11 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 		for (layer = 0; layer < epv->n_rootlayers-1; layer++)
 		{
 			sminn_RZ	+= ns->sminn[layer];
-		}
-			
+		}	
 		sminn_RZ	+= ns->sminn[epv->n_rootlayers-1] * (epv->rooting_depth - sitec->soillayer_depths[layer-1]) / sitec->soillayer_thickness[layer];
 	}
-				
-	ns->sminn_RZ		     = sminn_RZ;
-	ns->sminn_RZ_befsoilproc = sminn_RZ;
+	ns->sminn_RZ	  = sminn_RZ;
+
 
 
 	return(!ok);

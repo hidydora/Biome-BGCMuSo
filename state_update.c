@@ -394,7 +394,6 @@ int alloc, int woody, int evergreen)
 {
 	int ok=1;
 
-
 	/* N state variables are updated below in the order of the relevant
 	fluxes in the daily model loop */
 	
@@ -467,12 +466,6 @@ int alloc, int woody, int evergreen)
 	ns->retransn   += nf->livecrootn_to_retransn;   /* N retranslocation */
 	ns->livecrootn -= nf->livecrootn_to_retransn;
 
-	/* Hidy 2011 - Nitrogen deposition in the top soil layer */
-	ns->sminn_RZ     += nf->ndep_to_sminn;
-	ns->ndep_src     += nf->ndep_to_sminn;
-	ns->sminn_RZ     += nf->nfix_to_sminn;
-	ns->nfix_src     += nf->nfix_to_sminn;
-
 
 	/* Litter and soil decomposition fluxes */
 	/* Fluxes out of coarse woody debris into litter pools */
@@ -493,10 +486,10 @@ int alloc, int woody, int evergreen)
 	{
 		nf->sminn_to_nvol_l1s1 = 0.0;
 	}
-	ns->soil1n         += nf->sminn_to_soil1n_l1;
-	ns->sminn_RZ      -= nf->sminn_to_soil1n_l1;
-	ns->nvol_snk	   += nf->sminn_to_nvol_l1s1;
-	ns->sminn_RZ      -= nf->sminn_to_nvol_l1s1;
+	ns->soil1n             += nf->sminn_to_soil1n_l1;
+	nf->sminn_to_soil_SUM  += nf->sminn_to_soil1n_l1;
+	ns->nvol_snk	       += nf->sminn_to_nvol_l1s1;
+	nf->sminn_to_soil_SUM  += nf->sminn_to_nvol_l1s1;
 	
 	ns->soil2n     += nf->litr2n_to_soil2n;
 	ns->litr2n     -= nf->litr2n_to_soil2n;
@@ -508,10 +501,10 @@ int alloc, int woody, int evergreen)
 	{
 		nf->sminn_to_nvol_l2s2 = 0.0;
 	}
-	ns->soil2n         += nf->sminn_to_soil2n_l2;
-	ns->sminn_RZ      -= nf->sminn_to_soil2n_l2;
-	ns->nvol_snk       += nf->sminn_to_nvol_l2s2;
-	ns->sminn_RZ     -= nf->sminn_to_nvol_l2s2;
+	ns->soil2n            += nf->sminn_to_soil2n_l2;
+	nf->sminn_to_soil_SUM += nf->sminn_to_soil2n_l2;
+	ns->nvol_snk          += nf->sminn_to_nvol_l2s2;
+	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_l2s2;
 	
 	ns->litr2n     += nf->litr3n_to_litr2n;
 	ns->litr3n     -= nf->litr3n_to_litr2n;
@@ -526,10 +519,10 @@ int alloc, int woody, int evergreen)
 	{
 		nf->sminn_to_nvol_l4s3 = 0.0;
 	}
-	ns->soil3n         += nf->sminn_to_soil3n_l4;
-	ns->sminn_RZ      -= nf->sminn_to_soil3n_l4;
-	ns->nvol_snk       += nf->sminn_to_nvol_l4s3;
-	ns->sminn_RZ      -= nf->sminn_to_nvol_l4s3;
+	ns->soil3n            += nf->sminn_to_soil3n_l4;
+	nf->sminn_to_soil_SUM += nf->sminn_to_soil3n_l4;
+	ns->nvol_snk          += nf->sminn_to_nvol_l4s3;
+	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_l4s3;
 	
 	ns->soil2n     += nf->soil1n_to_soil2n;
 	ns->soil1n     -= nf->soil1n_to_soil2n;
@@ -541,10 +534,10 @@ int alloc, int woody, int evergreen)
 	{
 		nf->sminn_to_nvol_s1s2 = 0.0;
 	}
-	ns->soil2n         += nf->sminn_to_soil2n_s1;
-	ns->sminn_RZ      -= nf->sminn_to_soil2n_s1;
-	ns->nvol_snk       += nf->sminn_to_nvol_s1s2;
-	ns->sminn_RZ      -= nf->sminn_to_nvol_s1s2;
+	ns->soil2n            += nf->sminn_to_soil2n_s1;
+	nf->sminn_to_soil_SUM += nf->sminn_to_soil2n_s1;
+	ns->nvol_snk          += nf->sminn_to_nvol_s1s2;
+	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s1s2;
 	
 	ns->soil3n     += nf->soil2n_to_soil3n;
 	ns->soil2n     -= nf->soil2n_to_soil3n;
@@ -556,10 +549,10 @@ int alloc, int woody, int evergreen)
 	{
 		nf->sminn_to_nvol_s2s3 = 0.0;
 	}
-	ns->soil3n         += nf->sminn_to_soil3n_s2;
-	ns->sminn_RZ      -= nf->sminn_to_soil3n_s2;
-	ns->nvol_snk       += nf->sminn_to_nvol_s2s3;
-	ns->sminn_RZ      -= nf->sminn_to_nvol_s2s3;
+	ns->soil3n            += nf->sminn_to_soil3n_s2;
+	nf->sminn_to_soil_SUM += nf->sminn_to_soil3n_s2;
+	ns->nvol_snk          += nf->sminn_to_nvol_s2s3;
+	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s2s3;
 	
 	ns->soil4n     += nf->soil3n_to_soil4n;
 	ns->soil3n     -= nf->soil3n_to_soil4n;
@@ -571,26 +564,25 @@ int alloc, int woody, int evergreen)
 	{
 		nf->sminn_to_nvol_s3s4 = 0.0;
 	}
-	ns->soil4n       += nf->sminn_to_soil4n_s3;
-	ns->sminn_RZ      -= nf->sminn_to_soil4n_s3;
-	ns->nvol_snk     += nf->sminn_to_nvol_s3s4;
-	ns->sminn_RZ      -= nf->sminn_to_nvol_s3s4;
+	ns->soil4n            += nf->sminn_to_soil4n_s3;
+	nf->sminn_to_soil_SUM += nf->sminn_to_soil4n_s3;
+	ns->nvol_snk          += nf->sminn_to_nvol_s3s4;
+	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s3s4;
 	
-	nf->sminn_to_nvol_s4 = epc->denitrif_prop * nf->soil4n_to_sminn;
-	ns->sminn_RZ       += nf->soil4n_to_sminn;
-	ns->soil4n        -= nf->soil4n_to_sminn;
-	ns->nvol_snk      += nf->sminn_to_nvol_s4;
-	ns->sminn_RZ       -= nf->sminn_to_nvol_s4;
+	nf->sminn_to_nvol_s4  = epc->denitrif_prop * nf->soil4n_to_sminn;
+	nf->sminn_to_soil_SUM -= nf->soil4n_to_sminn;
+	ns->soil4n            -= nf->soil4n_to_sminn;
+	ns->nvol_snk          += nf->sminn_to_nvol_s4;
+	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s4;
 
 	/* Bulk denitrification of soil mineral N */
-	ns->sminn_RZ  -= nf->sminn_to_denitrif;
-	ns->nvol_snk += nf->sminn_to_denitrif;
+	nf->sminn_to_soil_SUM   += nf->sminn_to_denitrif;
+	ns->nvol_snk            += nf->sminn_to_denitrif;
 	
-	/* Plant allocation flux, from N retrans pool and soil mineral N pool */
-	ns->npool    += nf->retransn_to_npool;
-	ns->retransn -= nf->retransn_to_npool;
-	ns->npool    += nf->sminn_to_npool;
-	ns->sminn_RZ  -= nf->sminn_to_npool;
+	/* Plant allocation flux, from N retrans pool */
+	ns->npool     += nf->retransn_to_npool;
+	ns->retransn  -= nf->retransn_to_npool;
+
 		
 	/* Daily allocation fluxes */
 	/* Daily leaf allocation fluxes */

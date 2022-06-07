@@ -69,20 +69,23 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	cs->soil4_hr_snk = 0.0;
 	cs->fire_snk = 0.0;
 	/* senescence - Hidy 2010.*/
-	cs->SNSC_snk = 0.0;
-	cs->SNSC_src = 0.0;
+	cs->SNSCsnk = 0.0;
+	cs->SNSCsrc = 0.0;
 	/* planting - Hidy 2008.*/
 	cs->PLTsrc = 0.0; 
 	/* thinning - Hidy 2012.*/
 	cs->THNsnk = 0.0; 
 	/* mowing - Hidy 2008.*/
 	cs->MOWsnk = 0.0; 
+	cs->MOW_transportC = 0.0; 
 	/* grazing - Hidy 2008. */
 	cs->GRZsnk = 0.0;  
 	cs->GRZsrc = 0.0;
 	/* harvesting - Hidy 2012. */
 	cs->HRVsnk = 0.0;  
 	cs->HRVsrc = 0.0;
+	cs->HRVsnk = 0.0; 
+	cs->HRV_transportC = 0.0;
 	/* ploughing - Hidy 2012. */
 	cs->PLGsnk = 0.0;	
 	cs->PLGsrc = 0.0;
@@ -99,20 +102,22 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	ns->nvol_snk = 0.0;
 	ns->fire_snk = 0.0;
 	/* senescence - Hidy 2010.*/
-	ns->SNSC_snk = 0.0;
-	ns->SNSC_src = 0.0;
+	ns->SNSCsnk = 0.0;
+	ns->SNSCsrc = 0.0;
 	/* planting - Hidy 2012.*/
 	ns->PLTsrc = 0.0; 
 	/* thinning - Hidy 2012.*/
 	ns->THNsnk = 0.0; 
 	/* mowing - Hidy 2008.*/
 	ns->MOWsnk = 0.0; 
+	ns->MOW_transportN = 0.0; 
 	/* grazing - Hidy 2008. */
 	ns->GRZsnk = 0.0;  
 	ns->GRZsrc = 0.0;
 	/* harvesting - Hidy 2012. */
 	ns->HRVsnk = 0.0; 
 	ns->HRVsrc = 0.0;
+	ns->HRV_transportN = 0.0; 
 	/* ploughing - Hidy 2012. */
 	ns->PLGsnk = 0.0;	
 	ns->PLGsrc = 0.0;

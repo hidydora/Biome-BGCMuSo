@@ -416,10 +416,11 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->sminn_to_nvol_s3s4 = 0.0;
 	nf->sminn_to_nvol_s4 = 0.0;
 	/* Hidy 2011 - multilayer soil */
+	nf->sminn_to_soil_SUM = 0.0;
 	for (layer = 0; layer < N_SOILLAYERS; layer ++)
 	{
 		nf->sminn_leached[layer]      = 0.0;
-		nf->sminn_soilproc[layer]  = 0.0; 
+		nf->sminn_to_soil[layer]  = 0.0; 
 	}
 	nf->retransn_to_npool = 0.0;  
     nf->sminn_to_npool = 0.0;

@@ -160,11 +160,12 @@ int spinup_daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	growth N demands against the available soil mineral N pool. */
 	sum_ndemand = plant_ndemand + nt->potential_immob;
 	
-	/* spinup control: add N to sminn to meet demand */
+	/* Hidy 2013 - NO spinup control: add N to sminn to meet demand */
 	/* naddfrac scales N additions from 1.0 to 0.0 */
 	if (sum_ndemand > ns->sminn_RZ)
 	{
-		dif = sum_ndemand - ns->sminn_RZ;
+		dif = sum_ndemand - ns->sminn[0];
+		ns->sminn[0] += dif * naddfrac;
 		ns->sminn_RZ += dif * naddfrac;
 		ns->ndep_src += dif * naddfrac;
 	}

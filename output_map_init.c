@@ -141,6 +141,9 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[97] = &cs->soil3_hr_snk;
 		output_map[98] = &cs->soil4_hr_snk;
 		output_map[99] = &cs->fire_snk;
+		output_map[100] = &cs->fruitc;
+		output_map[101] = &cs->fruitc_storage;
+		output_map[102] = &cs->fruitc_transfer;
 		/* management and senescence - Hidy 2012. */
 		output_map[104] = &cs->THNsnk;
 		output_map[105] = &cs->THNsrc;	
@@ -154,8 +157,8 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[113] = &cs->PLGsrc;
 		output_map[114] = &cs->PLTsrc;
 		output_map[115] = &cs->FRZsrc;						
-		output_map[116] = &cs->SNSC_snk;		
-		output_map[117] = &cs->SNSC_src;	
+		output_map[116] = &cs->SNSCsnk;		
+		output_map[117] = &cs->SNSCsrc;	
 		
 		/* carbon flux variables */
 		output_map[120] = &cf->m_leafc_to_litr1c;
@@ -331,8 +334,8 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[322] = &ns->PLGsrc;
 		output_map[323] = &ns->PLTsrc;
 		output_map[324] = &ns->FRZsrc;						
-		output_map[325] = &ns->SNSC_snk;		
-		output_map[326] = &ns->SNSC_src;	
+		output_map[325] = &ns->SNSCsnk;		
+		output_map[326] = &ns->SNSCsrc;	
 	
 		/* nitrogen flux variables */
 		output_map[340] = &nf->m_leafn_to_litr1n;

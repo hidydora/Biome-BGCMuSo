@@ -3,10 +3,10 @@ metarr_init.c
 Initialize meteorological data arrays for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
+Biome-BGCMuSo v5.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -37,23 +37,19 @@ daylength   s      (daylight duration)
 
 */
 
-int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,const siteconst_struct* sitec,int nyears) 
+int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_struct* scc,const siteconst_struct* sitec,int nyears) 
 {
 	int ok = 1;
-	int i;
-	int ndays;
+	int i,j;
+	int ndays, nsimdays, dd;
 	int year;
-	double tmax = 0;
-	double tmin = 0;
-	double tday = 0;
-	double prcp = 0;
-	double vpd = 0;
-	double swavgfd = 0;
-	double dayl = 0;
+	double tmax, tmin, tday, prcp, vpd, swavgfd, dayl;
 	double sw_MJ;
 
-	
-	ndays = NDAY_OF_YEAR * nyears;
+	tmax=tmin=tday=prcp=vpd=swavgfd=dayl=0;
+
+	ndays    = NDAYS_OF_YEAR * nyears;
+	nsimdays = NDAYS_OF_YEAR * (nyears-1) + point->nday_lastsimyear;
 
 	/* allocate space for the metv arrays */
 	if (ok)
@@ -126,7 +122,7 @@ int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,c
 		}
 	}
 
-	/* Hidy 2015 - new arrays */
+	/* new arrays */
 	
 	if (ok)
 	{
@@ -200,41 +196,67 @@ int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,c
 
 	
 	/* begin daily loop: read input file, generate array values */
-	for (i=0 ; ok && i<ndays ; i++)
+	for (i=0 ; ok && i < ndays ; i++)
 	{
-		/* read year field  */
-		if (fscanf(metf.ptr,"%d",&year)==EOF)
+		/* if truncated last simyear -> estimated meteorological variables based on data from previous years */
+		if (i < nsimdays)
 		{
-			printf("Error reading year field: metarr_init()\n");
-			ok=0;
-		}
-		/* read tmax, tmin, prcp, vpd, and srad */
-		/* the following scan statement discards the tday field in the
-		standard MTCLIM version 3.1 input file */
-		if (ok && fscanf(metf.ptr,"%*d%lf%lf%lf%lf%lf%lf",
-			&tmax,&tmin,&tday,&prcp,&vpd,&swavgfd)==EOF)
-		{
-			printf("Error reading met file, metarr_init()\n");
-			ok=0;
-		}
-		/* read daylength */
-		if (ok && fscanf(metf.ptr,"%lf",&dayl)==EOF)
-		{
-			printf("Error reading met file, metv_init()\n");
-			ok=0;
-		}
+			/* read year field  */
+			if (fscanf(point->metf.ptr,"%d",&year)==EOF)
+			{
+				printf("Error reading year field: metarr_init()\n");
+				ok=0;
+			}
+			/* read tmax, tmin, prcp, vpd, and srad */
+			/* the following scan statement discards the tday field in the
+			standard MTCLIM version 3.1 input file */
+			if (ok && fscanf(point->metf.ptr,"%*d%lf%lf%lf%lf%lf%lf",
+				&tmax,&tmin,&tday,&prcp,&vpd,&swavgfd)==EOF)
+			{
+				printf("Error reading met file, metarr_init()\n");
+				ok=0;
+			}
+			/* read daylength */
+			if (ok && fscanf(point->metf.ptr,"%lf",&dayl)==EOF)
+			{
+				printf("Error reading met file, metv_init()\n");
+				ok=0;
+			}
 		
-		/* Hidy 2013 - control to avoid negative meteorological data */
- 		if (prcp < 0 || vpd < 0 || swavgfd < 0 || dayl < 0)
+			/* control to avoid negative meteorological data */
+ 			if (prcp < 0 || vpd < 0 || swavgfd < 0 || dayl < 0)
+			{
+				printf("Error in met file: negative prcp/vpd/swavgfd/dayl, metv_init()\n");
+				ok=0;
+			}
+		}
+		else
 		{
-			printf("Error in met file: negative prcp/vpd/swavgfd/dayl, metv_init()\n");
-			ok=0;
+			tmax=tmin=tday=prcp=vpd=swavgfd=dayl=0;
+			for (j=0; j<nyears-1;j++)
+			{
+				dd = (j * NDAYS_OF_YEAR) + (point->nday_lastsimyear - 1);
+				tmax     += metarr->tmax[dd];
+				tmin     += metarr->tmin[dd];
+				tday     += metarr->tday[dd];
+				prcp     += metarr->prcp[dd];
+				vpd      += metarr->vpd[dd];
+				swavgfd  += metarr->swavgfd[dd];
+				dayl     += metarr->dayl[dd];
+			}
+			tmax    = tmax    / (nyears-1);
+			tmin    = tmin    / (nyears-1);
+			tday    = tday    / (nyears-1);
+			prcp    = prcp    / (nyears-1);
+			vpd     = vpd     / (nyears-1);
+			swavgfd = swavgfd / (nyears-1);
+			dayl    = dayl    / (nyears-1);
 		}
 
 		/* apply the climate change scenario and store */
 		metarr->tmax[i] = tmax + scc->s_tmax;
 		metarr->tmin[i] = tmin + scc->s_tmin;
-		metarr->tday[i] = tday; // pasted by Hidy 2012.;
+		metarr->tday[i] = tday; 
 		metarr->tavg[i] = (tmax + tmin) / 2.0;
 		metarr->prcp[i] = prcp * scc->s_prcp;
 		metarr->vpd[i] = vpd * scc->s_vpd;
@@ -242,7 +264,7 @@ int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,c
 		metarr->par[i] = swavgfd * 0.45 * scc->s_swavgfd;
 		metarr->dayl[i] = dayl;
 
-		/* factor for soil temp. calculation - Hidy 2015 */
+		/* factor for soil temp. calculation */
 		sw_MJ = swavgfd * dayl / 1000000;
 		if (i == 0)
 			metarr->F_temprad[i] = metarr->tavg[i] +  (tmax - metarr->tavg[i]) * sqrt(sw_MJ*0.03);
@@ -266,7 +288,7 @@ int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,c
 		ok = 0;
 	}
 	
-	/* Hidy 2015- new averages */
+	/*  new averages */
 	if (ok && run_avg(metarr->tavg, metarr->tavg30_ra, ndays, 30, 0))
 	{
 		printf("Error: run_avg() in metv_init.c \n");

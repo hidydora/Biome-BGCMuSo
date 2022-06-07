@@ -3,10 +3,10 @@ sitec_init.c
 Initialize the site physical constants for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
+Biome-BGCMuSo v5.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -43,36 +43,45 @@ int sitec_init(file init, siteconst_struct* sitec)
 	/*--------------------------------------------------------------------------------------*/
 	/* 0. INITALIZING */
 
-	/* predefined values: depth of the layers (soillayer_depth;[m]) */
-	sitec->soillayer_depth[0] = 0.1;
-	sitec->soillayer_depth[1] = 0.3;
-	sitec->soillayer_depth[2] = 0.6;
-	sitec->soillayer_depth[3] = 1.;
-	sitec->soillayer_depth[4] = 2.;
-	sitec->soillayer_depth[5] = 3.;
-	sitec->soillayer_depth[6] = 10.;
+	/* predefined values: depth of the layers (soillayer_depth;[m])  */
+	sitec->soillayer_depth[0] = 0.02;
+	sitec->soillayer_depth[1] = 0.05;
+	sitec->soillayer_depth[2] = 0.10;
+	sitec->soillayer_depth[3] = 0.20;
+	sitec->soillayer_depth[4] = 0.50;
+	sitec->soillayer_depth[5] = 1.00;
+	sitec->soillayer_depth[6] = 1.50;
+	sitec->soillayer_depth[7] = 2.00;
+	sitec->soillayer_depth[8] = 4.00;
+	sitec->soillayer_depth[9] = 10.0;
+
+	
+	/* calculated values: thickness of the layers (soillayer_thickness;[m]) */
+	sitec->soillayer_thickness[0] = 0.02;
+	sitec->soillayer_thickness[1] = 0.03;
+	sitec->soillayer_thickness[2] = 0.05;
+	sitec->soillayer_thickness[3] = 0.10;
+	sitec->soillayer_thickness[4] = 0.30;
+	sitec->soillayer_thickness[5] = 0.50;
+	sitec->soillayer_thickness[6] = 0.50;
+	sitec->soillayer_thickness[7] = 0.50;
+	sitec->soillayer_thickness[8] = 2.00;
+	sitec->soillayer_thickness[9] = 6.00;
 
 
 	/* calculated values: depth of the layers (soillayer_midpoint;[m]) */
-	sitec->soillayer_midpoint[0]  = 0.05;
-	sitec->soillayer_midpoint[1] = 0.2;
-	sitec->soillayer_midpoint[2] = 0.45;
-	sitec->soillayer_midpoint[3] = 0.8;
-	sitec->soillayer_midpoint[4] = 1.5;
-	sitec->soillayer_midpoint[5] = 2.5;
-	sitec->soillayer_midpoint[6] = 6.5;
+	sitec->soillayer_midpoint[0] = 0.010;
+	sitec->soillayer_midpoint[1] = 0.035;
+	sitec->soillayer_midpoint[2] = 0.075;
+	sitec->soillayer_midpoint[3] = 0.150;
+	sitec->soillayer_midpoint[4] = 0.350;
+	sitec->soillayer_midpoint[5] = 0.750;
+	sitec->soillayer_midpoint[6] = 1.250;
+	sitec->soillayer_midpoint[7] = 1.750;
+	sitec->soillayer_midpoint[8] = 3.000;
+	sitec->soillayer_midpoint[9] = 7.000;
 
-	/* calculated values: thickness of the layers (soillayer_thickness;[m]) */
-	sitec->soillayer_thickness[0]  = 0.1;
-	sitec->soillayer_thickness[1] = 0.2;
-	sitec->soillayer_thickness[2] = 0.3;
-	sitec->soillayer_thickness[3] = 0.4;
-	sitec->soillayer_thickness[4] = 1.0;
-	sitec->soillayer_thickness[5] = 1.0;
-	sitec->soillayer_thickness[6] = 7;
 
-	/* initalization of groundwater depth parameter - Hidy 2015 */
-	sitec->gwd_act=DATA_GAP;
 
 
 	/*--------------------------------------------------------------------------------------
@@ -91,7 +100,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 	}
 
 
-	/* 1.3.1 SAND array - mulilayer soil (Hidy 2015) */
+	/* 1.3.1 SAND array - mulilayer soil  */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
@@ -103,7 +112,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		}
 	}
 
-	/* 1.3.2 SILT array - mulilayer soil (Hidy 2015)  */
+	/* 1.3.2 SILT array - mulilayer soil   */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
@@ -111,6 +120,18 @@ int sitec_init(file init, siteconst_struct* sitec)
 		if (ok && scan_array(init, &(sitec->silt[layer]), 'd', scanflag))
 		{
 			printf("Error reading percent silt in layer %i, sitec_init()\n", layer);
+			ok=0;
+		}
+	}
+
+	/* 1.3.3 pH array - mulilayer soil */
+	scanflag=0; 
+	for (layer=0; layer<N_SOILLAYERS; layer++)
+	{
+		if (layer==N_SOILLAYERS-1) scanflag=1;
+		if (ok && scan_array(init, &(sitec->pH[layer]), 'd', scanflag))
+		{
+			printf("Error reading soil pH in layer %i, sitec_init()\n", layer);
 			ok=0;
 		}
 	}
@@ -134,7 +155,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 	}
 	
 
-	/* 1.5.  FIRST APPROXIMATION to initalize multilayer soil temperature -> mean_surf_air_temp [Celsius] - Hidy 2010 */
+	/* 1.5.  FIRST APPROXIMATION to initalize multilayer soil temperature -> mean_surf_air_temp [Celsius] */
 	if (ok && scan_value(init, &sitec->tair_annavg, 'd'))
 	{
 		printf("Error reading tair_annavg, sitec_init()\n");
@@ -146,15 +167,23 @@ int sitec_init(file init, siteconst_struct* sitec)
 		printf("Error reading tair_annrange, sitec_init()\n");
 		ok=0;
 	}
+	
+	/*  maximum height of pond water */
+	if (ok && scan_value(init, &sitec->pondmax, 'd'))
+	{
+		printf("Error reading maximum height of pond water: sitec_init()\n");
+		ok=0;
+	}
 
-	/* 1.6 runoff parameter (Campbell and Diaz) - Hidy 2010 */
+
+	/* 1.6 runoff parameter (Campbell and Diaz)  */
 	if (ok && scan_value(init, &sitec->RCN_mes, 'd'))
 	{
 		printf("Error reading measured runoff curve number: sitec_init()\n");
 		ok=0;
 	}
 
-	/* 1.7.1 measured bulk density  (Hidy 2015)  */
+	/* 1.7.1 measured bulk density    */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
@@ -166,7 +195,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		}
 	}
 
-	/* 1.7.2 measured critical VWC values - saturation  (Hidy 2015)  */
+	/* 1.7.2 measured critical VWC values - saturation    */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
@@ -178,7 +207,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		}
 	}
 	
-	/* 1.7.3 measured critical VWC values - field capacity   (Hidy 2015)  */
+	/* 1.7.3 measured critical VWC values - field capacity     */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
@@ -190,7 +219,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		}
 	}
 	
-	/* 1.7.4 measured critical VWC values - wilting point  (Hidy 2015)  */
+	/* 1.7.4 measured critical VWC values - wilting point    */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
@@ -202,7 +231,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		}
 	}
 
-	/* 1.7.5 measured critical VWC values - hygr. water  (Hidy 2015)  */
+	/* 1.7.5 measured critical VWC values - hygr. water    */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
@@ -214,7 +243,6 @@ int sitec_init(file init, siteconst_struct* sitec)
 		}
 	}
 
-	
 
 
 	/* 1.8 CONTROL - measured VWC values (all or none should to be set) */
@@ -274,7 +302,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		sitec->clay[layer] = clay;
 
 	
-		/*  2.2.1 CONTROL to avoid negative data - Hidy 2013 */
+		/*  2.2.1 CONTROL to avoid negative data  */
  		if (sand < 0 || silt < 0 || clay < 0)
 		{
 			printf("Error in site data in INI file: sand/silt/clay/vwc data, sitec_init()\n");
@@ -301,7 +329,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		    psi_fc = exp(vwc_sat/vwc_fc*log(soil_b))*psi_sat;
 			psi_wp = exp(vwc_sat/vwc_wp*log(soil_b))*psi_sat;
 
-			/* control for soil type with high clay content - Hidy 2013. */
+			/* control for soil type with high clay content  */
 			if (vwc_sat - vwc_fc < 0.01)  vwc_fc = vwc_sat - 0.01;
 			if (vwc_fc  - vwc_wp < 0.01)  vwc_wp = vwc_fc  - 0.01;
 			if (vwc_wp  - vwc_hw < 0.01)  vwc_hw = vwc_wp  - 0.01;
@@ -379,7 +407,6 @@ int soilb_estimation(double sand, double silt, double* soil_b, double* vwc_sat, 
 	int ok=1;
 	
 	double clay = 100-sand-silt;
-//	double soilb_array[12]      = {2.69, 3.03,  3.42,3.69,4.18,3.77,3.94,4.37,4.32,4.60,5.19,5.32};
 
 	double soilb_array[12]      = {3.45,  4.11,  5.26,  6.12,  5.39,  4.02,  7.63,  7.71,  8.56,  9.22,  10.45, 12.46};
 	double VWCsat_array[12]     = {0.4,   0.42,  0.44,  0.46,  0.48,  0.49,  0.5,   0.505, 0.51,  0.515, 0.52,  0.525};

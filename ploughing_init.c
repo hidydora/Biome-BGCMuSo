@@ -3,8 +3,8 @@ ploughing_init.c
 read ploughing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0.
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
+int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 {
 	char key1[] = "PLOUGHING";
 	char keyword[80];
@@ -67,7 +67,7 @@ int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
 		{
 			
 			ok=1;
-			if (ctrl->onscreen) printf("But it is not a problem (it is only due to the reading of ploughing file)\n");
+			printf("But it is not a problem (it is only due to the reading of ploughing file)\n");
 			if (ctrl->onscreen) printf("INFORMATION: ploughing information from file\n");
 			PLG->PLG_flag = 2;
 			strcpy(PLG_file.name, PLG_filename);
@@ -77,6 +77,7 @@ int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
 	/* yeary varied garzing parameters (PLG_flag=2); else: constant garzing parameters (PLG_flag=1) */
 	if (PLG->PLG_flag == 2)
 	{
+
 		ny = ctrl->simyears; 
 	
 		/* open the main init file for ascii read and check for errors */
@@ -119,14 +120,14 @@ int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
 	}
 
 	
-	PLG->PLG_pool_litr1c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr2c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr3c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr4c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr1n = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr2n = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr3n = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr4n = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr1c = 0;				    /* local pool */
+	PLG->PLG_pool_litr2c = 0;				    /* local pool */
+	PLG->PLG_pool_litr3c = 0;				    /* local pool */
+	PLG->PLG_pool_litr4c = 0;				    /* local pool */
+	PLG->PLG_pool_litr1n = 0;				    /* local pool */
+	PLG->PLG_pool_litr2n = 0;				    /* local pool */
+	PLG->PLG_pool_litr3n = 0;				    /* local pool */
+	PLG->PLG_pool_litr4n = 0;				    /* local pool */
 	PLG->DC_act = 0.0;
 	PLG->mgmd = -1;
 

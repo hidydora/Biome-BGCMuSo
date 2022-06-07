@@ -3,8 +3,8 @@ thinning_init.c
 read thinning information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0.
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
+int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 {
 
 	char key1[] = "THINNING";
@@ -68,7 +68,7 @@ int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
 		{
 			
 			ok=1;
-			if (ctrl->onscreen) printf("But it is not a problem (it is only due to the reading of thinning file)\n");
+			printf("But it is not a problem (it is only due to the reading of thinning file)\n");
 			if (ctrl->onscreen) printf("INFORMATION: thinning information from file\n");
 			THN->THN_flag = 2;
 			strcpy(THN_file.name, THN_filename);
@@ -100,19 +100,25 @@ int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->thinning_rate_array)))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->thinningrate_w_array)))
 	{
-		printf("Error reading thinninng rate\n");
+		printf("Error reading woody thinninng rate\n");
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transpcoeff_woody_array)))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->thinningrate_nw_array)))
+	{
+		printf("Error reading non-woodythinninng rate\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transpcoeff_w_array)))
 	{
 		printf("Error reading transpcoeff_woody\n");
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transpcoeff_nwoody_array)))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transpcoeff_nw_array)))
 	{
 		printf("Error reading transpcoeff_nwoody\n");
 		ok=0;

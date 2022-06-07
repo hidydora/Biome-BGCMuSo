@@ -2,8 +2,8 @@
 conduct_limit_factors.c
 calculate the limitation factors of conductance
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -26,15 +26,16 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl,const sitecon
 {
 	int ok = 1;
 	int layer;
-	double soil_b, psi_sat,psi_fc, vwc_sat,vwc_fc,vwc_wp; 
-	double psi_crit1, psi_crit2, vwc_crit1, vwc_crit2, vwc_ratio_crit1, vwc_ratio_crit2;
-
+	double soil_b, psi_sat,psi_fc, vwc_sat,vwc_fc,vwc_wp, psi_crit1, psi_crit2, vwc_crit1, vwc_crit2, vwc_ratio_crit1, vwc_ratio_crit2;
+    
+	soil_b=psi_sat=psi_fc=vwc_sat=vwc_fc=vwc_wp=psi_crit1=psi_crit2=vwc_crit1=vwc_crit2=vwc_ratio_crit1=vwc_ratio_crit2=0;
 
 	/* -------------------------------------------*/
 	/* control: using vwc_ratio OR psi to calculate conductance limitation  */
 	if ((epc->relVWC_crit1  != (double) DATA_GAP && epc->PSI_crit1  != (double) DATA_GAP) ||
 		(epc->relVWC_crit2 != (double) DATA_GAP && epc->PSI_crit2 != (double) DATA_GAP))
 	{
+		printf("\n");
 		printf("ERROR: critical relSWC and PSI data are set simultaneously in EPC file, please check it!\n");
 		ok=0;
 
@@ -75,7 +76,8 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl,const sitecon
 				}
 				else
 				{
-					printf("ERROR: PSI_crit1 data (EPC file) is greater than saturation value\n");
+					printf("\n");
+					printf("ERROR: PSI_crit1 data (EPC file) is greater than saturation value in layer:%i\n", layer);
 					ok=0;
 				}
 				
@@ -88,7 +90,8 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl,const sitecon
 			/* CONTROL */
 			if (vwc_crit1 > vwc_sat)
 			{
-				printf("ERROR: VWC_crit1 data (calculated from relVWC_crit1 in EPC file) is greater than saturation value\n");
+				printf("\n");
+				printf("ERROR: VWC_crit1 data (calculated from relVWC_crit1 in EPC file) is greater than saturation value in layer:%i\n", layer);
 				ok=0;
 			}
 			
@@ -115,7 +118,8 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl,const sitecon
 				}
 				else
 				{
-					printf("ERROR: PSI_crit2 data (EPC file) is greater than saturation value\n");
+					printf("\n");
+					printf("ERROR: PSI_crit2 data (EPC file) is greater than saturation value in layer:%i\n", layer);
 					ok=0;
 				}
 
@@ -131,14 +135,16 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl,const sitecon
 		/* CONTROL */
 		if (vwc_crit2 > vwc_sat)
 		{
-			printf("ERROR: VWC_crit2 data (calculated from relVWC_crit2 in EPC file) is greater than saturation value\n");
+			printf("\n");
+			printf("ERROR: VWC_crit2 data (calculated from relVWC_crit2 in EPC file) is greater than saturation value in layer:%i\n", layer);
 			ok=0;
 		}
 
 		/* CONTROL */
 		if (ok && vwc_crit2 < vwc_crit1)
 		{
-			printf("ERROR: VWC_crit1 data is greater then VWC_crit2 data (calculated from relVWC_crit2 in EPC file)\n");
+			printf("\n");
+			printf("ERROR: VWC_crit1 data is greater then VWC_crit2 data (calculated from relVWC_crit2 in EPC file) in layer:%i\n", layer);
 			ok=0;
 		}
 			

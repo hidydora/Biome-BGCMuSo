@@ -4,8 +4,8 @@ calcultion of soil water potential, hydr. conductivity and hydr. diffusivity as 
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -27,8 +27,8 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 	inputs:
 	ws.soilw				     (kg/m2) water mass per unit area
 	sitec.max_rootzone_depth     (m)     maximum depth of rooting zone               
-	sitec.soil_b				 (DIM)   slope of log(psi) vs log(rwc)
-	sitec.vwc_sat				 (DIM)   volumetric water content at saturation
+	sitec.soil_b				 (dimless)   slope of log(psi) vs log(rwc)
+	sitec.vwc_sat				 (m3/m3)   volumetric water content at saturation
 	sitec.psi_sat			   	(MPa)   soil matric potential at saturation
 	output:
 	psi						 (MPa)   soil matric potential
@@ -62,6 +62,7 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 	double vwc_avg, psi_avg;
 	vwc_avg=psi_avg=0;
 
+
 	/* ***************************************************************************************************** */
 	/* calculating vwc psi and hydr. cond. to every layer */
 
@@ -71,7 +72,7 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 		
 		/* convert kg/m2 --> m3/m2 --> m3/m3 */
 		epv->vwc[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
-
+		
 
 	   
 		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
@@ -82,21 +83,23 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 		epv->pF[layer] =log10(fabs(10000*epv->psi[layer] ));
 	
 
-		/*  calculating averages */
+		/* calculating averages */
 
-		if (layer < N_SOILLAYERS-1)
+		if (layer  < N_SOILLAYERS-1)
 		{
 			vwc_avg	  += epv->vwc[layer]    * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
 			psi_avg	  += epv->psi[layer]    * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
 		}
-       
+
+     
 
 		/* CONTROL - unrealistic VWC content (higher than saturation value) */
 		if (epv->vwc[layer] > sitec->vwc_sat[layer])       
 		{
 			if (epv->vwc[layer] - sitec->vwc_sat[layer] > 0.001)       
 			{
-				printf("Fatal error: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
+				printf("\n");
+				printf("ERROR: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
 				ok=0;	
 			}
 			else
@@ -112,8 +115,10 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 
 
 
-  	epv->vwc_avg	= vwc_avg;
+	epv->vwc_avg	= vwc_avg;
 	epv->psi_avg	= psi_avg;
+
+
 
 
 	return(!ok);

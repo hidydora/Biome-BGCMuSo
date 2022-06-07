@@ -3,8 +3,8 @@ fertilizing_init.c
 read fertilizing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
+int fertilizing_init(file init, const control_struct* ctrl, fertilizing_struct* FRZ)
 {
 	char key1[] = "FERTILIZING";
 	char keyword[80];
@@ -67,7 +67,7 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 		{
 			
 			ok=1;
-			if (ctrl->onscreen) printf("But it is not a problem (it is only due to the reading of fertilizing file)\n");
+			printf("But it is not a problem (it is only due to the reading of fertilizing file)\n");
 			if (ctrl->onscreen) printf("INFORMATION: fertilizing information from file\n");
 			FRZ->FRZ_flag = 2;
 			strcpy(FRZ_file.name, FRZ_filename);
@@ -93,13 +93,15 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 	else FRZ_file=init;
 	
 
-
-
-
-
 	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->FRZdays_array)))
 	{
 		printf("Error reading FRZdays\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->FRZdepth_array)))
+	{
+		printf("Error reading FRZdepth\n");
 		ok=0;
 	}
 
@@ -110,15 +112,15 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 	}
 
 
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->Ncontent_array)))
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->NO3content_array)))
 	{
-		printf("Error reading prop. of the nitrate_content\n");
+		printf("Error reading nitrate content of fertilizer\n");
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->NH3content_array)))
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->NH4content_array)))
 	{
-		printf("Error reading ammonium_content\n");
+		printf("Error reading ammonium content of fertilizer\n");
 		ok=0;
 	}
 
@@ -154,17 +156,24 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->dissolv_coeff_array)))
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->DC_NO3_array)))
 	{
-		printf("Error reading dissolv_coeff\n");
+		printf("Error reading dissolv.coeff of NO3\n");
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->utiliz_coeff_array)))
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->DC_NH4_array)))
 	{
-		printf("Error reading utilization_coeff\n");
+		printf("Error reading dissolv.coeff of NH4\n");
 		ok=0;
 	}
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->DC_C_array)))
+	{
+		printf("Error reading dissolv.coeff of carbon\n");
+		ok=0;
+	}
+
 
 	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->EFfert_N2O)))
 	{
@@ -178,19 +187,22 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 		fclose (FRZ_file.ptr);
 	}
 
-	/* local variables - Hidy 2015.*/
-	FRZ->FRZ_pool_act   = 0;
-	FRZ->DC_act         = 0;        
-	FRZ->UC_act         = 0;
-	FRZ->Ccontent_act   = 0;
-	FRZ->Ncontent_act   = 0;	
-	FRZ->NH3content_act = 0;
+	/* local variables */
+	FRZ->FRZdepth_act   = 0;
+	FRZ->DC_NO3_act     = 0;    
+	FRZ->DC_NH4_act     = 0;   
+	FRZ->DC_C_act       = 0;   
+	FRZ->CARBON_act     = 0;
+	FRZ->NO3_act        = 0;	
+	FRZ->NH4_act        = 0;
 	FRZ->flab_act       = 0;
 	FRZ->fucel_act      = 0;
 	FRZ->fscel_act		= 0;
 	FRZ->flig_act		= 0;
 	FRZ->EFf_N2O_act	= 0;
+	FRZ->FRZlayer       = 0;
 	FRZ->mgmd           = -1;
+
 
 	return (!ok);
 }

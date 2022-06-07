@@ -4,8 +4,8 @@ calculation of soil temperature in the different soil layers based on the change
 to top soil layer and based on empirical function of temperature gradient in soil (Zheng et al.1993)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -23,8 +23,9 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_tsoil(int yday, const epconst_struct* epc, const siteconst_struct* sitec, const wstate_struct* ws, 
-					 metvar_struct* metv, epvar_struct* epv)
+int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, const epvar_struct* epv, int yday, double snoww,
+					 metvar_struct* metv)
+
 {
 	int ok=1;
 	int layer;
@@ -40,6 +41,9 @@ int multilayer_tsoil(int yday, const epconst_struct* epc, const siteconst_struct
 	double temp_diff_total, temp_diff, tsoil, tsoil_avg;
 
 	double STv1, STv2, WC, FX, f1, ALX, TA, Td, ZD;
+
+	/* 4M parameter */
+	double c_param_tsoil = 4;
 	
 	tsoil_avg=0;
 
@@ -48,7 +52,7 @@ int multilayer_tsoil(int yday, const epconst_struct* epc, const siteconst_struct
 	/* surface soil temperature change caused by air temp. change can be estimated from the air temperature using empirical equations */	
 
 	
-	if (ws->snoww) 
+	if (snoww) 
 		heating_coefficient = heatcoeff_snow;
 	else
 		heating_coefficient = heatcoeff_nosnow;
@@ -93,7 +97,7 @@ int multilayer_tsoil(int yday, const epconst_struct* epc, const siteconst_struct
 		TA = sitec->tair_annavg + sitec->tair_annrange * cos(ALX)/2;
 		Td = metv->F_temprad_ra - TA;
 	
-		ZD = -1 * sitec->soillayer_midpoint[layer] * 1000 * f1 * epc->c_param_tsoil; // m to mm
+		ZD = -1 * sitec->soillayer_midpoint[layer] * 1000 * f1 * c_param_tsoil; // m to mm
 	
 		tsoil = sitec->tair_annavg + (sitec->tair_annrange/2 * cos(ALX + ZD) + Td)  * exp(ZD); // depth: m to cm 
 
@@ -102,13 +106,12 @@ int multilayer_tsoil(int yday, const epconst_struct* epc, const siteconst_struct
 
 		if (layer < N_SOILLAYERS-1) tsoil_avg += metv->tsoil[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
 
-
 	}
 
 	metv->tsoil_surface_pre = metv->tsoil_surface;
 	metv->tday_pre          = metv->tday; 
-	metv->tsoil_avg         = tsoil_avg;
-   
+    metv->tsoil_avg         = tsoil_avg;
+
 	return (!ok);
 }
 	

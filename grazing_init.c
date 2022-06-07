@@ -3,8 +3,8 @@ grazing_init.c
 read grazinz information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
+int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 {
 
 	char key1[] = "GRAZING";
@@ -69,7 +69,7 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 		{
 			
 			ok=1;
-			if (ctrl->onscreen) printf("But it is not a problem (it is only due to the reading of grazing file)\n");
+			printf("But it is not a problem (it is only due to the reading of grazing file)\n");
 			if (ctrl->onscreen) printf("INFORMATION: grazing information from file\n");
 			GRZ->GRZ_flag = 2;
 			strcpy(GRZ_file.name, GRZ_filename);
@@ -79,6 +79,7 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 	/* yeary varied garzing parameters (GRZ_flag=2); else: constant garzing parameters (GRZ_flag=1) */
 	if (GRZ->GRZ_flag == 2)
 	{
+
 		ny = ctrl->simyears; 
 	
 		/* open the main init file for ascii read and check for errors */

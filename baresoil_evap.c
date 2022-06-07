@@ -3,7 +3,7 @@ baresoil_evap.c
 daily bare soil evaporation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
+Biome-BGCMuSo v5.0.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -20,16 +20,17 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int baresoil_evap(const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
+int baresoil_evap(const epconst_struct* epc, const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
 {
 	int ok=1;
 	double dsr;              /* number of days since rain */
 	double rbl;              /* (m/s) boundary layer resistance */
 	double pot_evap;         /* (kg/m2/s) potential evaporation (daytime) */
 	double evap;             /* (kg/m2/s) actual evaporation (daytime) */
-	pmet_struct pmet_in;     /* input structure for penmon function */
 	double rcorr;            /* correction factor for temp and pressure */
 	double ratio;            /* actual/potential evaporation for dry day */
+
+	pmet_struct pmet_in;     /* input structure for penmon function */
 
 	/* assign days since rain */
 	dsr = *dsr_ptr;
@@ -73,7 +74,7 @@ int baresoil_evap(const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
 		dsr = 0.0;
 		
 		/* soil evaporation proceeds at potential rate */
-		evap = 0.6 * pot_evap;
+		evap = epc->BSE_PE_prop * pot_evap;
 	}
 	else
 	{

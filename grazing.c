@@ -6,8 +6,8 @@ method: Vuichard et al, 2007
 NOTE: LSU: livestock unit = unit used to compare or aggregate different species and it is equivalnet to the liveweight of an average cattle (1 adult cattle = 1 LSU)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -31,15 +31,10 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	/* grazing parameters */
 	int ny;
 	double DMintake, stocking_rate,weight_LSU;			
-	double STDB_litr1c_to_GRZ, STDB_litr2c_to_GRZ, STDB_litr3c_to_GRZ, STDB_litr4c_to_GRZ;
-	double STDB_litr1n_to_GRZ, STDB_litr2n_to_GRZ, STDB_litr3n_to_GRZ, STDB_litr4n_to_GRZ;
 
 	/* local variables */
 	double EFman_N2O, Nexrate, EFman_CH4, EFfer_CH4;
-	double prop_DMintake2excr;	
-	double DM_Ccontent;				    
-	double EXCR_Ccontent_array;				
-	double EXCR_Ncontent_array;				
+	double prop_DMintake2excr, DM_Ccontent, EXCR_Ccontent_array, EXCR_Ncontent_array;				
     double prop_excr2litter;				/* proportion of excrement return to litter */
 	double GRZcoeff;						/* coefficient determining decrease of plant material caused by grazing  */
 	double befgrazing_leafc = 0;			/* value of leafc before grazing */
@@ -49,14 +44,13 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	double Cplus_from_excrement = 0;		/* daily carbon plus from excrement */
 	double Nplus_from_excrement = 0;        /* daily nitrogen plus from excrement */
 
+	
 	int mgmd = GRZ->mgmd;
 	
 	int ok=1;
 
-	/* test variable */
-	double storage_MGMmort=epc->storage_MGMmort;
 
-	/* Hidy 2015 - fraction of total annual nitrogen excretion for pasture management system*/
+	/* fraction of total annual nitrogen excretion for pasture management system*/
 	double MS_N2O = 0.015;
 
 	/* yearly varied or constant management parameters */
@@ -68,9 +62,8 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 
 
 
-	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                                    CALCULATING FLUXES 
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
+	/**********************************************************************************************/
+	/* I. CALCULATING GRZcoeff */
 
 
 	if (mgmd >= 0) 
@@ -88,8 +81,8 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 
 		Nexrate   = GRZ->Nexrate[mgmd][ny];
 		EFman_N2O = GRZ->EFman_N2O[mgmd][ny];
-		EFman_CH4 = GRZ->EFman_CH4[mgmd][ny]/NDAY_OF_YEAR;;
-		EFfer_CH4 = GRZ->EFfer_CH4[mgmd][ny]/NDAY_OF_YEAR;;
+		EFman_CH4 = GRZ->EFman_CH4[mgmd][ny]/NDAYS_OF_YEAR;;
+		EFfer_CH4 = GRZ->EFfer_CH4[mgmd][ny]/NDAYS_OF_YEAR;;
 
 		
 		/* daily total ingested carbon per m2 from daily ingested drymatter and carbon content of drymatter and stocking rate
@@ -119,212 +112,182 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 			if (ctrl->onscreen) printf("not enough grass for grazing on yday: %i\n", ctrl->yday);
 
 		}			
-	}
-	else 
-	{
-		GRZcoeff = 0.0;
-		daily_excr_prod = 0;
-		prop_excr2litter = 0;
-		EXCR_Ccontent_array = 0;
-		EXCR_Ncontent_array = 0;
-		stocking_rate = 0;
-		EFman_N2O =  0;
-		EFman_CH4 =  0;
-		EFfer_CH4 =  0;
-		Nexrate = 0;
-		weight_LSU=0;
-	}
 	
-	/* daily manure production per m2 (return to the litter) from daily total ingested dry matter and litter_return_ratio and its C and N content
-					[kgMANURE = (kgDM/LSU) * (LSU/m2) * (%)] */
-
-	Cplus_from_excrement = daily_excr_prod * EXCR_Ccontent_array;
-	Nplus_from_excrement = daily_excr_prod * EXCR_Ncontent_array;
-
-	/* CARBON */
-	cf->leafc_to_GRZ          = cs->leafc * GRZcoeff;
-	cf->leafc_transfer_to_GRZ = cs->leafc_transfer * GRZcoeff * storage_MGMmort;
-	cf->leafc_storage_to_GRZ  = cs->leafc_storage * GRZcoeff * storage_MGMmort;
 	
-    /* fruit simulation - Hidy 2013. */
-	cf->fruitc_to_GRZ          = cs->fruitc * GRZcoeff;
-	cf->fruitc_transfer_to_GRZ = cs->fruitc_transfer * GRZcoeff * storage_MGMmort;
-	cf->fruitc_storage_to_GRZ  = cs->fruitc_storage * GRZcoeff * storage_MGMmort;
-
-	 /* softstem simulation - Hidy 2013. */
-	cf->softstemc_to_GRZ          = cs->softstemc * GRZcoeff;
-	cf->softstemc_transfer_to_GRZ = cs->softstemc_transfer * GRZcoeff * storage_MGMmort;
-	cf->softstemc_storage_to_GRZ  = cs->softstemc_storage * GRZcoeff * storage_MGMmort;
-		
-	cf->gresp_transfer_to_GRZ = cs->gresp_transfer * GRZcoeff * storage_MGMmort;
-	cf->gresp_storage_to_GRZ  = cs->gresp_storage * GRZcoeff * storage_MGMmort;
-
-	/* standing dead biome */
-	STDB_litr1c_to_GRZ = cs->STDB_litr1c * GRZcoeff;
-	STDB_litr2c_to_GRZ = cs->STDB_litr2c * GRZcoeff;
-	STDB_litr3c_to_GRZ = cs->STDB_litr3c * GRZcoeff;
-	STDB_litr4c_to_GRZ = cs->STDB_litr4c * GRZcoeff;
-
-	cf->STDBc_to_GRZ = STDB_litr1c_to_GRZ + STDB_litr2c_to_GRZ + STDB_litr3c_to_GRZ + STDB_litr4c_to_GRZ;
-
-
-	/* CARBON */
-	nf->leafn_to_GRZ          = ns->leafn * GRZcoeff;
-	nf->leafn_transfer_to_GRZ = ns->leafn_transfer * GRZcoeff * storage_MGMmort;
-	nf->leafn_storage_to_GRZ  = ns->leafn_storage * GRZcoeff * storage_MGMmort;
-
-	/* fruit simulation - Hidy 2013. */
-	nf->fruitn_to_GRZ          = ns->fruitn * GRZcoeff;
-	nf->fruitn_transfer_to_GRZ = ns->fruitn_transfer * GRZcoeff * storage_MGMmort;
-	nf->fruitn_storage_to_GRZ  = ns->fruitn_storage * GRZcoeff * storage_MGMmort;
-
-	/* softstem simulation - Hidy 2013. */
-	nf->softstemn_to_GRZ          = ns->softstemn * GRZcoeff;
-	nf->softstemn_transfer_to_GRZ = ns->softstemn_transfer * GRZcoeff * storage_MGMmort;
-	nf->softstemn_storage_to_GRZ  = ns->softstemn_storage * GRZcoeff * storage_MGMmort;
 	
-	/* standing dead biome */
-	STDB_litr1n_to_GRZ = ns->STDB_litr1n * GRZcoeff;
-	STDB_litr2n_to_GRZ = ns->STDB_litr2n * GRZcoeff;
-	STDB_litr3n_to_GRZ = ns->STDB_litr3n * GRZcoeff;
-	STDB_litr4n_to_GRZ = ns->STDB_litr4n * GRZcoeff;
 
-	nf->STDBn_to_GRZ = STDB_litr1n_to_GRZ + STDB_litr2n_to_GRZ + STDB_litr3n_to_GRZ + STDB_litr4n_to_GRZ;
-   
-	/* restranslocated N pool is decreasing also */
-	nf->retransn_to_GRZ        = ns->retransn * GRZcoeff * storage_MGMmort;
-	 
-	wf->canopyw_to_GRZ = ws->canopyw * GRZcoeff;
+		/**********************************************************************************************/
+		/* II. CALCULATING FLUXES */
 
-	/* if grazing manure production is taken account (plant material goes into the litter pool)
-	   - gain to ecosystem is loss for "atmosphere" - negatice sign*/	
+		/*----------------------------------------------------------*/
+		/* 1. OUT: daily loss due to GRZ */ 
 
-	/* if grazing manure production is taken account (plant material goes into the litter pool) - gain to ecosystem is loss for "atmosphere" - negatice sign*/	
-	cf->GRZ_to_litr1c = (Cplus_from_excrement) * epc->leaflitr_flab * prop_excr2litter;
-	cf->GRZ_to_litr2c = (Cplus_from_excrement) * epc->leaflitr_fucel * prop_excr2litter;
-	cf->GRZ_to_litr3c = (Cplus_from_excrement) * epc->leaflitr_fscel * prop_excr2litter;
-	cf->GRZ_to_litr4c = (Cplus_from_excrement) * epc->leaflitr_flig * prop_excr2litter;
+		/* 1.1. actual and transfer plant pools*/
+		if (epc->leaf_cn)
+		{
+			cf->leafc_to_GRZ              = cs->leafc * GRZcoeff;
+			cf->leafc_transfer_to_GRZ     = 0; //cs->leafc_transfer * GRZcoeff;
+			cf->leafc_storage_to_GRZ      = 0; //cs->leafc_storage * GRZcoeff;
 
-	nf->GRZ_to_litr1n = (Nplus_from_excrement) * epc->leaflitr_flab * prop_excr2litter;  
-	nf->GRZ_to_litr2n = (Nplus_from_excrement) * epc->leaflitr_fucel * prop_excr2litter; 
-	nf->GRZ_to_litr3n = (Nplus_from_excrement) * epc->leaflitr_fscel * prop_excr2litter; 
-	nf->GRZ_to_litr4n = (Nplus_from_excrement) * epc->leaflitr_flig * prop_excr2litter;
+			nf->leafn_to_GRZ              = cf->leafc_to_GRZ          / epc->leaf_cn;
+			nf->leafn_transfer_to_GRZ     = 0; //cf->leafc_transfer_to_GRZ / epc->leaf_cn;
+			nf->leafn_storage_to_GRZ      = 0; //cf->leafc_storage_to_GRZ  / epc->leaf_cn;
+		}
+	
+		if (epc->fruit_cn)
+		{
+			cf->fruitc_to_GRZ              = cs->fruitc * GRZcoeff;
+			cf->fruitc_transfer_to_GRZ     = 0; //cs->fruitc_transfer * GRZcoeff;
+			cf->fruitc_storage_to_GRZ      = 0; //cs->fruitc_storage * GRZcoeff;
+
+			nf->fruitn_to_GRZ              = cf->fruitc_to_GRZ          / epc->fruit_cn;
+			nf->fruitn_transfer_to_GRZ     = 0; //cf->fruitc_transfer_to_GRZ / epc->fruit_cn;
+			nf->fruitn_storage_to_GRZ      = 0; //cf->fruitc_storage_to_GRZ  / epc->fruit_cn;
+		}
+
+		if (epc->softstem_cn)
+		{
+			cf->softstemc_to_GRZ              = cs->softstemc * GRZcoeff;
+			cf->softstemc_transfer_to_GRZ     = 0; //cs->softstemc_transfer * GRZcoeff;
+			cf->softstemc_storage_to_GRZ      = 0; //cs->softstemc_storage * GRZcoeff;
+
+			nf->softstemn_to_GRZ              = cf->softstemc_to_GRZ          / epc->softstem_cn;
+			nf->softstemn_transfer_to_GRZ     = 0; //cf->softstemc_transfer_to_GRZ / epc->softstem_cn;
+			nf->softstemn_storage_to_GRZ      = 0; //cf->softstemc_storage_to_GRZ  / epc->softstem_cn;
+		}
+	
+		cf->gresp_transfer_to_GRZ     = 0; //cs->gresp_transfer * GRZcoeff;
+		cf->gresp_storage_to_GRZ      = 0; //cs->gresp_storage * GRZcoeff;
+
+		nf->retransn_to_GRZ           = 0; //ns->retransn * GRZcoeff ;
 
 	
-	/* !!!!!!!!CH4 and N2O emissions !!!!!!!!!!*/ 
+		/* 1.2.  standing dead biome */
+		cf->STDBc_leaf_to_GRZ     = cs->STDBc_leaf     * GRZcoeff;
+		cf->STDBc_fruit_to_GRZ    = cs->STDBc_fruit    * GRZcoeff;
+		cf->STDBc_softstem_to_GRZ = cs->STDBc_softstem * GRZcoeff;
+		cf->STDBc_transfer_to_GRZ = cs->STDBc_transfer * GRZcoeff;
 
-	// dimension: db animal/m2 * kgN/(kg animal * day) * kg animal/db animal = mgN/m2/day
-	nf->N2O_flux_GRZ     = stocking_rate * Nexrate * weight_LSU/1000 *  EFman_N2O * MS_N2O * 1e+6;
-
-	// dimension: kgCH4/head/day * head / m2 * (C/CH4) * mg/kg = mgC/m2/day
-	cf->CH4_flux_MANURE  = EFman_CH4  * stocking_rate * 12./16. * 1e+6;  
-	cf->CH4_flux_FERMENT = EFfer_CH4  * stocking_rate * 12./16. * 1e+6;  
-
-
-	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                                    STATE UPDATE 
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/ 
-
-	/* 1. carbon */	
-	cs->GRZsnk += cf->leafc_to_GRZ;
-	cs->leafc -= cf->leafc_to_GRZ;
-	cs->GRZsnk += cf->leafc_transfer_to_GRZ;
-	cs->leafc_transfer -= cf->leafc_transfer_to_GRZ;
-	cs->GRZsnk += cf->leafc_storage_to_GRZ;
-	cs->leafc_storage -= cf->leafc_storage_to_GRZ;
-	/* fruit simulation - Hidy 2013. */
-	cs->GRZsnk += cf->fruitc_to_GRZ;
-	cs->fruitc -= cf->fruitc_to_GRZ;
-	cs->GRZsnk += cf->fruitc_transfer_to_GRZ;
-	cs->fruitc_transfer -= cf->fruitc_transfer_to_GRZ;
-	cs->GRZsnk += cf->fruitc_storage_to_GRZ;
-	cs->fruitc_storage -= cf->fruitc_storage_to_GRZ;
-	/* softstem simulation - Hidy 2013. */
-	cs->GRZsnk += cf->softstemc_to_GRZ;
-	cs->softstemc -= cf->softstemc_to_GRZ;
-	cs->GRZsnk += cf->softstemc_transfer_to_GRZ;
-	cs->softstemc_transfer -= cf->softstemc_transfer_to_GRZ;
-	cs->GRZsnk += cf->softstemc_storage_to_GRZ;
-	cs->softstemc_storage -= cf->softstemc_storage_to_GRZ;
-
-	cs->GRZsnk += cf->gresp_transfer_to_GRZ;
-
-	/* dead standing biomass */
-	cs->GRZsnk += STDB_litr1c_to_GRZ;
-	cs->STDB_litr1c -= STDB_litr1c_to_GRZ;
-	cs->GRZsnk += STDB_litr2c_to_GRZ;
-	cs->STDB_litr2c -= STDB_litr2c_to_GRZ;
-	cs->GRZsnk += STDB_litr3c_to_GRZ;
-	cs->STDB_litr3c -= STDB_litr3c_to_GRZ;
-	cs->GRZsnk += STDB_litr4c_to_GRZ;
-	cs->STDB_litr4c -=STDB_litr4c_to_GRZ;
-
-	cs->SNSCsrc += cf->STDBc_to_GRZ;
-	cs->STDBc -= cf->STDBc_to_GRZ;
+		nf->STDBn_leaf_to_GRZ     = ns->STDBn_leaf     * GRZcoeff;
+		nf->STDBn_fruit_to_GRZ    = ns->STDBn_fruit    * GRZcoeff;
+		nf->STDBn_softstem_to_GRZ = ns->STDBn_softstem * GRZcoeff;
+		nf->STDBn_transfer_to_GRZ = ns->STDBn_transfer * GRZcoeff;
 
 
-	cs->gresp_transfer -= cf->gresp_transfer_to_GRZ;
-	cs->GRZsnk += cf->gresp_storage_to_GRZ;
-	cs->gresp_storage -= cf->gresp_storage_to_GRZ;
+		/* 1.3 WATER */
+		wf->canopyw_to_GRZ = ws->canopyw * GRZcoeff;
+
+		/*----------------------------------------------------------*/
+		/* 2. IN: MANURE PRODUCTION (plant material goes into the litter pool) - gain to ecosystem is loss for "atmosphere" - negatice sign*/	
+
+		/* daily manure production per m2 (return to the litter) from daily total ingested dry matter and litter_return_ratio and its C and N content
+						[kgMANURE = (kgDM/LSU) * (LSU/m2) * (%)] */
+		Cplus_from_excrement = daily_excr_prod * EXCR_Ccontent_array;
+		Nplus_from_excrement = daily_excr_prod * EXCR_Ncontent_array;
+
+		cf->GRZ_to_litr1c = (Cplus_from_excrement) * epc->leaflitr_flab * prop_excr2litter;
+		cf->GRZ_to_litr2c = (Cplus_from_excrement) * epc->leaflitr_fucel * prop_excr2litter;
+		cf->GRZ_to_litr3c = (Cplus_from_excrement) * epc->leaflitr_fscel * prop_excr2litter;
+		cf->GRZ_to_litr4c = (Cplus_from_excrement) * epc->leaflitr_flig * prop_excr2litter;
+
+		nf->GRZ_to_litr1n = (Nplus_from_excrement) * epc->leaflitr_flab * prop_excr2litter;  
+		nf->GRZ_to_litr2n = (Nplus_from_excrement) * epc->leaflitr_fucel * prop_excr2litter; 
+		nf->GRZ_to_litr3n = (Nplus_from_excrement) * epc->leaflitr_fscel * prop_excr2litter; 
+		nf->GRZ_to_litr4n = (Nplus_from_excrement) * epc->leaflitr_flig * prop_excr2litter;
+
 	
-	cs->litr1c += cf->GRZ_to_litr1c;
-	cs->litr2c += cf->GRZ_to_litr2c;
-	cs->litr3c += cf->GRZ_to_litr3c;
-	cs->litr4c += cf->GRZ_to_litr4c;
+		/*----------------------------------------------------------*/
+		/* 3. CH4 and N2O emissions */ 
+
+		/*  dimension: db animal/m2 * kgN/(kg animal * day) * kg animal/db animal = gN/m2/day */
+		nf->N2O_flux_GRZ     = stocking_rate * Nexrate * weight_LSU/1000 *  EFman_N2O * MS_N2O;
+
+		/* dimension: kgCH4/head/day * head / m2 * (C/CH4) * mg/kg = gC/m2/day */
+		cf->CH4_flux_MANURE  = EFman_CH4  * stocking_rate * 12./16.;  
+		cf->CH4_flux_FERMENT = EFfer_CH4  * stocking_rate * 12./16.;  
+
+
+		/**********************************************************************************************/
+		/* III. STATE UPDATE */
+
+		/* 1.actual and transfer plant pools */	
+
+		cs->leafc				-= cf->leafc_to_GRZ;
+		cs->fruitc				-= cf->fruitc_to_GRZ;
+		cs->softstemc			-= cf->softstemc_to_GRZ;
+
+		cs->leafc_storage		-= cf->leafc_storage_to_GRZ;
+		cs->fruitc_storage		-= cf->fruitc_storage_to_GRZ;
+		cs->softstemc_storage	-= cf->softstemc_storage_to_GRZ;
+
+		cs->leafc_transfer		-= cf->leafc_transfer_to_GRZ;
+		cs->fruitc_transfer		-= cf->fruitc_transfer_to_GRZ;
+		cs->softstemc_transfer	-= cf->softstemc_transfer_to_GRZ;
+
+		cs->gresp_transfer      -= cf->gresp_transfer_to_GRZ;
+		cs->gresp_storage       -= cf->gresp_storage_to_GRZ;
+
+		cs->GRZsnk				+= cf->leafc_to_GRZ          + cf->fruitc_to_GRZ          + cf->softstemc_to_GRZ +
+								   cf->leafc_storage_to_GRZ  + cf->fruitc_storage_to_GRZ  + cf->softstemc_storage_to_GRZ +
+								   cf->leafc_transfer_to_GRZ + cf->fruitc_transfer_to_GRZ + cf->softstemc_transfer_to_GRZ +
+								   cf->gresp_transfer_to_GRZ + cf->gresp_storage_to_GRZ;
+
+		ns->leafn				-= nf->leafn_to_GRZ;
+		ns->fruitn				-= nf->fruitn_to_GRZ;
+		ns->softstemn			-= nf->softstemn_to_GRZ;
+
+		ns->leafn_storage		-= nf->leafn_storage_to_GRZ;
+		ns->fruitn_storage		-= nf->fruitn_storage_to_GRZ;
+		ns->softstemn_storage	-= nf->softstemn_storage_to_GRZ;
+
+		ns->leafn_transfer		-= nf->leafn_transfer_to_GRZ;
+		ns->fruitn_transfer		-= nf->fruitn_transfer_to_GRZ;
+		ns->softstemn_transfer	-= nf->softstemn_transfer_to_GRZ;
+
+		ns->retransn            -= nf->retransn_to_GRZ;
+
+		ns->GRZsnk				+= nf->leafn_to_GRZ          + nf->fruitn_to_GRZ          + nf->softstemn_to_GRZ +
+								   nf->leafn_storage_to_GRZ  + nf->fruitn_storage_to_GRZ  + nf->softstemn_storage_to_GRZ +
+								   nf->leafn_transfer_to_GRZ + nf->fruitn_transfer_to_GRZ + nf->softstemn_transfer_to_GRZ +
+								   nf->retransn_to_GRZ;
+
+		/* 2. dead standing biomass */
+		cs->STDBc_leaf     -= cf->STDBc_leaf_to_GRZ;
+		cs->STDBc_fruit    -= cf->STDBc_fruit_to_GRZ;
+		cs->STDBc_softstem -= cf->STDBc_softstem_to_GRZ;
+		cs->STDBc_transfer -= cf->STDBc_transfer_to_GRZ;
+
+		cs->GRZsnk         += (cf->STDBc_leaf_to_GRZ + cf->STDBc_fruit_to_GRZ + cf->STDBc_softstem_to_GRZ + cf->STDBc_transfer_to_GRZ);
+
+		ns->STDBn_leaf     -= nf->STDBn_leaf_to_GRZ;
+		ns->STDBn_fruit    -= nf->STDBn_fruit_to_GRZ;
+		ns->STDBn_softstem -= nf->STDBn_softstem_to_GRZ;
+		ns->STDBn_transfer -= nf->STDBn_transfer_to_GRZ;
+
+		ns->GRZsnk         += (nf->STDBn_leaf_to_GRZ + nf->STDBn_fruit_to_GRZ + nf->STDBn_softstem_to_GRZ + nf->STDBn_transfer_to_GRZ);
 	
-	cs->GRZsrc += cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c;
-
-	/* 2. nitrogen */
-	ns->GRZsnk   += nf->leafn_to_GRZ;
-	ns->leafn    -= nf->leafn_to_GRZ;
-	ns->GRZsnk   += nf->leafn_transfer_to_GRZ;
-	ns->leafn_transfer -= nf->leafn_transfer_to_GRZ;
-	ns->GRZsnk   += nf->leafn_storage_to_GRZ;
-	ns->leafn_storage -= nf->leafn_storage_to_GRZ;
-	ns->GRZsnk   += nf->retransn_to_GRZ;
-	ns->retransn -= nf->retransn_to_GRZ;
-	/* fruit simulation - Hidy 2013. */
-	ns->GRZsnk += nf->fruitn_to_GRZ;
-	ns->fruitn -= nf->fruitn_to_GRZ;
-	ns->GRZsnk += nf->fruitn_transfer_to_GRZ;
-	ns->fruitn_transfer -= nf->fruitn_transfer_to_GRZ;
-	ns->GRZsnk += nf->fruitn_storage_to_GRZ;
-	ns->fruitn_storage -= nf->fruitn_storage_to_GRZ;
-
-	/* softstem simulation - Hidy 2013. */
-	ns->GRZsnk += nf->softstemn_to_GRZ;
-	ns->softstemn -= nf->softstemn_to_GRZ;
-	ns->GRZsnk += nf->softstemn_transfer_to_GRZ;
-	ns->softstemn_transfer -= nf->softstemn_transfer_to_GRZ;
-	ns->GRZsnk += nf->softstemn_storage_to_GRZ;
-	ns->softstemn_storage -= nf->softstemn_storage_to_GRZ;
-
-/* dead standing biomass */
-	ns->GRZsnk += STDB_litr1n_to_GRZ;
-	ns->STDB_litr1n -= STDB_litr1n_to_GRZ;
-	ns->GRZsnk += STDB_litr2n_to_GRZ;
-	ns->STDB_litr2n -= STDB_litr2n_to_GRZ;
-	ns->GRZsnk += STDB_litr3n_to_GRZ;
-	ns->STDB_litr3n -= STDB_litr3n_to_GRZ;
-	ns->GRZsnk += STDB_litr4n_to_GRZ;
-	ns->STDB_litr4n -=STDB_litr4n_to_GRZ;
-
-	ns->SNSCsrc += nf->STDBn_to_GRZ;
-	ns->STDBn -= nf->STDBn_to_GRZ;
-
-
-	ns->litr1n += nf->GRZ_to_litr1n;
-	ns->litr2n += nf->GRZ_to_litr2n;
-	ns->litr3n += nf->GRZ_to_litr3n;
-	ns->litr4n += nf->GRZ_to_litr4n;
 	
-	ns->GRZsrc += nf->GRZ_to_litr1n + nf->GRZ_to_litr2n + nf->GRZ_to_litr3n + nf->GRZ_to_litr4n;
+		/* 3. water */
+		ws->canopyw_GRZsnk += wf->canopyw_to_GRZ;
+		ws->canopyw        -= wf->canopyw_to_GRZ;
 
-	/* 3. water */
-	ws->canopyw_GRZsnk += wf->canopyw_to_GRZ;
-	ws->canopyw -= wf->canopyw_to_GRZ;
+	
+		/* 4. aboveground biomass into top soil layer */
+		cs->litr1c[0] += cf->GRZ_to_litr1c;
+		cs->litr2c[0] += cf->GRZ_to_litr2c;
+		cs->litr3c[0] += cf->GRZ_to_litr3c;
+		cs->litr4c[0] += cf->GRZ_to_litr4c;
 
-		
+		ns->litr1n[0] += nf->GRZ_to_litr1n;
+		ns->litr2n[0] += nf->GRZ_to_litr2n;
+		ns->litr3n[0] += nf->GRZ_to_litr3n;
+		ns->litr4n[0] += nf->GRZ_to_litr4n;
+
+	
+		cs->GRZsrc += cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c;
+		ns->GRZsrc += nf->GRZ_to_litr1n + nf->GRZ_to_litr2n + nf->GRZ_to_litr3n + nf->GRZ_to_litr4n;
+
+}
 
 	
    return (!ok);

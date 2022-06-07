@@ -3,8 +3,8 @@ mowing_init.c
 read mowing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.1
-Copyright 2017, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v5.0
+Copyright 2018, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
+int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 {
 
 	char key1[] = "MOWING";
@@ -67,7 +67,7 @@ int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
 		{
 			
 			ok=1;
-			if (ctrl->onscreen) printf("But it is not a problem (it is only due to the reading of mowing file)\n");
+			printf("But it is not a problem (it is only due to the reading of mowing file)\n");
 			if (ctrl->onscreen) printf("INFORMATION: mowing information from file\n");
 			MOW->MOW_flag = 2;
 			strcpy(MOW_file.name, MOW_filename);

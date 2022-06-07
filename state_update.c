@@ -79,6 +79,8 @@ int daily_water_state_update(const control_struct* ctrl, const siteconst_struct*
 	}
 
 	ws->soilw_SUM = soilw_SUM;
+
+	wf->evapotransp = wf->canopyw_evap + wf->soilw_evap + wf->soilw_trans_SUM + wf->snoww_subl;
 	
 	
 	return (!ok);

@@ -55,9 +55,6 @@ typedef struct
 	int n_limitation;	     /* Hidy 2010 - flag for nitrogen limitation */
 	int varWPM_flag;	     /* Hidy 2012 - changing WPM value */
 	int varMSC_flag;	     /* Hidy 2012 - changing MSC value */
-	double vegperday;        /* Hidy 2013 - counter */
-	double vegperday_pre;    /* Hidy 2013 - counter */
-	int vegper_flag;         /* Hidy 2013 - flag: start and end of VP */
 } control_struct;
 
 /* a structure to hold information about ramped N-deposition scenario */
@@ -172,8 +169,9 @@ typedef struct
     double snoww_to_soilw;							/* (kgH2O/m2/d) melt from snowpack -  Hidy 2010: on the top soil layer */
     double soilw_evap;								/* (kgH2O/m2/d) evaporation from soil */
     double soilw_trans[N_SOILLAYERS];				/* (kgH2O/m2/d) Hidy 2010 - transpiration from the soil layers */
-    double soilw_trans_SUM;							/* (kgH2O/m2/d) Hidy 2010 - sum of transpiration */  
-	double soilw_percolated[N_SOILLAYERS];		/* (kgH2O/m2/d) Hidy 2010 - percolation fluxes between soil layers */
+    double soilw_trans_SUM;	
+	double evapotransp;								/* (kgH2O/m2/d) Hidy 2013 - total water evaporation (canopyw_evap+soilw_evap+soilw_trans+snoww_subl) */
+	double soilw_percolated[N_SOILLAYERS];		    /* (kgH2O/m2/d) Hidy 2010 - percolation fluxes between soil layers */
 	double soilw_diffused[N_SOILLAYERS];			/* (kgH2O/m2/d) Hidy 2010 - diffusion flux between the soil layers (positive: downward) */
 	/* thinning - by Hidy 2008. */
 	double canopyw_to_THN;							/* (kgH2O/m2/d) water stored on canopy is disappered because of thinning*/
@@ -1158,6 +1156,7 @@ typedef struct
 	double daily_gr;       /* kgC/m2/day  growth respiration */
 	double daily_hr;       /* kgC/m2/day  heterotrophic respiration */
 	double daily_sr;       /* kgC/m2/day  Hidy 2012 - soil respiration */
+	double daily_tr;       /* kgC/m2/day  Hidy 2013 - total respiration */
 	double daily_fire;     /* kgC/m2/day  fire losses */
 	double daily_litfallc; /* kgC/m2/day  total litterfall */
 	double cum_npp;        /* kgC/m2  Summed over entire simulation */
@@ -1180,6 +1179,7 @@ typedef struct
 	double carbonchange_GRZ;	   /* kgC/m2  total of grazing carbon change   */
 	double carbonchange_PLT;   /* kgC/m2  total of planting carbon change   */
 	double carbonchange_FRZ;  /* kgC/m2  total of fertilizing carbon change   */
+	double carbonchange_SNSC;  /* kgC/m2  total of senescence carbon change   */
 } summary_struct;
 
 /* restart data structure */

@@ -22,4 +22,5 @@ typedef struct
 /* function prototypes */
 int file_open (file *target, char mode);
 int scan_value (file ini, void *var, char mode);
+int scan_array (file ini, void *var, char mode, int nl);
 int scan_open (file ini,file *target,char mode);

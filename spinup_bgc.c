@@ -285,7 +285,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	temperature corrections. This code added 9 February 1999, in
 	conjunction with soil temperature testing done with Mike White. */
 	tair_annavg = 0.0;
-	nmetdays = ctrl.metyears * 365;
+	nmetdays = ctrl.metyears * NDAY_OF_YEAR;
 	for (i=0 ; i<nmetdays ; i++)
 	{
 		tair_annavg += metarr.tavg[i];
@@ -375,9 +375,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* set current month to 0 (january) at the beginning of each year */
 			curmonth = 0;
 
-			/* set vegetation period flag to 0 - Hidy 2013 */
-			ctrl.vegper_flag = 0;
-
+	
 			
 			/* calculate scaling for N additions (decreasing with
 			time since the beginning of metcycle = 0 block */
@@ -411,7 +409,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			else metv.co2 = co2.co2ppm_array[simyr];
 
 			/* begin the daily model loop */
-			for (yday=0 ; ok && yday<365 ; yday++)
+			for (yday=0 ; ok && yday<NDAY_OF_YEAR ; yday++)
 			{
 #ifdef DEBUG
 				printf("year %d\tyday %d\n",simyr,yday);
@@ -421,14 +419,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				ctrl.yday = yday;
 				ctrl.spinyears = spinyears;
 		
-				/* Hidy 2013. - determine vegetation period */ 
-				if (ok && vegetation_period_determ(&ctrl, &phen))
-				{
-					printf("Error in call to vegetation_period_determ() from bgc()\n");
-					ok=0;
-				} 
-			
-				
+							
 				/* Test for very low state variable values and force them
 				to 0.0 to avoid rounding and floating point overflow errors */
 				if (ok && precision_control(&sitec, &ws, &cs, &ns))
@@ -438,7 +429,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				} 
 
 				/* set the day index for meteorological and phenological arrays */
-				metday = metyr*365 + yday;
+				metday = metyr*NDAY_OF_YEAR + yday;
 
 				/* zero all the daily flux variables */
 				wf = zero_wf;

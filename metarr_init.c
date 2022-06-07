@@ -45,7 +45,7 @@ int nyears)
 	int year;
 	double tmax,tmin,tday, prcp,vpd,swavgfd,dayl;
 	
-	ndays = 365 * nyears;
+	ndays = NDAY_OF_YEAR * nyears;
 
 	/* allocate space for the metv arrays */
 	if (ok && !(metarr->tmax = (double*) malloc(ndays * sizeof(double))))

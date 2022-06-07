@@ -52,10 +52,10 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	/******************************************************************/
 
 
-	/* Hidy 2012 -  if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * 365 */
+	/* Hidy 2012 -  if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * NDAY_OF_YEAR */
 	if (ctrl->varWPM_flag)
 	{
-		mort = epc->wpm_array[simyr]/365;
+		mort = epc->wpm_array[simyr]/NDAY_OF_YEAR;
 	}
 	else
 	{

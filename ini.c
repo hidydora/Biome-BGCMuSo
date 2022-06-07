@@ -72,7 +72,7 @@ int file_open (file *target, char mode)
 initialization files. Reads the first whitespace delimited word on a line,
 and discards the remainder of the line. Returns a pointer to value depending
 on the specified scan type */
-int scan_value (file ini, void *var, char type)
+int scan_array (file ini, void *var, char type, int nl)
 /* Possible values for type
     'i' for integer
     'd' for double
@@ -86,7 +86,8 @@ int scan_value (file ini, void *var, char type)
     switch (type)
     {
         case 'i':
-            ok_scan = fscanf(ini.ptr, "%d%*[^\n]",(int*)var);
+			if (nl) ok_scan = fscanf(ini.ptr, "%d%*[^\n]",(int*)var);
+			else ok_scan = fscanf(ini.ptr, "%d",(int*)var);
             if (ok_scan == 0 || ok_scan == EOF) 
 			{
 				printf("Error reading int value from %s ... exiting\n",ini.name);
@@ -95,7 +96,8 @@ int scan_value (file ini, void *var, char type)
             break;
 
         case 'd':
-            ok_scan = fscanf(ini.ptr, "%lf%*[^\n]",(double*)var);
+			if (nl) ok_scan = fscanf(ini.ptr, "%lf%*[^\n]",(double*)var);
+			else ok_scan = fscanf(ini.ptr, "%lf",(double*)var);
             if (ok_scan == 0 || ok_scan == EOF)
 			{
 				printf("Error reading double value from %s... exiting\n",ini.name);
@@ -104,7 +106,8 @@ int scan_value (file ini, void *var, char type)
             break;
 
         case 's':
-            ok_scan = fscanf(ini.ptr, "%s%*[^\n]",(char*)var);
+			if (nl) ok_scan = fscanf(ini.ptr, "%s%*[^\n]",(char*)var);
+			else ok_scan = fscanf(ini.ptr, "%s",(char*)var);
             if (ok_scan == 0 || ok_scan == EOF) 
 			{
 				printf("Error reading string value from %s... exiting\n",ini.name);
@@ -117,6 +120,12 @@ int scan_value (file ini, void *var, char type)
             ok=0;
     }
     return(!ok);
+}
+
+
+int scan_value (file ini, void *var, char type)
+{
+	return scan_array (ini, var, type, 1);
 }
 
 /* combines scan_value with file_open for reading a filename from an
@@ -145,3 +154,4 @@ int scan_open (file ini,file *target,char mode)
 	}
 	return(!ok);
 }
+

@@ -1112,14 +1112,12 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (ctrl.onscreen && (ctrl.spinyears < 100 || (ctrl.spinyears > 300 && ctrl.spinyears < 310) || (ctrl.spinyears > 500 && ctrl.spinyears < 510) || 
 				(ctrl.spinyears > 700 && ctrl.spinyears < 710) || (ctrl.spinyears > 900 && ctrl.spinyears < 910) ))
 			{
-			fprintf(bgcout->control_file.ptr, "%i %i %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n",
+				fprintf(bgcout->control_file.ptr, "%i %i %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n",
 						ctrl.spinyears, yday, metv.tsoil[0], metv.tsoil[1], metv.GDD, epv.vwc[0], epv.vwc[1], epv.m_soilstress,
-						cs.STDBc, cs.CTDBc,ns.sminn[0], 
+						cs.STDBc, cs.CTDBc,(ns.sminn[0]+ns.sminn[1]+ns.sminn[2]+ns.sminn[3]+ns.sminn[4]+ns.sminn[5]+ns.sminn[6]), 
 				        summary.soilc, cs.litr_aboveground, cs.litr_belowground, epv.proj_lai, 
 						summary.abgc, summary.cum_npp, summary.daily_gpp,summary.daily_tr, wf.evapotransp);
 			}
-
-	
 	
 
 

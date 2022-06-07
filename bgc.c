@@ -88,6 +88,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* soil proportion variables */
 	soilprop_struct   sprop;
 
+	/* groundwater calcultaion */
+	GWcalc_struct gwc;
 		
 	/* ecophysiological constants */
 	epconst_struct     epc;
@@ -474,7 +476,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	
 	/* initialize the output mapping array */
-	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary))
+	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary,&gwc))
 	{
 		printf("ERROR in call to output_map_init() from bgc.c\n");
 		errorCode=401;
@@ -651,7 +653,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			
 			/* set fluxes to zero */
-			if (!errorCode && make_zero_flux_struct(&ctrl, &wf, &cf, &nf))
+			if (!errorCode && make_zero_flux_struct(&ctrl, &wf, &cf, &nf, &gwc))
 			{
 				printf("ERROR in call to make_zero_flux_struct() from bgc.c\n");
 				errorCode=501;
@@ -873,7 +875,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone photosynthesis\n",simyr,yday);
 #endif
 			
-			
+		
 			/* daily litter and soil decomp and nitrogen fluxes */
 			if (!errorCode && decomp(&metv,&epc, &sprop, &sitec,&cs,&ns,&epv,&cf,&nf,&nt))
 			{
@@ -885,7 +887,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone decomp\n",simyr,yday);
 #endif
 
-	
+		
+
 			/* Daily allocation gets called whether or not this is a current growth day, because the competition between decomp immobilization fluxes 
 			and plant growth N demand is resolved here.  On days with no growth, no allocation occurs, but immobilization fluxes are updated normally */
 
@@ -955,10 +958,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				errorCode=522;
 			}
 
-
+		
 
 	    	/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANSP */
-			if (!errorCode && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc,  &epv, &ws, &wf, &gws))
+			if (!errorCode && multilayer_hydrolprocess(bgcout->log_file, &ctrl, &sitec, &sprop, &epc,  &epv, &ws, &wf, &gws, &gwc))
 			{
 				printf("ERROR in multilayer_hydrolprocess() from bgc.c\n");
 				errorCode=524;
@@ -1112,7 +1115,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 
 
-			/* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlength_prop */
+			/* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlengthProp */
  			 if (!errorCode && multilayer_rootdepth(&epc, &sprop, &cs, &sitec, &epv))
 			 {
 				printf("ERROR in multilayer_rootdepth() from bgc.c\n");

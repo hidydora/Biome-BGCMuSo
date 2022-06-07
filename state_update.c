@@ -53,28 +53,29 @@ int daily_water_state_update(const epconst_struct* epc, const wflux_struct* wf, 
 	ws->snoww          -= wf->snoww_subl;
 	
 	/* bare soil evaporation */
-	ws->soilEvap_snk   += wf->soilw_evap;
+	ws->soilEvap_snk   += wf->soilwEvap;
 	
 	/* transpiration */
-	ws->trans_snk      += wf->soilw_transp_SUM;
+	ws->trans_snk      += wf->soilwTransp_SUM;
 	
 	/* runoff - from the top soil layer (net loss) */
 	ws->runoff_snk	   += wf->prcp_to_runoff + wf->pondw_to_runoff;;
 
 	/* pond water filling - from precipitiation (only in case of tipping) */
-	if (epc->SHCM_flag == 0 || epc->SHCM_flag == 2) ws->pondw -= wf->pondw_evap;
+	if (epc->SHCM_flag == 0 || epc->SHCM_flag == 2) ws->pondw -= wf->pondwEvap;
 
-	ws->pondEvap_snk += wf->pondw_evap; 
+	ws->pondEvap_snk += wf->pondwEvap; 
 
 	/* deep percolation: percolation of the bottom layer is net loss for the sytem*/
-	ws->deeppercolation_snk += wf->soilw_percolated[N_SOILLAYERS-1] + wf->soilw_diffused[N_SOILLAYERS-1];
+	ws->deeppercolation_snk += wf->soilwFlux[N_SOILLAYERS-1];
 	
 	/* groundwater */	
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		ws->groundwater_src += wf->soilw_from_GW[layer];
-		ws->groundwater_snk += wf->GW_recharge[layer];
+		ws->groundwater_src += wf->GWdischarge[layer];
+		ws->groundwater_snk += wf->GWrecharge[layer];
 	}
+	ws->groundwater_src += wf->GW_to_pondw;
 
 
 	/* irrigating */
@@ -368,15 +369,15 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	{
 		for (layer = 0; layer < N_SOILLAYERS; layer++)
 		{
-			cs->litr1c[layer] += cf->frootc_to_litr1c * epv->rootlength_prop[layer];
-			cs->litr2c[layer] += cf->frootc_to_litr2c * epv->rootlength_prop[layer];
-			cs->litr3c[layer] += cf->frootc_to_litr3c * epv->rootlength_prop[layer];
-			cs->litr4c[layer] += cf->frootc_to_litr4c * epv->rootlength_prop[layer];
+			cs->litr1c[layer] += cf->frootc_to_litr1c * epv->rootlengthProp[layer];
+			cs->litr2c[layer] += cf->frootc_to_litr2c * epv->rootlengthProp[layer];
+			cs->litr3c[layer] += cf->frootc_to_litr3c * epv->rootlengthProp[layer];
+			cs->litr4c[layer] += cf->frootc_to_litr4c * epv->rootlengthProp[layer];
 
-			ns->litr1n[layer] += nf->frootn_to_litr1n * epv->rootlength_prop[layer];
-			ns->litr2n[layer] += nf->frootn_to_litr2n * epv->rootlength_prop[layer];
-			ns->litr3n[layer] += nf->frootn_to_litr3n * epv->rootlength_prop[layer];
-			ns->litr4n[layer] += nf->frootn_to_litr4n * epv->rootlength_prop[layer];
+			ns->litr1n[layer] += nf->frootn_to_litr1n * epv->rootlengthProp[layer];
+			ns->litr2n[layer] += nf->frootn_to_litr2n * epv->rootlengthProp[layer];
+			ns->litr3n[layer] += nf->frootn_to_litr3n * epv->rootlengthProp[layer];
+			ns->litr4n[layer] += nf->frootn_to_litr4n * epv->rootlengthProp[layer];
 		}
 		cs->frootc       -= frootc_to_litr;
 		ns->frootn	      = cs->frootc / epc->froot_cn;

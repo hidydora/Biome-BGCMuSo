@@ -115,7 +115,7 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 		{
 			tsoil = metv->tsoil[layer];
 			
-			frootn_layer = ns->frootn * epv->rootlength_prop[layer];
+			frootn_layer = ns->frootn * epv->rootlengthProp[layer];
 			exponent = (tsoil - 20.0) / 10.0;
 			t1 = pow(q10, exponent);
 			froot_mr += frootn_layer * mrpern * t1;
@@ -168,7 +168,7 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 		{
 			tsoil = metv->tsoil[layer];
 
-			livecrootn_layer = ns->livecrootn * epv->rootlength_prop[layer];
+			livecrootn_layer = ns->livecrootn * epv->rootlengthProp[layer];
 			
 			exponent = (tsoil - 20.0) / 10.0;
 			t1 = pow(q10, exponent);

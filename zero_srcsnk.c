@@ -90,7 +90,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->HRV_transportC = 0.0;
 	cs->FRZsrc_C = 0.0;
 	cs->fruitC_HRV = 0.0;
-        cs->frootC_HRV = 0.0;
+	cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
 	cs->fruit_mr_snk = 0.0;
 	cs->fruit_gr_snk = 0.0;
@@ -227,6 +227,6 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->harvestIndex = 0;
 	summary->rootIndex = 0;
 	summary->belowground_ratio = 0;
-
+	
 	return (errorCode);
 }

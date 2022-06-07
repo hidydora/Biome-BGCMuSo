@@ -21,8 +21,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 #include "bgc_func.h"    
 
-int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struct* epc, 
-	                         epvar_struct* epv, wstate_struct* ws, wflux_struct* wf, groundwater_struct* gws)
+int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struct* epc, 
+	                         epvar_struct* epv, wstate_struct* ws, wflux_struct* wf, groundwater_struct* gws, GWcalc_struct* gwc)
 {
 	/* given a list of site constants and the soil water mass (kg/m2),
 	this function returns the soil water potential (MPa)
@@ -52,7 +52,18 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 
 	if (epc->SHCM_flag == 1)
 	{
-		if (!errorCode && richards(sitec, sprop, epc, epv, ws, wf))
+		/* groundwater calculation */
+		if (!errorCode && groundwaterRICHARDS(ctrl, sitec, sprop, epv, ws, wf, gws, gwc))
+		{
+			printf("ERROR in groundwater() from bgc.c\n");
+			errorCode=523;
+		}
+
+		#ifdef DEBUG
+					printf("%d\t%d\tdone groundwater\n",simyr,yday);
+		#endif	
+
+		if (!errorCode && richards(logfile, ctrl, epc, sprop, ws, wf, gwc))
 		{
 			printf("\n");
 			printf("ERROR in richards() from multilayer_hydrolprocess.c()\n");
@@ -62,31 +73,26 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 					printf("%d\t%d\tdone richards\n",simyr,yday);
 		#endif	
 
-	
-
-		/* groundwater calculation */
-		if (!errorCode && groundwater(ctrl, sitec, sprop, epv, ws, wf, gws))
+		/* groundwater postprocessing */
+		if (!errorCode && groundwaterRICHARDSpostproc(ctrl, sitec, sprop, epv, ws, wf, gws, gwc))
 		{
 			printf("ERROR in groundwater() from bgc.c\n");
 			errorCode=523;
 		}
 
-		#ifdef DEBUG
-					printf("%d\t%d\tdone groundwater\n",simyr,yday);
-		#endif	
-						/* water from GW to top soil layer to evaporation limitation calculation (value from previous day) */
-		wf->soilw_from_GW0 = wf->soilw_from_GW[0];
+	
+		/* water from GW to top soil layer to evaporation limitation calculation (value from previous day) */
+		wf->soilw_from_GW0 = wf->GWdischarge[0];
 
 		/* -----------------------------*/
 		/*  6. POND WATER from soil */
-		if (ws->pondw + wf->soilw_to_pondw + wf->GW_to_pondw  > sprop->pondmax)
+		if (ws->pondw + wf->GW_to_pondw  > sprop->pondmax)
 		{
-			wf->prcp_to_runoff += ws->pondw + wf->GW_to_pondw + wf->soilw_to_pondw  - sprop->pondmax;
+			wf->prcp_to_runoff += ws->pondw + wf->GW_to_pondw  - sprop->pondmax;
 			ws->pondw = sprop->pondmax;
-			wf->soilw_to_pondw = sprop->pondmax - ws->pondw;
 		}
 		else
-			ws->pondw += wf->soilw_to_pondw + wf->GW_to_pondw;
+			ws->pondw += wf->GW_to_pondw;
 
 		/* pond_flag: flag of WARNING writing (only at first time) */
 		if (ws->pondw > 0) if (!ctrl->pond_flag ) ctrl->pond_flag = 1;
@@ -147,7 +153,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 		/* ********************************************/
 		/* 5. groundwater calculation */
 	
-		if (!errorCode && groundwater(ctrl, sitec, sprop, epv, ws, wf, gws))
+		if (!errorCode && groundwaterTIPPING(ctrl, sitec, sprop, epv, ws, wf, gws))
 		{
 			printf("ERROR in groundwater() from bgc.c\n");
 			errorCode=523;
@@ -158,7 +164,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 	#endif	
 
 		/* water from GW to top soil layer to evaporation limitation calculation (value from previous day) */
-		wf->soilw_from_GW0 = wf->soilw_from_GW[0];
+		wf->soilw_from_GW0 = wf->GWdischarge[0];
 
 		/* -----------------------------*/
 		/*  6. POND WATER from soil */
@@ -177,8 +183,8 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 
 	/* evaportanspiration calculation */	
 	
-	wf->evapotransp = wf->canopyw_evap + wf->soilw_evap + wf->soilw_transp_SUM + wf->snoww_subl + wf->pondw_evap;
-	wf->PET         = wf->soilw_evapPOT + wf->soilw_transPOT + wf->canopyw_evap;
+	wf->evapotransp = wf->canopyw_evap + wf->soilwEvap + wf->soilwTransp_SUM + wf->snoww_subl + wf->pondwEvap;
+	wf->PET         = wf->soilwEvap_POT + wf->soilwTransp_POT + wf->canopyw_evap;
 
 
 	
@@ -191,17 +197,16 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 		soilw_before              = ws->soilw[N_SOILLAYERS-1];
 		epv->VWC[N_SOILLAYERS-1]  = sprop->VWCfc[N_SOILLAYERS-1];
 		ws->soilw[N_SOILLAYERS-1] = sprop->VWCfc[N_SOILLAYERS-1] * (sitec->soillayer_thickness[N_SOILLAYERS-1]) * water_density;
-		if (soilw_before > ws->soilw[N_SOILLAYERS-1])
-			wf->soilw_percolated[N_SOILLAYERS-1] += soilw_before - ws->soilw[N_SOILLAYERS-1];
-		else
-			wf->soilw_diffused[N_SOILLAYERS-1] += soilw_before - ws->soilw[N_SOILLAYERS-1];		
+	
+		wf->soilwFlux[N_SOILLAYERS-1] += soilw_before - ws->soilw[N_SOILLAYERS-1];
+
 	}
 	else
 	{
 		soilw_sat= sprop->VWCsat[N_SOILLAYERS-1] * (sitec->soillayer_thickness[N_SOILLAYERS-1]) * water_density;
 		if (ws->soilw[N_SOILLAYERS-1] > soilw_sat)
 		{
-			wf->GW_recharge[N_SOILLAYERS-1] = ws->soilw[N_SOILLAYERS-1] - soilw_sat;
+			wf->GWrecharge[N_SOILLAYERS-1] = ws->soilw[N_SOILLAYERS-1] - soilw_sat;
 			ws->soilw[N_SOILLAYERS-1] = soilw_sat;
 			epv->VWC[N_SOILLAYERS-1]  = sprop->VWCsat[N_SOILLAYERS-1];
 
@@ -228,9 +233,9 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 		{
 			if (sprop->VWChw[layer] - epv->VWC[layer] < 1e-3)
 			{
-				wf->soilw_diffused[N_SOILLAYERS-1] -= (sprop->VWChw[layer] - epv->VWC[layer])* water_density * sitec->soillayer_thickness[layer];
-				epv->VWC[layer] = sprop->VWChw[layer];
-				ws->soilw[layer] = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
+				wf->soilwFlux[N_SOILLAYERS-1] -= (sprop->VWChw[layer] - epv->VWC[layer])* water_density * sitec->soillayer_thickness[layer];
+				epv->VWC[layer]                = sprop->VWChw[layer];
+				ws->soilw[layer]               = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
 			}
 			else
 			{
@@ -241,19 +246,19 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 
 		}
 		
-		if (epv->VWC[layer] > sprop->VWCsat[layer])       
+		if (epv->VWC[layer] - sprop->VWCsat[layer] > CRIT_PREC)       
 		{
 			if (sprop->GWlayer == layer)
 			{
-				wf->GW_recharge[layer] = (epv->VWC[layer] - sprop->VWCsat[layer]) * water_density * sitec->soillayer_thickness[layer];
+				wf->GWrecharge[layer] = (epv->VWC[layer] - sprop->VWCsat[layer]) * water_density * sitec->soillayer_thickness[layer];
 				epv->VWC[layer] = sprop->VWCsat[layer];
 				ws->soilw[layer] = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
 			}
 			else
 			{
-				if (epv->VWC[layer] - sprop->VWCsat[layer] < 1e-3)
+				if (epv->VWC[layer] - sprop->VWCsat[layer] < CRIT_PRECwater)
 				{
-					wf->soilw_percolated[N_SOILLAYERS-1] += (epv->VWC[layer] - sprop->VWCsat[layer])/(water_density * sitec->soillayer_thickness[layer]);
+					wf->soilwFlux[N_SOILLAYERS-1] += (epv->VWC[layer] - sprop->VWCsat[layer])/(water_density * sitec->soillayer_thickness[layer]);
 					epv->VWC[layer] = sprop->VWCsat[layer];
 					ws->soilw[layer] = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
 				}
@@ -274,16 +279,16 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 
 		if (epv->n_rootlayers) 
 		{
-			weight_SUM += epv->rootlength_prop[layer];
+			weight_SUM += epv->rootlengthProp[layer];
 
-			VWC_RZ			+= epv->VWC[layer]      * epv->rootlength_prop[layer];
-			PSI_RZ			+= epv->PSI[layer]      * epv->rootlength_prop[layer];
-			VWCsat_RZ		+= sprop->VWCsat[layer] * epv->rootlength_prop[layer];
-			VWCfc_RZ		+= sprop->VWCfc[layer]  * epv->rootlength_prop[layer];
-			VWCwp_RZ		+= sprop->VWCwp[layer]  * epv->rootlength_prop[layer];
-			VWChw_RZ		+= sprop->VWChw[layer]  * epv->rootlength_prop[layer];
-			soilw_RZ        += ws->soilw[layer]     * epv->rootlength_prop[layer];
-			soilw_RZ_avail  += (sprop->VWCwp[layer] * sitec->soillayer_thickness[layer] * water_density) * epv->rootlength_prop[layer];
+			VWC_RZ			+= epv->VWC[layer]      * epv->rootlengthProp[layer];
+			PSI_RZ			+= epv->PSI[layer]      * epv->rootlengthProp[layer];
+			VWCsat_RZ		+= sprop->VWCsat[layer] * epv->rootlengthProp[layer];
+			VWCfc_RZ		+= sprop->VWCfc[layer]  * epv->rootlengthProp[layer];
+			VWCwp_RZ		+= sprop->VWCwp[layer]  * epv->rootlengthProp[layer];
+			VWChw_RZ		+= sprop->VWChw[layer]  * epv->rootlengthProp[layer];
+			soilw_RZ        += ws->soilw[layer]     * epv->rootlengthProp[layer];
+			soilw_RZ_avail  += (sprop->VWCwp[layer] * sitec->soillayer_thickness[layer] * water_density) * epv->rootlengthProp[layer];
 		}
 		else
 		{
@@ -296,6 +301,8 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 			soilw_RZ        = 0;
 			soilw_RZ_avail  = 0;
 		}
+
+	
 	}
 
 	if (epv->rootdepth && fabs(1-weight_SUM) > CRIT_PREC)

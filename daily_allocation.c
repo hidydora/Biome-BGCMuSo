@@ -239,9 +239,9 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		ns->sminNO3avail[layer] = ns->sminNO3[layer] * NO3_mobilen_prop;
 		sminAVAIL				= (ns->sminNH4avail[layer] + ns->sminNO3avail[layer]);
 
-		plantNdemand_layer		= epv->plantNdemand * epv->rootlength_prop[layer];
+		plantNdemand_layer		= epv->plantNdemand * epv->rootlengthProp[layer];
 	
-		retrans_layer			= ns->retransn * epv->rootlength_prop[layer];
+		retrans_layer			= ns->retransn * epv->rootlengthProp[layer];
 		pot_immob				= nt->potential_immob[layer];
 		ndemand					= plantNdemand_layer + pot_immob;
 
@@ -285,7 +285,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 			nf->sminn_to_npool[layer] = plantNdemand_layer- nf->retransn_to_npool[layer];
 
 			plantNalloc       += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];
-			plantCalloc       += avail_c * epv->rootlength_prop[layer];
+			plantCalloc       += avail_c * epv->rootlengthProp[layer];
 	
 		}
 		else

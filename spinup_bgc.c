@@ -68,6 +68,9 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* soil proportion variables */
 	soilprop_struct   sprop;
 
+	/* groundwater calcultaion */
+	GWcalc_struct gwc;
+
 	/* phenological data */
 	phenarray_struct   phenarr;
 	phenology_struct   phen;
@@ -444,7 +447,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	
 	/* initialize the output mapping array*/ 
-	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary))
+	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary,&gwc))
 	{
 		printf("ERROR in call to output_map_init.c from spinup_bgc.c\n");
 		errorCode=401;
@@ -683,7 +686,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				}
 
 				/* set fluxes to zero */
-				if (!errorCode && make_zero_flux_struct(&ctrl,&wf, &cf, &nf))
+				if (!errorCode && make_zero_flux_struct(&ctrl,&wf, &cf, &nf, &gwc))
 				{
 					printf("ERROR in call to make_zero_flux_struct.c from spinup_bgc.c\n");
 					errorCode=501;
@@ -978,7 +981,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				/* 3. WATER CALCULATIONS WITH STATE UPDATE */
 			
 				/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
-     			if (!errorCode && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc, &epv, &ws, &wf, &gws))
+     			if (!errorCode && multilayer_hydrolprocess(bgcout->log_file, &ctrl, &sitec, &sprop, &epc, &epv, &ws, &wf, &gws, &gwc))
 				{ 
 					printf("ERROR in multilayer_hydrolprocess.c from spinup_bgc.c\n");
 					errorCode=524;
@@ -1064,7 +1067,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone multilayer_leaching\n",simyr,yday);
 #endif
-				 /* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlength_prop */
+				 /* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlengthProp */
  				 if (!errorCode && multilayer_rootdepth(&epc, &sprop, &cs, &sitec, &epv))
 				 {
 					printf("ERROR in multilayer_rootdepth.c from spinup_bgc.c\n");

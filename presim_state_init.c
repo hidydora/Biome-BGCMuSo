@@ -159,7 +159,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->GRZsrc_C = 0;
 	cs->FRZsrc_C = 0;
 	cs->fruitC_HRV = 0.0;
-         cs->frootC_HRV = 0.0;
+	cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
 	cs->CbalanceERR = 0;
 	cs->CNratioERR = 0.0;
@@ -256,11 +256,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 		cs->soil3c[layer] = 0;
 		cs->soil4c[layer] = 0;
 		cs->soilC[layer] = 0;
-		cs->soil1_DOC[layer] = 0;
-		cs->soil2_DOC[layer] = 0;
-		cs->soil3_DOC[layer] = 0;
-		cs->soil4_DOC[layer] = 0;
-		cs->soil_DOC[layer] = 0;
+		cs->soil1DOC[layer] = 0;
+		cs->soil2DOC[layer] = 0;
+		cs->soil3DOC[layer] = 0;
+		cs->soil4DOC[layer] = 0;
+		cs->soilDOC[layer] = 0;
 		ns->cwdn[layer] = 0;
 		ns->litr1n[layer] = 0;
 		ns->litr2n[layer] = 0;
@@ -272,11 +272,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 		ns->soil3n[layer] = 0;
 		ns->soil4n[layer] = 0;
 		ns->soilN[layer] = 0;
-		ns->soil1_DON[layer] = 0;
-		ns->soil2_DON[layer] = 0;
-		ns->soil3_DON[layer] = 0;
-		ns->soil4_DON[layer] = 0;
-		ns->soil_DON[layer] = 0;
+		ns->soil1DON[layer] = 0;
+		ns->soil2DON[layer] = 0;
+		ns->soil3DON[layer] = 0;
+		ns->soil4DON[layer] = 0;
+		ns->soilDON[layer] = 0;
 		ns->sminNH4[layer] = 0;
 		ns->sminNO3[layer] = 0;
 	}

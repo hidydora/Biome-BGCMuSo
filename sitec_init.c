@@ -195,6 +195,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		sitec->psi_fc  = pow(10,pF_fieldcapacity) / (-10000);
 		sitec->psi_wp  = pow(10,pF_wiltingpoint) / (-10000);
 
+
 		if (sitec->vwc_sat_mes == DATA_GAP)
 		{
 			/* Clapp-Hornberger parameter from empirical function */

@@ -518,14 +518,6 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}
 
 	/* -------------------------------------------*/
-	/* control: VWC_close must be greater than soil moisture at wilting point */
-	if (epc->vwc_ratio_close != DATA_GAP && (epc->vwc_ratio_close * sitec->vwc_fc - sitec->vwc_wp) < 0.001)
-	{
-		printf("Error: VWC_ratio_close must be greater than soil moisture at wilting point, epc_init()\n");
-		printf("Check epc file, set higher VWC_ratio_close value and try again.\n");
-		ok=0;
-	}
-	/* -------------------------------------------*/
 	/* multiplier for PSI */
 	if (ok && scan_value(temp, &epc->psi_open, 'd'))
 	{
@@ -581,13 +573,21 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}
 
 	/* -------------------------------------------*/
-	/* Hidy 2012 - Q10 parameter (temperature coefficient for calculating maint. resp.) */
+	/* Hidy 2013 - Q10 parameter (temperature coefficient for calculating maint.resp.) and GRPERC (growth resp ratio )
+		original: BBGC constant - new version: can be set in EPC file*/
+
 	if (ok && scan_value(temp, &epc->q10_value, 'd'))
 	{
 		printf("Error reading Q10 parameter: epc_init()\n");
 		ok=0;
 	}
 
+	if (ok && scan_value(temp, &epc->GR_ratio, 'd'))
+	{
+		printf("Error reading growth resp.ratio: epc_init()\n");
+		ok=0;
+	}
+	/* -------------------------------------------*/
 	fclose(temp.ptr);
 		
 	return (!ok);

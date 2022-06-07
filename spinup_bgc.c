@@ -147,7 +147,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			file_open (&GSI.GSI_file, 'w');				/* file of GSI parameters - Hidy 2009.*/
 		}
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2010.*/
-		fprintf(bgcout->control_file.ptr, "yday m_soilprop leafc leafc_to_SNSC SNSC_to_litrc litrc_strg_SNSC SNSC_snk SNSC_src leafn leafn_to_SNSC SNSC_to_litrn litrn_strg_SNSC SNSC_snk SNSC_src\n");
+		fprintf(bgcout->control_file.ptr, "yday VWC1 VWC3 w_scalar cum_NPP SNSC_src litr1c soil4c(kg) soil4n(kg) GPP AR HR EVAP \n");
 
 	}
 
@@ -966,15 +966,16 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 						
-			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */		
-			if (ctrl.onscreen && ctrl.spinyears < 10)
+				/* INTERNAL VARIALBE CONTROL - Hidy 2013 */		
+				if (ctrl.onscreen && ctrl.spinyears < 20)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f %f %f %f %f\n", 
-				yday, epv.m_soilprop, 
-				cs.leafc*1000, cf.m_leafc_to_SNSC*1000, (cf.SNSC_to_litr1c+cf.SNSC_to_litr2c+cf.SNSC_to_litr3c+cf.SNSC_to_litr4c)*1000, 
-				(cs.litr1c_strg_SNSC+cs.litr2c_strg_SNSC+cs.litr3c_strg_SNSC+cs.litr4c_strg_SNSC)*1000, cs.SNSC_snk*1000, cs.SNSC_src*1000,
-				ns.leafn*1000, nf.m_leafn_to_SNSC*1000, (nf.SNSC_to_litr1n+nf.SNSC_to_litr2n+nf.SNSC_to_litr3n+nf.SNSC_to_litr4n)*1000, 
-				(ns.litr1n_strg_SNSC+ns.litr2n_strg_SNSC+ns.litr3n_strg_SNSC+ns.litr4n_strg_SNSC)*1000, ns.SNSC_snk*1000, ns.SNSC_src*1000); 
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f %f %f %f\n", 
+				yday, 
+				epv.vwc[0], epv.vwc[3], epv.w_scalar, 
+				summary.cum_npp*1000, cs.SNSC_src*1000, cs.litr1c, cs.soil4c, ns.soil4n,
+				summary.daily_gpp*1000, (summary.daily_mr+summary.daily_gr)*1000, summary.daily_hr*1000,
+				wf.canopyw_evap+wf.soilw_evap+wf.soilw_trans_SUM+wf.snoww_subl); 
+
 			}
 
 

@@ -67,6 +67,11 @@ int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_st
 	cs->soil3c                            = restart->soil3c;
 	cs->soil4c                            = restart->soil4c;
 	cs->cpool                             = restart->cpool;
+	/* Hidy 2013 - temporary senescence pool */
+	cs->litr1c_strg_SNSC				  = restart->litr1c_strg_SNSC;
+	cs->litr2c_strg_SNSC				  = restart->litr2c_strg_SNSC;
+	cs->litr3c_strg_SNSC				  = restart->litr3c_strg_SNSC;
+	cs->litr4c_strg_SNSC				  = restart->litr4c_strg_SNSC;
 	
 	ns->leafn                             = restart->leafn;
 	ns->leafn_storage                     = restart->leafn_storage;
@@ -95,7 +100,11 @@ int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_st
 	ns->soil2n                            = restart->soil2n;
 	ns->soil3n                            = restart->soil3n;
 	ns->soil4n                            = restart->soil4n;
-
+	/* Hidy 2013 - temporary senescence pool */
+	ns->litr1n_strg_SNSC				  = restart->litr1n_strg_SNSC;
+	ns->litr2n_strg_SNSC				  = restart->litr2n_strg_SNSC;
+	ns->litr3n_strg_SNSC				  = restart->litr3n_strg_SNSC;
+	ns->litr4n_strg_SNSC				  = restart->litr4n_strg_SNSC;
 
 	/*-----------------------------*/
 	/* Hidy 2011 - multilayer soil */
@@ -172,6 +181,11 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 	restart->soil3c 						  = cs->soil3c;
 	restart->soil4c 						  = cs->soil4c;
 	restart->cpool  						  = cs->cpool;
+	/* Hidy 2013 - temporary senescence pool */
+	restart->litr1c_strg_SNSC				  = cs->litr1c_strg_SNSC;
+	restart->litr2c_strg_SNSC				  = cs->litr2c_strg_SNSC;
+	restart->litr3c_strg_SNSC				  = cs->litr3c_strg_SNSC;
+	restart->litr4c_strg_SNSC				  = cs->litr4c_strg_SNSC;
 
 	restart->leafn  						  = ns->leafn;
 	restart->leafn_storage  				  = ns->leafn_storage;
@@ -200,6 +214,11 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 	restart->soil2n 						  = ns->soil2n;
 	restart->soil3n 						  = ns->soil3n;
 	restart->soil4n 						  = ns->soil4n;
+	/* Hidy 2013 - temporary senescence pool */
+	restart->litr1n_strg_SNSC				  = ns->litr1n_strg_SNSC;
+	restart->litr2n_strg_SNSC				  = ns->litr2n_strg_SNSC;
+	restart->litr3n_strg_SNSC				  = ns->litr3n_strg_SNSC;
+	restart->litr4n_strg_SNSC				  = ns->litr4n_strg_SNSC;
 	
 	/*-----------------------------*/
 	/* Hidy 2011 - multilayer soil */

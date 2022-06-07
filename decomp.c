@@ -31,7 +31,7 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	int ok=1;
 	double rate_scalar, t_scalar, w_scalar;
 	double tk, tsoil;
-	double minpsi, maxpsi, psi;
+	double minvwc, maxvwc, vwc;
 	double rfl1s1, rfl2s2,rfl4s3,rfs1s2,rfs2s3,rfs3s4;
 	double kl1_base,kl2_base,kl4_base,ks1_base,ks2_base,ks3_base,ks4_base,kfrag_base;
 	double kl1,kl2,kl4,ks1,ks2,ks3,ks4,kfrag;
@@ -46,7 +46,7 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 
 	/* Hidy 2010 - calculate the rate constant scalar in multilayer soil: averaged values */
 	tsoil = metv->tsoil_avg;
-	psi   = epv->psi_avg;
+	vwc   = epv->vwc_avg;
 	
 	/* calculate the rate constant scalar for soil temperature,
 	assuming that the base rate constants are assigned for non-moisture
@@ -76,22 +76,38 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	and soil moisture. Soil Biol. Biochem., 15(4):447-453.
 	*/
 	/* set the maximum and minimum values for water potential limits (MPa) */
-	minpsi = -10.0;
-	maxpsi = sitec->psi_sat;
-	if (psi < minpsi)
+	minvwc = sitec->vwc_wp;
+	maxvwc = sitec->vwc_sat;
+
+	if (vwc < minvwc)
 	{
 		/* no decomp below the minimum soil water potential */
 		w_scalar = 0.0;
 	}
-	else if (psi > maxpsi)
+	else if (vwc > maxvwc)
 	{
 		/* this shouldn't ever happen, but just in case... */
 		w_scalar = 1.0;
 	}
 	else
 	{
-		w_scalar = log(minpsi/psi)/log(minpsi/maxpsi);
+		if (epv->dsws > 0) 	
+		{
+			w_scalar = (vwc - sitec->vwc_wp) / (sitec->vwc_sat - sitec->vwc_wp);
+		}
+		else
+		{
+			w_scalar = log(minvwc/vwc)/log(minvwc/maxvwc);	
+		}
 	}
+
+	/* CONTROL - w_scalar must be grater than 0 */
+	if (w_scalar < 0)
+	{
+		printf("Error in w_scalar calculation in decomp.c\n");
+		ok=0;
+	}
+
 	
 	/* calculate the final rate scalar as the product of the temperature and
 	water scalars */

@@ -1011,10 +1011,11 @@ typedef struct
     double deadwood_fucel;   /* (DIM) dead wood unshileded cellulose fraction */
     double deadwood_fscel;   /* (DIM) dead wood shielded cellulose fraction */
     double deadwood_flig;    /* (DIM) dead wood lignin fraction */
-	double mort_SNSC_displayed;	 /* Hidy 2011 - mortality parameter of senescence reagrding to displayed plant material */
-	double mort_SNSC_storaged;	 /* Hidy 2011 - mortality parameter of senescence regarding to storaged plant material */
+	double mort_SNSC_displayed;	/* Hidy 2011 - mortality parameter of senescence reagrding to displayed plant material */
+	double mort_SNSC_storaged;	/* Hidy 2011 - mortality parameter of senescence regarding to storaged plant material */
     double mort_SNSC_to_litter; /* Hidy 2013 - turnover rate of wilted standing biomass to litter*/
-	double q10_value;				/* (DIM) temperature coefficient for calculating maint.resp. */
+	double q10_value;			/* (DIM) temperature coefficient for calculating maint.resp. */
+	double GR_ratio;            /* Hidy 2013 - (DIM) growth resp per unit of C grown */
 	double* wpm_array;		 /* Hidy 2011 - changingx WPM values */
 	double* msc_array;		 /* Hidy 2011 - changingx WPM values */
 } epconst_struct;
@@ -1213,10 +1214,10 @@ typedef struct
 	double litr3c;
 	double litr4c;
 	/* Hidy 2013: senescence */
-//	double litr1c_strg_SNSC;
-//	double litr2c_strg_SNSC;
-//	double litr3c_strg_SNSC;
-//	double litr4c_strg_SNSC;
+	double litr1c_strg_SNSC;
+	double litr2c_strg_SNSC;
+	double litr3c_strg_SNSC;
+	double litr4c_strg_SNSC;
 	double soil1c;
 	double soil2c;
 	double soil3c;
@@ -1246,10 +1247,10 @@ typedef struct
 	double litr3n;
 	double litr4n;
 	/* Hidy 2013: senescence */
-//  double litr1n_strg_SNSC;
-//	double litr2n_strg_SNSC;
-//	double litr3n_strg_SNSC;
-//	double litr4n_strg_SNSC;
+	double litr1n_strg_SNSC;
+	double litr2n_strg_SNSC;
+	double litr3n_strg_SNSC;
+	double litr4n_strg_SNSC;
 	double soil1n;
 	double soil2n;
 	double soil3n;

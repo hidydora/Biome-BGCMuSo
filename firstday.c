@@ -201,11 +201,11 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	leaf and fine root growth from transfer pools to the 
 	gresp_transfer pool */
 	cs->gresp_transfer = 0.0;
-	cs->gresp_transfer += (cs->leafc_transfer + cs->frootc_transfer) * GRPERC;
+	cs->gresp_transfer += (cs->leafc_transfer + cs->frootc_transfer) * epc->GR_ratio;
 	if (woody)
 	{
 		cs->gresp_transfer += (cs->livestemc_transfer + cs->deadstemc_transfer +
-			cs->livecrootc_transfer + cs->deadcrootc_transfer) * GRPERC;
+			cs->livecrootc_transfer + cs->deadcrootc_transfer) * epc->GR_ratio;
 	}
 	
 	/* set the initial rates of litterfall and live wood turnover */

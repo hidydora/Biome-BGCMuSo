@@ -173,7 +173,7 @@ ntemp_struct* nt, int* n_limitation_ptr)
 	f2 = epc->alloc_crootc_stemc;
 	f3 = epc->alloc_newstemc_newleafc;
 	f4 = epc->alloc_newlivewoodc_newwoodc;
-	g1 = GRPERC;
+	g1 = epc->GR_ratio;
 	g2 = GRPNOW;
 	cnl = epc->leaf_cn;
 	cnfr = epc->froot_cn;

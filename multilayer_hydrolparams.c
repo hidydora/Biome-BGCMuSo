@@ -87,7 +87,7 @@ int multilayer_hydrolparams(const control_struct* ctrl, const siteconst_struct* 
 		vwc_act = ws->soilw[layer] / (1000.0 * sitec->soillayer_thickness[layer]);
 
 		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
-		psi_act = psi_sat * pow( (vwc_sat/vwc_act), soil_b);
+		psi_act = psi_sat * pow( (vwc_act/vwc_sat), -1*soil_b);
 		
 		hydr_conduct_act = sitec->hydr_conduct_sat * pow(vwc_act/vwc_sat, 2*soil_b+3);
 		

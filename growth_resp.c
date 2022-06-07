@@ -26,7 +26,7 @@ int growth_resp(epconst_struct* epc, cflux_struct* cf)
 	double g1;   /* RATIO   C respired for growth : C grown  */ 
 	double g2;   /* proportion of growth resp to release at fixation */
 
-	g1 = GRPERC;
+	g1 = epc->GR_ratio;
 	g2 = GRPNOW;
 	
 	/* leaf and fine root growth respiration for both trees and grass */	

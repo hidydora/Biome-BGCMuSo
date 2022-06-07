@@ -47,7 +47,7 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 	{
 		epv->vwc_ratio_open = epc->vwc_ratio_open;
 		epv->vwc_open = sitec->vwc_fc * epc->vwc_ratio_open;
-		epv->psi_open = sitec->psi_sat * pow((epv->vwc_open/sitec->vwc_fc), sitec->soil_b);
+		epv->psi_open = sitec->psi_sat * pow((epv->vwc_open/sitec->vwc_sat), -1*sitec->soil_b);
 	}
 
 
@@ -61,7 +61,7 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 		}
 		else
 		{
-			epv->psi_close = epc->psi_open; 
+			epv->psi_close = epc->psi_close; 
 			epv->vwc_close = sitec->vwc_sat * (log(sitec->soil_b) / log(epc->psi_close/sitec->psi_sat));
 			epv->vwc_ratio_close = epv->vwc_close/sitec->vwc_fc;
 		}
@@ -70,10 +70,9 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 	{
 		epv->vwc_ratio_close = epc->vwc_ratio_close;
 		epv->vwc_close = sitec->vwc_fc * epc->vwc_ratio_close;
-		epv->psi_close = sitec->psi_sat * pow((epv->vwc_close/sitec->vwc_fc), sitec->soil_b);
+		epv->psi_close = sitec->psi_sat * pow((epv->vwc_close/sitec->vwc_sat), -1*sitec->soil_b);
 	}
 
-	
 
 		
 	return (!ok);

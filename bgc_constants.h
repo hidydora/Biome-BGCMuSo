@@ -37,7 +37,6 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 #define SOIL2_CN    12.0     /* C:N for slow microbial recycling pool */
 #define SOIL3_CN    10.0     /* C:N for recalcitrant SOM pool (humus) */
 #define SOIL4_CN    10.0     /* C:N for recalcitrant SOM pool (humus) */
-#define GRPERC      0.3      /* (DIM) growth resp per unit of C grown */
 #define GRPNOW      1.0      /* (DIM) proportion of storage growth resp at fixation */
 #define PPFD50      75.0     /* (umol/m2/s) PPFD for 1/2 stomatal closure */
 #define DENITRIF_PROPORTION  0.01  /* fraction of mineralization to volatile */

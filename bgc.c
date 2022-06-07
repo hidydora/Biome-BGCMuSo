@@ -132,8 +132,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
     /* variables used for monthly average output */
 	int curmonth;
-	int mondays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-	int endday[12] = {30,58,89,119,150,180,211,242,272,303,333,364};
+	int mondays[nMONTHS_OF_YEAR] = {31,28,31,30,31,30,31,31,30,31,30,31};
+	int endday[nMONTHS_OF_YEAR] = {30,58,89,119,150,180,211,242,272,303,333,364};
 	
 
 	/* copy the input structures into local structures */
@@ -511,7 +511,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	/* calculate the annual average air temperature for use in soil temperature corrections */
 	tair_annavg = 0.0;
-	nmetdays = ctrl.simyears * NDAYS_OF_YEAR;
+	nmetdays = ctrl.simyears * nDAYS_OF_YEAR;
 	for (i=0 ; i<nmetdays ; i++)
 	{
 		tair_annavg += metarr.tavg[i];
@@ -522,7 +522,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* if this simulation is using a restart file for its initialconditions, then copy restart info into structures */
 	if (!errflag && ctrl.read_restart)
 	{
-		if (!errflag && restart_input(&epc, &ws, &cs, &ns, &epv, &(bgcin->restart_input)))
+		if (!errflag && restart_input(&ctrl, &epc, &ws, &cs, &ns, &epv, &(bgcin->restart_input)))
 		{
 			printf("ERROR in call to restart_input() from bgc()\n");
 			errflag=406;
@@ -595,12 +595,12 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		if (!(ndep.varndep))
 		{
 			/*constant Ndep */
-			daily_ndep = ndep.ndep / NDAYS_OF_YEAR;
+			daily_ndep = ndep.ndep / nDAYS_OF_YEAR;
 		}
 		else
 		{	
 			/* Ndep from file */
-			daily_ndep = ndep.Ndep_array[simyr] / NDAYS_OF_YEAR;
+			daily_ndep = ndep.Ndep_array[simyr] / nDAYS_OF_YEAR;
 		}
 		
 		if (ctrl.onscreen) printf("-------------------\n");
@@ -609,7 +609,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 		/* 2. BEGIN OF THE DAILY LOOP */
 		
-		for (yday=0 ; !errflag && yday<NDAYS_OF_YEAR ; yday++)
+		for (yday=0 ; !errflag && yday<nDAYS_OF_YEAR ; yday++)
 		{
 
 #ifdef DEBUG
@@ -643,12 +643,12 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 
 			/* set the day index for meteorological and phenological arrays */
-			metday = simyr*NDAYS_OF_YEAR + yday;
+			metday = simyr*nDAYS_OF_YEAR + yday;
 			
-			
+
 			/* nitrogen deposition and fixation */
 			nf.ndep_to_sminn = daily_ndep;
-			nf.nfix_to_sminn = epc.nfix / NDAYS_OF_YEAR;
+			nf.nfix_to_sminn = epc.nfix / nDAYS_OF_YEAR;
 
 	
 
@@ -790,25 +790,24 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone bare_soil evap\n",simyr,yday);
 #endif
 
+		/* conductance calculation */
+		if (!errflag && conduct_calc(&ctrl, &metv, &epc, &sitec, &sprop, &epv, &wf, simyr))
+		{
+			printf("ERROR in conduct_calc() from bgc()\n");
+			errflag=514;
+		}
+			
+		#ifdef DEBUG
+					printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
+		#endif
 
 		/* begin canopy bio-physical process simulation */
 		/* do canopy ET calculations whenever there is leaf area displayed, since there may be intercepted water on the canopy that needs to be dealt with */
 		if (!errflag && epv.n_actphen > epc.n_emerg_phenophase && metv.dayl)
 		{
-			 /* conductance calculation */
-			if (!errflag && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
-				{
-					printf("ERROR in conduct_calc() from bgc()\n");
-					errflag=514;
-				}
-			
-			#ifdef DEBUG
-						printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
-			#endif
-		
-				
+	
 			/* evapo-transpiration */
-			if (!errflag && cs.leafc && canopy_et(&epc, &metv, &sprop, &epv, &wf))
+			if (!errflag && cs.leafc && canopy_et(&epc, &sitec, &ws, &metv, &sprop, &epv, &wf))
 			{
 				printf("ERROR in canopy_et() from bgc()\n");
 				errflag=515;
@@ -916,50 +915,31 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 			/* 3. WATER CALCULATIONS WITH STATE UPDATE */
 
-			/* calculate the part-transpiration from total transpiration */
-			if (!errflag && multilayer_transpiration(&ctrl, &sitec, &epv, &ws, &wf))
-			{
-				printf("ERROR in multilayer_transpiration() from bgc()\n");
-				errflag=523;
-			}
-#ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_transpiration\n",simyr,yday);
-#endif
 		
-
 			/* IRRIGATING separately from other management routines*/
 			if (!errflag && irrigating(&ctrl, &IRG, &sitec, &epv, &wf))
 			{
 				printf("ERROR in irrigating() from bgc()\n");
-				errflag=524;
+				errflag=523;
 			}
 		
 		    /* ground water calculation */
 			if (!errflag && groundwater(&sitec, &sprop, &ctrl, &epv, &ws, &wf))
 			{
 				printf("ERROR in groundwater() from bgc()\n");
-				errflag=525;
+				errflag=524;
 			}
 
 #ifdef DEBUG
 			printf("%d\t%d\tdone groundwater\n",simyr,yday);
 #endif	
 			
-			/* calculation of actual evaporation from potential evaporation */
-			if (!errflag && potEVAP_to_actEVAP(&ctrl, &sprop, &epv, &ws, &wf))
-			{
-				printf("ERROR in potEVAP_to_actEVAP() from bgc()\n");
-				errflag=547;
-			}
-	
-#ifdef DEBUG
-			printf("%d\t%d\tdone potEVAP_to_actEVAP\n",simyr,yday);
-#endif	
+		
 			/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
 			if (!errflag && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc, &epv, &ws, &wf))
 			{
 				printf("ERROR in multilayer_hydrolprocess() from bgc()\n");
-				errflag=526;
+				errflag=525;
 			}
 
 #ifdef DEBUG
@@ -974,7 +954,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && daily_water_state_update(&wf, &ws))
 			{
 				printf("ERROR in daily_water_state_update() from bgc()\n");
-				errflag=527;
+				errflag=526;
 			}
 			
 #ifdef DEBUG
@@ -986,7 +966,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && daily_CN_state_update(&epc, &ctrl, &epv, &cf, &nf, &cs, &ns, annual_alloc, epc.woody, epc.evergreen))
 			{
 				printf("ERROR in daily_CN_state_update() from bgc()\n");
-				errflag=528;
+				errflag=527;
 			}
 
 #ifdef DEBUG
@@ -1003,7 +983,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && senescence(yday, &epc, &GRZ, &metv, &phen, &ctrl, &cs, &cf, &ns, &nf, &epv))
 			{
 				printf("ERROR in senescence() from bgc()\n");
-				errflag=529;
+				errflag=528;
 			}
 			
 #ifdef DEBUG
@@ -1013,7 +993,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && mortality(&ctrl, &epc, &epv, &phen, &cs, &cf, &ns, &nf, simyr))
 			{
 				printf("ERROR in mortality() from bgc()\n");
-				errflag=530;
+				errflag=529;
 			}
 			
 #ifdef DEBUG
@@ -1025,7 +1005,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && multilayer_sminn(&epc, &sprop, &epv, &sitec, &cf, &ns, &nf))
 			{
 				printf("ERROR in multilayer_sminn() from bgc()\n");
-				errflag=531;
+				errflag=530;
 			}
 			
 #ifdef DEBUG
@@ -1036,7 +1016,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && multilayer_leaching(&epc, &sprop, &epv, &ctrl, &cs, &cf, &ns, &nf, &ws, &wf))
 			{
 				printf("ERROR in multilayer_leaching() from bgc()\n");
-				errflag=532;
+				errflag=531;
 			}
 			
 #ifdef DEBUG
@@ -1051,7 +1031,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && planting(&ctrl, &sitec, &PLT, &epc, &epv, &phen, &cs, &ns, &cf, &nf))
 			{
 				printf("ERROR in planting() from bgc()\n");
-				errflag=533;
+				errflag=532;
 			}
 
 
@@ -1059,49 +1039,49 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && thinning(&ctrl, &epc, &THN, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in thinning() from bgc()\n");
-				errflag=534;
+				errflag=533;
 			}
 
 			/* MOWING  */
 			if (!errflag && mowing(&ctrl, &epc, &MOW, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in mowing() from bgc()\n");
-				errflag=535;
+				errflag=534;
 			}
 
 			/* GRAZING  */
-			if (!errflag && grazing(&ctrl, &epc, &GRZ, &cs, &ns, &ws, &cf, &nf, &wf))
+			if (!errflag && grazing(&ctrl, &epc, &GRZ, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in grazing() from bgc()\n");
-				errflag=536;
+				errflag=535;
 			}
 	
 		   	/* HARVESTING  */
 			if (!errflag && harvesting(&ctrl, &epc, &HRV, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in harvesting() from bgc()\n");
-				errflag=537;
+				errflag=536;
 			}
  
 			/* PLOUGHING */
  			if (!errflag && ploughing(&ctrl, &epc, &sitec, &sprop, &metv, &epv, &PLG, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in ploughing() from bgc()\n");
-				errflag=538;
+				errflag=537;
 			}
 		 
 			/* FERTILIZING  */
 	    	if (!errflag && fertilizing(&ctrl, &sitec, &FRZ, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in fertilizing() from bgc()\n");
-				errflag=539;
+				errflag=538;
 			}	
 				
 			/* cut-down plant material (due to management) */
 			if (!errflag && cutdown2litter(&epc, &epv, &cs, &cf, &ns, &nf))
 			{
 				printf("ERROR in cutdown2litter() from bgc()\n");
-				errflag=540;
+				errflag=539;
 			}
 
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -1111,7 +1091,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && precision_control(&ws, &cs, &ns))
 			{
 				printf("ERROR in call to precision_control() from bgc()\n");
-				errflag=541;
+				errflag=540;
 			} 
 				
 #ifdef DEBUG
@@ -1119,10 +1099,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 			/* test for water balance*/
- 			if (!errflag && check_water_balance(&ws, first_balance))
+ 			if (!errflag && check_water_balance(&ws, &epv, &sitec, first_balance))
 			{
 				printf("ERROR in check_water_balance() from bgc()\n");
-				errflag=542;
+				errflag=541;
 			}
 			 
 #ifdef DEBUG
@@ -1134,7 +1114,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && check_carbon_balance(&cs, first_balance))
 			{
 				printf("ERROR in check_carbon_balance() from bgc()\n");
-				errflag=543;
+				errflag=542;
 			}
 	
 		
@@ -1148,7 +1128,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && check_nitrogen_balance(&ns, first_balance))
 			{
 				printf("ERROR in check_nitrogen_balance() from bgc()\n");
-				errflag=544;
+				errflag=543;
 			}
 			
 			
@@ -1161,7 +1141,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errflag && cnw_summary(yday, &epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
 			{
 				printf("ERROR in cnw_summary() from bgc()\n");
-				errflag=545;
+				errflag=544;
 			}
 	
 	
@@ -1172,10 +1152,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			/* output handling */
 			if (!errflag && output_handling(mondays[curmonth], endday[curmonth], &ctrl, output_map, dayarr, monavgarr, annavgarr, annarr, 
-				bgcout->dayout, bgcout->monavgout, bgcout->annavgout, bgcout->annout))
+				                            bgcout->dayout, bgcout->monavgout, bgcout->annavgout, bgcout->annout))
 			{
 				printf("ERROR in output_handling() from bgc()\n");
-				errflag=546;
+				errflag=545;
 			}
 	
 	

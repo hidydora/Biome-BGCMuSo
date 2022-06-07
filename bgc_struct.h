@@ -16,7 +16,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #define N_MGMDAYS 7		    /*  number of type of management events in a single year */
 #define N_SOILLAYERS 10		/*  number of type of soil layers in multilayer soil module */
 #define N_PHENPHASES 7		/*  number of phenological phases */
-#define NDAYS_OF_YEAR 365    /* number of days in a year */
+#define nDAYS_OF_YEAR 365    /* number of days in a year */
 
 /* VAR ctrl: simulation control variables */
 typedef struct
@@ -70,7 +70,7 @@ typedef struct
 	int prephen2_flag;          /* (flag) for warnings into logfile */	
 	int bareground_flag;        /* (flag) for warnings into logfile */	
 	int vegper_flag;            /* (flag) for warnings into logfile */	
-
+	int south_shift;            /* (int) shifting of meteo data for southern hemisphere */
 
 } control_struct;
 /* endVAR */
@@ -202,6 +202,9 @@ typedef struct
 {
     double soilw[N_SOILLAYERS];		 /* water stored in the soil layers */
 	double soilw_SUM;				 /* water stored in soil */
+	double soilw_2m;				 /* water stored in 0-200 cm */
+	double soilw_RZ;				 /* water stored in rootzone */
+	double soilw_RZ_avail;		     /* water stored in rootzone available for plants */
 	double pond_water;				 /* water stored on surface because of saturation */
     double snoww;					 /* water stored in snowpack */
     double canopyw;					 /* water stored on canopy */
@@ -221,12 +224,13 @@ typedef struct
 	double canopyw_GRZsnk;			 /* SUM of water stored on canopy is disappered because of grazing */
     double IRGsrc_W;			     /* SUM of water from irrigating */
 	double FRZsrc_W;				 /* SUM of water from fertilization */
+	double soil_evapCUM1;            /* cumulated soil evaporation in first evaporation phase (no limit) */
+	double soil_evapCUM2;            /* cumulated soil evaporation in second evaporation phase (dsr limit) */
+	double transp_lack[N_SOILLAYERS];/* transpiration lack in a given layer */
     double WbalanceERR;              /* SUM of water balance error  */
 	double inW;						 /* SUM of nitrogen input */
 	double outW;					 /* SUM of nitrogen output */
 	double storeW;					 /* SUM of nitrogen store */
-	double soil_evapCUM1;            /* cumulated soil evaporation in first evaporation phase (no limit) */
-	double soil_evapCUM2;            /* cumulated soil evaporation in second evaporation phase (dsr limit) */
 } wstate_struct;                        
 /* endOUT */
 
@@ -244,6 +248,8 @@ typedef struct
 	double snoww_subl;								/* sublimation from snowpack */
     double snoww_to_soilw;							/* melt from snowpack  */
     double soilw_evap;								/* evaporation from soil */
+	double soilw_transDEMAND[N_SOILLAYERS];			/* transpiration demand from the soil layers */
+	double soilw_transDEMAND_SUM;					/* sum of transpiration demand */
     double soilw_trans[N_SOILLAYERS];				/* transpiration from the soil layers */
     double soilw_trans_SUM;	                        /* SUM of transpiration from the soil layers */
 	double evapotransp;								/* evapotranspiration (evap+trans+subl) */
@@ -261,7 +267,7 @@ typedef struct
 	double IRG_to_prcp;								/* irrigatied water amount */	
 	double FRZ_to_soilw;                            /* water flux from fertilization */
 	double pot_evap;                                /* potential evaporation to calcualte pond evaporation */
-	double pot_infilt;                                  /* infiltrated water: prcp_to_soilw + snoww_to_soilw + canopyw_to_soilw + IRG_to_prcp + pond_water */
+	double pot_infilt;                              /* infiltrated water: prcp_to_soilw + snoww_to_soilw + canopyw_to_soilw + IRG_to_prcp + pond_water - runoff */
 } wflux_struct;
 /* endOUT */
 
@@ -790,7 +796,6 @@ typedef struct
 	double CH4_flux_MANURE;			
 	double CH4_flux_FERMENT;
 
-
 } cflux_struct;
 /* endOUT */
 
@@ -1314,9 +1319,9 @@ typedef struct
 	int n_maxrootlayers;						/* (n) maximum number of soil layers in which root can be found  */
 	int germ_layer;								/* (n) number of germination layer */
 	double germ_depth;                          /* (m) actual germination depth*/
-	double thermal_timeSUM[NDAYS_OF_YEAR*2];		/* (Celsius) sum of thermal time */
-	double cpool_to_leafcARRAY[NDAYS_OF_YEAR*2];   /* (kgC/m2/day) array of carbon from cpool to leafC */                 
-	double npool_to_leafnARRAY[NDAYS_OF_YEAR*2];   /* (kgN/m2/day) array of nitrogen from npool to leafN */  
+	double thermal_timeSUM[nDAYS_OF_YEAR*2];		/* (Celsius) sum of thermal time */
+	double cpool_to_leafcARRAY[nDAYS_OF_YEAR*2];   /* (kgC/m2/day) array of carbon from cpool to leafC */                 
+	double npool_to_leafnARRAY[nDAYS_OF_YEAR*2];   /* (kgN/m2/day) array of nitrogen from npool to leafN */  
 	double leafdayARRAY[2];                     /* (n) counter array for days and phenpase of year when leaves are on*/
 	double thermal_time;			            /* (Celsius) difference between tavg and base temperature */
 	double leafday_lastmort;                    /* (n) counter for last genetical mortality day */
@@ -1363,7 +1368,7 @@ typedef struct
 	double vwc_crit2[N_SOILLAYERS];					/* (ratio) volumetric water content at stomatal closure */
     double vwc_avg;									/* (m3/m3) average volumetric water content in active layers */
 	double vwc_RZ;									/* (m3/m3) average volumetric water content in rootzone (max.soil.depth) */
-	double psi_avg;									/* (MPa) average water potential of soil and leaves */
+	double psi_RZ;									/* (MPa) average water potential of soil and leaves */
 	double rooting_depth;							/* (m) actual depth of the rooting zone */
 	double dlmr_area_sun;							/* (umolC/m2projected leaf area/s) sunlit leaf MR */
     double dlmr_area_shade;				  			/* (umolC/m2projected leaf area/s) shaded leaf MR */
@@ -1381,7 +1386,7 @@ typedef struct
 	double max_conduct;								/* (m/s) stomatal conductance with atmospheric [CO2] multiplier */
 	double m_tmin;									/* (dimless) freezing night temperature multiplier */
 	double m_soilstress_layer[N_SOILLAYERS];		/* (dimless) soil water stress multiplier */
-	double m_soilstress;							/* (dimless) soil water properties  multiplier */
+	double m_soilstress;							/* (dimless) soil water stress  multiplier */
 	double m_ppfd_sun;								/* (dimless) PAR flux density multiplier */
 	double m_ppfd_shade;							/* (dimless) PAR flux density multiplier */
 	double m_vpd;									/* (dimless) vapor pressure deficit multiplier */
@@ -1389,6 +1394,7 @@ typedef struct
 	double m_final_shade;							/* (dimless) product of all other multipliers */
 	double m_dsws;									/* (dimless) day since water stress multiplier */
 	double m_extremT;								/* (dimless) extem temp. multiplier */
+	double m_co2;                                   /* (dimless) CO2 concentration multiplier */
 	double SMSI;									/* (prop.) soil moisture stress index */
 	double gcorr;									/* (dimless) temperature and pressure correction factor for conductances */
 	double gl_bl;									/* (m/s) leaf boundary layer conductance */
@@ -1400,7 +1406,8 @@ typedef struct
     double gc_e_wv;									/* (m/s) canopy conductance to evaporated water */
     double gc_sh;									/* (m/s) canopy conductance to sensible heat */
 	double annmax_lai;								/* (m2/m2) year-to-date maximum projected LAI */
-	double n_limitation[N_SOILLAYERS];				/* (flag) for nitrogen limitation in multilayer soil */
+	double Nlimit[N_SOILLAYERS];				    /* (prop) nitrogen limitation in multilayer soil */
+	double Nlimit_RZ;				                /* (prop) averaged nitrogen limitation for rooting zone */
 	double plant_calloc;							/* (kgC/m2) amount of C allocated */
 	double plant_nalloc;							/* (kgN/m2) amount of N allocated */
 	double excess_c;								/* (kgC/m2) difference between available and allocated C */
@@ -1850,6 +1857,7 @@ typedef struct
 	double daily_npp;					/* (kgC/m2/day)  GPP - Rmaint - Rgrowth */
 	double daily_nee;					/* (kgC/m2/day)  GPP - Rmaint - Rgrowth - Rheretotrop - fire losses */
 	double daily_nbp;					/* (kgC/m2/day)  GPP - Rmaint - Rgrowth - Rheretotrop - disturb_emission - fire losses*/
+	double daily_ngb;					/* (kgC/m2/day)  NBP - N2Oflux(Ceq) - CH4(Ceq)*/
 	double daily_gpp;					/* (kgC/m2/day)  gross PSN source */
 	double daily_mr;					/* (kgC/m2/day)  maintenance respiration */
 	double daily_gr;					/* (kgC/m2/day)  growth respiration */
@@ -1867,6 +1875,7 @@ typedef struct
 	double cum_nep;						/* (kgC/m2)  cumulative SUM of NEP */
 	double cum_nee;						/* (kgC/m2)  cumulative SUM of NEE */
 	double cum_gpp;						/* (kgC/m2)  cumulative SUM of GPP */
+	double cum_ngb;					    /* (kgC/m2)  cumulative SUM of NGB */
 	double cum_mr;						/* (kgC/m2)  cumulative SUM of MR */
 	double cum_gr;						/* (kgC/m2)  cumulative SUM of GR */
 	double cum_hr;						/* (kgC/m2)  cumulative SUM of HR */
@@ -1922,7 +1931,7 @@ typedef struct
 	double softstemc_LandD;             /* (kgC/m2)  live and dead sofstem carbon content */
 	double sminNH4_ppm[N_SOILLAYERS];	/* (ppm)  soil ammonium content in ppm */
 	double sminNO3_ppm[N_SOILLAYERS];	/* (ppm)  soil nitrate content in ppm */
-
+	double CH4_flux_TOTAL;              /* (kgC/m2/d) total ecosystem CH4 flux */
 } summary_struct;
 /* endOUT */
 

@@ -123,8 +123,8 @@ int harvesting_init(file init, const control_struct* ctrl, planting_struct* PLT,
 
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
-				PLTyday = PLT->PLTyear_array[0] * NDAYS_OF_YEAR + date_to_doy(PLT->PLTmonth_array[0], PLT->PLTday_array[0]);
-				HRVyday = p1 * NDAYS_OF_YEAR + date_to_doy(p2, p3);
+				PLTyday = PLT->PLTyear_array[0] * nDAYS_OF_YEAR + date_to_doy(PLT->PLTmonth_array[0], PLT->PLTday_array[0]);
+				HRVyday = p1 * nDAYS_OF_YEAR + date_to_doy(p2, p3);
 				if (HRVyday > PLTyday)
 				{
 					HRVyear_array[nmgm]         = p1;

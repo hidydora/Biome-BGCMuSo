@@ -96,7 +96,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	/* local storage for daily and annual output variables and output mapping (array of pointers to double)  */
 	double* dayarr=0;
-	double* monavgarr=0;
+ 	double* monavgarr=0;
 	double* annavgarr=0;
 	double* annarr=0;
 	double** output_map=0;
@@ -117,8 +117,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 	/* variables used for monthly average output */
 	int curmonth;
-	int mondays[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
-	int endday[12] = {30,58,89,119,150,180,211,242,272,303,333,364};
+	int mondays[nMONTHS_OF_YEAR] = {31,28,31,30,31,30,31,31,30,31,30,31};
+	int endday[nMONTHS_OF_YEAR] = {30,58,89,119,150,180,211,242,272,303,333,364};
 	
 	/* spinup control */
 	int ntimesmet, nblock;
@@ -492,7 +492,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* if this simulation is using a restart file for its initialconditions, then copy restart info into structures */
 	if (!errflag && ctrl.read_restart)
 	{
-		if (!errflag && restart_input(&epc, &ws, &cs, &ns, &epv, &(bgcin->restart_input)))
+		if (!errflag && restart_input(&ctrl, &epc, &ws, &cs, &ns, &epv, &(bgcin->restart_input)))
 		{
 			printf("ERROR in call to restart_input() from bgc()\n");
 			errflag=406;
@@ -746,12 +746,13 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 					errflag=510;
 				}
 
-				/* update the ann max LAI for annual diagnostic output */
-				if (epv.proj_lai > epv.annmax_lai) epv.annmax_lai = epv.proj_lai;
-
+	
 #ifdef DEBUG
 				printf("%d\t%d\tdone radtrans\n",simyr,yday);
 #endif
+
+			/* update the ann max LAI for annual diagnostic output */
+				if (epv.proj_lai > epv.annmax_lai) epv.annmax_lai = epv.proj_lai;
 
 				/* precip routing (when there is precip) */
 				if (!errflag && metv.prcp && prcp_route(&metv, epc.int_coef, epv.all_lai,	&wf))
@@ -787,26 +788,25 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 				printf("%d\t%d\tdone bare_soil evap\n",simyr,yday);
 #endif
-	
+				/* conductance calculation */
+				if (!errflag && conduct_calc(&ctrl, &metv, &epc, &sitec, &sprop, &epv, &wf, simyr))
+				{
+					printf("ERROR in conduct_calc() from bgc()\n");
+					errflag=514;
+				}
+			
+#ifdef DEBUG
+			printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
+#endif
+
 
 				/* begin canopy bio-physical process simulation */
 				/* do canopy ET calculations whenever there is leaf areadisplayed, since there may be intercepted water on the canopy that needs to be dealt with */
 				if (!errflag && epv.n_actphen > epc.n_emerg_phenophase && metv.dayl)
 				{
 
-					/* conductance calculation */
-					if (!errflag && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
-					{
-						printf("ERROR in conduct_calc() from bgc()\n");
-						errflag=514;
-					}
-			
-#ifdef DEBUG
-			printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
-#endif
-
 					/* evapo-transpiration */
-					if (!errflag && cs.leafc && canopy_et(&epc, &metv, &sprop, &epv, &wf))
+					if (!errflag && cs.leafc && canopy_et(&epc, &sitec,&ws, &metv, &sprop, &epv, &wf))
 					{
 						printf("ERROR in canopy_et() from bgc()\n");
 						errflag=515;
@@ -830,7 +830,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 
-				/* do photosynthesis only when it is part of the current growth season, as defined by the remdays_curgrowth flag */
+				/* do photosynthesis calculation */
 				if (!errflag && cs.leafc && photosynthesis(&epc, &metv, &cs, &ws, &phen, &epv, &psn_sun, &psn_shade, &cf))
 				{
 					printf("ERROR in photosynthesis() from bgc()\n");
@@ -927,17 +927,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-				/* 3. WATER CALCULATIONS WITH STATE UPDATE */
-
-				/* calculate the part-transpiration from total transpiration */
-				if (!errflag && multilayer_transpiration(&ctrl, &sitec, &epv, &ws, &wf))
-				{
-					printf("ERROR in multilayer_transpiration() from bgc()\n");
-					errflag=523;
-				}
-#ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_transpiration\n",simyr,yday);
-#endif	
+				/* 3. WATER CALCULATIONS WITH STATE UPDATE *
 			
 		
 				/* ground water calculation */
@@ -950,18 +940,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone groundwater\n",simyr,yday);
 #endif	
 
-		
-				/* calculation of actual evaporation from potential evaporation */
-				if (!errflag && potEVAP_to_actEVAP(&ctrl, &sprop, &epv, &ws, &wf))
-				{
-					printf("ERROR in potEVAP_to_actEVAP() from bgc()\n");
-					errflag=547;
-				}
-
-#ifdef DEBUG
-			printf("%d\t%d\tdone potEVAP_to_actEVAP\n",simyr,yday);
-#endif	
-
+	
 				/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
      			if (!errflag && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc, &epv, &ws, &wf))
 				{ 
@@ -1066,7 +1045,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 				/* test for water balance */
-				if (!errflag && check_water_balance(&ws, first_balance))
+				if (!errflag && check_water_balance(&ws, &epv, &sitec, first_balance))
 				{
 					printf("ERROR in check_water_balance() from bgc()\n");
 					errflag=542;
@@ -1113,7 +1092,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 				/* output handling */
 				if (!errflag && output_handling(mondays[curmonth], endday[curmonth], &ctrl, output_map, dayarr, monavgarr, annavgarr, annarr, 
-					bgcout->dayout, bgcout->monavgout, bgcout->annavgout, bgcout->annout))
+					                            bgcout->dayout, bgcout->monavgout, bgcout->annavgout, bgcout->annout))
 				{
 					printf("ERROR in output_handling() from bgc()\n");
 					errflag=546;

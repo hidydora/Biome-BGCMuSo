@@ -149,7 +149,7 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 				printf("ERROR reading GRAZING parameters from GRAZING file  file\n");
 				errflag=1;
 			}
-			
+
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
 				GRZstart_year_array[nmgm]       = p1;  

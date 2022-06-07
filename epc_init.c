@@ -389,7 +389,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		printf("ERROR reading fire mortality, epc_init()\n");
 		errflag=20915;
 	}
-	if (!errflag) epc->daily_fire_turnover = t1/NDAYS_OF_YEAR;
+	if (!errflag) epc->daily_fire_turnover = t1/nDAYS_OF_YEAR;
 
 	if (!errflag && scan_value(epc_file, &epc->wholeplant_mortality, 'd'))
 	{

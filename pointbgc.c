@@ -31,6 +31,9 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 int main(int argc, char *argv[])
 {
 	int errflag=0;
+	int transient=0;
+	char printVERSION[] = "-v";
+	char keyword[STRINGSIZE];
 
 	/* bgc input and output structures */
 	bgcin_struct bgcin;
@@ -88,7 +91,7 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.prephen2_flag = 0;          
 	bgcin.ctrl.bareground_flag = 0;
 	bgcin.ctrl.vegper_flag = 0;
-	
+	bgcin.ctrl.south_shift = 0;
 
 	/******************************
 	**                           **
@@ -96,13 +99,23 @@ int main(int argc, char *argv[])
 	**                           **
 	******************************/
 	
+	/* wrinting on screen: model version 
+
+	strcpy(keyword,argv[1]);
+	if (!strcmp(keyword, printVERSION))
+	{
+		printf("Model version: Biome-BGCMuSo6.0-4 OR Biome-BGCMAg2.0-4\n");
+		exit(0);
+	} 
+	*/
 	/* read the name of the main init file from the command line and store as init.name */
 	if (argc != 2)
 	{
 		printf("ERROR in reading the main init file from command line. Exiting\n");
 		printf("Correct usage: <executable name>  <initialization file name>\n");
 		exit(102);
-	}
+	} 
+	
 	strcpy(init.name, argv[1]);
 
 	/* open the main init file for ascii read and check for errors */
@@ -164,7 +177,7 @@ int main(int argc, char *argv[])
 
 
 	/* read site constants */
-	errflag = sitec_init(init, &bgcin.sitec);
+	errflag = sitec_init(init, &bgcin.sitec, &(bgcin.ctrl));
 	if (errflag)
 	{
 		printf("ERROR in call to sitec_init() from pointbgc.c... Exiting\n");
@@ -236,7 +249,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* read the output control information */
-	errflag = output_init(init, &output);
+	if ((bgcin.co2.varco2 == 1 || bgcin.ndep.varndep == 1) && bgcin.ctrl.spinup == 1) transient = 1;
+	errflag = output_init(init, transient, &output);
 	if (errflag)
 	{
 		printf("ERROR in call to output_init() from pointbgc.c... Exiting\n");
@@ -294,10 +308,18 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.condMOW_flag = bgcin.MOW.condMOW_flag;   
 
 	/* copy the output file structures into bgcout */
-	if (output.dodaily) bgcout.dayout = output.dayout;
-	if (output.domonavg) bgcout.monavgout = output.monavgout;
-	if (output.doannavg) bgcout.annavgout = output.annavgout;
-	if (output.doannual) bgcout.annout = output.annout;
+	bgcout.dayout  = output.dayout;
+	bgcout.dayoutT = output.dayoutT;
+	
+	bgcout.monavgout  = output.monavgout;
+	bgcout.monavgoutT = output.monavgoutT;
+	
+	bgcout.annavgout  = output.annavgout;
+	bgcout.annavgoutT = output.annavgoutT;
+	
+	bgcout.annout  = output.annout;
+	bgcout.annoutT = output.annoutT;
+
 	bgcout.log_file = output.log_file;
 	
 	
@@ -500,10 +522,26 @@ int main(int argc, char *argv[])
 	/* close files */
 	if (restart.read_restart) fclose(restart.in_restart.ptr);
 	if (restart.write_restart) fclose(restart.out_restart.ptr);
-	if (output.dodaily) fclose(output.dayout.ptr);
-	if (output.domonavg) fclose(output.monavgout.ptr);
-	if (output.doannavg) fclose(output.annavgout.ptr);
-	if (output.doannual) fclose(output.annout.ptr);
+	if (output.dodaily) 
+	{
+		fclose(output.dayout.ptr);
+		if (transient) fclose(output.dayoutT.ptr);
+	}
+	if (output.domonavg) 
+	{
+		fclose(output.monavgout.ptr);
+		if (transient) fclose(output.monavgoutT.ptr);
+	}
+	if (output.doannavg) 
+	{
+		fclose(output.annavgout.ptr);
+		if (transient) fclose(output.annavgoutT.ptr);
+	}
+	if (output.doannual) 
+	{
+		fclose(output.annout.ptr);
+		if (transient) fclose(output.annoutT.ptr);
+	}
 
 	fclose(output.log_file.ptr);
 

@@ -24,7 +24,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ, 
+int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ, epvar_struct* epv,
 			cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf)
 {
 
@@ -66,11 +66,7 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ
 		GRZyday_start = date_to_doy(GRZ->GRZstart_month_array[md], GRZ->GRZstart_day_array[md]);
 		GRZyday_end   = date_to_doy(GRZ->GRZend_month_array[md], GRZ->GRZend_day_array[md]);
 
-		if (GRZyday_start > GRZyday_end)
-		{
 	
-		}
-
 		if (year == GRZ->GRZstart_year_array[md] && ctrl->yday >= GRZyday_start && ctrl->yday <= GRZyday_end) 
 		{
 		
@@ -87,38 +83,39 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ
 
 			Nexrate   = GRZ->Nexrate[md];
 			EFman_N2O = GRZ->EFman_N2O[md];
-			EFman_CH4 = GRZ->EFman_CH4[md]/NDAYS_OF_YEAR;;
-			EFfer_CH4 = GRZ->EFfer_CH4[md]/NDAYS_OF_YEAR;;
+			EFman_CH4 = GRZ->EFman_CH4[md]/nDAYS_OF_YEAR;;
+			EFfer_CH4 = GRZ->EFfer_CH4[md]/nDAYS_OF_YEAR;;
 
 		
-			/* daily total ingested carbon per m2 from daily ingested drymatter and carbon content of drymatter and stocking rate
-							[kgC/m2 = kgDM/LSU * (kgC/kgDM) * (LSU/m2)] */	
-			daily_C_loss = (DMintake * DM_Ccontent) * stocking_rate;	
+			if (epv->proj_lai)
+			{
+				/* daily total ingested carbon per m2 from daily ingested drymatter and carbon content of drymatter and stocking rate
+								[kgC/m2 = kgDM/LSU * (kgC/kgDM) * (LSU/m2)] */	
+				daily_C_loss = (DMintake * DM_Ccontent) * stocking_rate;	
 	
 		
-			/* effect of grazing: decrease of leafc and increase of soilc and soiln (manure)*/
-			befgrazing_leafc = cs->leafc;
+				/* effect of grazing: decrease of leafc and increase of soilc and soiln (manure)*/
+				befgrazing_leafc = cs->leafc;
 		
-			if (befgrazing_leafc - daily_C_loss > 0)
-			{
-			
-				aftergrazing_leafc = befgrazing_leafc - daily_C_loss;
+				if (befgrazing_leafc - daily_C_loss > 0)
+				{
+					aftergrazing_leafc = befgrazing_leafc - daily_C_loss;
+					GRZcoeff  = 1-aftergrazing_leafc/befgrazing_leafc;
+				}
+				else
+				{
+					GRZcoeff  = 1.0;
+					aftergrazing_leafc = 0;
+					daily_C_loss = befgrazing_leafc;
+
+				}	
 				daily_excr_prod = (daily_C_loss/DM_Ccontent) * prop_DMintake2excr;/* kg manure/m2/day -> kgC/m2/day */
-		
-				GRZcoeff  = 1-aftergrazing_leafc/befgrazing_leafc;
-				GRZcoeff = GRZcoeff;
-				GRZcoeff = GRZcoeff;
 			}
 			else
 			{
-				GRZcoeff  = 0.0;
-				daily_excr_prod = 0;
-				prop_excr2litter = 0;
-		
 				/* grazingW_flag: flag of WARNING writing in log file (only at first time) */
 				if (!ctrl->grazingW_flag) ctrl->grazingW_flag = 1;
-
-			}	
+			}
 		}
 	}
 

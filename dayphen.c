@@ -61,8 +61,8 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 		}
 		else
 		{
-			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + NDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
-			phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + NDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
+			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + nDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
+			phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + nDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
 		}
 
 		if (phen->offday <= phen->onday && (phen->offday != DATA_GAP && phen->onday != DATA_GAP))

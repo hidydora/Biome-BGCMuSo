@@ -58,6 +58,10 @@ typedef struct
 	file monavgout;				/* monthly average output file */
 	file annavgout;				/* annual average output file */
     file annout;				/* annual output file */
+	file dayoutT;				/* transient daily output file */
+	file monavgoutT;			/* transient monthly average output file */
+	file annavgoutT;			/* transient annual average output file */
+    file annoutT;				/* transient annual output file */
 	file log_file;				/* main information about model run */
 } output_struct;
 

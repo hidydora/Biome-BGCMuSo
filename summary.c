@@ -29,6 +29,7 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 	int errflag=0;
 	int layer;
 	double gpp,mr,gr,hr,tr, fire;
+	double N2O_Ceq, CH4_Ceq;
 	double sr; /* calculating soil respiration */
 	double npp,nep,nee, nbp, disturb_loss, disturb_gain, BD_top30, BD_30to60, BD_60to90, g_per_cm3_to_kg_per_m3, prop_to_percent, kg_to_mg;
 	double Closs_THN_w, Closs_THN_nw, Closs_MOW, Closs_HRV, yieldC_HRV, Closs_PLG, Closs_GRZ, Cplus_PLT, Cplus_FRZ, Cplus_GRZ, Nplus_GRZ, Nplus_FRZ;
@@ -82,7 +83,7 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 
 
 	summary->annprcp += metv->prcp;
-	summary->anntavg += metv->tavg / NDAYS_OF_YEAR;
+	summary->anntavg += metv->tavg / nDAYS_OF_YEAR;
 
 		
 	summary->annrunoff += wf->prcp_to_runoff;
@@ -174,6 +175,8 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 	summary->NO3_top30 = (ns->sminNO3[0] + ns->sminNO3[1] + ns->sminNO3[2]) / BD_top30 * kg_to_mg * sprop->NO3_mobilen_prop;
 
 	summary->daily_n2o = nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
+
+	summary->CH4_flux_TOTAL = cf->CH4_flux_FERMENT + cf->CH4_flux_MANURE + cf->CH4_flux_soil;
 
 	/*******************************************************************************/
 	/* 3. calculate daily fluxes (GPP, NPP, NEP, MR, GR, HR) positive for net growth: NPP = Gross PSN - Maintenance Resp - Growth Resp */
@@ -399,13 +402,17 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 
 	disturb_loss = Closs_THN_w + Closs_THN_nw + Closs_MOW + Closs_HRV + Closs_PLG;
 				
-	disturb_gain = Cplus_FRZ + Cplus_GRZ + Cplus_PLT + daily_CTDB_to_litr + daily_STDB_to_litr;
+	disturb_gain = Cplus_FRZ + Cplus_GRZ + Cplus_PLT;
 	
 
 	nbp = nep + disturb_gain - disturb_loss;
 	summary->daily_nbp = nbp;
 
-
+	/* NGB calculation: net greenhouse gas balance - NBP - N2O(Ceq) -CH(Ceq) */
+	N2O_Ceq= summary->daily_n2o * (44/28) * 298 * (12/44);
+	CH4_Ceq= summary->CH4_flux_TOTAL * (18/14) * 34 * (12/44);
+	summary->daily_ngb = summary->daily_nbp - N2O_Ceq - CH4_Ceq;
+	summary->cum_ngb += summary->daily_ngb;
 	
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -413,7 +420,5 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 		summary->daily_gross_nimmob_total += epv->daily_gross_nimmob[layer];
 		summary->daily_net_nmin_total     += epv->daily_net_nmin[layer];
 	}
-
-	
 	return(errflag);
 }

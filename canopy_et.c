@@ -22,17 +22,15 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const soilprop_struct* sprop, epvar_struct* epv, wflux_struct* wf)
+int canopy_et(const epconst_struct* epc, const siteconst_struct* sitec, const wstate_struct* ws, const metvar_struct* metv, const soilprop_struct* sprop, 
+	          epvar_struct* epv, wflux_struct* wf)
 {
 	int errflag=0;
-	double m_soilstress_avg, transp_lack;
-
-	int layer;
 	double e, cwe, t, trans, trans_sun, trans_shade, e_dayl,t_dayl;
 	
 	pmet_struct pmet_in;
     
-	e=cwe=t=trans=trans_sun=trans_shade=e_dayl=t_dayl=m_soilstress_avg=transp_lack=0;
+	e=cwe=t=trans=trans_sun=trans_shade=e_dayl=t_dayl=0;
 
 
 	/* Assign values in pmet_in that don't change */
@@ -166,41 +164,12 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const soilpr
 		
 	}
 	/* multilayer soil model: multilayer transpiration is calculated in multilayer_transpiration.c */
-	wf->soilw_trans_SUM = trans;
+	wf->soilw_transDEMAND_SUM = trans;
 	
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
 	wf->canopyw_evap = cwe;
     wf->canopyw_to_soilw = wf->prcp_to_canopyw - cwe;
 
-
-	
-	/* m_soistress calculation based on VWC or transpiration demand-possibitiy  */
-	if (epc->soilstress_flag == 1)
-	{
-		m_soilstress_avg = 0;
-		for (layer = 0; layer < N_SOILLAYERS; layer++)
-		{
-			if (epv->vwc[layer] > sprop->vwc_wp[layer])
-			{
-				transp_lack = (epv->vwc[layer] - sprop->vwc_wp[layer]) - wf->soilw_trans_SUM * epv->rootlength_prop[layer];
-				if (transp_lack > 0)
-					epv->m_soilstress_layer[layer] = 1;
-				else
-					epv->m_soilstress_layer[layer] = 1 - fabs(transp_lack)/(wf->soilw_trans_SUM * epv->rootlength_prop[layer]);
-			}
-			else
-				epv->m_soilstress_layer[layer] = 0;
-
-			m_soilstress_avg	 += epv->m_soilstress_layer[layer] * epv->rootlength_prop[layer];
-		}
-		epv->m_soilstress  = m_soilstress_avg;
-		epv->m_final_sun   = epv->m_ppfd_sun * epv->m_soilstress *  epv->m_tmin * epv->m_vpd;
-		epv->m_final_shade = epv->m_ppfd_shade * epv->m_soilstress * epv->m_tmin * epv->m_vpd;
-		epv->gl_s_sun      = epv->max_conduct * epv->m_final_sun * epv->gcorr;
-		epv->gl_s_shade    = epv->max_conduct * epv->m_final_shade * epv->gcorr;
-		epv->gl_t_wv_sun   = (epv->gl_bl * (epv->gl_s_sun + epv->gl_c)) / (epv->gl_bl + epv->gl_s_sun + epv->gl_c);
-		epv->gl_t_wv_shade = (epv->gl_bl * (epv->gl_s_shade + epv->gl_c)) / (epv->gl_bl + epv->gl_s_shade + epv->gl_c);
-	}
 
 
 	return (errflag);

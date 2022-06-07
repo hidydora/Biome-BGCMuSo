@@ -27,12 +27,12 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 	int layer;
 
 	double RLprop_sum1, RLprop_sum2, frootc;
-	double vwcSAT_RZ, vwcFC_RZ, vwcWP_RZ, vwcHW_RZ, maxRD;
+	double maxRD;
 
 
 	/* initalizing internal variables */
 
-	RLprop_sum1=RLprop_sum2=vwcSAT_RZ=vwcFC_RZ=vwcWP_RZ=vwcHW_RZ=0.0;
+	RLprop_sum1=RLprop_sum2=0.0;
 
 	if (sprop->soildepth < epc->max_rootzone_depth)
 		maxRD = sprop->soildepth;
@@ -120,19 +120,7 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 			errflag=1;
 		}
 	
-		/*calculation of critical VWC values for rootzone */
-
-		for (layer = 0; layer < epv->n_maxrootlayers; layer++)
-		{
-			vwcSAT_RZ += sprop->vwc_sat[layer]* (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-			vwcFC_RZ  += sprop->vwc_fc[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-			vwcWP_RZ  += sprop->vwc_wp[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-			vwcHW_RZ  += sprop->vwc_hw[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
-		}
-		epv->vwcSAT_RZ = vwcSAT_RZ;
-		epv->vwcFC_RZ  = vwcFC_RZ;
-		epv->vwcWP_RZ  = vwcWP_RZ;
-		epv->vwcHW_RZ  = vwcHW_RZ;
+	
 	}
 
 	/* ***************************************************************************************************** */	
@@ -146,10 +134,10 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 		if (frootc < epc->rootlenght_par1)
 		{
 			/* par1: root weight corresponding to max root depth, par2: root depth function shape parameter */
-			epv->rooting_depth = epv->germ_depth + maxRD * pow(frootc / epc->rootlenght_par1, epc->rootlenght_par2);
+			epv->rooting_depth = epv->germ_depth + (maxRD-epv->germ_depth) * pow(frootc / epc->rootlenght_par1, epc->rootlenght_par2);
 		}
 		else
-			epv->rooting_depth = epv->germ_depth + maxRD;
+			epv->rooting_depth = epv->germ_depth + (maxRD-epv->germ_depth);
 	}
 	else
 		epv->rooting_depth = 0;

@@ -21,7 +21,7 @@ int restart_init(file init, restart_ctrl_struct* restart);
 int time_init(file init, control_struct *ctrl);
 int scc_init(file init, climchange_struct* scc);
 int co2_init(file init, co2control_struct* co2, control_struct *ctrl);
-int sitec_init(file init, siteconst_struct* sitec);
+int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl);
 int ndep_init(file init, ndep_control_struct* ndep, control_struct *ctrl);
 int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromINI);
 int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl);
@@ -31,7 +31,7 @@ int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_
 int wstate_init(file init, const siteconst_struct* sitec, const soilprop_struct* sprop, wstate_struct* ws);
 int cnstate_init(file init, const epconst_struct* epc, cstate_struct* cs,
 	cinit_struct* cinit, nstate_struct* ns);
-int output_init(file init, output_struct* output);
+int output_init(file init, int transient, output_struct* output);
 int end_init(file init);
 int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_struct* scc, const siteconst_struct* sitec, const control_struct* ctrl);
 int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns,
@@ -48,10 +48,11 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 	
 	int date_to_doy(int month, int day);
 
-
 int output_handling(int monday, int endday, control_struct* ctrl, 
                     double** output_map, double* dayarr, double* monavgarr, double* annavgarr, double* annarr, 
-					file dayout,file monavgout, file annavgout, file annout);
+					file dayout, file monavgout, file annavgout, file annout);
+
+	int doy_to_date(int yday, int* month, int* day, int from1);
 
 int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN);
 int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW);

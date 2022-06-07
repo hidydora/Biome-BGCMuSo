@@ -25,7 +25,7 @@ temperature to the formatted annual ascii output file.
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
 
-int output_init(file init, output_struct* output)
+int output_init(file init, int transient, output_struct* output)
 {
 	int errflag=0;
 	int i;
@@ -107,10 +107,11 @@ int output_init(file init, output_struct* output)
 	if (!errflag && output->dodaily)
 	{
 		strcpy(output->dayout.name, output->outprefix);
-		if (output->dodaily == 2)
-			strcat(output->dayout.name, ".dayout");
-		else
-			strcat(output->dayout.name, ".dayout");
+		strcat(output->dayout.name, ".dayout");
+
+		/* transient output */
+		strcpy(output->dayoutT.name,output->outprefix);
+		strcat(output->dayoutT.name,"_TRZ.dayout");
 		
 		/* flag = 1 -> binary; flag = 2 -> ascii */
 		if (output->dodaily == 1)
@@ -120,6 +121,15 @@ int output_init(file init, output_struct* output)
 				printf("ERROR opening daily outfile (%s) in output_init()\n",output->dayout.name);
 				errflag=21604;
 			}
+			if (transient)
+			{
+				if (file_open(&(output->dayoutT),'w',1))
+				{
+					printf("ERROR opening transient daily outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
+			}
+
 		}
 		else
 		{
@@ -128,15 +138,24 @@ int output_init(file init, output_struct* output)
 				printf("ERROR opening daily outfile (%s) in output_init()\n",output->dayout.name);
 				errflag=21604;
 			}
+			if (transient)
+			{
+				if (file_open(&(output->dayoutT),'o',1))
+				{
+					printf("ERROR opening transient daily outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
+			}
 		}
 	}
 	if (!errflag && output->domonavg)
 	{
 		strcpy(output->monavgout.name, output->outprefix);
-		if (output->domonavg == 2)
-			strcat(output->monavgout.name,".monavgout");
-		else
-			strcat(output->monavgout.name,".monavgout");
+		strcat(output->monavgout.name,".monavgout");
+
+		/* transient output */
+		strcpy(output->monavgoutT.name,output->outprefix);
+		strcat(output->monavgoutT.name,"_TRZ.monavgout");
 
 		/* flag = 1 -> binary; flag = 2 -> ascii */
 		if (output->domonavg == 1)
@@ -146,6 +165,14 @@ int output_init(file init, output_struct* output)
 				printf("ERROR opening monthly average outfile (%s) in output_init()\n",output->monavgout.name);
 				errflag=21604;
 			}
+			if (transient)
+			{
+				if (file_open(&(output->monavgoutT),'w',1))
+				{
+					printf("ERROR opening transient monthly average outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
+			}
 		}
 		else
 		{
@@ -154,15 +181,24 @@ int output_init(file init, output_struct* output)
 				printf("ERROR opening monthly average outfile (%s) in output_init()\n",output->monavgout.name);
 				errflag=21604;
 			}
+			if (transient)
+			{
+				if (file_open(&(output->monavgoutT),'o',1))
+				{
+					printf("ERROR opening transient monthly average outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
+			}
 		}
 	}
 	if (!errflag && output->doannavg)
 	{
 		strcpy(output->annavgout.name, output->outprefix);
-		if (output->doannavg == 2)
-			strcat(output->annavgout.name,".annavgout");
-		else
-			strcat(output->annavgout.name,".annavgout");
+		strcat(output->annavgout.name,".annavgout");
+
+		/* transient output */
+		strcpy(output->annavgoutT.name,output->outprefix);
+		strcat(output->annavgoutT.name,"_TRZ.annavgout");
 
 		/* flag = 1 -> binary; flag = 2 -> ascii */
 		if (output->doannavg == 1)
@@ -172,6 +208,14 @@ int output_init(file init, output_struct* output)
 				printf("ERROR opening annual average outfile (%s) in output_init()\n",output->annavgout.name);
 				errflag=21604;
 			}
+			if (transient)
+			{
+				if (file_open(&(output->annavgoutT),'w',1))
+				{
+					printf("ERROR opening transient annual average outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
+			}
 		}
 		else
 		{
@@ -180,15 +224,24 @@ int output_init(file init, output_struct* output)
 				printf("ERROR opening annual average outfile (%s) in output_init()\n",output->annavgout.name);
 				errflag=21604;
 			}
+			if (transient)
+			{
+				if (file_open(&(output->annavgoutT),'o',1))
+				{
+					printf("ERROR opening transient annual average outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
+			}
 		}
 	}
 	if (!errflag && output->doannual)
 	{
 		strcpy(output->annout.name, output->outprefix);
-		if (output->doannual == 2)
-			strcat(output->annout.name,".annout");
-		else
-			strcat(output->annout.name,".annout");
+		strcat(output->annout.name,".annout");
+
+		/* transient output */
+		strcpy(output->annoutT.name,output->outprefix);
+		strcat(output->annoutT.name,"_TRZ.annout");
 
 		/* flag = 1 -> binary; flag = 2 -> ascii */
 		if (output->doannual == 1)
@@ -198,6 +251,14 @@ int output_init(file init, output_struct* output)
 				printf("ERROR opening annual outfile (%s) in output_init()\n",output->annout.name);
 				errflag=21604;
 			}
+			if (transient)
+			{
+				if (file_open(&(output->annoutT),'w',1))
+				{
+					printf("ERROR opening transient annual outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
+			}
 		}
 		else
 		{
@@ -205,6 +266,14 @@ int output_init(file init, output_struct* output)
 			{
 				printf("ERROR opening annual  outfile (%s) in output_init()\n",output->annout.name);
 				errflag=21604;
+			}
+			if (transient)
+			{
+				if (file_open(&(output->annoutT),'o',1))
+				{
+					printf("ERROR opening transient annual outfile (%s) in output_init()\n",output->dayout.name);
+					errflag=21604;
+				}
 			}
 		}
 	}

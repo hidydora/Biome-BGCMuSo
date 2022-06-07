@@ -22,14 +22,14 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int check_water_balance(wstate_struct* ws, int first_balance)
+int check_water_balance(wstate_struct* ws, const epvar_struct* epv, const siteconst_struct *sitec, int first_balance)
 {
 	int errflag=0;
 	static double old_balance;
 	
-	int layer        = 0; 
-	double balance   = 0;
-	double soilw_SUM = 0;
+	int layer; 
+	double balance, soilw_SUM, soilw_2m;
+	balance=soilw_SUM=soilw_2m=0;
 	
 	/* DAILY CHECK ON WATER BALANCE */
 
@@ -43,8 +43,11 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 			errflag=1;
 		}
 		soilw_SUM += ws->soilw[layer];
+		if (layer < 7) soilw_2m += ws->soilw[layer];
+
 	}
 	ws->soilw_SUM = soilw_SUM;
+	ws->soilw_2m = soilw_2m;
 
 	if (ws->snoww < 0.0 || ws->canopyw < 0  || ws->soilw_SUM < 0 || ws->pond_water < 0)
 	{

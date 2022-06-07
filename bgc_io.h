@@ -47,6 +47,10 @@ typedef struct
 	file monavgout;         /* file containing monthly average output */
 	file annavgout;         /* file containing annual average output */
 	file annout;            /* file containing annual output */
+	file dayoutT;            /* file containing transient daily output */
+	file monavgoutT;         /* file containing transient monthly average output */
+	file annavgoutT;         /* file containing transient annual average output */
+	file annoutT;            /* file containing transient annual output */
 	double spinup_resid_trend; /* kgC/m2/yr remaining trend after spinup */
 	int spinup_years;       /* number of years before reaching steady-state */
 	file log_file;

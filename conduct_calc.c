@@ -21,172 +21,109 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, 
-                 epvar_struct* epv, int simyr)
+int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, 
+                 epvar_struct* epv, wflux_struct* wf, int simyr)
 {
 	int errflag=0;	
-	int layer;
 	
-	double gl_bl, gl_c, gl_s_sun, gl_s_shade, gl_e_wv, gl_t_wv_sun, gl_t_wv_shade, gl_sh, gc_e_wv, gc_sh;
-	double m_ppfd_sun, m_ppfd_shade, m_tmin, m_co2, m_vpd, m_final_sun, m_final_shade, gcorr;
-	double max_conduct, m_vwcR_layer, vwc_ratio, m_soilstress_avg, p_co2;
+	
+	double p_co2;
 
-	gl_bl=gl_c=gl_s_sun=gl_s_shade=gl_e_wv=gl_t_wv_sun=gl_t_wv_shade=gl_sh=gc_e_wv=gc_sh=0;
-	m_ppfd_sun=m_ppfd_shade=m_tmin=m_co2=m_vpd=m_final_sun=m_final_shade=gcorr=0;
-	max_conduct=m_vwcR_layer=vwc_ratio=m_soilstress_avg=p_co2=0;
+	p_co2=0;
+	
+	
+	/*********************************************************************************************/
+	/* 1. calculate boundary layer and cuticular conductance */
 	
 	/* temperature and pressure correction factor for conductances */
-	gcorr = pow((metv->tday+273.15)/293.15, 1.75) * 101300/metv->pa;
-	
-	/* calculate leaf- and canopy-level conductances to water vapor and
-	sensible heat fluxes */
+	epv->gcorr = pow((metv->tday+273.15)/293.15, 1.75) * 101300/metv->pa;
 	
 	/* leaf boundary-layer conductance */
-	gl_bl = epc->gl_bl * gcorr;
+	epv->gl_bl = epc->gl_bl * epv->gcorr;
 	
 	/* leaf cuticular conductance */
-	gl_c = epc->gl_c * gcorr;
+	epv->gl_c = epc->gl_c * epv->gcorr;
 	
-	/* leaf stomatal conductance: first generate multipliers, then apply them
-	to maximum stomatal conductance */
-	/* calculate stomatal conductance radiation multiplier: 
-	*** NOTE CHANGE FROM BIOME-BGC CODE ***
-	The original Biome-BGC formulation follows the arguments in 
-	Rastetter, E.B., A.W. King, B.J. Cosby, G.M. Hornberger, 
-	   R.V. O'Neill, and J.E. Hobbie, 1992. Aggregating fine-scale 
-	   ecological knowledge to model coarser-scale attributes of 
-	   ecosystems. Ecological Applications, 2:55-70.
 
-	gmult->max = (gsmax/(k*lai))*log((gsmax+rad)/(gsmax+(rad*exp(-k*lai))))
-
-	I'm using a much simplified form, which doesn't change relative shape
-	as gsmax changes. See Korner, 1995.
-	*/
-
-	/* photosynthetic photon flux density conductance control */
-	m_ppfd_sun = metv->ppfd_per_plaisun/(PPFD50 + metv->ppfd_per_plaisun);
-	m_ppfd_shade = metv->ppfd_per_plaishade/(PPFD50 + metv->ppfd_per_plaishade);
-
+	/*********************************************************************************************/
+	/* 2. leaf stomatal conductance: first generate multipliers, then apply them to maximum stomatal conductance */
 	
-	/* ***************************************************************************/
-	/* ***************************************************************************/
-	/* MULTIPLIERS */
-
-	/* ******************/
-	/* 1. actual maximum stomatal conductance: CO2 multiplier */
-	
-	
+	/*-----------------------*/
+	/* 2.1  CO2 multiplier */
 	if (epc->CO2conduct_flag)
 	{
 		p_co2 = 39.43 * pow(360, -0.64);
-		m_co2 = 39.43 * pow(metv->co2, -0.64) / p_co2;
+		epv->m_co2 = 39.43 * pow(metv->co2, -0.64) / p_co2;
 	}
 	else
-		m_co2 = 1;
+		epv->m_co2 = 1;
 
-
-	/* changing MSC value taking into account the effect of CO2 concentration */
+	/*-----------------------*/
+	/* 2.2 changing MSC value taking into account the effect of CO2 concentration */
 	if (ctrl->varMSC_flag)
-		max_conduct=epc->msc_array[simyr] * m_co2;
+		epv->max_conduct=epc->msc_array[simyr] * epv->m_co2;
 	else
-		max_conduct=epc->gl_smax * m_co2;
+		epv->max_conduct=epc->gl_smax * epv->m_co2;
 
-	/* ******************/
-	/* 2. Soil water content
-		  calculate the multipiers for soil properties (soil water content ratio) in multilayer soil  - Jarvis (1989)*/	
+	/*-----------------------*/
+	/* 2.3 photosynthetic photon flux density conductance control (radiation multiplier) */
+	epv->m_ppfd_sun = metv->ppfd_per_plaisun/(PPFD50 + metv->ppfd_per_plaisun);
+	epv->m_ppfd_shade = metv->ppfd_per_plaishade/(PPFD50 + metv->ppfd_per_plaishade);
 
-	/* m_soistress calculation based on VWC or transpiration demand-possibitiy */
-	if (epc->soilstress_flag == 0)
-	{
-		for (layer = 0; layer < N_SOILLAYERS; layer++)
-		{	
-			m_soilstress_avg	 += epv->m_soilstress_layer[layer] * epv->rootlength_prop[layer];
-		}	
-	}
-	/* if soilstress is calculated based on transpiration demand-possibitiy, m_soilstress is calculated in canopy_et.c */ 
-	else
-		m_soilstress_avg = 1;
-
-
-	/* ******************/
-	/* 3. freezing night minimum temperature multiplier */
-
+	/*-----------------------*/
+	/* 2.4 freezing night minimum temperature multiplier */
 	if (metv->tmin > 0.0)        /* no effect */
-		m_tmin = 1.0;
+		epv->m_tmin = 1.0;
 	else
 	if (metv->tmin < -8.0)       /* full tmin effect */
-		m_tmin = 0.0;
+		epv->m_tmin = 0.0;
 	else                   /* partial reduction (0.0 to -8.0 C) */
-		m_tmin = 1.0 + (0.125 * metv->tmin);
+		epv->m_tmin = 1.0 + (0.125 * metv->tmin);
 
-	/* ******************/	
-	/* 3. vapor pressure deficit multiplier, vpd in Pa */
-
+	/*-----------------------*/
+	/* 2.5 vapor pressure deficit multiplier, vpd in Pa */
 	if (metv->vpd < epc->vpd_open)    /* no vpd effect */
-		m_vpd = 1.0;
+		epv->m_vpd = 1.0;
 	else
 	if (metv->vpd > epc->vpd_close)   /* full vpd effect */
-		m_vpd = 0.0;
+		epv->m_vpd = 0.0;
 	else                   /* partial vpd effect */
-		m_vpd = (epc->vpd_close - metv->vpd) / (epc->vpd_close - epc->vpd_open);
+		epv->m_vpd = (epc->vpd_close - metv->vpd) / (epc->vpd_close - epc->vpd_open);
 
-	/* ******************/	
-	/* 4. apply all multipliers to the maximum stomatal conductance */
-
-	m_final_sun = m_ppfd_sun * m_soilstress_avg *  m_tmin * m_vpd;
-	m_final_shade = m_ppfd_shade * m_soilstress_avg * m_tmin * m_vpd;
-	gl_s_sun = max_conduct * m_final_sun * gcorr;
-	gl_s_shade = max_conduct * m_final_shade * gcorr;
-
-	/* ***************************************************************************/
-	/* ***************************************************************************/
-
-	/* calculate leaf-and canopy-level conductances to water vapor and
-	sensible heat fluxes, to be used in Penman-Monteith calculations of
-	canopy evaporation and canopy transpiration. */
 	
-	/* Leaf conductance to evaporated water vapor, per unit projected LAI */
-	gl_e_wv = gl_bl;
+	/*-----------------------*/
+	/* 2.7. apply all multipliers to the maximum stomatal conductance */
+	
+	epv->m_final_sun   = epv->m_ppfd_sun * epv->m_soilstress *  epv->m_tmin * epv->m_vpd;
+	epv->m_final_shade = epv->m_ppfd_shade * epv->m_soilstress * epv->m_tmin * epv->m_vpd;
+
+	epv->gl_s_sun      = epv->max_conduct * epv->m_final_sun * epv->gcorr;
+	epv->gl_s_shade    = epv->max_conduct * epv->m_final_shade * epv->gcorr;
+
+	/* 2.8 Leaf conductance to transpired water vapor, per unit projected LAI.  This formula is derived from stomatal and cuticular conductances
+	in parallel with each other, and both in series with leaf boundary layer conductance. */
+	epv->gl_t_wv_sun   = (epv->gl_bl * (epv->gl_s_sun + epv->gl_c)) / (epv->gl_bl + epv->gl_s_sun + epv->gl_c);
+	epv->gl_t_wv_shade = (epv->gl_bl * (epv->gl_s_shade + epv->gl_c)) / (epv->gl_bl + epv->gl_s_shade + epv->gl_c);
+
+
+	/* **************************************************************************-----------------------------------*/
+
+	/* 3. calculate leaf-and canopy-level conductances to water vapor and sensible heat fluxes, to be used in 
+	      Penman-Monteith calculations of canopy evaporation and canopy transpiration. */
+	
+	/* 3.1 Leaf conductance to evaporated water vapor, per unit projected LAI */
+	epv->gl_e_wv = epv->gl_bl;
 		
-	/* Leaf conductance to transpired water vapor, per unit projected
-	LAI.  This formula is derived from stomatal and cuticular conductances
-	in parallel with each other, and both in series with leaf boundary 
-	layer conductance. */
-	gl_t_wv_sun = (gl_bl * (gl_s_sun + gl_c)) / (gl_bl + gl_s_sun + gl_c);
-	gl_t_wv_shade = (gl_bl * (gl_s_shade + gl_c)) / (gl_bl + gl_s_shade + gl_c);
 
-	/* Leaf conductance to sensible heat, per unit all-sided LAI */
-	gl_sh = gl_bl;
+	/* 3.2 Leaf conductance to sensible heat, per unit all-sided LAI */
+	epv->gl_sh = epv->gl_bl;
 	
-	/* Canopy conductance to evaporated water vapor */
-	gc_e_wv = gl_e_wv * epv->proj_lai;
+	/* 3.4 Canopy conductance to evaporated water vapor */
+	epv->gc_e_wv = epv->gl_e_wv * epv->proj_lai;
 	
-	/* Canopy conductane to sensible heat */
-	gc_sh = gl_sh * epv->proj_lai;
-	
-	/* assign leaf-level conductance to transpired water vapor, 
-	for use in calculating co2 conductance for farq_psn() */
-	epv->gl_t_wv_sun = gl_t_wv_sun; 
-	epv->gl_t_wv_shade = gl_t_wv_shade;
-	
-	/* assign output variables */
-	epv->gcorr          = gcorr;
-	epv->max_conduct	= max_conduct;
-	epv->m_ppfd_sun     = m_ppfd_sun;
-	epv->m_ppfd_shade   = m_ppfd_shade;
-    epv->m_soilstress   = m_soilstress_avg;
-	epv->m_tmin			= m_tmin;
-	epv->m_vpd			= m_vpd;
-	epv->m_final_sun	= m_final_sun;
-	epv->m_final_shade	= m_final_shade;
-	epv->gl_bl			= gl_bl;
-	epv->gl_c			= gl_c;
-	epv->gl_s_sun		= gl_s_sun;
-	epv->gl_s_shade		= gl_s_shade;
-	epv->gl_e_wv		= gl_e_wv;
-	epv->gl_sh			= gl_sh;
-	epv->gc_e_wv		= gc_e_wv;
-	epv->gc_sh			= gc_sh;
+	/* 3.5 Canopy conductane to sensible heat */
+	epv->gc_sh = epv->gl_sh * epv->proj_lai;
+
 	
 	
     return (errflag);

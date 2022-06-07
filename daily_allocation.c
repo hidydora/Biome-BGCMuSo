@@ -112,8 +112,8 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	double c_allometry, n_allometry;
 	double plant_ndemand, sum_plant_nsupply, plant_remaining_ndemand,potential_immob_rootzone,sminn_rootzone,layer_prop;
 	double plant_nalloc, plant_calloc;
-    double excess_c, pnow_Tcoeff;
-	int n_limitation, layer;
+    double excess_c, pnow_Tcoeff, Nlimit;
+	int layer;
 	double cn_l1,cn_l2,cn_l4,cn_s1,cn_s2,cn_s3,cn_s4;
 	double rfl1s1, rfl2s2, rfl4s3, rfs1s2, rfs2s3, rfs3s4;
 	double daily_net_nmin, actual_immob;
@@ -273,7 +273,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 
 	if (ns->sum_ndemand <= sminn_rootzone)
 	{
-		n_limitation = 0;
+		Nlimit = 0;
 		actual_immob = potential_immob_rootzone;
 
 		/* Determine the split between retranslocation N and soil mineral N to meet the plant demand */
@@ -297,6 +297,12 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	{
 		/* N availability can not satisfy the sum of immobiliation and plant growth demands, 
 		so these two demands compete for available soil mineral N */
+		
+		/* N-limitation factor */
+		if (ns->sum_ndemand)
+			Nlimit = (ns->sum_ndemand - sminn_rootzone)/ns->sum_ndemand;
+		else
+			Nlimit = 0;
 
 		actual_immob = sminn_rootzone * potential_immob_rootzone/ns->sum_ndemand;
 		if (potential_immob_rootzone)
@@ -321,8 +327,6 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 			plant_nalloc            = nf->retransn_to_npool + nf->sminn_to_npool;
 			plant_calloc            = avail_c;
 
-			/* flag for nitrogen limitation type */
-			n_limitation = 1;	
 		}
 		else
 		{
@@ -349,8 +353,6 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 				printf("ERROR: Negative GPP value (daily_allocation.c)\n");
 				errflag=1;
 			}
-			
-			n_limitation = 2;		
 		}
 	}
 
@@ -481,7 +483,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* labile litter fluxes */
 		if (cs->litr1c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l1s1[layer] > 0.0)
+			if (Nlimit && nt->pmnf_l1s1[layer] > 0.0)
 			{
 				nt->plitr1c_loss[layer] *= fpi;
 				nt->pmnf_l1s1[layer]    *= fpi;
@@ -502,7 +504,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* cellulose litter fluxes */
 		if (cs->litr2c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l2s2[layer] > 0.0)
+			if (Nlimit && nt->pmnf_l2s2[layer] > 0.0)
 			{
 				nt->plitr2c_loss[layer] *= fpi;
 				nt->pmnf_l2s2[layer]    *= fpi;
@@ -523,7 +525,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		lignin litter */
 		if (cs->litr3c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l4s3[layer] > 0.0)
+			if (Nlimit && nt->pmnf_l4s3[layer] > 0.0)
 			{
 				cf->litr3c_to_litr2c[layer] = nt->kl4[layer] * cs->litr3c[layer] * fpi;
 				nf->litr3n_to_litr2n[layer] = nt->kl4[layer] * ns->litr3n[layer] * fpi;
@@ -538,7 +540,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* lignin litter fluxes */
 		if (cs->litr4c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_l4s3[layer] > 0.0)
+			if (Nlimit && nt->pmnf_l4s3[layer] > 0.0)
 			{
 				nt->plitr4c_loss[layer] *= fpi;
 				nt->pmnf_l4s3[layer] *= fpi;
@@ -558,7 +560,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* fast microbial recycling pool */
 		if (cs->soil1c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_s1s2[layer] > 0.0)
+			if (Nlimit && nt->pmnf_s1s2[layer] > 0.0)
 			{
 				nt->psoil1c_loss[layer] *= fpi;
 				nt->pmnf_s1s2[layer] *= fpi;
@@ -576,7 +578,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* medium microbial recycling pool */
 		if (cs->soil2c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_s2s3[layer] > 0.0)
+			if (Nlimit && nt->pmnf_s2s3[layer] > 0.0)
 			{
 				nt->psoil2c_loss[layer] *= fpi;
 				nt->pmnf_s2s3[layer] *= fpi;
@@ -594,7 +596,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* slow microbial recycling pool */
 		if (cs->soil3c[layer] > 0.0)
 		{
-			if (n_limitation && nt->pmnf_s3s4[layer] > 0.0)
+			if (Nlimit && nt->pmnf_s3s4[layer] > 0.0)
 			{
 				nt->psoil3c_loss[layer] *= fpi;
 				nt->pmnf_s3s4[layer] *= fpi;
@@ -623,7 +625,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		/* store the day's net N mineralization */
 		epv->daily_net_nmin[layer]     = daily_net_nmin;
 		epv->daily_gross_nimmob[layer] = actual_immob;
-		epv->n_limitation[layer]       = n_limitation;
+		epv->Nlimit[layer]       = Nlimit;
 
 	}
 		

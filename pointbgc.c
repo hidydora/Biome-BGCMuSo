@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 	}
 	
 	/* read soil properties */
-	errorCode = sprop_init(init,  &bgcin.sitec, &bgcin.sprop, &bgcin.ctrl);
+	errorCode = sprop_init(init, &bgcin.sprop, &bgcin.ctrl);
 	if (errorCode)
 	{
 		printf("ERROR in call to sprop_init() from pointbgc.c... Exiting\n");

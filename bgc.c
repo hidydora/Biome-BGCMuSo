@@ -214,7 +214,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (epc.evapotransp_flag == 0)
 		fprintf(bgcout->log_file.ptr, "evapotranspiration  - Penman-Montieth\n");
 	else
-		fprintf(bgcout->log_file.ptr, "evapotranspiration  - Priestly-Taylor\n");
+		fprintf(bgcout->log_file.ptr, "evapotranspiration  - Priestley-Taylor\n");
 
 	if (epc.radiation_flag == 0)
 		fprintf(bgcout->log_file.ptr, "radiation           - based on SWabs\n");
@@ -777,12 +777,12 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone snowmelt\n",simyr,yday);
 #endif
 		
-		
+	
 
-		/* bare-soil evaporation */
-		if (!errflag && baresoil_evap(&sprop, &metv, &wf, &epv.dsr))
+		/* potential bare-soil evaporation */
+		if (!errflag && potential_evap(&epc, &sprop, &metv, &epv, &wf))
 		{
-			printf("ERROR in baresoil_evap() from bgc()\n");
+			printf("ERROR in potential_evap() from bgc()\n");
 			errflag=513;
 		}
 
@@ -821,7 +821,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 			
 			/* daily maintenance respiration */
-			if (!errflag && maint_resp(&cs, &ns, &epc, &metv, &epv, &cf))
+			if (!errflag && maint_resp(&PLT, &cs, &ns, &epc, &metv, &epv, &cf))
 			{
 				printf("ERROR in m_resp() from bgc()\n");
 				errflag=516;
@@ -945,8 +945,16 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone groundwater\n",simyr,yday);
 #endif	
 			
-		
+			/* calculation of actual evaporation from potential evaporation */
+			if (!errflag && potEVAP_to_actEVAP(&ctrl, &sprop, &epv, &ws, &wf))
+			{
+				printf("ERROR in potEVAP_to_actEVAP() from bgc()\n");
+				errflag=547;
+			}
 	
+#ifdef DEBUG
+			printf("%d\t%d\tdone potEVAP_to_actEVAP\n",simyr,yday);
+#endif	
 			/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
 			if (!errflag && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc, &epv, &ws, &wf))
 			{
@@ -1328,7 +1336,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 		if (ctrl.bareground_flag)
 		{
-			fprintf(bgcout->log_file.ptr, "User-defined bare-ground run (onday and offday set to -1 in EPC)\n");
+			fprintf(bgcout->log_file.ptr, "User-defined bareground run (onday and offday set to -9999 in EPC)\n");
 			ctrl.bareground_flag = -1;
 		}
 

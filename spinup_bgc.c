@@ -208,7 +208,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (epc.evapotransp_flag == 0)
 		fprintf(bgcout->log_file.ptr, "evapotranspiration  - Penman-Montieth\n");
 	else
-		fprintf(bgcout->log_file.ptr, "evapotranspiration  - Priestly-Taylor\n");
+		fprintf(bgcout->log_file.ptr, "evapotranspiration  - Priestley-Taylor\n");
 
 	if (epc.radiation_flag == 0)
 		fprintf(bgcout->log_file.ptr, "radiation           - based on SWabs\n");
@@ -481,7 +481,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
     /* calculate the annual average air temperature for use in soil temperature corrections */
 	tair_annavg = 0.0;
-	nmetdays = ctrl.simyears * NDAYS_OF_YEAR;
+	nmetdays = ctrl.simyears * nDAYS_OF_YEAR;
  	for (i=0 ; i<nmetdays ; i++)
 	{
 		tair_annavg += metarr.tavg[i];
@@ -616,9 +616,9 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-		        /* 2. BEGIN OF THE DAILY LOOP */
+		    /* 2. BEGIN OF THE DAILY LOOP */
 
-			for (yday=0 ; !errflag && yday<NDAYS_OF_YEAR ; yday++)
+			for (yday=0 ; !errflag && yday<nDAYS_OF_YEAR ; yday++)
 			{
 #ifdef DEBUG
 				printf("year %d\tyday %d\n",simyr,yday);
@@ -652,12 +652,12 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			
 				/* set the day index for meteorological and phenological arrays */
-				metday = simyr*NDAYS_OF_YEAR + yday;
+				metday = simyr*nDAYS_OF_YEAR + yday;
 
 
                 /* nitrogen deposition and fixation */
-			    nf.ndep_to_sminn = ndep.ndep / NDAYS_OF_YEAR;
-			    nf.nfix_to_sminn = epc.nfix / NDAYS_OF_YEAR;
+			    nf.ndep_to_sminn = ndep.ndep / nDAYS_OF_YEAR;
+			    nf.nfix_to_sminn = epc.nfix / nDAYS_OF_YEAR;
 		
 				/* actual onday and offday */
 				if (!errflag && dayphen(&ctrl, &epc, &phenarr, &PLT, &epv, &phen))
@@ -777,10 +777,10 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 					
-				/* bare-soil evaporation  */
-				if (!errflag && baresoil_evap(&sprop, &metv, &wf, &epv.dsr))
+				/* potential bare-soil evaporation  */
+				if (!errflag && potential_evap(&epc, &sprop, &metv, &epv, &wf))
 				{
-					printf("ERROR in baresoil_evap() from bgc()\n");
+					printf("ERROR in potential_evap() from bgc()\n");
 					errflag=513;
 				}
 
@@ -819,7 +819,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 				/* daily maintenance respiration */
-				if (!errflag && maint_resp(&cs, &ns, &epc, &metv, &epv, &cf))
+				if (!errflag && maint_resp(&PLT, &cs, &ns, &epc, &metv, &epv, &cf))
 				{
 					printf("ERROR in m_resp() from bgc()\n");
 					errflag=516;
@@ -950,7 +950,18 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone groundwater\n",simyr,yday);
 #endif	
 
-	
+		
+				/* calculation of actual evaporation from potential evaporation */
+				if (!errflag && potEVAP_to_actEVAP(&ctrl, &sprop, &epv, &ws, &wf))
+				{
+					printf("ERROR in potEVAP_to_actEVAP() from bgc()\n");
+					errflag=547;
+				}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone potEVAP_to_actEVAP\n",simyr,yday);
+#endif	
+
 				/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
      			if (!errflag && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc, &epv, &ws, &wf))
 				{ 
@@ -1040,7 +1051,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone multilayer_leaching\n",simyr,yday);
 #endif	
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-				/* 7. ERROR CHECKING AND SUMMARY VARIABLES  */
+				/* 6. ERROR CHECKING AND SUMMARY VARIABLES  */
 			
 				/* test for very low state variable values and force them to 0.0 to avoid rounding and floating point overflow errors */
 				if (!errflag && precision_control(&ws, &cs, &ns))
@@ -1151,14 +1162,15 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 		}   /* end of annual model loop */
 		
-		/* spinup control */
+		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+		/* 7. spinup control */
 		/* if this is the third pass through metcycle, do comparison */
 		/* first block is during the rising phase */
 		if (!steady1 && metcycle == 2)
 		{
 			/* convert tally1 and tally2 to average daily soilc */
-			tally1 /= (double)nblock * NDAYS_OF_YEAR;
-			tally2 /= (double)nblock * NDAYS_OF_YEAR;
+			tally1 /= (double)nblock * nDAYS_OF_YEAR;
+			tally2 /= (double)nblock * nDAYS_OF_YEAR;
 			rising = (tally2 > tally1);
 			t1 = (tally2-tally1)/(double)nblock;
 			steady1 = (fabs(t1) < SPINUP_TOLERANCE);
@@ -1178,8 +1190,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		else if (steady1 && metcycle == 2)
 		{
 			/* convert tally1 and tally2 to average daily soilc */
-			tally1 /= (double)nblock * NDAYS_OF_YEAR;
-			tally2 /= (double)nblock * NDAYS_OF_YEAR;
+			tally1 /= (double)nblock * nDAYS_OF_YEAR;
+			tally2 /= (double)nblock * nDAYS_OF_YEAR;
 			t1 = (tally2-tally1)/(double)nblock;
 			steady2 = (fabs(t1) < SPINUP_TOLERANCE);
 
@@ -1224,8 +1236,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		metcycle != 0));
 	
 
-	/********************************************************************************************************* */
-	/* writing log file */
+	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+	/* 8. Writing log file */
 
 	if (cs.CbalanceERR != 0) CbalanceERR = log10(cs.CbalanceERR);
 	if (ns.NbalanceERR != 0) NbalanceERR = log10(ns.NbalanceERR);
@@ -1316,7 +1328,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			ctrl.notransp_flag = -1;
 		}
 
-				if (ctrl.condMOWerr_flag)
+		if (ctrl.condMOWerr_flag)
 		{
 			fprintf(bgcout->log_file.ptr, "If conditional MOWING flag is on, no MOWING is possible\n");
 			ctrl.condMOWerr_flag = -1;
@@ -1348,7 +1360,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 		if (ctrl.bareground_flag)
 		{
-			fprintf(bgcout->log_file.ptr, "User-defined bare-ground run (onday and offday set to -1 in EPC)\n");
+			fprintf(bgcout->log_file.ptr, "User-defined bareground run (onday and offday set to -9999 in EPC)\n");
 			ctrl.bareground_flag = -1;
 		}
 
@@ -1366,8 +1378,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/********************************************************************************************************* */
 
 	/* save some information on the end status of spinup */
-	tally1b /= (double)nblock * NDAYS_OF_YEAR;
-	tally2b /= (double)nblock * NDAYS_OF_YEAR;
+	tally1b /= (double)nblock * nDAYS_OF_YEAR;
+	tally2b /= (double)nblock * nDAYS_OF_YEAR;
 	bgcout->spinup_resid_trend = (tally2b-tally1b)/(double)nblock;
 	bgcout->spinup_years = spinyears;
 	
@@ -1375,25 +1387,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (ctrl.onscreen) printf("SPINUP: residual trend   = %.6lf\n",bgcout->spinup_resid_trend);
  	if (ctrl.onscreen) printf("SPINUP: number of years  = %d\n",bgcout->spinup_years);
 
+	
 	/********************************************************************************************************* */
-
-	/* 8. RESTART OUTPUT HANDLING */
-	/* if write_restart flag is set, copy data to the output restart struct */
-	if (!errflag && ctrl.write_restart)
-	{
-		if (restart_output(&ws, &cs, &ns, &epv, &(bgcout->restart_output)))
-		{
-			printf("ERROR in call to restart_output() from bgc()\n");
-			errflag=600;
-		}
-		
-#ifdef DEBUG
-		printf("%d\t%d\tdone restart output\n",simyr,yday);
-#endif
-	}
-
-
-
 	
 	/* free memory for local output arrays */
 	if (((errflag == 0 || errflag > 403) && ctrl.GSI_flag) || ((errflag == 0 || errflag > 405) && !ctrl.GSI_flag)) 
@@ -1415,8 +1410,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	}
 	
 
-	/*----------------------------------------------------------*/
-	/* TRANSIENT RUN between spinup and normal run  */
+	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+	/* 9. TRANSIENT RUN between spinup and normal run  */
   	if (!errflag && (co2.varco2 || ndep.varndep))
 	{
 	
@@ -1449,6 +1444,22 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		ns = bgcin->ns;
 	}
 
+	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+	/* 10. RESTART OUTPUT HANDLING */
+	/* if write_restart flag is set, copy data to the output restart struct */
+	if (!errflag && ctrl.write_restart)
+	{
+		if (restart_output(&ws, &cs, &ns, &epv, &(bgcout->restart_output)))
+		{
+			printf("ERROR in call to restart_output() from bgc()\n");
+			errflag=600;
+		}
+		
+	#ifdef DEBUG
+			printf("%d\t%d\tdone restart output\n",simyr,yday);
+	#endif
+		}
 
 	/* return error status */	
 	return (errflag);

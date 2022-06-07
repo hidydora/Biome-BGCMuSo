@@ -69,6 +69,10 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	epv->NSC_limit_w = 0;
 	epv->NDVI = 0;
 	epv->rooting_depth = 0;
+	epv->rate_scalar_avg = 0;
+	epv->m_tmin = 0;
+	epv->max_conduct = 0;
+	epv->albedo_LAI = 0;
 
 	psn_sun->A      = 0;
 	psn_sun->Ci	    = 0;

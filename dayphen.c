@@ -49,8 +49,21 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 	{
 		ctrl->plantyr += 1;
 		
-		phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + NDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
-		phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + NDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
+		if (epc->onday == DATA_GAP)
+		{
+			if (epc->offday != DATA_GAP)
+			{
+				printf("FATAL ERROR: if onday is equal to -9999 offday must be equal to -9999 - bare soil simulation (dayphen.c)\n");
+				errflag=1;
+			}
+			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
+			phen->offday        = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
+		}
+		else
+		{
+			phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + NDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
+			phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + NDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
+		}
 
 		if (phen->offday <= phen->onday && (phen->offday != DATA_GAP && phen->onday != DATA_GAP))
 		{

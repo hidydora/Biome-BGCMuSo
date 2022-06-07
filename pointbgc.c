@@ -30,7 +30,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 int main(int argc, char *argv[])
 {
-	int errflag = 0;
+	int errflag=0;
 
 	/* bgc input and output structures */
 	bgcin_struct bgcin;
@@ -54,9 +54,7 @@ int main(int argc, char *argv[])
 	tm_ptr = localtime(&lt);
 	strcpy(point.systime,asctime(tm_ptr));
 	
-	errflag = 0;
-
-
+	
 	/* initialize the bgcin state variable structures before filling with
 	values from ini file */
 	if (presim_state_init(&bgcin.ws, &bgcin.cs, &bgcin.ns, &bgcin.cinit))
@@ -98,8 +96,7 @@ int main(int argc, char *argv[])
 	**                           **
 	******************************/
 	
-	/* read the name of the main init file from the command line
-	and store as init.name */
+	/* read the name of the main init file from the command line and store as init.name */
 	if (argc != 2)
 	{
 		printf("ERROR in reading the main init file from command line. Exiting\n");
@@ -124,6 +121,7 @@ int main(int argc, char *argv[])
 
 	/* open met file, discard header lines */
 	errflag = met_init(init, &point);
+	
 	if (errflag)
 	{
 		printf("ERROR in call to met_init() from pointbgc.c... Exiting\n");
@@ -316,6 +314,7 @@ int main(int argc, char *argv[])
 	**                  **
 	*********************/
 
+	
 	/* all initialization complete, call model */
 	/* either call the spinup code or the normal simulation code */
 	if (bgcin.ctrl.spinup)

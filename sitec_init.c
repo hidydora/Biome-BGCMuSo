@@ -63,7 +63,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		printf("ERROR reading site latitude, sitec_init()\n");
 		errflag=20702;
 	}
-	if (!errflag && scan_value(init, &sitec->sw_alb, 'd'))
+	if (!errflag && scan_value(init, &sitec->albedo_sw, 'd'))
 	{
 		printf("ERROR reading shortwave albedo, sitec_init()\n");
 		errflag=20703;
@@ -91,7 +91,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 
 
 	/* CONTROL to avoid negative meteorological data */
- 	if (sitec->sw_alb < 0 || sitec->NdepNH4_coeff < 0)
+ 	if (sitec->albedo_sw < 0 || sitec->NdepNH4_coeff < 0)
 	{
 		printf("ERROR in site data: swalb and NdepNH4_coeff must be positive\n");
 		errflag=20707;

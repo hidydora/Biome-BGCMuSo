@@ -215,16 +215,18 @@ typedef struct
 	double deeppercolation_snk;		 /* SUM of percolated water out of the system */
 	double groundwater_src;			 /* SUM of water plus from goundwater */
 	double canopyw_THNsnk;			 /* SUM of water stored on canopy is disappered because of thinning*/
-	double canopyw_MOWsnk;		     /* SUM of water stored on canopy is disappered because of mowing*/
-	double canopyw_HRVsnk;           /* SUM of water stored on canopy is disappered because of harvesting*/
-	double canopyw_PLGsnk;		     /* SUM of water stored on canopy is disappered because of ploughing*/
-	double canopyw_GRZsnk;			 /* SUM of water stored on canopy is disappered because of grazing*/
+	double canopyw_MOWsnk;		     /* SUM of water stored on canopy is disappered because of mowing */
+	double canopyw_HRVsnk;           /* SUM of water stored on canopy is disappered because of harvesting */
+	double canopyw_PLGsnk;		     /* SUM of water stored on canopy is disappered because of ploughing */
+	double canopyw_GRZsnk;			 /* SUM of water stored on canopy is disappered because of grazing */
     double IRGsrc_W;			     /* SUM of water from irrigating */
-	double FRZsrc_W;				/* SUM of water from fertilization */
+	double FRZsrc_W;				 /* SUM of water from fertilization */
     double WbalanceERR;              /* SUM of water balance error  */
 	double inW;						 /* SUM of nitrogen input */
 	double outW;					 /* SUM of nitrogen output */
 	double storeW;					 /* SUM of nitrogen store */
+	double soil_evapCUM1;            /* cumulated soil evaporation in first evaporation phase (no limit) */
+	double soil_evapCUM2;            /* cumulated soil evaporation in second evaporation phase (dsr limit) */
 } wstate_struct;                        
 /* endOUT */
 
@@ -259,6 +261,7 @@ typedef struct
 	double IRG_to_prcp;								/* irrigatied water amount */	
 	double FRZ_to_soilw;                            /* water flux from fertilization */
 	double pot_evap;                                /* potential evaporation to calcualte pond evaporation */
+	double pot_infilt;                                  /* infiltrated water: prcp_to_soilw + snoww_to_soilw + canopyw_to_soilw + IRG_to_prcp + pond_water */
 } wflux_struct;
 /* endOUT */
 
@@ -1404,6 +1407,7 @@ typedef struct
 	double pnow;									/* (prop) proportion of growth displayed on current day */ 
 	double NSC_limit_nw;							/* (flag) for NSC-limitation in maint.resp.calculation for nw-biomass */
 	double NSC_limit_w;								/* (flag) for NSC-limitation in maint.resp.calculation for nw-biomass */
+	double albedo_LAI;                              /* (dimless) LAI dependent albedo */
 } epvar_struct;
 /* endOUT */
 
@@ -1415,8 +1419,8 @@ typedef struct
 	double tair_annrange;					            /* (Celsius) mean annual air temperature range  */
     double elev;								        /* (m) site elevation */
     double lat;				 					        /* (degrees) site latitude (negative for south) */
-    double sw_alb;								        /* (dimless) surface shortwave albedo */
-	 double soillayer_depth[N_SOILLAYERS];			    /* (m) contains the soil layer depths (positive values)*/
+    double albedo_sw;								    /* (dimless) surface shortwave albedo */
+	double soillayer_depth[N_SOILLAYERS];			    /* (m) contains the soil layer depths (positive values)*/
 	double soillayer_thickness[N_SOILLAYERS];		    /* (m) contains the soil layer thicknesses (positive values) */
 	double soillayer_midpoint[N_SOILLAYERS];			/* (m) contains the depths of the middle layers (positive values)*/
 	double* gwd_array;									/* (m) ARRAY of depth of the groundwater */	
@@ -1439,7 +1443,7 @@ typedef struct
 	int discretlevel_Richards;  /* (int) discretization level of VWC calculation */
 	int STCM_flag;			    /* (flag) soil temperature calculation method (0:Zheng, 1:DSSAT) */
 	int photosynt_flag;         /* (flag) photosynthesis calculation method (0: Farquhar, 1: DSSAT) */
-    int evapotransp_flag;	    /* (flag) evapotranspiration calculation method (0: Penman-Montieth, 1: Priestly-Taylor) */
+    int evapotransp_flag;	    /* (flag) evapotranspiration calculation method (0: Penman-Montieth, 1: Priestley-Taylor) */
     int radiation_flag;	        /* (flag) radiation calculation method (0: SWabs, 1: Rn) */
 	int soilstress_flag;	    /* (flag) soilstress calculation method (0: based on VWC, 1: based on transp.demand) */
 	int onday;                  /* (doy) yearday leaves on */
@@ -1595,7 +1599,7 @@ typedef struct
 	double SOIL2_dissolv_prop;      /* (prop) fraction of dissolved part of SOIL2 organic matter  */
 	double SOIL3_dissolv_prop;      /* (prop) fraction of dissolved part of SOIL3 organic matter */
 	double SOIL4_dissolv_prop;      /* (prop) fraction of dissolved part of SOIL4 organic matter */
-	double BSE_PE_prop;             /* (prop) ratio of bare soil evaporation and pot.evaporation */
+	double soilevapLIM;             /* (mm) limitation of soil evaporation (Joe Ritchie-method) */
 	double rfl1s1;                  /* (prop) respiration fractions for fluxes between compartments  */
 	double rfl2s2;                  /* (prop) respiration fractions for fluxes between compartments  */
 	double rfl4s3;                  /* (prop) respiration fractions for fluxes between compartments  */

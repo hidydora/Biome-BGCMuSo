@@ -108,7 +108,7 @@ int output_init(file init, output_struct* output)
 	{
 		strcpy(output->dayout.name, output->outprefix);
 		if (output->dodaily == 2)
-			strcat(output->dayout.name, ".dayout.txt");
+			strcat(output->dayout.name, ".dayout");
 		else
 			strcat(output->dayout.name, ".dayout");
 		
@@ -134,7 +134,7 @@ int output_init(file init, output_struct* output)
 	{
 		strcpy(output->monavgout.name, output->outprefix);
 		if (output->domonavg == 2)
-			strcat(output->monavgout.name,".monavgout.txt");
+			strcat(output->monavgout.name,".monavgout");
 		else
 			strcat(output->monavgout.name,".monavgout");
 
@@ -160,7 +160,7 @@ int output_init(file init, output_struct* output)
 	{
 		strcpy(output->annavgout.name, output->outprefix);
 		if (output->doannavg == 2)
-			strcat(output->annavgout.name,".annavgout.txt");
+			strcat(output->annavgout.name,".annavgout");
 		else
 			strcat(output->annavgout.name,".annavgout");
 
@@ -186,7 +186,7 @@ int output_init(file init, output_struct* output)
 	{
 		strcpy(output->annout.name, output->outprefix);
 		if (output->doannual == 2)
-			strcat(output->annout.name,".annout.txt");
+			strcat(output->annout.name,".annout");
 		else
 			strcat(output->annout.name,".annout");
 

@@ -78,7 +78,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	else
 	{
 		epc_file = init;
-		/* open simple EPC file  BALUUUS */
+		/* open simple EPC file */
 		if (!errflag && file_open(&epc_file,'r',1)) 
 		{
 			printf("ERROR opening epconst file, epc_init()\n");

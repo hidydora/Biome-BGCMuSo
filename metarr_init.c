@@ -281,8 +281,8 @@ int metarr_init(point_struct* point, metarr_struct* metarr, const climchange_str
 			if (sd == 0)
 				metarr->F_temprad[sd] = metarr->tavg[sd] +  (tmax - metarr->tavg[sd]) * sqrt(sw_MJ*0.03);
 			else
-				metarr->F_temprad[sd] = (1 - sitec->sw_alb) * (metarr->tavg[sd] +  (tmax - metarr->tavg[sd]) * sqrt(sw_MJ*0.03))
-										+ sitec->sw_alb * metarr->F_temprad[sd-1];
+				metarr->F_temprad[sd] = (1 - sitec->albedo_sw) * (metarr->tavg[sd] +  (tmax - metarr->tavg[sd]) * sqrt(sw_MJ*0.03))
+										+ sitec->albedo_sw * metarr->F_temprad[sd-1];
 
 			/* counter of simdays*/			
 			sd += 1;

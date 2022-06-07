@@ -51,7 +51,8 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	ws->inW = 0.0;
 	ws->outW = 0.0;
 	ws->storeW = 0.0;
-
+	ws->soil_evapCUM1 = 0.0;
+	ws->soil_evapCUM2 = 0.0;
 
 	/* zero the carbon sources and sinks */
 	cs->psnsun_src = 0.0;
@@ -95,6 +96,10 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->inC = 0.0;
 	cs->outC = 0.0;
 	cs->storeC = 0.0;
+	cs->nsc_nw = 0.0;
+	cs->nsc_w = 0.0;
+	cs->sc_nw = 0.0;
+	cs->sc_w = 0.0;
 
 	ns->nfix_src = 0.0;
 	ns->ndep_src = 0.0;

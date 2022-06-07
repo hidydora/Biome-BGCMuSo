@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HRV)
+int harvesting_init(file init, const control_struct* ctrl, planting_struct* PLT, harvesting_struct* HRV)
 {
 	char header[STRINGSIZE];
 	char HRV_filename[STRINGSIZE];
@@ -39,7 +39,7 @@ int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HR
 	double p4,p5;
 	char tempvar;
 
-	int n_HRVparam, maxHRV_num;
+	int n_HRVparam, maxHRV_num, PLTyday, HRVyday;
 
 	int* HRVyear_array;						
 	int* HRVmonth_array;						
@@ -123,13 +123,18 @@ int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HR
 
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
 			{
-				HRVyear_array[nmgm]         = p1;
-				HRVmonth_array[nmgm]        = p2;
-				HRVday_array[nmgm]          = p3;
-				snagprop_array[nmgm]        = p4;
-				transportHRV_array[nmgm]    = p5;
+				PLTyday = PLT->PLTyear_array[0] * NDAYS_OF_YEAR + date_to_doy(PLT->PLTmonth_array[0], PLT->PLTday_array[0]);
+				HRVyday = p1 * NDAYS_OF_YEAR + date_to_doy(p2, p3);
+				if (HRVyday > PLTyday)
+				{
+					HRVyear_array[nmgm]         = p1;
+					HRVmonth_array[nmgm]        = p2;
+					HRVday_array[nmgm]          = p3;
+					snagprop_array[nmgm]        = p4;
+					transportHRV_array[nmgm]    = p5;
 
-				nmgm += 1;
+					nmgm += 1;
+				}
 			}
 		}
 

@@ -22,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv,
+int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv,
 	          epvar_struct* epv, cflux_struct* cf)
 {
 	/*
@@ -129,7 +129,7 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_s
 	/* ********************************************************* */
 	/* 3. Fruit simulation maintenance respiration when fruits on */
    
-	if (cs->fruitc)
+	if (cs->fruitc && PLT->PLT_num == 0)
 	{
 		exponent = (metv->tavg - 20.0) / 10.0;
 		t1 = pow(q10, exponent);

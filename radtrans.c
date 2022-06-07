@@ -31,7 +31,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	int errflag=0;
 	int pp;
 	double proj_lai, leafcSUM, sla_avg;
-	double albedo_sw, albedo_par;
+	double albedo_par;
 	double sw,par;
 	double swabs, swtrans;
 	double parabs;
@@ -128,21 +128,21 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	
 	
 	/* calculate LAI dependent albedo */
-	if (sitec->sw_alb < crit_albedo)
-		albedo_sw = crit_albedo - (crit_albedo - sitec->sw_alb)* exp(-0.75*proj_lai);
+	if (sitec->albedo_sw < crit_albedo)
+		epv->albedo_LAI = crit_albedo - (crit_albedo - sitec->albedo_sw)* exp(-0.75*proj_lai);
 	else
-		albedo_sw = sitec->sw_alb;
+		epv->albedo_LAI = sitec->albedo_sw;
 
 	/* 1.2 calculate total shortwave absorbed */
 	k_sw = k;
 	sw = 0;
-	sw = metv->swavgfd * (1.0 - albedo_sw);
+	sw = metv->swavgfd * (1.0 - epv->albedo_LAI);
 	swabs = sw * (1.0 - exp(-k_sw*proj_lai));
 	swtrans = sw - swabs;
 	
 	/* 1.3 calculate PAR absorbed */
 	k_par = k * 1.0;
-	albedo_par = sitec->sw_alb/3.0;
+	albedo_par = sitec->albedo_sw/3.0;
 	par = metv->par * (1.0 - albedo_par);
 	parabs = par * (1.0 - exp(-k_par*proj_lai));
 	
@@ -202,7 +202,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	
 	/* 2.2. net short-wave radiation: swRADnet. Dimensions: [rad]=MJ/m2/d-1; [swavgfd]=W/m2*; [swRADnet]=W/m2*/
 	rad = metv->swavgfd * W_to_MJperDAY; 
-	swRADnet = (1 - albedo_sw) * rad  / W_to_MJperDAY;
+	swRADnet = (1 - epv->albedo_LAI) * rad  / W_to_MJperDAY;
 	
 	/* 2.3. net outgoing long-wave-radation: lwRADnet */
 	/* number of the year between 1 and 365: J */

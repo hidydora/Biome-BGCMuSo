@@ -56,7 +56,7 @@ int output_handling(int monday, int endday, control_struct* ctrl,
 int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN);
 int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW);
 int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ);
-int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HRV);
+int harvesting_init(file init, const control_struct* ctrl, planting_struct* PLT, harvesting_struct* HRV);
 int ploughing_init(file init,  const control_struct* ctrl, ploughing_struct* PLG);
 int fertilizing_init(file init, const control_struct* ctrl, fertilizing_struct* FRZ);
 int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IRG);

@@ -51,6 +51,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->IRG_to_prcp = 0;
 	wf->FRZ_to_soilw = 0;
 	wf->pot_evap = 0;
+	wf->pot_infilt = 0;
 	cf->m_leafc_to_litr1c = 0;
 	cf->m_leafc_to_litr2c = 0;
 	cf->m_leafc_to_litr3c = 0;

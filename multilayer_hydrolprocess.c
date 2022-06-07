@@ -40,7 +40,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 	
 
 	/* internal variables */
-	double prcp, evap_diff;
+	double evap_diff;
 	double vwc_avg, vwc_RZ;
 	double soilw_hw0, soilw_before;  /* (kgH2O/m2/min) */
 	double soilw_hw, transp_diff, transp_diff_SUM, soilw_trans_ctrl;
@@ -54,10 +54,11 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 
 	/* when the precipitation at the surface exceeds the max. infiltration rate, the excess water is put into surfacerunoff (Balsamo et al. 20008; Eq.(7)) */
 	
-	prcp = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + ws->pond_water);
+	wf->pot_infilt = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + ws->pond_water);
 
+	
 
-	/* if the precipitation is greater than critical amount a fixed part of prcp is lost due to runoff (based on Campbell and Diaz, 1988) */
+	/* if the precipitation is greater than critical amount a fixed part of pot_infilt is lost due to runoff (based on Campbell and Diaz, 1988) */
 
 	RCN = sprop->RCN;
 	coeff_soiltype  = 254*(100 / RCN - 1);
@@ -66,9 +67,9 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 
 	coeff_runoff = coeff_soiltype * coeff_soilmoist;
 
-	if (prcp > coeff_runoff)
+	if (wf->pot_infilt > coeff_runoff)
 	{
-		wf->prcp_to_runoff = pow(prcp - coeff_runoff, 2) / (prcp + (1 - coeff_soilmoist)*coeff_soiltype);
+		wf->prcp_to_runoff = pow(wf->pot_infilt - coeff_runoff, 2) / (wf->pot_infilt + (1 - coeff_soilmoist)*coeff_soiltype);
 
 	}
 	else
@@ -76,7 +77,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec
 		wf->prcp_to_runoff = 0;
 	}
 
-
+	
 	/* ********************************************/
 	/* 3. EVAPORATION */
 	

@@ -60,6 +60,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->inW = 0;
 	ws->outW = 0;
 	ws->storeW = 0;
+	ws->soil_evapCUM1 = 0.0;
+	ws->soil_evapCUM2 = 0.0;
 	cs->leafc = 0;
 	cs->leafc_storage = 0;
 	cs->leafc_transfer = 0;

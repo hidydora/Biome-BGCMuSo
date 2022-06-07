@@ -72,7 +72,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	/* at the presence of snow cover no vegetation period (calculating snow cover from precipitation, Tavg and srad) */
 	double snowcover, snowcover_limit, prcp_act, srad_act;
 	double rn, tmelt, rmelt, melt, snow_loss, snow_plus, rsub;
-	double albedo_sw = sitec->sw_alb;
+	double albedo_sw = sitec->albedo_sw;
 	
 	/* to calculate moving average from total index values */
 	double epc_index_SUM = 0;

@@ -121,9 +121,11 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 	south = (sitec->lat < 0.0);
 	
 	
-	/* for southern hemisphere sites, use an extra phenology year */
+	
 	if (south) phenyears = nyears+1;
-	else phenyears = nyears;
+	else phenyears = nyears;  */
+
+
 	
 
 	fprintf(logfile.ptr, "INFORMATION ABOUT SGS AND EGS VALUES (yday of onday and offday)\n");
@@ -202,7 +204,7 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 					offday=364;
 				}
 
-				if(onday == DATA_GAP && offday == DATA_GAP) ctrl->bareground_flag = 1;
+				if (onday == DATA_GAP && offday == DATA_GAP) ctrl->bareground_flag = 1;
 
 
 				phenarr->onday_arr[py][0]  = ctrl->simstartyear+py;

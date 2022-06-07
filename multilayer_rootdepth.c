@@ -291,14 +291,9 @@ int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phe
 	}
 	else
 	{
-		if (PLT->PLT_num)
-		{
-			epv->plant_height = pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantheight_par1),epc->plantheight_par2);
-		}
-		else
-		{
-			epv->plant_height = 0.12*epv->proj_lai + 0.15;	
-		}
+		
+		epv->plant_height = epc->max_plant_height * pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantheight_par1),epc->plantheight_par2);
+		
 	}
 	if (epv->plant_height > epc->max_plant_height) epv->plant_height = epc->max_plant_height;
 

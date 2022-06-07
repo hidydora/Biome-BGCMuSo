@@ -15,6 +15,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 int soilb_estimation(double sand, double silt, double* soil_b, double* vwc_sat,double* vwc_fc, double* vwc_wp,  double* BD, double* RCN);
 int multilayer_soilcalc(soilprop_struct* sprop);
 
+
 int output_map_init(double** output_map, phenology_struct* phen, metvar_struct* metv, wstate_struct* ws,
 	wflux_struct* wf, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, 
 	soilprop_struct* sprop, epvar_struct* epv, psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary);
@@ -73,16 +74,19 @@ int prcp_route(const metvar_struct* metv, double precip_int_coef,double all_lai,
 
 int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww);
 
-int baresoil_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr);
+int potential_evap(const epconst_struct* epc, const soilprop_struct* sprop, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf);
 
 int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, 
 				 epvar_struct* epv, int simyr);
 
-int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv, 
+int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc, const metvar_struct* metv, 
 	           epvar_struct* epv, cflux_struct* cf);
 
 int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const soilprop_struct* sprop, epvar_struct* epv, wflux_struct* wf);
-	int penmon(const pmet_struct* in, int out_flag,	double* et);
+
+int penmon(const pmet_struct* in, int out_flag,	double* et);
+
+int priestley(const metvar_struct* metv, const epvar_struct *epv, wflux_struct* wf);
 
 int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const cstate_struct* cs, const wstate_struct* ws, const phenology_struct* phen, 
 	               epvar_struct* epv, psn_struct* psn_sun, psn_struct* psn_shade, cflux_struct *cf); 
@@ -107,6 +111,9 @@ int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec
 int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const siteconst_struct* sitec, epvar_struct* epv, wflux_struct* wf);
 
 int groundwater(const siteconst_struct* sitec, const soilprop_struct* sprop, control_struct* ctrl, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+
+int potEVAP_to_actEVAP(const control_struct* ctrl, const soilprop_struct* sprop, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+	int evapPHASE1toPHASE2(const soilprop_struct* sprop, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
 int multilayer_hydrolprocess(control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, const epconst_struct* epc,
 							 epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);

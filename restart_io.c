@@ -43,6 +43,10 @@ int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_st
 	cs->frootc                            = restart->frootc;
 	cs->frootc_storage                    = restart->frootc_storage;
 	cs->frootc_transfer                   = restart->frootc_transfer;
+	/* fruit simulation - Hidy 2013. */
+	cs->fruitc                            = restart->fruitc;
+	cs->fruitc_storage                    = restart->fruitc_storage;
+	cs->fruitc_transfer                   = restart->fruitc_transfer;
 	cs->livestemc                         = restart->livestemc;
 	cs->livestemc_storage                 = restart->livestemc_storage;
 	cs->livestemc_transfer                = restart->livestemc_transfer;
@@ -79,6 +83,10 @@ int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_st
 	ns->frootn                            = restart->frootn;
 	ns->frootn_storage                    = restart->frootn_storage;
 	ns->frootn_transfer                   = restart->frootn_transfer;
+	/* fruit simulation - Hidy 2013. */
+	ns->fruitn                            = restart->fruitn;
+	ns->fruitn_storage                    = restart->fruitn_storage;
+	ns->fruitn_transfer                   = restart->fruitn_transfer;
 	ns->livestemn                         = restart->livestemn;
 	ns->livestemn_storage                 = restart->livestemn_storage;
 	ns->livestemn_transfer                = restart->livestemn_transfer;
@@ -124,6 +132,8 @@ int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_st
 	epv->day_livecrootc_turnover_increment= restart->day_livecrootc_turnover_increment;
 	epv->annmax_leafc                     = restart->annmax_leafc;
 	epv->annmax_frootc                    = restart->annmax_frootc;
+	/* fruit simulation - Hidy 2013. */
+	epv->annmax_fruitc                    = restart->annmax_fruitc;
 	epv->annmax_livestemc                 = restart->annmax_livestemc;
 	epv->annmax_livecrootc                = restart->annmax_livecrootc;
 	epv->dsr                              = restart->dsr;
@@ -157,6 +167,10 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 	restart->frootc 						  = cs->frootc;
 	restart->frootc_storage 				  = cs->frootc_storage;
 	restart->frootc_transfer				  = cs->frootc_transfer;
+	/* fruit simulation - Hidy 2013. */
+	restart->fruitc 						  = cs->fruitc;
+	restart->fruitc_storage 				  = cs->fruitc_storage;
+	restart->fruitc_transfer				  = cs->fruitc_transfer;
 	restart->livestemc  					  = cs->livestemc;
 	restart->livestemc_storage  			  = cs->livestemc_storage;
 	restart->livestemc_transfer 			  = cs->livestemc_transfer;
@@ -193,6 +207,10 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 	restart->frootn 						  = ns->frootn;
 	restart->frootn_storage 				  = ns->frootn_storage;
 	restart->frootn_transfer				  = ns->frootn_transfer;
+	/* fruit simulation - Hidy 2013. */
+	restart->fruitn  						  = ns->fruitn;
+	restart->fruitn_storage  				  = ns->fruitn_storage;
+	restart->fruitn_transfer 				  = ns->fruitn_transfer;
 	restart->livestemn  					  = ns->livestemn;
 	restart->livestemn_storage  			  = ns->livestemn_storage;
 	restart->livestemn_transfer 			  = ns->livestemn_transfer;
@@ -235,10 +253,14 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 
 	restart->day_leafc_litfall_increment	  = epv->day_leafc_litfall_increment;
 	restart->day_frootc_litfall_increment	  = epv->day_frootc_litfall_increment;
+	/* fruit simulation - Hidy 2013. */
+	restart->day_fruitc_litfall_increment	  = epv->day_fruitc_litfall_increment;
 	restart->day_livestemc_turnover_increment = epv->day_livestemc_turnover_increment;
 	restart->day_livecrootc_turnover_increment= epv->day_livecrootc_turnover_increment;
 	restart->annmax_leafc					  = epv->annmax_leafc;
 	restart->annmax_frootc  				  = epv->annmax_frootc;
+	/* fruit simulation - Hidy 2013. */
+	restart->annmax_fruitc  				  = epv->annmax_fruitc;
 	restart->annmax_livestemc				  = epv->annmax_livestemc;
 	restart->annmax_livecrootc  			  = epv->annmax_livecrootc;
 	restart->dsr							  = epv->dsr;

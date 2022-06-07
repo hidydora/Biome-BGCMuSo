@@ -38,13 +38,16 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteconst_struct* sitec,
     const wstate_struct* ws, metvar_struct* metv, double* tair_annavg_ptr, int metday);
 int dayphen(const phenarray_struct* phenarr, phenology_struct* phen, int metday, int metyr);
-
-int phenology(const epconst_struct* epc, const phenology_struct* phen,
+int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 	epvar_struct* epv, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns,
 	nflux_struct* nf);
+
 int leaf_litfall(const epconst_struct* epc, double litfallc,
 	cflux_struct* cf, nflux_struct* nf);
 int froot_litfall(const epconst_struct* epc, double litfallc, 
+	cflux_struct* cf, nflux_struct* nf);
+/* fruit simulation - Hidy 2013 */
+int fruit_litfall(const epconst_struct* epc, double litfallc, 
 	cflux_struct* cf, nflux_struct* nf);
 int radtrans(const cstate_struct* cs, const epconst_struct* epc, 
 	metvar_struct* metv, epvar_struct* epv, double albedo);
@@ -68,10 +71,10 @@ int decomp(const metvar_struct* metv, const epconst_struct* epc, epvar_struct* e
 nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt);
 
 /* Hidy 2010 - plus/new input variables */
-int daily_allocation(cflux_struct* cf, cstate_struct* cs,
+int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	nflux_struct* nf, nstate_struct* ns, epconst_struct* epc, epvar_struct* epv,
 	ntemp_struct* nt, int* n_limitation_ptr);
-int spinup_daily_allocation(cflux_struct* cf, cstate_struct* cs,
+int spinup_daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	nflux_struct* nf, nstate_struct* ns, epconst_struct* epc, epvar_struct* epv,
 	ntemp_struct* nt, double naddfrac);
 int annual_rates(const epconst_struct* epc, epvar_struct* epv);
@@ -162,11 +165,11 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc,
 	        cstate_struct* cs, nstate_struct* ns, wstate_struct* ws);
 
 /* fertilizing - Hidy 2012 */
-int fertilizing(int yday, const control_struct* ctrl, fertilizing_struct* FRZ, 
+int fertilizing(const control_struct* ctrl, fertilizing_struct* FRZ, 
 				cstate_struct* cs, nstate_struct*ns, cflux_struct* cf, nflux_struct* nf);
 
 /* management days - Hidy 2013 */
-int management(int yday, const control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, 
+int management(const control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, 
 			   mowing_struct* MOW,planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN);
 
 /* limitation factors of conductance calculation - Hidy 2012. */

@@ -147,7 +147,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			file_open (&GSI.GSI_file, 'w');				/* file of GSI parameters - Hidy 2009.*/
 		}
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2010.*/
-		fprintf(bgcout->control_file.ptr, "yday soil1c soil2c soil3c soil4c soil1n soil2n soil3n soil4n sminn\n");
+		fprintf(bgcout->control_file.ptr, "yday vwc0  SNSC_str fruitC leafC gpp tr evapotransp\n");
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -285,7 +285,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	conjunction with soil temperature testing done with Mike White. */
 	tair_annavg = 0.0;
 	nmetdays = ctrl.metyears * NDAY_OF_YEAR;
-	for (i=0 ; i<nmetdays ; i++)
+ 	for (i=0 ; i<nmetdays ; i++)
 	{
 		tair_annavg += metarr.tavg[i];
 	}
@@ -466,7 +466,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 				/* phenology fluxes */
-				if (ok && phenology(&epc, &phen, &epv, &cs, &cf, &ns, &nf))
+				if (ok && phenology(yday,&epc, &phen, &epv, &cs, &cf, &ns, &nf))
 				{
 					printf("Error in phenology() from bgc()\n");
 					ok=0;
@@ -749,7 +749,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			that supplements N supply */
 			if (!steady1 && rising && metcycle == 0)
 			{
-				if (ok && spinup_daily_allocation(&cf,&cs,&nf,&ns,&epc,&epv,&nt,naddfrac))
+				if (ok && spinup_daily_allocation(yday,&cf,&cs,&nf,&ns,&epc,&epv,&nt,naddfrac))
 				{
 					printf("Error in daily_allocation() from bgc.c\n");
 					ok=0;
@@ -758,7 +758,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			else
 			{
 				ctrl.n_limitation = 0;
-				if (ok && daily_allocation(&cf,&cs,&nf,&ns,&epc,&epv,&nt, &ctrl.n_limitation))
+				if (ok && daily_allocation(yday,&cf,&cs,&nf,&ns,&epc,&epv,&nt, &ctrl.n_limitation))
 				{
 					printf("Error in daily_allocation() from bgc.c\n");
 					ok=0;
@@ -957,12 +957,12 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 						
 				/* INTERNAL VARIALBE CONTROL - Hidy 2013 */		
-			if (ctrl.onscreen && yday==0)
+			if (ctrl.onscreen && ctrl.simyr<10)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f\n", 
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f\n", 
 				yday, 
-				cs.soil1c, cs.soil2c, cs.soil3c, cs.soil4c, ns.soil1n, ns.soil2n, ns.soil3n, ns.soil4n, ns.sminn_SUM); 
- 
+				epv.vwc[0],(cs.litr1c_strg_SNSC+cs.litr2c_strg_SNSC+cs.litr3c_strg_SNSC+cs.litr4c_strg_SNSC), 
+				cs.fruitc, cs.leafc, summary.daily_gpp*1000, summary.daily_tr*1000, wf.evapotransp); 
 			}
 
 

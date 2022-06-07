@@ -31,6 +31,9 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 		epv->day_frootc_litfall_increment = epv->annmax_frootc * epc->froot_turnover / NDAY_OF_YEAR;
 		epv->annmax_leafc = 0.0;
 		epv->annmax_frootc = 0.0;
+		/* fruit simulation */
+		epv->day_fruitc_litfall_increment = epv->annmax_fruitc * epc->fruit_turnover / NDAY_OF_YEAR;
+		epv->annmax_fruitc = 0.0;
 	}
 	else
 	{
@@ -38,6 +41,8 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 		next litterfall season */
 		epv->day_leafc_litfall_increment = 0.0;
 		epv->day_frootc_litfall_increment = 0.0;
+		/* fruit simulation */
+		epv->day_fruitc_litfall_increment = 0.0;
 	}
 	
 	if (epc->woody)

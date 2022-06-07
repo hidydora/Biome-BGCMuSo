@@ -109,6 +109,10 @@ int alloc, int woody, int evergreen)
 	cs->leafc_transfer   -= cf->leafc_transfer_to_leafc;
 	cs->frootc           += cf->frootc_transfer_to_frootc;
 	cs->frootc_transfer  -= cf->frootc_transfer_to_frootc;
+	/* fruit simulation - Hidy 2013 */
+	cs->fruitc           += cf->fruitc_transfer_to_fruitc;
+	cs->fruitc_transfer  -= cf->fruitc_transfer_to_fruitc;
+
 	if (woody)
 	{
 		/* Stem and coarse root transfer growth */
@@ -138,6 +142,16 @@ int alloc, int woody, int evergreen)
 	cs->frootc     -= cf->frootc_to_litr3c;
 	cs->litr4c     += cf->frootc_to_litr4c;
 	cs->frootc     -= cf->frootc_to_litr4c;
+	/* fruit simulation - Hidy 2013. */
+	cs->litr1c     += cf->fruitc_to_litr1c;
+	cs->fruitc     -= cf->fruitc_to_litr1c;
+	cs->litr2c     += cf->fruitc_to_litr2c;
+	cs->fruitc     -= cf->fruitc_to_litr2c;
+	cs->litr3c     += cf->fruitc_to_litr3c;
+	cs->fruitc     -= cf->fruitc_to_litr3c;
+	cs->litr4c     += cf->fruitc_to_litr4c;
+	cs->fruitc     -= cf->fruitc_to_litr4c;
+
 	/* livewood turnover fluxes */
 	if (woody)
 	{
@@ -154,6 +168,11 @@ int alloc, int woody, int evergreen)
 	cs->cpool        -= cf->leaf_night_mr;
 	cs->froot_mr_snk += cf->froot_mr;
 	cs->cpool        -= cf->froot_mr;
+	 /*fruit simulation - Hidy 2013. */
+    cs->fruit_mr_snk += cf->fruit_mr;
+	cs->cpool        -= cf->fruit_mr;
+
+
 	if (woody)
 	{
 		cs->livestem_mr_snk  += cf->livestem_mr;
@@ -225,6 +244,12 @@ int alloc, int woody, int evergreen)
 	cs->cpool          -= cf->cpool_to_frootc;
 	cs->frootc_storage += cf->cpool_to_frootc_storage;
 	cs->cpool          -= cf->cpool_to_frootc_storage;
+	/* fruit simulation - Hidy 2013. */
+	cs->fruitc         += cf->cpool_to_fruitc;
+	cs->cpool          -= cf->cpool_to_fruitc;
+	cs->fruitc_storage += cf->cpool_to_fruitc_storage;
+	cs->cpool          -= cf->cpool_to_fruitc_storage; 
+
 	if (woody)
 	{
 		/* Daily live stem wood allocation fluxes */
@@ -267,6 +292,14 @@ int alloc, int woody, int evergreen)
 		cs->cpool           -= cf->cpool_froot_storage_gr;
 		cs->froot_gr_snk    += cf->transfer_froot_gr;
 		cs->gresp_transfer  -= cf->transfer_froot_gr;
+		/* fruit simulation - Hidy 2013. */
+		cs->fruit_gr_snk     += cf->cpool_fruit_gr;
+		cs->cpool            -= cf->cpool_fruit_gr;
+		cs->fruit_gr_snk     += cf->cpool_fruit_storage_gr;
+		cs->cpool            -= cf->cpool_fruit_storage_gr;
+		cs->fruit_gr_snk     += cf->transfer_fruit_gr;
+		cs->gresp_transfer   -= cf->transfer_fruit_gr;
+
 		if (woody)
 		{
 			/* Live stem growth respiration */ 
@@ -312,6 +345,8 @@ int alloc, int woody, int evergreen)
 		cf->leafc_storage_to_leafc_transfer = cs->leafc_storage;
 		cf->frootc_storage_to_frootc_transfer = cs->frootc_storage;
 		cf->gresp_storage_to_gresp_transfer = cs->gresp_storage;
+		/* fruit simulation - Hidy 2013. */
+		cf->fruitc_storage_to_fruitc_transfer = cs->fruitc_storage;
 		if (woody)
 		{
 			cf->livestemc_storage_to_livestemc_transfer = cs->livestemc_storage;
@@ -326,6 +361,10 @@ int alloc, int woody, int evergreen)
 		cs->frootc_storage    -= cf->frootc_storage_to_frootc_transfer;
 		cs->gresp_transfer    += cf->gresp_storage_to_gresp_transfer;
 		cs->gresp_storage     -= cf->gresp_storage_to_gresp_transfer;
+		/* fruit simulation - Hidy 2013. */
+		cs->fruitc_transfer    += cf->fruitc_storage_to_fruitc_transfer;
+		cs->fruitc_storage     -= cf->fruitc_storage_to_fruitc_transfer;
+
 		if (woody)
 		{
 			cs->livestemc_transfer  += cf->livestemc_storage_to_livestemc_transfer;
@@ -371,6 +410,10 @@ int alloc, int woody, int evergreen)
 	ns->leafn_transfer  -= nf->leafn_transfer_to_leafn;
 	ns->frootn          += nf->frootn_transfer_to_frootn;
 	ns->frootn_transfer -= nf->frootn_transfer_to_frootn;
+	/* fruit simulation - Hidy 2013. */
+	ns->fruitn           += nf->fruitn_transfer_to_fruitn;
+	ns->fruitn_transfer  -= nf->fruitn_transfer_to_fruitn;
+
 	if (woody)
 	{
 		/* Stem and coarse root transfer growth */
@@ -402,6 +445,18 @@ int alloc, int woody, int evergreen)
 	ns->frootn     -= nf->frootn_to_litr3n;
 	ns->litr4n     += nf->frootn_to_litr4n;
 	ns->frootn     -= nf->frootn_to_litr4n;
+	/* fruit simulation - Hidy 2013. */
+	ns->litr1n     += nf->fruitn_to_litr1n;
+	ns->fruitn      -= nf->fruitn_to_litr1n;
+	ns->litr2n     += nf->fruitn_to_litr2n;
+	ns->fruitn      -= nf->fruitn_to_litr2n;
+	ns->litr3n     += nf->fruitn_to_litr3n;
+	ns->fruitn      -= nf->fruitn_to_litr3n;
+	ns->litr4n     += nf->fruitn_to_litr4n;
+	ns->fruitn      -= nf->fruitn_to_litr4n;
+	ns->retransn   += nf->fruitn_to_retransn;   /* N retranslocation */
+	ns->fruitn      -= nf->fruitn_to_retransn;
+
 	/* live wood turnover to dead wood */
 	ns->deadstemn  += nf->livestemn_to_deadstemn;
 	ns->livestemn  -= nf->livestemn_to_deadstemn;
@@ -548,6 +603,11 @@ int alloc, int woody, int evergreen)
 	ns->npool          -= nf->npool_to_frootn;
 	ns->frootn_storage += nf->npool_to_frootn_storage;
 	ns->npool          -= nf->npool_to_frootn_storage;
+	/* Daily fruit allocation fluxes - Hidy 2013. */
+	ns->fruitn          += nf->npool_to_fruitn;
+	ns->npool          -= nf->npool_to_fruitn;
+	ns->fruitn_storage  += nf->npool_to_fruitn_storage;
+	ns->npool          -= nf->npool_to_fruitn_storage;
 	if (woody)
 	{
 		/* Daily live stem allocation fluxes */
@@ -584,6 +644,8 @@ int alloc, int woody, int evergreen)
 		season, instead of two growing seasons from now. */
 		nf->leafn_storage_to_leafn_transfer = ns->leafn_storage;
 		nf->frootn_storage_to_frootn_transfer = ns->frootn_storage;
+		/* fruit simulation - Hidy 2013. */
+		nf->fruitn_storage_to_fruitn_transfer = ns->fruitn_storage;
 		if (woody)
 		{
 			nf->livestemn_storage_to_livestemn_transfer = ns->livestemn_storage;
@@ -596,6 +658,9 @@ int alloc, int woody, int evergreen)
 		ns->leafn_storage     -= nf->leafn_storage_to_leafn_transfer;
 		ns->frootn_transfer   += nf->frootn_storage_to_frootn_transfer;
 		ns->frootn_storage    -= nf->frootn_storage_to_frootn_transfer;
+		/* fruit simulation - Hidy 2013. */
+		ns->fruitn_transfer    += nf->fruitn_storage_to_fruitn_transfer;
+		ns->fruitn_storage     -= nf->fruitn_storage_to_fruitn_transfer;
 		if (woody)
 		{
 			ns->livestemn_transfer  += nf->livestemn_storage_to_livestemn_transfer;

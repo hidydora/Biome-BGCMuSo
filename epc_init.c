@@ -106,6 +106,11 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading offday, epc_init()\n");
 		ok=0;
 	}
+	if (ok && scan_value(temp, &epc->flowerday, 'i'))
+	{
+		printf("Error reading flowerday, epc_init()\n");
+		ok=0;
+	}
 	if (ok && scan_value(temp, &epc->transfer_pdays, 'd'))
 	{
 		printf("Error reading transfer_pdays, epc_init()\n");
@@ -127,6 +132,9 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		epc->leaf_turnover = 1.0;
 	}
 	epc->froot_turnover = epc->leaf_turnover;
+	/* fruit simulation - Hidy 2013. */
+	epc->fruit_turnover = epc->leaf_turnover;
+
 	if (ok && scan_value(temp, &epc->livewood_turnover, 'd'))
 	{
 		printf("Error reading livewood turnover, epc_init()\n");
@@ -206,6 +214,12 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading froot C:leaf C, epc_init()\n");
 		ok=0;
 	}
+	/* fruit simulation - Hidy 2013. */
+	if (ok && scan_value(temp, &epc->alloc_fruitc_leafc, 'd'))
+	{
+		printf("Error reading fruit C: leaf c, epc_init()\n");
+		ok=0;
+	}
 	if (ok && scan_value(temp, &epc->alloc_newstemc_newleafc, 'd'))
 	{
 		printf("Error reading new stemC:new leaf C, epc_init()\n");
@@ -221,6 +235,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading croot C:stem C, epc_init()\n");
 		ok=0;
 	}
+	
 	if (ok && scan_value(temp, &epc->alloc_prop_curgrowth, 'd'))
 	{
 		printf("Error reading new growth:storage growth, epc_init()\n");
@@ -243,11 +258,20 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("change the values in ECOPHYS block of initialization file\n");
 		ok=0;
 	}
+
 	if (ok && scan_value(temp, &epc->froot_cn, 'd'))
 	{
 		printf("Error reading initial fine root C:N, epc_init()\n");
 		ok=0;
 	}
+
+	/* fruit simulation - Hidy 2013. */
+	if (ok && scan_value(temp, &epc->fruit_cn, 'd'))
+	{
+		printf("Error reading initial fruit C:N, epc_init()\n");
+		ok=0;
+	}
+
 	if (ok && scan_value(temp, &epc->livewood_cn, 'd'))
 	{
 		printf("Error reading initial livewood C:N, epc_init()\n");
@@ -265,6 +289,8 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("change the values in ECOPHYS block of initialization file\n");
 		ok=0;
 	}
+
+	/* LEAF LITTER PROPORTION */
 	if (ok && scan_value(temp, &t1, 'd'))
 	{
 		printf("Error reading leaf litter labile proportion, epc_init()\n");
@@ -311,6 +337,8 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 			epc->leaflitr_fucel = 0.2*t2;
 		}
 	}
+
+	/* FROOT LITTER PROPORTION */
 	if (ok && scan_value(temp, &t1, 'd'))
 	{
 		printf("Error reading froot litter labile proportion, epc_init()\n");
@@ -360,6 +388,58 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 			epc->frootlitr_fucel = 0.2*t2;
 		}
 	}
+
+
+	/* FRUIT LITTER PROPORTION */
+	if (ok && scan_value(temp, &t1, 'd'))
+	{
+		printf("Error reading fruit litter labile proportion, epc_init()\n");
+		ok=0;
+	}
+	epc->fruitlitr_flab = t1;
+	if (ok && scan_value(temp, &t2, 'd'))
+	{
+		printf("Error reading fruit litter cellulose proportion, epc_init()\n");
+		ok=0;
+	}
+	if (ok && scan_value(temp, &t3, 'd'))
+	{
+		printf("Error reading fruit litter lignin proportion, epc_init()\n");
+		ok=0;
+	}
+	epc->fruitlitr_flig = t3;
+	/* test for litter fractions sum to 1.0 */
+	if (ok && (fabs(t1+t2+t3-1.0) > 1e-10))
+	{
+		printf("Error:\n");
+		printf("fruit litter proportions of labile, cellulose, and lignin\n");
+		printf("must sum to 1.0. Check initialization file and try again.\n");
+		ok=0;
+	}
+	/* calculate shielded and unshielded cellulose fraction */
+	if (ok)
+	{
+		r1 = t3/t2;
+		if (r1 <= 0.45)
+		{
+			epc->fruitlitr_fscel = 0.0;
+			epc->fruitlitr_fucel = t2;
+		}
+		else if (r1 > 0.45 && r1 < 0.7)
+		{
+			t4 = (r1 - 0.45)*3.2;
+			epc->fruitlitr_fscel = t4*t2;
+			epc->fruitlitr_fucel = (1.0 - t4)*t2;
+		}
+		else
+		{
+			epc->fruitlitr_fscel = 0.8*t2;
+			epc->fruitlitr_fucel = 0.2*t2;
+		}
+	}
+
+
+	/* DEAD WOOD LITTER PROPORTION */
 	if (ok && scan_value(temp, &t1, 'd'))
 	{
 		printf("Error reading dead wood %% cellulose, epc_init()\n");
@@ -401,6 +481,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 			epc->deadwood_fucel = 0.2*t1;
 		}
 	}
+
 	if (ok && scan_value(temp, &epc->int_coef, 'd'))
 	{
 		printf("Error reading canopy water int coef, epc_init()\n");
@@ -555,15 +636,15 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	
 	/* -------------------------------------------*/
 	/* Hidy 2011 - plant wilting mortality parameter */
-	if (ok && scan_value(temp, &epc->mort_SNSC_displayed, 'd'))
+	if (ok && scan_value(temp, &epc->mort_SNSC_abovebiom, 'd'))
 	{
-		printf("Error reading senescence mortality parameter of displayed plant material: epc_init()\n");
+		printf("Error reading senescence mortality parameter of aboveground biomass: epc_init()\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(temp, &epc->mort_SNSC_storaged, 'd'))
+	if (ok && scan_value(temp, &epc->mort_SNSC_belowbiom, 'd'))
 	{
-		printf("Error reading storaged senescence mortality parameter of displayed plant material: epc_init()\n");
+		printf("Error reading storaged senescence mortality parameter of belowground biomass: epc_init()\n");
 		ok=0;
 	}
 

@@ -126,6 +126,20 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns,const epconst_st
 
 	cf->froot_mr = froot_mr;
 
+	/* ********************************************************* */
+	/* Fruit simulation - Hidy 2013. */
+    if (cs->fruitc)
+	{
+       /* fruit maintenance respiration */
+		exponent = (metv->tavg - 20.0) / 10.0;
+		t1 = pow(q10, exponent);
+		cf->fruit_mr = ns->fruitn * mrpern * t1;
+	}
+	/* no fruits on */
+	else cf->fruit_mr = 0.0;
+		
+
+	/* ********************************************************* */
 	/* TREE-specific fluxes */
 	if (epc->woody)
 	{

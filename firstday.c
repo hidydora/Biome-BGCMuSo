@@ -29,7 +29,7 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	int woody;
 	int predays,remdays;
 	int layer;
-	double max_leafc,max_frootc;
+	double max_leafc,max_frootc,max_fruitc; /* fruit simulation - Hidy 2013. */
 	double max_stemc,new_stemc;
 	double prop_transfer,transfer;
 	double prop_litfall;
@@ -51,6 +51,9 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	ns->deadcrootn_storage = 0.0;
 	ns->retransn = 0.0;
 	ns->npool = 0.0;
+	/* fruit simulation - Hidy 2013. */
+	cs->fruitc_storage = 0.0;
+	ns->fruitn_storage = 0.0;
 	
 	/* *****************************************************************************- */
 	/* Hidy 2010 - initialize days-since-rain and day-since-waterstress counter */
@@ -99,6 +102,12 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	cs->frootc_transfer = cinit->max_leafc * epc->alloc_frootc_leafc * 
 		epc->froot_turnover;
 	cs->frootc = max_frootc - cs->frootc_transfer;
+	/* fruit simulation - Hidy 2013. */
+	max_fruitc = max_leafc * epc->alloc_fruitc_leafc;
+	cs->fruitc_transfer = cinit->max_leafc * epc->alloc_fruitc_leafc * 
+	epc->fruit_turnover;
+	cs->fruitc = max_fruitc - cs->fruitc_transfer;
+
 	if (epc->woody)
 	{
 		max_stemc = cinit->max_stemc;
@@ -121,6 +130,11 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	ns->leafn = cs->leafc / epc->leaf_cn;
 	ns->frootn_transfer = cs->frootc_transfer / epc->froot_cn;
 	ns->frootn = cs->frootc / epc->froot_cn;
+	/* fruit simulation - Hidy 2013. */
+	ns->fruitn_transfer = cs->fruitc_transfer / epc->fruit_cn;
+	ns->fruitn = cs->fruitc / epc->fruit_cn;
+
+
 	if (epc->woody)
 	{
 		ns->livestemn_transfer = cs->livestemc_transfer / epc->livewood_cn;
@@ -154,6 +168,14 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		transfer = prop_transfer * ns->frootn_transfer;
 		ns->frootn          += transfer;
 		ns->frootn_transfer -= transfer;
+		/* fruit simulation - Hidy 2013. */
+		transfer = prop_transfer * cs->fruitc_transfer;
+		cs->fruitc          += transfer;
+		cs->fruitc_transfer -= transfer;
+		transfer = prop_transfer * ns->fruitn_transfer;
+		ns->fruitn          += transfer;
+		ns->fruitn_transfer -= transfer;
+
 		if (woody)
 		{
 			transfer = prop_transfer * cs->livestemc_transfer;
@@ -194,6 +216,8 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 			prop_litfall = (double)predays/(double)(predays+remdays);
 			cs->leafc  -= prop_litfall * cs->leafc * epc->leaf_turnover;
 			cs->frootc -= prop_litfall * cs->frootc * epc->froot_turnover;
+			/* fruit simulation - Hidy 2013. */
+			cs->fruitc -= prop_litfall * cs->fruitc * epc->fruit_turnover;
 		}
 	} /* end if transfer */
 
@@ -201,7 +225,7 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	leaf and fine root growth from transfer pools to the 
 	gresp_transfer pool */
 	cs->gresp_transfer = 0.0;
-	cs->gresp_transfer += (cs->leafc_transfer + cs->frootc_transfer) * epc->GR_ratio;
+	cs->gresp_transfer += (cs->leafc_transfer + cs->frootc_transfer + cs->frootc_transfer) * epc->GR_ratio; /* fruit simulation - Hidy 2013. */
 	if (woody)
 	{
 		cs->gresp_transfer += (cs->livestemc_transfer + cs->deadstemc_transfer +
@@ -214,6 +238,8 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		/* leaf and fineroot litterfall rates */
 		epv->day_leafc_litfall_increment = max_leafc * epc->leaf_turnover / NDAY_OF_YEAR;
 		epv->day_frootc_litfall_increment = max_frootc * epc->froot_turnover / NDAY_OF_YEAR;
+		/* fruit simulation - Hidy 2013. */
+		epv->day_fruitc_litfall_increment = max_fruitc * epc->fruit_turnover / NDAY_OF_YEAR;
 	}
 	else
 	{
@@ -221,10 +247,14 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		next litterfall season */
 		epv->day_leafc_litfall_increment = 0.0;
 		epv->day_frootc_litfall_increment = 0.0;
+		/* fruit simulation - Hidy 2013. */
+		epv->day_fruitc_litfall_increment = 0.0;
 	}
 	/* all types can use annmax leafc and frootc */
 	epv->annmax_leafc = 0.0;
 	epv->annmax_frootc = 0.0;
+	/* fruit simulation - Hidy 2013. */
+	epv->annmax_fruitc = 0.0;
 	
 	if (epc->woody)
 	{

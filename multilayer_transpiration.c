@@ -40,6 +40,7 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 	double soilw_trans_control;
 	double transp_diff;
 	int ok=1;
+	double transp_diff_SUM = 0;
 
 
 
@@ -77,12 +78,15 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 		if (transp_diff < 0)
 		{
 			wf->soilw_trans[layer] += transp_diff;
-			wf->soilw_trans_SUM += transp_diff;
+			transp_diff_SUM += transp_diff;
 			if (ctrl->onscreen) printf("Warning: limited transpiration due to dry soil (multilayer_transpiration.c)\n");
 		}
 
 		ws->soilw[layer] -= wf->soilw_trans[layer];
 	}
+
+	wf->soilw_trans_SUM += transp_diff_SUM;
+
 	/* no transpiration from the bottom layer (deeper than 4m */
 	wf->soilw_trans[N_SOILLAYERS-1] = 0;
 
@@ -98,6 +102,7 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 		printf("FATAL ERRROR: transpiration calculation error in multilayer_transpiration.c:\n");
 		ok=0;
 	}
+
 
 
 

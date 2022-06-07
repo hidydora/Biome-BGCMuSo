@@ -20,12 +20,12 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_struct* epv, 
+int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen, epvar_struct* epv, 
 			  cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf)
 {
 	int ok=1;
 	double ndays;
-	double leaflitfallc, frootlitfallc;
+	double leaflitfallc, frootlitfallc, fruitlitfallc;	/* fruit simulation - Hidy 2013. */
 	double livestemtovrc, livestemtovrn;
 	double livecroottovrc, livecroottovrn;
 	double drate;
@@ -44,6 +44,18 @@ int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_str
 			nf->leafn_transfer_to_leafn = ns->leafn_transfer / ndays;
 			cf->frootc_transfer_to_frootc = cs->frootc_transfer / ndays;
 			nf->frootn_transfer_to_frootn = ns->frootn_transfer / ndays;
+			/* fruit simulation - Hidy 2013. */
+			if (yday > epc->flowerday)
+			{
+				cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer / ndays;
+				nf->fruitn_transfer_to_fruitn = ns->fruitn_transfer / ndays;
+			}
+			else
+			{
+				cf->fruitc_transfer_to_fruitc = 0;
+				nf->fruitn_transfer_to_fruitn = 0;
+			}
+
 			if (epc->woody)
 			{
 				cf->livestemc_transfer_to_livestemc = cs->livestemc_transfer / ndays;
@@ -69,6 +81,18 @@ int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_str
 		{
 			printf("Error in call to leaf_litfall() from phenology()\n");
 			ok=0;
+		}
+		
+		/* fruit simulation - Hidy 2013. */
+		if (yday > epc->flowerday)
+		{
+			fruitlitfallc = epv->day_fruitc_litfall_increment;
+			if (fruitlitfallc > cs->fruitc) fruitlitfallc = cs->fruitc;
+			if (ok && fruit_litfall(epc,fruitlitfallc,cf,nf))
+			{
+				printf("Error in call to fruit_litfall() from phenology()\n");
+				ok=0;
+			}
 		}
 
 		/* fine root litterfall */
@@ -125,6 +149,18 @@ int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_str
 			nf->leafn_transfer_to_leafn = 2.0*ns->leafn_transfer / ndays;
 			cf->frootc_transfer_to_frootc = 2.0*cs->frootc_transfer / ndays;
 			nf->frootn_transfer_to_frootn = 2.0*ns->frootn_transfer / ndays;
+			/* fruit simulation - Hidy 2013. */
+			if (yday > epc->flowerday)
+			{
+				cf->fruitc_transfer_to_fruitc = 2.0*cs->fruitc_transfer / ndays;
+				nf->fruitn_transfer_to_fruitn = 2.0*ns->fruitn_transfer / ndays;
+			}
+			else
+			{
+				cf->fruitc_transfer_to_fruitc = 0;
+				nf->fruitn_transfer_to_fruitn = 0;
+			}
+
 			if (epc->woody)
 			{
 				cf->livestemc_transfer_to_livestemc = 2.0*cs->livestemc_transfer / ndays;
@@ -150,6 +186,8 @@ int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_str
 				that pools go to 0.0 */
 				leaflitfallc = cs->leafc;
 				frootlitfallc = cs->frootc;
+				/* fruit simulation - Hidy 2013. */
+				fruitlitfallc = cs->fruitc;
 			}
 			else
 			{
@@ -161,6 +199,13 @@ int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_str
 				frootlitfallc = epv->day_frootc_litfall_increment;
 				drate = 2.0*(cs->frootc - frootlitfallc*ndays)/(ndays*ndays);
 				epv->day_frootc_litfall_increment += drate;
+				/* fruit simulation - Hidy 2013. */
+				if (yday > epc->flowerday)
+				{
+					fruitlitfallc = epv->day_fruitc_litfall_increment;
+					drate = 2.0*(cs->fruitc - fruitlitfallc*ndays)/(ndays*ndays);
+					epv->day_fruitc_litfall_increment += drate;
+				}
 			}
 			/* leaf litterfall */
 			if (leaflitfallc > cs->leafc) leaflitfallc = cs->leafc;
@@ -169,6 +214,17 @@ int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_str
 				printf("Error in call to leaf_litfall() from phenology()\n");
 				ok=0;
 			}
+			/* fruit litterfall - Hidy 2013. */
+			if (yday > epc->flowerday)
+			{
+				if (fruitlitfallc > cs->fruitc) fruitlitfallc = cs->fruitc;
+				if (ok && fruitlitfallc && fruit_litfall(epc,fruitlitfallc,cf,nf))
+				{
+					printf("Error in call to fruit_litfall() from phenology()\n");
+					ok=0;
+				}
+			}
+
 			/* fine root litterfall */
 			if (frootlitfallc > cs->frootc) frootlitfallc = cs->frootc;
 			if (ok && frootlitfallc && froot_litfall(epc,frootlitfallc,cf,nf))
@@ -221,6 +277,8 @@ int phenology(const epconst_struct* epc, const phenology_struct* phen, epvar_str
 	/* for all types, find annual maximum leafc */
 	if (epv->annmax_leafc < cs->leafc) epv->annmax_leafc = cs->leafc;
 	if (epv->annmax_frootc < cs->frootc) epv->annmax_frootc = cs->frootc;
+	/* fruit simulation - Hidy 2013. */
+	if (epv->annmax_fruitc < cs->fruitc) epv->annmax_fruitc = cs->fruitc;
 	
 	return (!ok);
 }
@@ -260,6 +318,41 @@ cflux_struct* cf, nflux_struct* nf)
 		nf->leafn_to_litr3n = n3;
 		nf->leafn_to_litr4n = n4;
 		nf->leafn_to_retransn = nretrans;
+	}
+	
+	return (!ok);
+}
+
+int fruit_litfall(const epconst_struct* epc, double litfallc, 
+cflux_struct* cf, nflux_struct* nf)
+{
+	int ok=1;
+	double c1,c2,c3,c4;
+	double n1,n2,n3,n4;
+	double avg_cn;
+	
+	avg_cn = epc->fruit_cn;
+	
+	c1 = litfallc * epc->fruitlitr_flab;
+	n1 = c1 / avg_cn;
+	c2 = litfallc * epc->fruitlitr_fucel;
+	n2 = c2 / avg_cn;
+	c3 = litfallc * epc->fruitlitr_fscel;
+	n3 = c3 / avg_cn;
+	c4 = litfallc * epc->fruitlitr_flig;
+	n4 = c4 / avg_cn;
+	
+	if (ok)
+	{
+		/* set fluxes in daily flux structure */
+		cf->fruitc_to_litr1c = c1;
+		cf->fruitc_to_litr2c = c2;
+		cf->fruitc_to_litr3c = c3;
+		cf->fruitc_to_litr4c = c4;
+		nf->fruitn_to_litr1n = n1;
+		nf->fruitn_to_litr2n = n2;
+		nf->fruitn_to_litr3n = n3;
+		nf->fruitn_to_litr4n = n4;
 	}
 	
 	return (!ok);

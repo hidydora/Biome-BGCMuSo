@@ -86,8 +86,11 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	/* ploughing - Hidy 2012. */
 	cs->PLGsnk = 0.0;	
 	cs->PLGsrc = 0.0;
-	/* fertilizing */
+	/* fertilizing - Hidy 2012.  */
 	cs->FRZsrc = 0.0;
+	/* fruit simulation - Hidy 2013.  */
+	cs->fruit_mr_snk = 0.0;
+	cs->fruit_gr_snk = 0.0;
 	
 	/* zero the nitrogen sources and sinks */
 	ns->nfix_src = 0.0;
@@ -113,7 +116,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	/* ploughing - Hidy 2012. */
 	ns->PLGsnk = 0.0;	
 	ns->PLGsrc = 0.0;
-	/* fertilizing */
+	/* fertilizing - Hidy 2012. */
 	ns->FRZsrc = 0.0;
 	
 	/* zero the summary variables */

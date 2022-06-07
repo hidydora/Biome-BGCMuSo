@@ -73,6 +73,11 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cf->m_frootc_to_litr2c = mort * cs->frootc * epc->frootlitr_fucel;
 	cf->m_frootc_to_litr3c = mort * cs->frootc * epc->frootlitr_fscel; 	 
 	cf->m_frootc_to_litr4c = mort * cs->frootc * epc->frootlitr_flig;
+	/* fruit simulation - Hidy 2013. */
+	cf->m_fruitc_to_litr1c = mort * cs->fruitc * epc->fruitlitr_flab;  	 
+	cf->m_fruitc_to_litr2c = mort * cs->fruitc * epc->fruitlitr_fucel;
+	cf->m_fruitc_to_litr3c = mort * cs->fruitc * epc->fruitlitr_fscel;  	 
+	cf->m_fruitc_to_litr4c = mort * cs->fruitc * epc->fruitlitr_flig;  	 
 	
 	/* mortality fluxes out of storage and transfer pools */
 	cf->m_leafc_storage_to_litr1c  = mort * cs->leafc_storage;
@@ -88,7 +93,10 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cf->m_livecrootc_transfer_to_litr1c = mort * cs->livecrootc_transfer;
 	cf->m_deadcrootc_transfer_to_litr1c = mort * cs->deadcrootc_transfer;
 	cf->m_gresp_storage_to_litr1c = mort * cs->gresp_storage;
-	cf->m_gresp_transfer_to_litr1c = mort * cs->gresp_transfer;
+	cf->m_gresp_transfer_to_litr1c = mort * cs->gresp_transfer;	
+	/* fruit simulation - Hidy 2013. */
+	cf->m_fruitc_storage_to_litr1c  = mort * cs->fruitc_storage;
+	cf->m_fruitc_transfer_to_litr1c = mort * cs->fruitc_transfer;
 
 	/* TREE-specific carbon fluxes */
 	if (epc->woody)
@@ -108,7 +116,12 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	nf->m_frootn_to_litr1n = cf->m_frootc_to_litr1c / epc->froot_cn; 	
 	nf->m_frootn_to_litr2n = cf->m_frootc_to_litr2c / epc->froot_cn; 	
 	nf->m_frootn_to_litr3n = cf->m_frootc_to_litr3c / epc->froot_cn; 	
-	nf->m_frootn_to_litr4n = cf->m_frootc_to_litr4c / epc->froot_cn;	
+	nf->m_frootn_to_litr4n = cf->m_frootc_to_litr4c / epc->froot_cn;
+	/* fruit simulation - Hidy 2013. */
+	nf->m_fruitn_to_litr1n = cf->m_fruitc_to_litr1c / epc->fruit_cn;  	
+	nf->m_fruitn_to_litr2n = cf->m_fruitc_to_litr2c / epc->fruit_cn;  	
+	nf->m_fruitn_to_litr3n = cf->m_fruitc_to_litr3c / epc->fruit_cn;  	
+	nf->m_fruitn_to_litr4n = cf->m_fruitc_to_litr4c / epc->fruit_cn;  	
 	
 	/* mortality fluxes out of storage and transfer */
 	nf->m_leafn_storage_to_litr1n  = mort * ns->leafn_storage;
@@ -124,6 +137,9 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	nf->m_livecrootn_transfer_to_litr1n = mort * ns->livecrootn_transfer;
 	nf->m_deadcrootn_transfer_to_litr1n = mort * ns->deadcrootn_transfer;
 	nf->m_retransn_to_litr1n = mort * ns->retransn;
+	/* fruit simulation - Hidy 2013. */
+	nf->m_fruitn_storage_to_litr1n  = mort * ns->fruitn_storage;
+	nf->m_fruitn_transfer_to_litr1n = mort * ns->fruitn_transfer;
 	
 	/* woody-specific nitrogen fluxes */
 	if (epc->woody)
@@ -161,6 +177,15 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cs->frootc         -= cf->m_frootc_to_litr3c;
 	cs->litr4c         += cf->m_frootc_to_litr4c;
 	cs->frootc         -= cf->m_frootc_to_litr4c;
+	/* Fruit mortality - Hidy 2013. */
+	cs->litr1c         += cf->m_fruitc_to_litr1c;
+	cs->fruitc         -= cf->m_fruitc_to_litr1c;
+	cs->litr2c         += cf->m_fruitc_to_litr2c;
+	cs->fruitc         -= cf->m_fruitc_to_litr2c;
+	cs->litr3c         += cf->m_fruitc_to_litr3c;
+	cs->fruitc         -= cf->m_fruitc_to_litr3c;
+	cs->litr4c         += cf->m_fruitc_to_litr4c;
+	cs->fruitc         -= cf->m_fruitc_to_litr4c;
 	/*   Storage and transfer mortality */
 	cs->litr1c              += cf->m_leafc_storage_to_litr1c;
 	cs->leafc_storage       -= cf->m_leafc_storage_to_litr1c;
@@ -190,6 +215,12 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cs->gresp_storage       -= cf->m_gresp_storage_to_litr1c;
 	cs->litr1c              += cf->m_gresp_transfer_to_litr1c;
 	cs->gresp_transfer      -= cf->m_gresp_transfer_to_litr1c;
+	/* fruit simulation - Hidy 2013. */
+	cs->litr1c              += cf->m_fruitc_storage_to_litr1c;
+	cs->fruitc_storage      -= cf->m_fruitc_storage_to_litr1c;
+	cs->litr1c              += cf->m_fruitc_transfer_to_litr1c;
+	cs->fruitc_transfer     -= cf->m_fruitc_transfer_to_litr1c;
+
 	if (epc->woody)
 	{
 		/*    Stem wood mortality */
@@ -204,7 +235,7 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 		cs->deadcrootc -= cf->m_deadcrootc_to_cwdc;
 	}
 	/* NITROGEN mortality state variable update */
-	/*    Leaf mortality */
+	/*  Leaf mortality */
 	ns->litr1n         += nf->m_leafn_to_litr1n;
 	ns->leafn          -= nf->m_leafn_to_litr1n;
 	ns->litr2n         += nf->m_leafn_to_litr2n;
@@ -213,7 +244,7 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	ns->leafn          -= nf->m_leafn_to_litr3n;
 	ns->litr4n         += nf->m_leafn_to_litr4n;
 	ns->leafn          -= nf->m_leafn_to_litr4n;
-	/*    Fine root mortality */
+	/*  Fine root mortality */
 	ns->litr1n         += nf->m_frootn_to_litr1n;
 	ns->frootn         -= nf->m_frootn_to_litr1n;
 	ns->litr2n         += nf->m_frootn_to_litr2n;
@@ -222,7 +253,16 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	ns->frootn         -= nf->m_frootn_to_litr3n;
 	ns->litr4n         += nf->m_frootn_to_litr4n;
 	ns->frootn         -= nf->m_frootn_to_litr4n;
-	/*    Storage, transfer, excess, and npool mortality */
+	/* Fruit mortality - Hidy 2013. */
+	ns->litr1n         += nf->m_fruitn_to_litr1n;
+	ns->fruitn         -= nf->m_fruitn_to_litr1n;
+	ns->litr2n         += nf->m_fruitn_to_litr2n;
+	ns->fruitn         -= nf->m_fruitn_to_litr2n;
+	ns->litr3n         += nf->m_fruitn_to_litr3n;
+	ns->fruitn         -= nf->m_fruitn_to_litr3n;
+	ns->litr4n         += nf->m_fruitn_to_litr4n;
+	ns->fruitn         -= nf->m_fruitn_to_litr4n;
+	/*  Storage, transfer, excess, and npool mortality */
 	ns->litr1n              += nf->m_leafn_storage_to_litr1n;
 	ns->leafn_storage       -= nf->m_leafn_storage_to_litr1n;
 	ns->litr1n              += nf->m_frootn_storage_to_litr1n;
@@ -249,6 +289,12 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	ns->deadcrootn_transfer -= nf->m_deadcrootn_transfer_to_litr1n;
 	ns->litr1n              += nf->m_retransn_to_litr1n;
 	ns->retransn            -= nf->m_retransn_to_litr1n;
+	/* Fruit simulation - Hidy 2013. */
+	ns->litr1n              += nf->m_fruitn_storage_to_litr1n;
+	ns->fruitn_storage      -= nf->m_fruitn_storage_to_litr1n;
+	ns->litr1n              += nf->m_fruitn_transfer_to_litr1n;
+	ns->fruitn_transfer     -= nf->m_fruitn_transfer_to_litr1n;
+
 	if (epc->woody)
 	{
 		/*    Stem wood mortality */
@@ -277,6 +323,8 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	/* mortality fluxes out of leaf and fine root pools */
 	cf->m_leafc_to_fire = mort * cs->leafc;  	 
 	cf->m_frootc_to_fire = mort * cs->frootc;
+	/* fruit simulation - Hidy 2013. */
+	cf->m_fruitc_to_fire = mort * cs->fruitc;  
 	
 	/* mortality fluxes out of storage and transfer pools */
 	cf->m_leafc_storage_to_fire  = mort * cs->leafc_storage;
@@ -293,6 +341,9 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cf->m_deadcrootc_transfer_to_fire = mort * cs->deadcrootc_transfer;
 	cf->m_gresp_storage_to_fire =  mort * cs->gresp_storage;
 	cf->m_gresp_transfer_to_fire = mort * cs->gresp_transfer;
+	/* fruit simulation - Hidy 2013. */
+	cf->m_fruitc_storage_to_fire  = mort * cs->fruitc_storage;
+	cf->m_fruitc_transfer_to_fire = mort * cs->fruitc_transfer;
 
 	/* TREE-specific carbon fluxes */
 	if (epc->woody)
@@ -315,6 +366,8 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	/* mortality fluxes out of leaf and fine root pools */
 	nf->m_leafn_to_fire = cf->m_leafc_to_fire / epc->leaf_cn;  	
 	nf->m_frootn_to_fire = cf->m_frootc_to_fire / epc->froot_cn; 	
+	/* fruit simulation - Hidy 2013. */
+	nf->m_fruitn_to_fire = cf->m_fruitc_to_fire / epc->fruit_cn;  	
 	
 	/* mortality fluxes out of storage and transfer */
 	nf->m_leafn_storage_to_fire  =  mort * ns->leafn_storage;
@@ -330,6 +383,9 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	nf->m_livecrootn_transfer_to_fire = mort * ns->livecrootn_transfer;
 	nf->m_deadcrootn_transfer_to_fire = mort * ns->deadcrootn_transfer;
 	nf->m_retransn_to_fire = mort * ns->retransn;
+	/* fruit simulation - Hidy 2013. */
+	nf->m_fruitn_storage_to_fire  = mort * ns->fruitn_storage;
+	nf->m_fruitn_transfer_to_fire = mort * ns->fruitn_transfer;
 	
 	/* woody-specific nitrogen fluxes */
 	if (epc->woody)
@@ -360,6 +416,9 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	/*   Fine root mortality */
 	cs->fire_snk       += cf->m_frootc_to_fire;
 	cs->frootc         -= cf->m_frootc_to_fire;
+	/*   Fruit mortality - Hidy 2013. */
+	cs->fire_snk       += cf->m_fruitc_to_fire;
+	cs->fruitc         -= cf->m_fruitc_to_fire;
 	/*   Storage and transfer mortality */
 	cs->fire_snk            += cf->m_leafc_storage_to_fire;
 	cs->leafc_storage       -= cf->m_leafc_storage_to_fire;
@@ -389,6 +448,13 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cs->gresp_storage       -= cf->m_gresp_storage_to_fire;
 	cs->fire_snk            += cf->m_gresp_transfer_to_fire;
 	cs->gresp_transfer      -= cf->m_gresp_transfer_to_fire;
+	/* fruit simulation - Hidy 2013. */
+	cs->fire_snk            += cf->m_fruitc_storage_to_fire;
+	cs->fruitc_storage      -= cf->m_fruitc_storage_to_fire;
+	cs->fire_snk            += cf->m_fruitc_transfer_to_fire;
+	cs->fruitc_transfer     -= cf->m_fruitc_transfer_to_fire;
+
+
 	if (epc->woody)
 	{
 		/*    Stem wood mortality */
@@ -421,6 +487,9 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	/*    Fine root mortality */
 	ns->fire_snk       += nf->m_frootn_to_fire;
 	ns->frootn         -= nf->m_frootn_to_fire;
+	/*    Fruit mortality - Hidy 2013. */
+	ns->fire_snk       += nf->m_fruitn_to_fire;
+	ns->fruitn         -= nf->m_fruitn_to_fire;
 	/*    Storage, transfer, excess, and npool mortality */
 	ns->fire_snk            += nf->m_leafn_storage_to_fire;
 	ns->leafn_storage       -= nf->m_leafn_storage_to_fire;
@@ -448,6 +517,12 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	ns->deadcrootn_transfer -= nf->m_deadcrootn_transfer_to_fire;
 	ns->fire_snk            += nf->m_retransn_to_fire;
 	ns->retransn            -= nf->m_retransn_to_fire;
+	/*  fruit simulation - Hidy 2013. */
+	ns->fire_snk            += nf->m_fruitn_storage_to_fire;
+	ns->fruitn_storage      -= nf->m_fruitn_storage_to_fire;
+	ns->fire_snk            += nf->m_fruitn_transfer_to_fire;
+	ns->fruitn_transfer     -= nf->m_fruitn_transfer_to_fire;
+
 	if (epc->woody)
 	{
 		/*    Stem wood mortality */

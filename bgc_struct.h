@@ -262,21 +262,27 @@ typedef struct
     double PLTsrc;     /* (kgN/m2) planted N */
 	/* thinning - by Hidy 2012.  */
 	double THNsnk;              /* (kgC/m2) thinned leaf C */
-	double THNsrc;			  /* (kgC/m2) thinned plant material (C content) returns to the litter  */
-	/* mowing - by Hidy 2008.  */
+	double THNsrc;			    /* (kgC/m2) thinned plant material (C content) returns to the litter  */
+	/* mowing - by Hidy 2008.   */
 	double MOWsnk;              /* (kgC/m2) mowed leaf C */
-	double MOWsrc;			  /* (kgC/m2) mowed plant material (C content) returns to the litter */
+	double MOWsrc;			    /* (kgC/m2) mowed plant material (C content) returns to the litter */
 	/* harvesting - Hidy 2012.  */
-	double HRVsnk;             /* (kgC/m2) harvested leaf C */
-	double HRVsrc;			   /* (kgC/m2) harvested plant material (C content) returns to the litter */
-	/* ploughing - Hidy 2012. */
+	double HRVsnk;              /* (kgC/m2) harvested leaf C */
+	double HRVsrc;			    /* (kgC/m2) harvested plant material (C content) returns to the litter */
+	/* ploughing - Hidy 2012.   */
 	double PLGsnk;              /* (kgC/m2) ploughed leaf C */
-	double PLGsrc;			  /* (kgC/m2) ploughed plant material (C content)to the soil (labile litter) */
+	double PLGsrc;			    /* (kgC/m2) ploughed plant material (C content)to the soil (labile litter) */
 	/* grazing - by Hidy 2009.  */
 	double GRZsnk;              /* (kgC/m2) grazed leaf C */
 	double GRZsrc;              /* (kgC/m2) added carbon from fertilizer */
 	/* fertilizing - Hidy 2009. */
-	double FRZsrc;			  /* (kgC/m2) carbon content of fertilizer return to the litter pool */
+	double FRZsrc;			    /* (kgC/m2) carbon content of fertilizer return to the litter pool */
+	/* fruit simulation - Hidy 2009. */
+	 double fruitc;             /* (kgC/m2) SUM of fruitc */
+     double fruitc_storage;     /* (kgC/m2) SUM of fruitc */
+     double fruitc_transfer;    /* (kgC/m2) SUM of fruitc */
+	 double fruit_gr_snk;       /* (kgC/m2) SUM of fruit growth resp. */
+	 double fruit_mr_snk;       /* (kgC/m2) SUM of fruit maint resp.*/
 } cstate_struct;
 
 /* daily carbon flux variables */
@@ -309,6 +315,13 @@ typedef struct
 	double m_deadcrootc_to_cwdc;           /* (kgC/m2/d) */
 	double m_gresp_storage_to_litr1c;      /* (kgC/m2/d) */
 	double m_gresp_transfer_to_litr1c;     /* (kgC/m2/d) */
+	/* mortality - fruit simulation -  by Hidy 2013. */
+	double m_fruitc_to_litr1c;             /* (kgC/m2/d) */
+	double m_fruitc_to_litr2c;             /* (kgC/m2/d) */
+	double m_fruitc_to_litr3c;             /* (kgC/m2/d) */
+	double m_fruitc_to_litr4c;             /* (kgC/m2/d) */
+	double m_fruitc_storage_to_litr1c;     /* (kgC/m2/d) */
+	double m_fruitc_transfer_to_litr1c;    /* (kgC/m2/d) */
 	/* fire fluxes */
 	double m_leafc_to_fire;                /* (kgC/m2/d) */
 	double m_frootc_to_fire;               /* (kgC/m2/d) */
@@ -335,6 +348,10 @@ typedef struct
 	double m_litr3c_to_fire;               /* (kgC/m2/d) */
 	double m_litr4c_to_fire;               /* (kgC/m2/d) */
 	double m_cwdc_to_fire;                 /* (kgC/m2/d) */
+	/* fire - fruit simulation (Hidy 2013.) */
+	double m_fruitc_to_fire;               /* (kgC/m2/d) */
+	double m_fruitc_storage_to_fire;       /* (kgC/m2/d) */
+	double m_fruitc_transfer_to_fire;      /* (kgC/m2/d) */
 	/* Hidy 2010 - senescence fluxes */
 	double m_leafc_to_SNSC;                /* (kgC/m2/d) */
 	double m_frootc_to_SNSC;               /* (kgC/m2/d) */
@@ -348,6 +365,10 @@ typedef struct
 	double SNSC_to_litr2c;
 	double SNSC_to_litr3c;
 	double SNSC_to_litr4c;
+	/* senescence fluxes  - fruit simulation (Hidy 2013.) */
+	double m_fruitc_to_SNSC;                /* (kgC/m2/d) */
+	double m_fruitc_storage_to_SNSC;        /* (kgC/m2/d) */
+	double m_fruitc_transfer_to_SNSC;       /* (kgC/m2/d) */
 	/* phenology fluxes from transfer pool */
 	double leafc_transfer_to_leafc;          /* (kgC/m2/d) */
 	double frootc_transfer_to_frootc;        /* (kgC/m2/d) */
@@ -355,6 +376,8 @@ typedef struct
 	double deadstemc_transfer_to_deadstemc;  /* (kgC/m2/d) */
 	double livecrootc_transfer_to_livecrootc;/* (kgC/m2/d) */
 	double deadcrootc_transfer_to_deadcrootc;/* (kgC/m2/d) */
+	/* phenology fluxes - fruit simulation (Hidy 2013.) */
+	double fruitc_transfer_to_fruitc;
 	/* leaf and fine root litterfall */
 	double leafc_to_litr1c;              /* (kgC/m2/d) */
 	double leafc_to_litr2c;              /* (kgC/m2/d) */
@@ -364,12 +387,19 @@ typedef struct
 	double frootc_to_litr2c;             /* (kgC/m2/d) */
 	double frootc_to_litr3c;             /* (kgC/m2/d) */
 	double frootc_to_litr4c;             /* (kgC/m2/d) */
+	/* litterfall  - fruit simulation (Hidy 2013.) */
+	double fruitc_to_litr1c;
+	double fruitc_to_litr2c;
+	double fruitc_to_litr3c;
+	double fruitc_to_litr4c;
 	/* maintenance respiration fluxes */
 	double leaf_day_mr;                  /* (kgC/m2/d) */
 	double leaf_night_mr;                /* (kgC/m2/d) */
 	double froot_mr;                     /* (kgC/m2/d) */
 	double livestem_mr;                  /* (kgC/m2/d) */
 	double livecroot_mr;                 /* (kgC/m2/d) */
+	/* maintenance  - fruit simulation (Hidy 2013.) */
+	double fruit_mr;   	
 	/* photosynthesis flux */
 	double psnsun_to_cpool;              /* (kgC/m2/d) */
 	double psnshade_to_cpool;            /* (kgC/m2/d) */
@@ -405,6 +435,9 @@ typedef struct
 	double cpool_to_deadcrootc;          /* (kgC/m2/d) */
 	double cpool_to_deadcrootc_storage;  /* (kgC/m2/d) */
 	double cpool_to_gresp_storage;       /* (kgC/m2/d) */
+	/* daily allocation fluxes  - fruit simulation (Hidy 2013.)  */
+	double cpool_to_fruitc;                /* (kgC/m2/d) */
+	double cpool_to_fruitc_storage;        /* (kgC/m2/d) */
 	/* daily growth respiration fluxes */
 	double cpool_leaf_gr;                /* (kgC/m2/d) */
 	double cpool_leaf_storage_gr;        /* (kgC/m2/d) */
@@ -424,6 +457,10 @@ typedef struct
 	double cpool_deadcroot_gr;           /* (kgC/m2/d) */
 	double cpool_deadcroot_storage_gr;   /* (kgC/m2/d) */
 	double transfer_deadcroot_gr;        /* (kgC/m2/d) */
+	/* daily growth respiration  - fruit simulation (Hidy 2013.)  */
+	double cpool_fruit_gr;                 /* (kgC/m2/d) */
+	double cpool_fruit_storage_gr;         /* (kgC/m2/d) */
+	double transfer_fruit_gr;             /* (kgC/m2/d) */
 	/* annual turnover of storage to transfer pools */
 	double leafc_storage_to_leafc_transfer;           /* (kgC/m2/d) */
 	double frootc_storage_to_frootc_transfer;         /* (kgC/m2/d) */
@@ -432,12 +469,15 @@ typedef struct
 	double livecrootc_storage_to_livecrootc_transfer; /* (kgC/m2/d) */
 	double deadcrootc_storage_to_deadcrootc_transfer; /* (kgC/m2/d) */
 	double gresp_storage_to_gresp_transfer;           /* (kgC/m2/d) */
+	/* annual turnover  - fruit simulation (Hidy 2013.)  */
+	double fruitc_storage_to_fruitc_transfer;   /* (kgC/m2/d) */
 	/* turnover of live wood to dead wood */
 	double livestemc_to_deadstemc;        /* (kgC/m2/d) */
 	double livecrootc_to_deadcrootc;      /* (kgC/m2/d) */
 	/* planting - Hidy 2012. */
 	double leafc_transfer_from_PLT;		/* (kgC/m2/d) */
 	double frootc_transfer_from_PLT;	/* (kgC/m2/d) */
+	double fruitc_transfer_from_PLT;		/* (kgC/m2/d) */
 	/* thinning - Hidy 2012. */
 	double leafc_to_THN;				 /* (kgC/m2/d) */
 	double leafc_storage_to_THN;         /* (kgC/m2/d) */
@@ -464,6 +504,10 @@ typedef struct
 	double THN_to_litr3c;				 /* (kgC/m2/d) */
 	double THN_to_litr4c;				 /* (kgC/m2/d) */
 	double THN_to_cwdc;			    	 /* (kgC/m2/d) */
+	/* thinning  - fruit simulation (Hidy 2013.)  */
+	double fruitc_to_THN;				 /* (kgC/m2/d) */
+	double fruitc_storage_to_THN;         /* (kgC/m2/d) */
+	double fruitc_transfer_to_THN;        /* (kgC/m2/d) */
 	/* mowing - Hidy 2008. */
 	double leafc_to_MOW;				 /* (kgC/m2/d) */
 	double leafc_storage_to_MOW;         /* (kgC/m2/d) */
@@ -474,6 +518,10 @@ typedef struct
 	double MOW_to_litr2c;				 /* (kgC/m2/d) */
 	double MOW_to_litr3c;				 /* (kgC/m2/d) */
 	double MOW_to_litr4c;				 /* (kgC/m2/d) */
+	/* mowing  - fruit simulation (Hidy 2013.)  */
+	double fruitc_to_MOW;				 /* (kgC/m2/d) */
+	double fruitc_storage_to_MOW;         /* (kgC/m2/d) */
+	double fruitc_transfer_to_MOW;        /* (kgC/m2/d) */
 	/* harvesting - Hidy 2012. */
 	double leafc_to_HRV;				 /* (kgC/m2/d) */
 	double leafc_storage_to_HRV;         /* (kgC/m2/d) */
@@ -484,6 +532,10 @@ typedef struct
 	double HRV_to_litr2c;				 /* (kgC/m2/d) */
 	double HRV_to_litr3c;				 /* (kgC/m2/d) */
 	double HRV_to_litr4c;				 /* (kgC/m2/d) */
+	/* harvesting  - fruit simulation (Hidy 2013.)  */
+	double fruitc_to_HRV;				 /* (kgC/m2/d) */
+	double fruitc_storage_to_HRV;         /* (kgC/m2/d) */
+	double fruitc_transfer_to_HRV;        /* (kgC/m2/d) */
 	/* ploughing - Hidy 2012. */
 	double leafc_to_PLG;					 /* (kgC/m2/d) */
 	double leafc_storage_to_PLG;          /* (kgC/m2/d) */
@@ -497,6 +549,10 @@ typedef struct
 	double PLG_to_litr2c;
 	double PLG_to_litr3c;
 	double PLG_to_litr4c;
+	/* ploughing  - fruit simulation (Hidy 2013.)  */
+	double fruitc_to_PLG;				 /* (kgC/m2/d) */
+	double fruitc_storage_to_PLG;         /* (kgC/m2/d) */
+	double fruitc_transfer_to_PLG;        /* (kgC/m2/d) */
 	/* grazing - Hidy 2009. */
 	double leafc_to_GRZ;					/* (kgC/m2/d) */
 	double leafc_storage_to_GRZ;         /* (kgC/m2/d) */
@@ -506,12 +562,17 @@ typedef struct
 	double GRZ_to_litr1c;				 /* (kgC/m2/d) */
 	double GRZ_to_litr2c;				 /* (kgC/m2/d) */
 	double GRZ_to_litr3c;				 /* (kgC/m2/d) */
-	double GRZ_to_litr4c;				 /* (kgC/m2/d) */       
+	double GRZ_to_litr4c;				 /* (kgC/m2/d) */   
+    /* grazing  - fruit simulation (Hidy 2013.)  */
+	double fruitc_to_GRZ;				 /* (kgC/m2/d) */
+	double fruitc_storage_to_GRZ;         /* (kgC/m2/d) */
+	double fruitc_transfer_to_GRZ;        /* (kgC/m2/d) */
 	/* fertiliziation -  by Hidy 2008 */
 	double FRZ_to_litr1c;				 /* (kgC/m2/d) */
 	double FRZ_to_litr2c;				 /* (kgC/m2/d) */
 	double FRZ_to_litr3c;				 /* (kgC/m2/d) */
 	double FRZ_to_litr4c;				 /* (kgC/m2/d) */ 
+
 } cflux_struct;
 
 /* nitrogen state variables (including sums for sources and sinks) */ 
@@ -540,6 +601,10 @@ typedef struct
     double litr2n;             /* (kgN/m2) litter unshielded cellulose N */
     double litr3n;             /* (kgN/m2) litter shielded cellulose N */
     double litr4n;             /* (kgN/m2) litter lignin N */
+	/* fruit simulation (Hidy 2013.) */
+	double fruitn;              /* (kgN/m2) fruit N */
+    double fruitn_storage;      /* (kgN/m2) fruit N */
+    double fruitn_transfer;     /* (kgN/m2) fruit N */
 	/* Hidy 2013: senescence */
 	double litr1n_strg_SNSC;
 	double litr2n_strg_SNSC;
@@ -617,6 +682,13 @@ typedef struct
 	double m_livecrootn_to_cwdn;           /* (kgN/m2/d) */
 	double m_deadcrootn_to_cwdn;           /* (kgN/m2/d) */
 	double m_retransn_to_litr1n;           /* (kgN/m2/d) */
+	/* mortality - fruit simulation (Hidy 2013.) */
+	double m_fruitn_to_litr1n;              /* (kgN/m2/d) */
+	double m_fruitn_to_litr2n;              /* (kgN/m2/d) */
+	double m_fruitn_to_litr3n;              /* (kgN/m2/d) */
+	double m_fruitn_to_litr4n;              /* (kgN/m2/d) */
+	double m_fruitn_storage_to_litr1n;      /* (kgN/m2/d) */
+	double m_fruitn_transfer_to_litr1n;      /* (kgN/m2/d) */
 	/* 2010 Hidy - senescence fluxes */
 	double m_leafn_to_SNSC;                /* (kgN/m2/d) */
 	double m_frootn_to_SNSC;               /* (kgN/m2/d) */
@@ -628,7 +700,11 @@ typedef struct
 	double SNSC_to_litr1n;
 	double SNSC_to_litr2n;
 	double SNSC_to_litr3n;
-	double SNSC_to_litr4n;
+	double SNSC_to_litr4n;	
+	/* senescence - fruit simulation (Hidy 2013.) */
+	double m_fruitn_to_SNSC;                /* (kgN/m2/d) */
+	double m_fruitn_storage_to_SNSC;		   /* (kgN/m2/d) */
+	double m_fruitn_transfer_to_SNSC;       /* (kgN/m2/d) */
 	/* fire fluxes */
 	double m_leafn_to_fire;                /* (kgN/m2/d) */
 	double m_frootn_to_fire;               /* (kgN/m2/d) */
@@ -654,13 +730,20 @@ typedef struct
 	double m_litr3n_to_fire;               /* (kgN/m2/d) */
 	double m_litr4n_to_fire;               /* (kgN/m2/d) */
 	double m_cwdn_to_fire;                 /* (kgN/m2/d) */
+	/* fire - fruit simulation (Hidy 2013.) */
+	double m_fruitn_to_fire;                /* (kgN/m2/d) */
+	double m_fruitn_storage_to_fire;		   /* (kgN/m2/d) */
+	double m_fruitn_transfer_to_fire;       /* (kgN/m2/d) */
 	/* phenology fluxes from transfer pool */
 	double leafn_transfer_to_leafn;           /* (kgN/m2/d) */
 	double frootn_transfer_to_frootn;         /* (kgN/m2/d) */
+	double fruitn_transfer_to_fruitn;         /* (kgN/m2/d) */
 	double livestemn_transfer_to_livestemn;   /* (kgN/m2/d) */
 	double deadstemn_transfer_to_deadstemn;   /* (kgN/m2/d) */
 	double livecrootn_transfer_to_livecrootn; /* (kgN/m2/d) */
 	double deadcrootn_transfer_to_deadcrootn; /* (kgN/m2/d) */
+	/* phenology - fruit simulation (Hidy 2013.)  */
+	double fruitn_transfer_to_leafn;           /* (kgN/m2/d) */
 	/* litterfall fluxes */
 	double leafn_to_litr1n;               /* (kgN/m2/d) */
 	double leafn_to_litr2n;               /* (kgN/m2/d) */ 
@@ -671,6 +754,12 @@ typedef struct
 	double frootn_to_litr2n;              /* (kgN/m2/d) */
 	double frootn_to_litr3n;              /* (kgN/m2/d) */
 	double frootn_to_litr4n;              /* (kgN/m2/d) */
+	/* litterfall  - fruit simulation (Hidy 2013.)  */
+	double fruitn_to_litr1n;               /* (kgN/m2/d) */
+	double fruitn_to_litr2n;               /* (kgN/m2/d) */ 
+	double fruitn_to_litr3n;               /* (kgN/m2/d) */
+	double fruitn_to_litr4n;               /* (kgN/m2/d) */
+	double fruitn_to_retransn;             /* (kgN/m2/d) */
 	/* deposition flux */
 	double ndep_to_sminn;                 /* (kgN/m2/d) */
 	double nfix_to_sminn;                 /* (kgN/m2/d) */
@@ -709,6 +798,9 @@ typedef struct
 	double sminn_to_npool;                /* (kgN/m2/d) */
 	double npool_to_leafn;                /* (kgN/m2/d) */
 	double npool_to_leafn_storage;        /* (kgN/m2/d) */
+	/* fruit simulation (Hidy 2013.)  */
+	double npool_to_fruitn;                /* (kgN/m2/d) */
+	double npool_to_fruitn_storage;        /* (kgN/m2/d) */
 	double npool_to_frootn;               /* (kgN/m2/d) */
 	double npool_to_frootn_storage;       /* (kgN/m2/d) */
 	double npool_to_livestemn;            /* (kgN/m2/d) */
@@ -726,6 +818,8 @@ typedef struct
 	double deadstemn_storage_to_deadstemn_transfer;   /* (kgN/m2/d) */
 	double livecrootn_storage_to_livecrootn_transfer; /* (kgN/m2/d) */
 	double deadcrootn_storage_to_deadcrootn_transfer; /* (kgN/m2/d) */
+	/* annual turnover  - fruit simulation (Hidy 2013.) */
+	double fruitn_storage_to_fruitn_transfer;           /* (kgN/m2/d) */
 	/* turnover of live wood to dead wood, with retranslocation */
 	double livestemn_to_deadstemn;        /* (kgN/m2/d) */
 	double livestemn_to_retransn;         /* (kgN/m2/d) */
@@ -734,6 +828,7 @@ typedef struct
 	/* planting - Hidy 2012. */
 	double leafn_transfer_from_PLT;		/* (kgN/m2/d) */
 	double frootn_transfer_from_PLT;		/* (kgN/m2/d) */
+	double fruitn_transfer_from_PLT;		/* (kgN/m2/d) */
 	/* thinning - by Hidy 2012. */
 	double leafn_to_THN;				 /* (kgN/m2/d) */
 	double leafn_storage_to_THN;         /* (kgN/m2/d) */
@@ -753,28 +848,42 @@ typedef struct
 	double deadstemn_to_THN;				 /* (kgN/m2/d) */
 	double deadstemn_storage_to_THN;         /* (kgN/m2/d) */
 	double deadstemn_transfer_to_THN;        /* (kgN/m2/d) */
-	double restransn_to_THN;				  /* (kgN/m2/d) */
+	double retransn_to_THN;
 	double THN_to_litr1n;				 /* (kgN/m2/d) */
 	double THN_to_litr2n;				 /* (kgN/m2/d) */
 	double THN_to_litr3n;				 /* (kgN/m2/d) */
 	double THN_to_litr4n;				 /* (kgN/m2/d) */
 	double THN_to_cwdn;
+	/* thinning - fruit simulation (Hidy 2013.)  */
+	double fruitn_to_THN;				 /* (kgN/m2/d) */
+	double fruitn_storage_to_THN;         /* (kgN/m2/d) */
+	double fruitn_transfer_to_THN;        /* (kgN/m2/d) */
 	/* mowing - by Hidy 2008. */
 	double leafn_to_MOW;                 /* (kgN/m2/d) */
 	double leafn_storage_to_MOW;         /* (kgN/m2/d) */
 	double leafn_transfer_to_MOW;        /* (kgN/m2/d) */
+	double retransn_to_MOW;
 	double MOW_to_litr1n;				 /* (kgN/m2/d) */
 	double MOW_to_litr2n;				 /* (kgN/m2/d) */
 	double MOW_to_litr3n;				 /* (kgN/m2/d) */
 	double MOW_to_litr4n;				 /* (kgN/m2/d) */
+	/* mowing - fruit simulation (Hidy 2013.)  */
+	double fruitn_to_MOW;				 /* (kgN/m2/d) */
+	double fruitn_storage_to_MOW;         /* (kgN/m2/d) */
+	double fruitn_transfer_to_MOW;        /* (kgN/m2/d) */
 	/* harvesting - by Hidy 2012. */
 	double leafn_to_HRV;                 /* (kgN/m2/d) */
 	double leafn_storage_to_HRV;         /* (kgN/m2/d) */
 	double leafn_transfer_to_HRV;        /* (kgN/m2/d) */
+	double retransn_to_HRV;
 	double HRV_to_litr1n;				 /* (kgN/m2/d) */
 	double HRV_to_litr2n;				 /* (kgN/m2/d) */
 	double HRV_to_litr3n;				 /* (kgN/m2/d) */
 	double HRV_to_litr4n;				 /* (kgN/m2/d) */
+	/* harvesting - fruit simulation (Hidy 2013.)  */
+	double fruitn_to_HRV;				 /* (kgN/m2/d) */
+	double fruitn_storage_to_HRV;         /* (kgN/m2/d) */
+	double fruitn_transfer_to_HRV;        /* (kgN/m2/d) */
 	/* ploughing - Hidy 2012. */
 	double leafn_to_PLG;                 /* (kgN/m2/d) */
 	double leafn_storage_to_PLG;         /* (kgN/m2/d) */
@@ -782,18 +891,28 @@ typedef struct
 	double frootn_to_PLG;				/* (kgN/m2/d) */
 	double frootn_storage_to_PLG;         /* (kgN/m2/d) */
 	double frootn_transfer_to_PLG;        /* (kgN/m2/d) */
+	double retransn_to_PLG;
 	double PLG_to_litr1n;
 	double PLG_to_litr2n;
 	double PLG_to_litr3n;
 	double PLG_to_litr4n;
+	/* ploughing - fruit simulation (Hidy 2013.)  */
+	double fruitn_to_PLG;				 /* (kgN/m2/d) */
+	double fruitn_storage_to_PLG;         /* (kgN/m2/d) */
+	double fruitn_transfer_to_PLG;        /* (kgN/m2/d) */
 	/* grazing - by Hidy 2008. */
 	double leafn_to_GRZ;                 /* (kgN/m2/d) */
 	double leafn_storage_to_GRZ;         /* (kgN/m2/d) */
 	double leafn_transfer_to_GRZ;        /* (kgN/m2/d) */
+	double retransn_to_GRZ;
 	double GRZ_to_litr1n;				 /* (kgN/m2/d) */
 	double GRZ_to_litr2n;				 /* (kgN/m2/d) */
 	double GRZ_to_litr3n;				 /* (kgN/m2/d) */
 	double GRZ_to_litr4n;				 /* (kgN/m2/d) */
+	/* grazing - fruit simulation (Hidy 2013.)  */
+	double fruitn_to_GRZ;				 /* (kgN/m2/d) */
+	double fruitn_storage_to_GRZ;         /* (kgN/m2/d) */
+	double fruitn_transfer_to_GRZ;        /* (kgN/m2/d) */
 	/* fertiliziation -  by Hidy 2008 */
 	double FRZ_to_sminn;      /* (kgN/m2/d) */
 	double FRZ_to_litr1n;				 /* (kgN/m2/d) */
@@ -856,10 +975,12 @@ typedef struct
 typedef struct
 {
 	double day_leafc_litfall_increment;      /* (kgC/m2/d) rate leaf litfall */
+	double day_fruitc_litfall_increment;     /* (kgC/m2/d) rate fruit litfall - fruit simulation (Hidy 2013) */
 	double day_frootc_litfall_increment;     /* (kgC/m2/d) rate froot litfall */
 	double day_livestemc_turnover_increment; /* (kgC/m2/d) rate livestem turnover */
 	double day_livecrootc_turnover_increment;/* (kgC/m2/d) rate livecroot turnover */
 	double annmax_leafc;					 /* (kgC/m2) annual maximum daily leaf C */
+	double annmax_fruitc;					 /* (kgC/m2) annual maximum daily fruit C - fruit simulation (Hidy 2013) */
 	double annmax_frootc;					 /* (kgC/m2) annual maximum daily froot C */
 	double annmax_livestemc;				 /* (kgC/m2) annual maximum daily livestem C */
 	double annmax_livecrootc;				 /* (kgC/m2) annual maximum daily livecroot C */
@@ -973,6 +1094,7 @@ typedef struct
 	int phenology_flag;    /* (flag) 1=phenology model, 0=user defined */
 	int onday;             /* (yday) yearday leaves on */
 	int offday;            /* (yday) yearday leaves off */
+	int flowerday;         /* (yday) yearday of flowering */
 	double transfer_pdays;    /* (prop.) fraction of growth period for transfer */
 	double litfall_pdays;     /* (prop.) fraction of growth period for litfall */
     double leaf_turnover;     /* (1/yr) annual leaf turnover fraction */
@@ -1016,8 +1138,8 @@ typedef struct
     double deadwood_fucel;   /* (DIM) dead wood unshileded cellulose fraction */
     double deadwood_fscel;   /* (DIM) dead wood shielded cellulose fraction */
     double deadwood_flig;    /* (DIM) dead wood lignin fraction */
-	double mort_SNSC_displayed;	/* Hidy 2011 - mortality parameter of senescence reagrding to displayed plant material */
-	double mort_SNSC_storaged;	/* Hidy 2011 - mortality parameter of senescence regarding to storaged plant material */
+	double mort_SNSC_abovebiom;	/* Hidy 2011 - mortality parameter of senescence of aboveground biomass */
+	double mort_SNSC_belowbiom;	/* Hidy 2011 - mortality parameter of senescence of belowground biomass */
     double mort_SNSC_to_litter; /* Hidy 2013 - turnover rate of wilted standing biomass to litter*/
 	double GR_ratio;            /* Hidy 2013 - (DIM) growth resp per unit of C grown */
 	double denitrif_prop;		/* Hidy 2013 - fraction of mineralization to volatile */
@@ -1025,6 +1147,14 @@ typedef struct
 	double maturity_coeff;		/* Hidy 2013 - maturity coefficient (to calculate maximum rooting depth) */
 	double* wpm_array;			/* Hidy 2011 - changingx WPM values */
 	double* msc_array;			/* Hidy 2011 - changingx WPM values */
+	/* fruit simulation - Hidy 2013. */
+	double fruit_turnover;          /* (1/yr) annual fruit turnover fraction */
+    double alloc_fruitc_leafc;      /* (ratio) new fruit c to new leaf c */
+    double fruit_cn;                /* (kgC/kgN) C:N for fruits */
+    double fruitlitr_flab;          /* (DIM) fruit litter labile fraction */
+    double fruitlitr_fucel;         /* (DIM) fruit litter unshielded cellulose fract. */
+    double fruitlitr_fscel;         /* (DIM) fruit litter shielded cellulose fract. */
+    double fruitlitr_flig;          /* (DIM) fruit litter lignin fraction */
 } epconst_struct;
 
 /* strucure for thinning paramteres - by Hidy 2012. */
@@ -1095,7 +1225,7 @@ typedef struct
     double** PLTdays_array;						/* (array) contains the planting days in 1 year*/
 	double** seed_quantity_array;				/* (array) quantity of seed*/
 	double** seed_carbon_array;					/* (array) carbon content of seed*/
-	double** prop_leaf_product_array;			/* (array) proportion of material of seed which produces leaf */
+	double** utiliz_coeff_array;				/* (array) useful part of the seed */
 } planting_struct;
 
 /* strucure for fertilizing paramteres - by Hidy 2008 */
@@ -1277,10 +1407,6 @@ typedef struct
 	double soil2n;
 	double soil3n;
 	double soil4n;
-	/* Hidy 2011 - multilayer soil */
-	double sminn_RZ;
-	double sminn_RZ_befsoilproc;
-	double sminn[N_SOILLAYERS];
 	double retransn;
 	double npool;
 	double day_leafc_litfall_increment;
@@ -1293,4 +1419,17 @@ typedef struct
 	double annmax_livecrootc;
 	double dsr;
 	int metyr;
+	/* Hidy 2011 - multilayer soil */
+	double sminn_RZ;
+	double sminn_RZ_befsoilproc;
+	double sminn[N_SOILLAYERS];
+	/* fruit simulation - Hidy 2013. */
+	double fruitc;
+	double fruitc_storage;
+	double fruitc_transfer;
+	double fruitn;
+	double fruitn_storage;
+	double fruitn_transfer;
+	double day_fruitc_litfall_increment;
+	double annmax_fruitc;
 } restart_data_struct;

@@ -50,6 +50,14 @@ int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_s
 		ns->frootn = 0.0;
 	}
 
+	if (fabs(cs->fruitc) < 1e-7)
+	{
+		cs->litr1c += cs->fruitc;
+		ns->litr1n += ns->fruitn;
+		cs->fruitc = 0.0;
+		ns->fruitn = 0.0;
+	}
+
 	/* tests for other plant pools. Excess goes to litter 1 */
 	if (fabs(cs->livestemc) < CRIT_PREC)
 	{

@@ -33,14 +33,16 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	double stocking_rate;			
 
 	/* local variables */
+	double fC_lC_ratio, fN_lN_ratio, litr_flab, litr_fucel, litr_fscel, litr_flig;
 	double prop_DMintake2excr;	
 	double DM_Ccontent;				    
 	double EXCR_Ccontent_array;				
 	double EXCR_Ncontent_array;				
     double prop_excr2litter;				/* proportion of excrement return to litter */
+	double GRZcoeff_leaf, GRZcoeff_fruit;	/* coefficient determining decrease of plant material caused by grazing  */
+	double GRZcoeff_gresp;					/* coefficient determining the decrease of gresp pools caused by grazing */
 	double befgrazing_leafc = 0;			/* value of leafc before grazing */
 	double aftergrazing_leafc = 0;			/* value of leafc before grazing */
-	double grazing_effect = 0;				/* decreasing of plant material caused by grazing: plant_material_before_grazing - plant_material_after_grazing  */
 	double rate_of_removal = 0;				/* if grazing calculation based on LSU, a fixed proportion of the abovegroind biomass is removed */
 	double daily_excr_prod = 0;	/* daily excrement production */	
 	double daily_C_loss = 0;				/* daily carbon loss due to grazing */
@@ -54,6 +56,9 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	double grazing_limit = 0.01;	/* limitation for carbon content before grazing in order to avoid negative leaf carbon content */
 	
 	int ok=1;
+
+	/* test variable */
+	int nonactpool_coeff=1;
 
 
 	/* yearly varied or constant management parameters */
@@ -93,13 +98,20 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 		{
 			
 			aftergrazing_leafc = befgrazing_leafc - daily_C_loss;
-			grazing_effect = 1-aftergrazing_leafc/befgrazing_leafc;	
 			daily_excr_prod = (daily_C_loss/DM_Ccontent) * prop_DMintake2excr;/* kg manure/m2/day -> kgC/m2/day */
+		
+			GRZcoeff_leaf  = 1-aftergrazing_leafc/befgrazing_leafc;
+			GRZcoeff_fruit = GRZcoeff_leaf;
+			GRZcoeff_gresp = (cs->leafc  / (cs->leafc + cs->frootc + cs->fruitc)) * GRZcoeff_leaf + 
+					         (cs->fruitc / (cs->leafc + cs->frootc + cs->fruitc)) * GRZcoeff_fruit;
+
 		
 		}
 		else
 		{
-			grazing_effect = 0.0;
+			GRZcoeff_leaf  = 0.0;
+			GRZcoeff_fruit = 0.0;
+			GRZcoeff_gresp =0.0;
 			daily_excr_prod = 0;
 			prop_excr2litter = 0;
 			if (ctrl->onscreen) printf("not enough grass for grazing\n");
@@ -109,12 +121,15 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	}
 	else 
 	{
-		grazing_effect = 0.0;
+		GRZcoeff_leaf = 0.0;
+		GRZcoeff_fruit= 0.0;
 		daily_excr_prod = 0;
 		prop_excr2litter = 0;
 		EXCR_Ccontent_array = 0;
 		EXCR_Ncontent_array = 0;
 	}
+	
+
 
 
 	/* daily manure production per m2 (return to the litter) from daily total ingested dry matter and litter_return_ratio and its C and N content
@@ -123,30 +138,59 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	Cplus_from_excrement = daily_excr_prod * EXCR_Ccontent_array;
 	Nplus_from_excrement = daily_excr_prod * EXCR_Ncontent_array;
 
-	/* carbon loss from grazing is determined using grazing_effect */
-	cf->leafc_to_GRZ = cs->leafc * grazing_effect;
-	cf->leafc_storage_to_GRZ = 0;
-	cf->leafc_transfer_to_GRZ = 0;
-
-	cf->gresp_storage_to_GRZ = 0;
-	cf->gresp_transfer_to_GRZ = 0;
+	cf->leafc_to_GRZ          = cs->leafc * GRZcoeff_leaf;
+	cf->leafc_transfer_to_GRZ = cs->leafc_transfer* GRZcoeff_leaf * nonactpool_coeff;
+	cf->leafc_storage_to_GRZ  = cs->leafc_storage * GRZcoeff_leaf * nonactpool_coeff;
+	/* fruit simulation - Hidy 2013. */
+	cf->fruitc_to_GRZ          = cs->fruitc * GRZcoeff_fruit;
+	cf->fruitc_transfer_to_GRZ = cs->fruitc_transfer * GRZcoeff_fruit * nonactpool_coeff;
+	cf->fruitc_storage_to_GRZ  = cs->fruitc_transfer * GRZcoeff_fruit * nonactpool_coeff;
 	
-	nf->leafn_to_GRZ = ns->leafn * grazing_effect;
-	nf->leafn_storage_to_GRZ = 0;
-	nf->leafn_transfer_to_GRZ = 0;
+	cf->gresp_transfer_to_GRZ = cs->gresp_transfer * GRZcoeff_gresp * nonactpool_coeff;
+	cf->gresp_storage_to_GRZ  = cs->gresp_storage * GRZcoeff_gresp * nonactpool_coeff;
+
+	nf->leafn_to_GRZ          = ns->leafn * GRZcoeff_leaf;
+	nf->leafn_transfer_to_GRZ = ns->leafn_transfer * GRZcoeff_leaf * nonactpool_coeff;
+	nf->leafn_storage_to_GRZ  = ns->leafn_storage * GRZcoeff_leaf * nonactpool_coeff;
+	/* fruit simulation - Hidy 2013. */
+	nf->fruitn_to_GRZ          = ns->fruitn * GRZcoeff_fruit;
+	nf->fruitn_transfer_to_GRZ = ns->fruitn_transfer * GRZcoeff_fruit * nonactpool_coeff;
+	nf->fruitn_storage_to_GRZ  = ns->fruitn_storage * GRZcoeff_fruit * nonactpool_coeff;
+	/* restranslocated N pool is decreasing also */
+	nf->retransn_to_GRZ        = ns->retransn * GRZcoeff_leaf * nonactpool_coeff;
 	 
-	wf->canopyw_to_GRZ = ws->canopyw * grazing_effect;
+	wf->canopyw_to_GRZ = ws->canopyw * GRZcoeff_leaf;
 
-	/* if grazing manure production is taken account (plant material goes into the litter pool) - surplus to ecosystem is loss for "atmosphere" - negatice sign*/	
-	cf->GRZ_to_litr1c = (Cplus_from_excrement) * epc->leaflitr_flab * prop_excr2litter;
-	cf->GRZ_to_litr2c = (Cplus_from_excrement) * epc->leaflitr_fucel * prop_excr2litter;
-	cf->GRZ_to_litr3c = (Cplus_from_excrement) * epc->leaflitr_fscel * prop_excr2litter;
-	cf->GRZ_to_litr4c = (Cplus_from_excrement) * epc->leaflitr_flig * prop_excr2litter;
+	/* if grazing manure production is taken account (plant material goes into the litter pool)
+	   - surplus to ecosystem is loss for "atmosphere" - negatice sign*/	
+	
+	/* calculation of labile, cellulose and lignin proportion of litter */
+	if (cf->leafc_to_GRZ > 0)
+	{
+		fC_lC_ratio = cf->fruitc_to_GRZ/cf->leafc_to_GRZ;
+		fN_lN_ratio = nf->fruitn_to_GRZ/nf->leafn_to_GRZ;
+	}
+	else
+	{
+		fC_lC_ratio = 0;
+		fN_lN_ratio = 0;
+	}
 
-	nf->GRZ_to_litr1n = (Nplus_from_excrement) * epc->leaflitr_flab * prop_excr2litter;  
-	nf->GRZ_to_litr2n = (Nplus_from_excrement) * epc->leaflitr_fucel * prop_excr2litter; 
-	nf->GRZ_to_litr3n = (Nplus_from_excrement) * epc->leaflitr_fscel * prop_excr2litter; 
-	nf->GRZ_to_litr4n = (Nplus_from_excrement) * epc->leaflitr_flig * prop_excr2litter;
+	litr_flab  = (1-fC_lC_ratio) * epc->leaflitr_flab  + fC_lC_ratio * epc->fruitlitr_flab;
+	litr_fucel = (1-fC_lC_ratio) * epc->leaflitr_fucel + fC_lC_ratio * epc->fruitlitr_fucel;
+	litr_fscel = (1-fC_lC_ratio) * epc->leaflitr_fscel + fC_lC_ratio * epc->fruitlitr_fscel;
+	litr_flig  = (1-fC_lC_ratio) * epc->leaflitr_flig  + fC_lC_ratio * epc->fruitlitr_flig;
+
+
+	cf->GRZ_to_litr1c = (Cplus_from_excrement) * litr_flab * prop_excr2litter;
+	cf->GRZ_to_litr2c = (Cplus_from_excrement) * litr_fucel * prop_excr2litter;
+	cf->GRZ_to_litr3c = (Cplus_from_excrement) * litr_fscel * prop_excr2litter;
+	cf->GRZ_to_litr4c = (Cplus_from_excrement) * litr_flig * prop_excr2litter;
+
+	nf->GRZ_to_litr1n = (Nplus_from_excrement) * litr_flab * prop_excr2litter;  
+	nf->GRZ_to_litr2n = (Nplus_from_excrement) * litr_fucel * prop_excr2litter; 
+	nf->GRZ_to_litr3n = (Nplus_from_excrement) * litr_fscel * prop_excr2litter; 
+	nf->GRZ_to_litr4n = (Nplus_from_excrement) * litr_flig * prop_excr2litter;
 
 
 	
@@ -154,15 +198,23 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
                                                     STATE UPDATE 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/ 
 
-	/* carbon */	
+	/* 1. carbon */	
 	cs->GRZsnk += cf->leafc_to_GRZ;
 	cs->leafc -= cf->leafc_to_GRZ;
 	cs->GRZsnk += cf->leafc_transfer_to_GRZ;
 	cs->leafc_transfer -= cf->leafc_transfer_to_GRZ;
 	cs->GRZsnk += cf->leafc_storage_to_GRZ;
 	cs->leafc_storage -= cf->leafc_storage_to_GRZ;
+	/* fruit simulation - Hidy 2013. */
+	cs->GRZsnk += cf->fruitc_to_GRZ;
+	cs->fruitc -= cf->fruitc_to_GRZ;
+	cs->GRZsnk += cf->fruitc_transfer_to_GRZ;
+	cs->fruitc_transfer -= cf->fruitc_transfer_to_GRZ;
+	cs->GRZsnk += cf->fruitc_storage_to_GRZ;
+	cs->fruitc_storage -= cf->fruitc_storage_to_GRZ;
 	cs->GRZsnk += cf->gresp_transfer_to_GRZ;
-	
+
+	cs->GRZsnk += cf->gresp_transfer_to_GRZ;
 	cs->gresp_transfer -= cf->gresp_transfer_to_GRZ;
 	cs->GRZsnk += cf->gresp_storage_to_GRZ;
 	cs->gresp_storage -= cf->gresp_storage_to_GRZ;
@@ -174,14 +226,23 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	
 	cs->GRZsrc += cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c;
 
-	/* nitrogen */
-	ns->GRZsnk += nf->leafn_to_GRZ;
-	ns->leafn -= nf->leafn_to_GRZ;
-	ns->GRZsnk += nf->leafn_transfer_to_GRZ;
+	/* 2. nitrogen */
+	ns->GRZsnk   += nf->leafn_to_GRZ;
+	ns->leafn    -= nf->leafn_to_GRZ;
+	ns->GRZsnk   += nf->leafn_transfer_to_GRZ;
 	ns->leafn_transfer -= nf->leafn_transfer_to_GRZ;
-	ns->GRZsnk += nf->leafn_storage_to_GRZ;
+	ns->GRZsnk   += nf->leafn_storage_to_GRZ;
 	ns->leafn_storage -= nf->leafn_storage_to_GRZ;
-	
+	ns->GRZsnk   += nf->retransn_to_GRZ;
+	ns->retransn -= nf->retransn_to_GRZ;
+	/* fruit simulation - Hidy 2013. */
+	ns->GRZsnk += nf->fruitn_to_GRZ;
+	ns->fruitn -= nf->fruitn_to_GRZ;
+	ns->GRZsnk += nf->fruitn_transfer_to_GRZ;
+	ns->fruitn_transfer -= nf->fruitn_transfer_to_GRZ;
+	ns->GRZsnk += nf->fruitn_storage_to_GRZ;
+	ns->fruitn_storage -= nf->fruitn_storage_to_GRZ;
+
 	ns->litr1n += nf->GRZ_to_litr1n;
 	ns->litr2n += nf->GRZ_to_litr2n;
 	ns->litr3n += nf->GRZ_to_litr3n;
@@ -189,6 +250,7 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	
 	ns->GRZsrc += nf->GRZ_to_litr1n + nf->GRZ_to_litr2n + nf->GRZ_to_litr3n + nf->GRZ_to_litr4n;
 
+	/* 3. water */
 	ws->canopyw_GRZsnk += wf->canopyw_to_GRZ;
 	ws->canopyw -= wf->canopyw_to_GRZ;
 	

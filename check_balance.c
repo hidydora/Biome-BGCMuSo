@@ -102,8 +102,10 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 	
 	/* sum of sources */
 	in = cs->psnsun_src + cs->psnshade_src + 
+		/* senescence - Hidy 2012 */
+		 cs->SNSC_src +
 		/* management - Hidy 2012. */
-		cs->PLTsrc + cs->THNsrc +  cs->MOWsrc + cs->GRZsrc + cs->HRVsrc + cs->PLGsrc + cs->FRZsrc + cs->SNSC_src;
+		cs->PLTsrc + cs->THNsrc +  cs->MOWsrc + cs->GRZsrc + cs->HRVsrc + cs->PLGsrc + cs->FRZsrc;
 	
 	/* sum of sinks */
 	out = cs->leaf_mr_snk + cs->leaf_gr_snk + cs->froot_mr_snk + 
@@ -112,9 +114,10 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 		cs->deadcroot_gr_snk + cs->litr1_hr_snk + cs->litr2_hr_snk + 
 		cs->litr4_hr_snk + cs->soil1_hr_snk + cs->soil2_hr_snk + 
 		cs->soil3_hr_snk + cs->soil4_hr_snk + cs->fire_snk + 
-		/* management - Hidy 2012. */
-		cs->SNSC_snk + cs->THNsnk + cs->MOWsnk + cs->HRVsnk + cs->PLGsnk + cs->GRZsnk; 
-	
+		/* management and senescence - Hidy 2012. */
+		cs->SNSC_snk + cs->THNsnk + cs->MOWsnk + cs->GRZsnk + cs->HRVsnk + cs->PLGsnk + 
+		/* fruit simulation - Hidy 2013. */
+		cs->fruit_gr_snk + cs->fruit_mr_snk; 
 		     
 		
 	/* sum of current storage */
@@ -126,7 +129,9 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 		cs->deadcrootc + cs->deadcrootc_storage + cs->deadcrootc_transfer + 
 		cs->gresp_storage + cs->gresp_transfer + cs->cwdc + cs->litr1c +
 		cs->litr2c + cs->litr3c + cs->litr4c + cs->soil1c + cs->soil2c +
-		cs->soil3c + cs->soil4c + cs->cpool;   
+		cs->soil3c + cs->soil4c + cs->cpool +
+		/* fruit simulation */
+		cs->fruitc + cs->fruitc_storage + cs->fruitc_transfer;   
 	
 	/* calculate current balance */
 	balance = in - out - store;
@@ -135,7 +140,7 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 	{
 		if (fabs(old_balance - balance) > 1e-10)
 		{
-			printf("FATAL ERRROR: carbon balance error:\n");
+	 		printf("FATAL ERRROR: carbon balance error:\n");
 			printf("Balance from previous day = %lf\n",old_balance);
 			printf("Balance from current day  = %lf\n",balance);
 			printf("Difference (previous - current) = %lf\n",old_balance-balance);
@@ -185,7 +190,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 		/*  senescence */
 		ns->SNSC_src +	/*  senescence */
 		/* management */
-		ns->THNsrc + ns->MOWsrc + ns->GRZsrc +	ns->PLGsnk + ns->PLTsrc + ns->FRZsrc;        
+		ns->PLTsrc + ns->THNsrc +  ns->MOWsrc + ns->GRZsrc + ns->HRVsrc + ns->PLGsrc + ns->FRZsrc;
 	
 	
 	/* sum of sinks */
@@ -194,6 +199,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 		ns->SNSC_snk + 
 		/* management */
 		ns->THNsnk + ns->MOWsnk + ns->GRZsnk + ns->HRVsnk + ns->PLGsnk;
+
 		
 	/* sum of current storage */
 	store = ns->leafn + ns->leafn_storage + ns->leafn_transfer +
@@ -204,7 +210,9 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 		ns->deadcrootn + ns->deadcrootn_storage + ns->deadcrootn_transfer + 
 		ns->cwdn + ns->litr1n + ns->litr2n + ns->litr3n + ns->litr4n +
 		ns->soil1n + ns->soil2n + ns->soil3n + ns->soil4n +
-		ns->sminn_SUM + ns->npool + ns->retransn;
+		ns->sminn_SUM + ns->npool + ns->retransn +
+		/* fruit simulation */
+		ns->fruitn + ns->fruitn_storage + ns->fruitn_transfer;
 	
 	/* calculate current balance */
 	balance = in - out - store;

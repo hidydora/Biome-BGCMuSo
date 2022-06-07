@@ -182,7 +182,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
-		fprintf(bgcout->control_file.ptr, "yday LAI leafc leafc_transfer GPP TR SNSC SNSCchange standingB\n");
+		fprintf(bgcout->control_file.ptr, "yday vwc0  SNSC_str fruitC leafC gpp tr evapotransp\n");
 
 	}
 
@@ -502,7 +502,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			
 			/* phenology fluxes */
-			if (ok && phenology(&epc, &phen, &epv, &cs, &cf, &ns, &nf))
+			if (ok && phenology(yday,&epc, &phen, &epv, &cs, &cf, &ns, &nf))
 			{
 				printf("Error in phenology() from bgc()\n");
 				ok=0;
@@ -785,7 +785,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			here.  On days with no growth, no allocation occurs, but
 			immobilization fluxes are updated normally */
 			ctrl.n_limitation = 0;
-			if (ok && daily_allocation(&cf,&cs,&nf,&ns,&epc,&epv,&nt,&ctrl.n_limitation))
+			if (ok && daily_allocation(yday,&cf,&cs,&nf,&ns,&epc,&epv,&nt,&ctrl.n_limitation))
 			{
 				printf("Error in daily_allocation() from bgc.c\n");
 				ok=0;
@@ -882,7 +882,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MANAGEMENT SUBMODULES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
 			/* MANAGEMENT DAYS - Hidy 2013. */
-			if (ok && management(yday, &ctrl, &FRZ, &GRZ, &HRV, &MOW, &PLT, &PLG, &THN))
+			if (ok && management(&ctrl, &FRZ, &GRZ, &HRV, &MOW, &PLT, &PLG, &THN))
 			{
 				printf("Error in management days() from bgc()\n");
 				ok=0;
@@ -931,7 +931,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		   }
 		 
 		   /* FERTILIZING -  Hidy 2008 */
-	    	if (ok && fertilizing(yday, &ctrl, &FRZ, &cs, &ns, &cf, &nf))
+	    	if (ok && fertilizing(&ctrl, &FRZ, &cs, &ns, &cf, &nf))
 			{
 				printf("Error in fertilizing() from bgc()\n");
 				ok=0;
@@ -972,7 +972,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 			
 #ifdef DEBUG
-			printf("%d\t%d\tdone mortality\n",simyr,yday);
+			printf("%d\t%d\tdone senescence\n",simyr,yday);
 #endif
 
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -980,6 +980,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
                         This is a special state variable update routine, done after the other fluxes and states are
                         reconciled (nleaching is included) */
 
+		
 			if (ok && multilayer_sminn(&epc, &sitec, &epv, &ns, &nf, &ws, &wf))
 			{
 				printf("Error in multilayer_sminn() from bgc()\n");
@@ -1052,8 +1053,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			{
 				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f\n", 
 				yday, 
-				epv.vwc[0], cs.leafc, cs.leafc_transfer,  
-				summary.daily_gpp*1000, summary.daily_tr*1000, cf.m_leafc_to_SNSC, summary.Cchange_SNSC, cs.litr1c_strg_SNSC); 
+				epv.vwc[0],(cs.litr1c_strg_SNSC+cs.litr2c_strg_SNSC+cs.litr3c_strg_SNSC+cs.litr4c_strg_SNSC), 
+				cs.fruitc, cs.leafc, summary.daily_gpp*1000, summary.daily_tr*1000, wf.evapotransp); 
  
 			}
 

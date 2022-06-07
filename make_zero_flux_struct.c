@@ -84,8 +84,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
     cf->m_gresp_transfer_to_litr1c = 0.0;
 	cf->m_leafc_to_fire = 0.0;
 	cf->m_frootc_to_fire = 0.0;
-	
-
 	cf->m_leafc_storage_to_fire = 0.0;
 	cf->m_frootc_storage_to_fire = 0.0;
 	cf->m_livestemc_storage_to_fire = 0.0;
@@ -187,6 +185,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
     cf->gresp_storage_to_gresp_transfer = 0.0;
     cf->livestemc_to_deadstemc = 0.0;
     cf->livecrootc_to_deadcrootc = 0.0;
+
 	/* !!!  Hidy 2012. - management !!! */
 	/* planting */
 	cf->leafc_transfer_from_PLT = 0.0;
@@ -281,6 +280,46 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->m_frootc_transfer_to_SNSC = 0.0;
 	cf->m_gresp_storage_to_SNSC = 0.0;
 	cf->m_gresp_transfer_to_SNSC = 0.0;
+
+	/* fruit simulation - Hidy 2013. */
+	cf->fruit_mr = 0.0;
+	cf->fruitc_storage_to_fruitc_transfer = 0.0;
+	cf->fruitc_storage_to_GRZ = 0.0;
+	cf->fruitc_storage_to_HRV = 0.0;
+	cf->fruitc_storage_to_PLG = 0.0;
+	cf->fruitc_storage_to_THN = 0.0;
+	cf->fruitc_storage_to_MOW = 0.0;
+	cf->fruitc_transfer_to_GRZ = 0.0;
+	cf->fruitc_transfer_to_HRV = 0.0;
+	cf->fruitc_transfer_to_PLG = 0.0;
+	cf->fruitc_transfer_to_THN = 0.0;
+	cf->fruitc_transfer_to_MOW = 0.0;
+	cf->fruitc_to_GRZ = 0.0;
+	cf->fruitc_to_HRV = 0.0;
+	cf->fruitc_to_PLG = 0.0;
+	cf->fruitc_to_THN = 0.0;
+	cf->fruitc_to_MOW = 0.0;
+	cf->fruitc_to_litr1c = 0.0;
+	cf->fruitc_to_litr2c = 0.0;
+	cf->fruitc_to_litr2c = 0.0;
+	cf->fruitc_to_litr3c = 0.0;
+	cf->fruitc_to_litr4c = 0.0;
+	cf->fruitc_transfer_from_PLT = 0.0;
+	cf->m_fruitc_storage_to_fire = 0.0;
+	cf->m_fruitc_storage_to_litr1c = 0.0;
+	cf->m_fruitc_storage_to_SNSC = 0.0;
+	cf->m_fruitc_transfer_to_fire = 0.0;
+	cf->m_fruitc_transfer_to_litr1c = 0.0;
+	cf->m_fruitc_transfer_to_SNSC = 0.0;
+	cf->m_fruitc_to_fire = 0.0;
+	cf->m_fruitc_to_litr1c = 0.0;
+	cf->m_fruitc_to_SNSC = 0.0;
+	cf->cpool_fruit_gr = 0.0;
+	cf->cpool_fruit_storage_gr = 0.0;
+	cf->cpool_to_fruitc = 0.0;
+	cf->cpool_to_fruitc_storage = 0.0;
+	cf->transfer_fruit_gr = 0.0;
+	cf->fruitc_transfer_to_fruitc = 0.0;
 
 	         	
 	/* daily nitrogen fluxes */
@@ -429,7 +468,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->deadstemn_to_THN= 0.0;
 	nf->deadstemn_storage_to_THN= 0.0;
 	nf->deadstemn_transfer_to_THN = 0.0;
-	nf->restransn_to_THN= 0.0;
 	nf->THN_to_litr1n = 0.0;
 	nf->THN_to_litr2n = 0.0;
 	nf->THN_to_litr3n = 0.0;
@@ -487,6 +525,40 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->m_frootn_storage_to_SNSC = 0.0;
 	nf->m_leafn_transfer_to_SNSC = 0.0;
 	nf->m_frootn_transfer_to_SNSC = 0.0;
+	/* fruit simulation - Hidy 2013. */
+	nf->leafn_transfer_to_leafn = 0.0;
+	nf->fruitn_storage_to_fruitn_transfer = 0.0;
+	nf->fruitn_storage_to_GRZ = 0.0;
+	nf->fruitn_storage_to_HRV = 0.0;
+	nf->fruitn_storage_to_PLG = 0.0;
+	nf->fruitn_storage_to_THN = 0.0;
+	nf->fruitn_storage_to_MOW = 0.0;
+	nf->fruitn_transfer_to_GRZ = 0.0;
+	nf->fruitn_transfer_to_HRV = 0.0;
+	nf->fruitn_transfer_to_PLG = 0.0;
+	nf->fruitn_transfer_to_THN = 0.0;
+	nf->fruitn_transfer_to_MOW = 0.0;
+	nf->fruitn_to_GRZ = 0.0;
+	nf->fruitn_to_HRV = 0.0;
+	nf->fruitn_to_PLG = 0.0;
+	nf->fruitn_to_THN = 0.0;
+	nf->fruitn_to_MOW = 0.0;
+	nf->fruitn_to_litr1n = 0.0;
+	nf->fruitn_to_litr2n = 0.0;
+	nf->fruitn_to_litr2n = 0.0;
+	nf->fruitn_to_litr3n = 0.0;
+	nf->fruitn_to_litr4n = 0.0;
+	nf->fruitn_to_retransn = 0.0;
+	nf->fruitn_transfer_from_PLT = 0.0;
+	nf->m_fruitn_storage_to_fire = 0.0;
+	nf->m_fruitn_storage_to_litr1n = 0.0;
+	nf->m_fruitn_storage_to_SNSC = 0.0;
+	nf->m_fruitn_transfer_to_fire = 0.0;
+	nf->m_fruitn_transfer_to_litr1n = 0.0;
+	nf->m_fruitn_transfer_to_SNSC = 0.0;
+	nf->m_fruitn_to_fire = 0.0;
+	nf->m_fruitn_to_litr1n = 0.0;
+	nf->m_fruitn_to_SNSC = 0.0;
 
 
 	return (!ok);

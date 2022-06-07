@@ -138,6 +138,12 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* senescence - Hidy 2012.*/
 	cs->SNSC_snk= 0.0;
 	cs->SNSC_src= 0.0;
+	/* fruit simulation - Hidy 2013.*/
+	cs->fruitc = 0.0;
+	cs->fruitc_storage = 0.0;
+	cs->fruitc_transfer = 0.0;
+	cs->fruit_gr_snk = 0.0;
+	cs->fruit_mr_snk = 0.0;
 	
 	ns->leafn = 0.0;
 	ns->leafn_storage = 0.0;
@@ -208,7 +214,10 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* senescence - Hidy 2012.*/
 	ns->SNSC_snk= 0.0;
 	ns->SNSC_src= 0.0;
-	
+	/* fruit simulation - Hidy 2013.*/
+	ns->fruitn = 0.0;
+	ns->fruitn_storage = 0.0;
+	ns->fruitn_transfer = 0.0;
 	
 	
 	return(!ok);

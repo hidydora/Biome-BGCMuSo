@@ -36,6 +36,10 @@ int growth_resp(epconst_struct* epc, cflux_struct* cf)
 	cf->cpool_froot_storage_gr = cf->cpool_to_frootc_storage * g1 * g2; 
 	cf->transfer_leaf_gr  = cf->leafc_transfer_to_leafc * g1 * (1.0-g2);
 	cf->transfer_froot_gr = cf->frootc_transfer_to_frootc * g1 * (1.0-g2);
+	/* fruit simulation - Hidy 2013. */
+	cf->cpool_fruit_gr     = cf->cpool_to_fruitc * g1;
+	cf->cpool_fruit_storage_gr  = cf->cpool_to_fruitc_storage * g1 * g2;
+	cf->transfer_fruit_gr = cf->fruitc_transfer_to_fruitc * g1 * (1.0-g2);
 	
 	/* woody tissue growth respiration only for trees */
 	if (epc->woody)

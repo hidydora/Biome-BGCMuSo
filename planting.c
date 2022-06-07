@@ -25,9 +25,9 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 {
 	/* planting parameters Hidy 2012.*/	   
 
-	double seed_quantity;					
-	double seed_Ccontent;				 
-	double prop_leaf_product;	
+	double seed_quantity,seed_Ccontent;					
+	double utiliz_coeff;
+	double prop_leaf, prop_froot, prop_fruit;	
 	
 	int ok=1;
 	int ny;
@@ -48,14 +48,30 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 	/* we assume that the transfer pools contain the palnt material of seeds. Therefore planting increase the transfer pools */ 
 	if (mgmd >= 0) 
 	{	
-		seed_quantity     = PLT->seed_quantity_array[mgmd][ny]/10;				 /* change unit: kg seed/ha -> g seed/m2 */
-		seed_Ccontent     = PLT->seed_carbon_array[mgmd][ny]/100;			 /* change unit: % to number */
-		prop_leaf_product = PLT->prop_leaf_product_array[mgmd][ny]/100;	     /* change unit: % to number */
+		seed_quantity = PLT->seed_quantity_array[mgmd][ny]/10;				 /* change unit: kg seed/ha -> g seed/m2 */
+		seed_Ccontent = PLT->seed_carbon_array[mgmd][ny]/100;			     /* change unit: % to number */
+		utiliz_coeff  = PLT->utiliz_coeff_array[mgmd][ny]/100;	         /* change unit: % to number */
+	
+		/* allocation is calculated based on leafC - EPC alloc.params: unit is leafC content */
+		prop_leaf     = 1.0/(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + 1.);											
+		prop_froot    = epc->alloc_frootc_leafc/(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + 1.);
+		prop_fruit    = epc->alloc_fruitc_leafc/(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + 1.);
 
-		cf->leafc_transfer_from_PLT  =  (seed_quantity * prop_leaf_product) * seed_Ccontent;
-		cf->frootc_transfer_from_PLT = (seed_quantity * (1-prop_leaf_product)) * seed_Ccontent;
-		nf->leafn_transfer_from_PLT  =  cf->leafc_transfer_from_PLT / epc->leaf_cn;
-		nf->frootn_transfer_from_PLT = cf->frootc_transfer_from_PLT  / epc->froot_cn;
+		/* CONTROL: seed C content must cover plant material required leaf/froot/fruit composition 
+		            EPC allocation paramters (new frootC:leafC, new fruitC:leafC) and INI planting paramters (seed prod. to leaf) */
+		if (prop_leaf+prop_froot+prop_fruit - 1.0 > 0.0001)
+		{
+			printf("Fatal error: seed C content does not cover plant material required leaf/froot/fruit composition - see EPC allocation and INI planting paramters (planting.c)\n");
+			ok=0;
+		}
+
+		cf->leafc_transfer_from_PLT  = (seed_quantity * utiliz_coeff * prop_leaf)  * seed_Ccontent;
+		nf->leafn_transfer_from_PLT  =  cf->leafc_transfer_from_PLT  / epc->leaf_cn;
+		cf->frootc_transfer_from_PLT = (seed_quantity * utiliz_coeff * prop_froot) * seed_Ccontent;
+		nf->frootn_transfer_from_PLT =  cf->frootc_transfer_from_PLT / epc->froot_cn;
+		/* fruit simulation - Hidy 2013 */
+		cf->fruitc_transfer_from_PLT = (seed_quantity * utiliz_coeff * prop_fruit) * seed_Ccontent;
+		nf->fruitn_transfer_from_PLT =  cf->fruitc_transfer_from_PLT / epc->fruit_cn;
 
 	}
 	else
@@ -64,6 +80,8 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 		cf->frootc_transfer_from_PLT = 0.;
 		nf->leafn_transfer_from_PLT  = 0.;
 		nf->frootn_transfer_from_PLT = 0.;
+		cf->fruitc_transfer_from_PLT = 0.;
+		nf->fruitn_transfer_from_PLT = 0.;
 	}
 
 	
@@ -71,17 +89,23 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
                                                     STATE UPDATE 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/ 
 
-	/* carbon */
+	/* 1. carbon */
 	cs->leafc_transfer += cf->leafc_transfer_from_PLT;
 	cs->PLTsrc += cf->leafc_transfer_from_PLT;
 	cs->frootc_transfer += cf->frootc_transfer_from_PLT;
 	cs->PLTsrc += cf->frootc_transfer_from_PLT;
+	/* fruit simulation - Hidy 2013 */
+	cs->fruitc_transfer += cf->fruitc_transfer_from_PLT;
+	cs->PLTsrc += cf->fruitc_transfer_from_PLT;
 
-	/* nitrogen */
+	/* 2. nitrogen */
 	ns->leafn_transfer += nf->leafn_transfer_from_PLT;
 	ns->PLTsrc += nf->leafn_transfer_from_PLT;
 	ns->frootn_transfer += nf->frootn_transfer_from_PLT;
 	ns->PLTsrc += nf->frootn_transfer_from_PLT;
+	/* fruit simulation - Hidy 2013 */
+	ns->fruitn_transfer += nf->fruitn_transfer_from_PLT;
+	ns->PLTsrc += nf->fruitn_transfer_from_PLT;
 
 
    return (!ok);

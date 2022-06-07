@@ -143,9 +143,9 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT)
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->prop_leaf_product_array)))
+	if (ok && read_mgmarray(ny, PLT->PLT_flag, PLT_file, &(PLT->utiliz_coeff_array)))
 	{
-		printf("Error reading prop_leaf_product_array\n");
+		printf("Error reading utiliz_coeff_array\n");
 		ok=0;
 	}
 

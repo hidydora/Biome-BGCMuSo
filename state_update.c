@@ -32,7 +32,7 @@ int daily_water_state_update(const control_struct* ctrl, const siteconst_struct*
 
 	/* Hidy 2011 - multilayer soil */
 	int layer;
-	double soilw_SUM;
+	double soilw_SUM = 0;
 	
 	/* precipitation fluxes */
 	ws->canopyw        += wf->prcp_to_canopyw;
@@ -79,8 +79,6 @@ int daily_water_state_update(const control_struct* ctrl, const siteconst_struct*
 	}
 
 	ws->soilw_SUM = soilw_SUM;
-
-	wf->evapotransp = wf->canopyw_evap + wf->soilw_evap + wf->soilw_trans_SUM + wf->snoww_subl;
 	
 	
 	return (!ok);

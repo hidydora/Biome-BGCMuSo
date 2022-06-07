@@ -137,7 +137,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading whole-plant mortality, epc_init()\n");
 		ok=0;
 	}
-	epc->daily_mortality_turnover = t1/NDAY_OF_YEAR;
+	epc->daily_mortality_turnover = t1/365;
 	/* ------------------------------------------------------ */
 	/* Hidy 2011 - using varying whole plant mortality values */
 
@@ -180,7 +180,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		}
 		fclose(wpm_file.ptr);
 	}	
-	else /* if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * NDAY_OF_YEAR */
+	else /* if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * 365 */
 	{
 		if (!ctrl->spinup)
 		{
@@ -199,7 +199,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading fire mortality, epc_init()\n");
 		ok=0;
 	}
-	epc->daily_fire_turnover = t1/NDAY_OF_YEAR;
+	epc->daily_fire_turnover = t1/365;
 	if (ok && scan_value(temp, &epc->alloc_frootc_leafc, 'd'))
 	{
 		printf("Error reading froot C:leaf C, epc_init()\n");

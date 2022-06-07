@@ -39,7 +39,6 @@ nflux_struct* nf)
 	/* Hidy 2010. - developed hydrological module */
 	wf->prcp_to_runoff = 0.0;
 	wf->soilw_trans_SUM = 0.0;
-	wf->evapotransp = 0.0;
 	
 	/* Hidy 2012. - mangement fluxes */
 	wf->canopyw_to_THN = 0.0;

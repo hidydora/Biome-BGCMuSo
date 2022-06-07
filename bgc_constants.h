@@ -65,6 +65,6 @@ are set to 0.0 to control rounding and overflow errors */
 #define pF_wiltingpoint		4.2		/* (dimless)  pF value at wilting point */
 #define pF_fieldcapacity	2.5		/* (dimless)  pF value at field capacity */
 
-#define NDAY_OF_YEAR	    365	
+#define NDAY_OF_YEAR	    365.0	
 #define DATA_GAP			-999.9	
 #define CAMPBELL_PARAM		200    /* (dimless) based on Cambell and Diaz 1988: Simplifiled soil-water balance model (runoff calc. in mm) */

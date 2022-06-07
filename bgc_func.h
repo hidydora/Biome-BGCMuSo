@@ -166,6 +166,8 @@ int fertilizing(int yday, const control_struct* ctrl, fertilizing_struct* FRZ,
 /* limitation factors of conductance calculation - Hidy 2012. */
 int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* epc, epvar_struct* epv);
 
+/* determine vegetation period (0: before, 1: in, -1: after) */
+int vegetation_period_determ(control_struct* ctrl, phenology_struct* phen);
 
 /* senescence mortality calculation */
 int senescence(const epconst_struct* epc, const metvar_struct* metv, const siteconst_struct* sitec,

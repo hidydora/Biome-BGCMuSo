@@ -176,16 +176,16 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 	restart->litr2c 						  = cs->litr2c;
 	restart->litr3c 						  = cs->litr3c;
 	restart->litr4c 						  = cs->litr4c;
-	/* Hidy 2013 - temporary senescence pool */
-	restart->litr1c_strg_SNSC				  = cs->litr1c_strg_SNSC;
-	restart->litr2c_strg_SNSC				  = cs->litr2c_strg_SNSC;
-	restart->litr3c_strg_SNSC				  = cs->litr3c_strg_SNSC;
-	restart->litr4c_strg_SNSC				  = cs->litr4c_strg_SNSC;
 	restart->soil1c 						  = cs->soil1c;
 	restart->soil2c 						  = cs->soil2c;
 	restart->soil3c 						  = cs->soil3c;
 	restart->soil4c 						  = cs->soil4c;
 	restart->cpool  						  = cs->cpool;
+	/* Hidy 2013 - temporary senescence pool */
+	restart->litr1c_strg_SNSC				  = cs->litr1c_strg_SNSC;
+	restart->litr2c_strg_SNSC				  = cs->litr2c_strg_SNSC;
+	restart->litr3c_strg_SNSC				  = cs->litr3c_strg_SNSC;
+	restart->litr4c_strg_SNSC				  = cs->litr4c_strg_SNSC;
 
 	restart->leafn  						  = ns->leafn;
 	restart->leafn_storage  				  = ns->leafn_storage;
@@ -210,20 +210,19 @@ int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_s
 	restart->litr2n 						  = ns->litr2n;
 	restart->litr3n 						  = ns->litr3n;
 	restart->litr4n 						  = ns->litr4n;
+	restart->soil1n 						  = ns->soil1n;
+	restart->soil2n 						  = ns->soil2n;
+	restart->soil3n 						  = ns->soil3n;
+	restart->soil4n 						  = ns->soil4n;
 	/* Hidy 2013 - temporary senescence pool */
 	restart->litr1n_strg_SNSC				  = ns->litr1n_strg_SNSC;
 	restart->litr2n_strg_SNSC				  = ns->litr2n_strg_SNSC;
 	restart->litr3n_strg_SNSC				  = ns->litr3n_strg_SNSC;
 	restart->litr4n_strg_SNSC				  = ns->litr4n_strg_SNSC;
-	restart->soil1n 						  = ns->soil1n;
-	restart->soil2n 						  = ns->soil2n;
-	restart->soil3n 						  = ns->soil3n;
-	restart->soil4n 						  = ns->soil4n;
+	
 	/*-----------------------------*/
 	/* Hidy 2011 - multilayer soil */
 	
-	restart->sminn_RZ                         = ns->sminn_RZ;
-	restart->sminn_RZ_befsoilproc             = ns->sminn_RZ_befsoilproc;
 	for (layer =0; layer < N_SOILLAYERS; layer++)
 	{ 
 		restart->sminn[layer]                 = ns->sminn[layer];

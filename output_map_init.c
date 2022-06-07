@@ -59,20 +59,19 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[19] = &metv->dayl;
 		
 		/* water state variables */
-		output_map[23] = &ws->soilw_SUM;	 /* Hidy 2010 - multilayer soil */
-		output_map[24] = &ws->snoww;
-		output_map[25] = &ws->canopyw;
-		output_map[26] = &ws->prcp_src;
-		output_map[27] = &ws->soilevap_snk;
-		output_map[28] = &ws->snowsubl_snk;
-		output_map[29] = &ws->canopyevap_snk;
-		output_map[30] = &ws->trans_snk;
-		output_map[31] = &ws->runoff_snk;			/* soilwater submodel - Hidy 2010. */
-		output_map[32] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
-		output_map[33] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[20] = &ws->soilw_SUM;	 /* Hidy 2010 - multilayer soil */
+		output_map[25] = &ws->snoww;
+		output_map[26] = &ws->canopyw;
+		output_map[27] = &ws->prcp_src;
+		output_map[28] = &ws->soilevap_snk;
+		output_map[29] = &ws->snowsubl_snk;
+		output_map[30] = &ws->canopyevap_snk;
+		output_map[31] = &ws->trans_snk;
+		output_map[32] = &ws->runoff_snk;			/* soilwater submodel - Hidy 2010. */
+		output_map[33] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[34] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
 		
 		/* water flux variables */
-		output_map[34] = &wf->evapotransp;			/* Hidy 2013 - merging output data */
 		output_map[35] = &wf->prcp_to_canopyw;
 		output_map[36] = &wf->prcp_to_soilw;		/* Hidy 2010 - multilayer soil: prcp reaches the top soil layer */
 		output_map[37] = &wf->prcp_to_snoww;
@@ -586,10 +585,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[644] = &summary->carbonchange_GRZ;	/* Hidy 2008. */
 		output_map[645] = &summary->carbonchange_FRZ;	/* Hidy 2008. */
 		output_map[646] = &summary->carbonchange_PLT;	/* Hidy 2008. */
-		output_map[647] = &summary->carbonchange_SNSC;	/* Hidy 2013. */
-		output_map[648] = &summary->daily_sr;			/* Hidy 2008. */
-		output_map[649] = &summary->daily_tr;			/* Hidy 2013 - merging output data */
-
+		output_map[647] = &summary->daily_sr;			/* Hidy 2008. */
 		
 		
 	}

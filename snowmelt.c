@@ -26,12 +26,13 @@ int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww)
 	from Joseph Coughlan PhD thesis, 1991 */
 
 	int ok=1;
-	static double sn_abs = 0.6;    /* absorptivity of snow */
-	static double lh_fus = 335.0;  /* (kJ/kg) latent heat of fusion */
-	static double lh_sub = 2845.0; /* (kJ/kg) latent heal of sublimation */
+	static double sn_abs = 0.6;		/* absorptivity of snow */
+	static double lh_fus = 335.0;	/* (kJ/kg) latent heat of fusion */
+	static double lh_sub = 2845.0;	/* (kJ/kg) latent heat of sublimation */
 	static double tcoef  = 0.65;   /* (kg/m2/deg C/d) temp. snowmelt coef */
-	double rn;                     /* (kJ/m2/d) incident radiation */
+	double rn;						/* (kJ/m2/d) incident radiation */
 	double melt, tmelt, rmelt, rsub;
+	double rms = 0.95;				/* Hidy 2013 - ratio of melting snow */
 
 	/* canopy transmitted radiaiton: convert from W/m2 --> KJ/m2/d */	
 	rn = metv->swtrans * metv->dayl * sn_abs * 0.001;
@@ -41,13 +42,13 @@ int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww)
 
 	{
 		tmelt = tcoef * (metv->tmax + metv->tmin)/2.;
-		rmelt = rn / lh_fus;
-		melt = tmelt+rmelt;
+		rmelt = (rn / lh_fus);
+		melt = (tmelt+rmelt);
 	
 		if (melt > snoww)
 			melt = snoww;
 	
-		wf->snoww_to_soilw = melt;
+		wf->snoww_to_soilw = melt * rms;
 	}
 	else  /* sublimation from snowpack */
 	{
@@ -56,7 +57,7 @@ int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww)
 		if (rsub > snoww)
 			rsub = snoww;
 	
-		wf->snoww_subl = rsub;
+		wf->snoww_subl = rsub * rms;
 	}	
 	
 	return (!ok);

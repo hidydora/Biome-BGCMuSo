@@ -21,8 +21,8 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 
 
 	int ok=1;
-	double soillayer_RZportion_ctrl;
 	double plant_day, matur_day;
+	double soillayer_RZportion_ctrl = 0;
 	double maturity_coeff = 0.5;
 
 	/* soil mineral N in changing rooting zone */

@@ -23,7 +23,7 @@ Missoula, MT 59812
 int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_struct* summary)
 {
 	int ok=1;
-	double gpp,mr,gr,hr,tr, fire;
+	double gpp,mr,gr,hr,fire;
 	double sr; /* Hidy 2012 - calculating soil respiration */
 	double npp,nep,nee, nbp, disturb_loss, disturb_surplus;
 
@@ -55,7 +55,6 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 		cf->cpool_deadstem_gr + cf->cpool_deadstem_storage_gr + cf->transfer_deadstem_gr + 
 		cf->cpool_livecroot_gr + cf->cpool_livecroot_storage_gr + cf->transfer_livecroot_gr + 
 		cf->cpool_deadcroot_gr + cf->cpool_deadcroot_storage_gr + cf->transfer_deadcroot_gr;
-
 	npp = gpp - mr - gr;
 
 	
@@ -63,9 +62,6 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 	/* NEP = NPP - Autotrophic Resp */
 	hr = cf->litr1_hr + cf->litr2_hr + cf->litr4_hr + cf->soil1_hr +
 		cf->soil2_hr + cf->soil3_hr + cf->soil4_hr;
-
-	tr = mr + gr + hr;
-	
 	nep = npp - hr;
 	
 	/* Hidy 2012 - calculating soil respiration */
@@ -98,7 +94,6 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 	summary->daily_gr = gr;
 	summary->daily_hr = hr;
 	summary->daily_sr = sr;
-	summary->daily_tr = tr;
 	summary->daily_fire = fire;
 	summary->cum_npp += npp;
 	summary->cum_nep += nep;
@@ -169,16 +164,9 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 								cf->leafc_storage_to_GRZ - cf->leafc_transfer_to_GRZ - cf->leafc_to_GRZ - 
 								cf->gresp_transfer_to_GRZ - cf->gresp_storage_to_GRZ;
 
-
 	summary->carbonchange_FRZ = cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
 
 	summary->carbonchange_PLT = cf->leafc_transfer_from_PLT + cf->frootc_transfer_from_PLT;
-
-	/* summerize senescence effect - Hidy 2008 */
-	summary->carbonchange_SNSC =  cf->SNSC_to_litr1c + cf->SNSC_to_litr2c + cf->SNSC_to_litr3c + cf->SNSC_to_litr4c - 
-								 cf->m_leafc_storage_to_SNSC - cf->m_leafc_transfer_to_SNSC - cf->m_leafc_to_SNSC -
-								 cf->m_frootc_storage_to_SNSC - cf->m_frootc_transfer_to_SNSC - cf->m_frootc_to_SNSC -
-								 cf->m_gresp_transfer_to_SNSC - cf->m_gresp_storage_to_SNSC;
 
 	disturb_loss = cf->leafc_storage_to_MOW + cf->leafc_transfer_to_MOW + cf->leafc_to_MOW + cf->gresp_transfer_to_MOW + cf->gresp_storage_to_MOW +
 				   cf->leafc_storage_to_HRV + cf->leafc_transfer_to_HRV + cf->leafc_to_HRV + cf->gresp_transfer_to_HRV + cf->gresp_storage_to_HRV +

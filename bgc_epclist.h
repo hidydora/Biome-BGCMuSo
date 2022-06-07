@@ -3,7 +3,7 @@ epclist.h
 structure for array of ecophysiological constants structures 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*

@@ -1,11 +1,10 @@
 /* 
 pointbgc_struct.h
-for use with pointbgc front-end to BBGC MuSo v3.0.8 library
+for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -56,6 +55,7 @@ typedef struct
     file annout;           /* annual output file */
 	file anntext;          /* simple annual text output */
 	file control_file;	   /* Hidy 2012 - file to write out control variables */
+	file log_file;		   /* Hidy 2015 - main information about model run */
 } output_struct;
 
 
@@ -64,7 +64,6 @@ typedef struct
 {
 	int GSI_flag;					/* flag for doing runoff or not */
 	double snowcover_limit;			/* critical amount of snow (above: no vegetation period) */
-	double basic_temperature;		/* basic_temperature to calculate heatsum */
 	double heatsum_limit1;			/* lower limit of heatsum to calculate heatsum index */
     double heatsum_limit2;			/* upper limit of heatsum to calculate heatsum index */
 	double tmin_limit1;				/* lower limit of tmin to calculate tmin index */

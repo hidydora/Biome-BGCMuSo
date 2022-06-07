@@ -3,11 +3,11 @@ grazing.c
 grazing  - decrease the plant material (leafc, leafn, canopy water) and increase N-content (mature)
 
 method: Vuichard et al, 2007
-NOTE: LSU: livestock unit = unit used to compare or aggregate different species and it is equivalnet to 500 kg live weight (1 adult cattle = 1 LSU)
+NOTE: LSU: livestock unit = unit used to compare or aggregate different species and it is equivalnet to the liveweight of an average cattle (1 adult cattle = 1 LSU)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -17,10 +17,11 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <time.h>
 #include <math.h>
-#include "ini.h"     
+#include "ini.h"        
 #include "pointbgc_struct.h"
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struct* GRZ, 
 			cflux_struct* cf, nflux_struct* nf, wflux_struct* wf,  cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
@@ -28,10 +29,12 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 
 	/* grazing parameters */
 	int ny;
-	double DMintake;		
-	double stocking_rate;			
+	double DMintake, stocking_rate,weight_LSU;			
+	double litr1c_STDB_to_GRZ, litr2c_STDB_to_GRZ, litr3c_STDB_to_GRZ, litr4c_STDB_to_GRZ;
+	double litr1n_STDB_to_GRZ, litr2n_STDB_to_GRZ, litr3n_STDB_to_GRZ, litr4n_STDB_to_GRZ;
 
 	/* local variables */
+	double EFman_N2O, Nexrate, EFman_CH4, EFfer_CH4;
 	double prop_DMintake2excr;	
 	double DM_Ccontent;				    
 	double EXCR_Ccontent_array;				
@@ -50,8 +53,10 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	int ok=1;
 
 	/* test variable */
-	double belowbiom_MGMmort=epc->belowbiom_MGMmort;
+	double storage_MGMmort=epc->storage_MGMmort;
 
+	/* Hidy 2015 - fraction of total annual nitrogen excretion for pasture management system*/
+	double MS_N2O = 0.015;
 
 	/* yearly varied or constant management parameters */
 	if(GRZ->GRZ_flag == 2)
@@ -69,15 +74,22 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 
 	if (mgmd >= 0) 
 	{
+		GRZ->trampleff_act  = GRZ->trampling_effect[mgmd][ny];
 		DMintake            = GRZ->DMintake_array[mgmd][ny];						 /*  unit: kgDM/LSU (DM:dry matter)*/
 		stocking_rate       = GRZ->stocking_rate_array[mgmd][ny]/10000;				 /*  unit: LSU/ha -> new unit: LSU/m2 */
-
+		weight_LSU			= GRZ->weight_LSU[mgmd][ny];
 
 		prop_DMintake2excr  = GRZ->prop_DMintake2excr_array[mgmd][ny] / 100.;	     /* from proporiton(%) to ratio(number) */
 		DM_Ccontent         = GRZ->DM_Ccontent_array[mgmd][ny] / 100.;				 /* from proporiton(%) to ratio(number) */
 		EXCR_Ccontent_array = GRZ->EXCR_Ccontent_array[mgmd][ny] / 100.;			 /* from proporiton(%) to ratio(number) */
 		EXCR_Ncontent_array = GRZ->EXCR_Ncontent_array[mgmd][ny] / 100.;			 /* from proporiton(%) to ratio(number) */
 		prop_excr2litter    = GRZ->prop_excr2litter_array[mgmd][ny] / 100;
+
+		Nexrate   = GRZ->Nexrate[mgmd][ny];
+		EFman_N2O = GRZ->EFman_N2O[mgmd][ny];
+		EFman_CH4 = GRZ->EFman_CH4[mgmd][ny]/NDAY_OF_YEAR;;
+		EFfer_CH4 = GRZ->EFfer_CH4[mgmd][ny]/NDAY_OF_YEAR;;
+
 		
 		/* daily total ingested carbon per m2 from daily ingested drymatter and carbon content of drymatter and stocking rate
 						[kgC/m2 = kgDM/LSU * (kgC/kgDM) * (LSU/m2)] */	
@@ -102,10 +114,9 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 			GRZcoeff  = 0.0;
 			daily_excr_prod = 0;
 			prop_excr2litter = 0;
-			if (ctrl->onscreen) 
-			{	
-				printf("not enough grass for grazing\n");
-			}
+		
+			if (ctrl->onscreen) printf("not enough grass for grazing on yday: %i\n", ctrl->yday);
+
 		}			
 	}
 	else 
@@ -115,6 +126,12 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 		prop_excr2litter = 0;
 		EXCR_Ccontent_array = 0;
 		EXCR_Ncontent_array = 0;
+		stocking_rate = 0;
+		EFman_N2O =  0;
+		EFman_CH4 =  0;
+		EFfer_CH4 =  0;
+		Nexrate = 0;
+		weight_LSU=0;
 	}
 	
 	/* daily manure production per m2 (return to the litter) from daily total ingested dry matter and litter_return_ratio and its C and N content
@@ -123,29 +140,58 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	Cplus_from_excrement = daily_excr_prod * EXCR_Ccontent_array;
 	Nplus_from_excrement = daily_excr_prod * EXCR_Ncontent_array;
 
+	/* CARBON */
 	cf->leafc_to_GRZ          = cs->leafc * GRZcoeff;
-	cf->leafc_transfer_to_GRZ = cs->leafc_transfer * GRZcoeff * belowbiom_MGMmort;
-	cf->leafc_storage_to_GRZ  = cs->leafc_storage * GRZcoeff * belowbiom_MGMmort;
+	cf->leafc_transfer_to_GRZ = cs->leafc_transfer * GRZcoeff * storage_MGMmort;
+	cf->leafc_storage_to_GRZ  = cs->leafc_storage * GRZcoeff * storage_MGMmort;
 	
     /* fruit simulation - Hidy 2013. */
 	cf->fruitc_to_GRZ          = cs->fruitc * GRZcoeff;
-	cf->fruitc_transfer_to_GRZ = cs->fruitc_transfer * GRZcoeff * belowbiom_MGMmort;
-	cf->fruitc_storage_to_GRZ  = cs->fruitc_storage * GRZcoeff * belowbiom_MGMmort;
-		
-	cf->gresp_transfer_to_GRZ = cs->gresp_transfer * GRZcoeff * belowbiom_MGMmort;
-	cf->gresp_storage_to_GRZ  = cs->gresp_storage * GRZcoeff * belowbiom_MGMmort;
+	cf->fruitc_transfer_to_GRZ = cs->fruitc_transfer * GRZcoeff * storage_MGMmort;
+	cf->fruitc_storage_to_GRZ  = cs->fruitc_storage * GRZcoeff * storage_MGMmort;
 
+	 /* softstem simulation - Hidy 2013. */
+	cf->softstemc_to_GRZ          = cs->softstemc * GRZcoeff;
+	cf->softstemc_transfer_to_GRZ = cs->softstemc_transfer * GRZcoeff * storage_MGMmort;
+	cf->softstemc_storage_to_GRZ  = cs->softstemc_storage * GRZcoeff * storage_MGMmort;
+		
+	cf->gresp_transfer_to_GRZ = cs->gresp_transfer * GRZcoeff * storage_MGMmort;
+	cf->gresp_storage_to_GRZ  = cs->gresp_storage * GRZcoeff * storage_MGMmort;
+
+	/* standing dead biome */
+	litr1c_STDB_to_GRZ = cs->litr1c_STDB * GRZcoeff;
+	litr2c_STDB_to_GRZ = cs->litr2c_STDB * GRZcoeff;
+	litr3c_STDB_to_GRZ = cs->litr3c_STDB * GRZcoeff;
+	litr4c_STDB_to_GRZ = cs->litr4c_STDB * GRZcoeff;
+
+	cf->STDBc_to_GRZ = litr1c_STDB_to_GRZ + litr2c_STDB_to_GRZ + litr3c_STDB_to_GRZ + litr4c_STDB_to_GRZ;
+
+
+	/* CARBON */
 	nf->leafn_to_GRZ          = ns->leafn * GRZcoeff;
-	nf->leafn_transfer_to_GRZ = ns->leafn_transfer * GRZcoeff * belowbiom_MGMmort;
-	nf->leafn_storage_to_GRZ  = ns->leafn_storage * GRZcoeff * belowbiom_MGMmort;
+	nf->leafn_transfer_to_GRZ = ns->leafn_transfer * GRZcoeff * storage_MGMmort;
+	nf->leafn_storage_to_GRZ  = ns->leafn_storage * GRZcoeff * storage_MGMmort;
 
 	/* fruit simulation - Hidy 2013. */
 	nf->fruitn_to_GRZ          = ns->fruitn * GRZcoeff;
-	nf->fruitn_transfer_to_GRZ = ns->fruitn_transfer * GRZcoeff * belowbiom_MGMmort;
-	nf->fruitn_storage_to_GRZ  = ns->fruitn_storage * GRZcoeff * belowbiom_MGMmort;
+	nf->fruitn_transfer_to_GRZ = ns->fruitn_transfer * GRZcoeff * storage_MGMmort;
+	nf->fruitn_storage_to_GRZ  = ns->fruitn_storage * GRZcoeff * storage_MGMmort;
+
+	/* softstem simulation - Hidy 2013. */
+	nf->softstemn_to_GRZ          = ns->softstemn * GRZcoeff;
+	nf->softstemn_transfer_to_GRZ = ns->softstemn_transfer * GRZcoeff * storage_MGMmort;
+	nf->softstemn_storage_to_GRZ  = ns->softstemn_storage * GRZcoeff * storage_MGMmort;
 	
+	/* standing dead biome */
+	litr1n_STDB_to_GRZ = ns->litr1n_STDB * GRZcoeff;
+	litr2n_STDB_to_GRZ = ns->litr2n_STDB * GRZcoeff;
+	litr3n_STDB_to_GRZ = ns->litr3n_STDB * GRZcoeff;
+	litr4n_STDB_to_GRZ = ns->litr4n_STDB * GRZcoeff;
+
+	nf->STDBn_to_GRZ = litr1n_STDB_to_GRZ + litr2n_STDB_to_GRZ + litr3n_STDB_to_GRZ + litr4n_STDB_to_GRZ;
+   
 	/* restranslocated N pool is decreasing also */
-	nf->retransn_to_GRZ        = ns->retransn * GRZcoeff * belowbiom_MGMmort;
+	nf->retransn_to_GRZ        = ns->retransn * GRZcoeff * storage_MGMmort;
 	 
 	wf->canopyw_to_GRZ = ws->canopyw * GRZcoeff;
 
@@ -164,6 +210,16 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	nf->GRZ_to_litr4n = (Nplus_from_excrement) * epc->leaflitr_flig * prop_excr2litter;
 
 	
+	/* !!!!!!!!CH4 and N2O emissions !!!!!!!!!!*/ 
+
+	// dimension: db animal/m2 * kgN/(kg animal * day) * kg animal/db animal = mgN/m2/day
+	nf->N2O_flux_GRZ     = stocking_rate * Nexrate * weight_LSU/1000 *  EFman_N2O * MS_N2O * 1e+6;
+
+	// dimension: kgCH4/head/day * head / m2 * (C/CH4) * mg/kg = mgC/m2/day
+	cf->CH4_flux_MANURE  = EFman_CH4  * stocking_rate * 12./16. * 1e+6;  
+	cf->CH4_flux_FERMENT = EFfer_CH4  * stocking_rate * 12./16. * 1e+6;  
+
+
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     STATE UPDATE 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/ 
@@ -182,8 +238,30 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	cs->fruitc_transfer -= cf->fruitc_transfer_to_GRZ;
 	cs->GRZsnk += cf->fruitc_storage_to_GRZ;
 	cs->fruitc_storage -= cf->fruitc_storage_to_GRZ;
+	/* softstem simulation - Hidy 2013. */
+	cs->GRZsnk += cf->softstemc_to_GRZ;
+	cs->softstemc -= cf->softstemc_to_GRZ;
+	cs->GRZsnk += cf->softstemc_transfer_to_GRZ;
+	cs->softstemc_transfer -= cf->softstemc_transfer_to_GRZ;
+	cs->GRZsnk += cf->softstemc_storage_to_GRZ;
+	cs->softstemc_storage -= cf->softstemc_storage_to_GRZ;
 
 	cs->GRZsnk += cf->gresp_transfer_to_GRZ;
+
+	/* dead standing biomass */
+	cs->GRZsnk += litr1c_STDB_to_GRZ;
+	cs->litr1c_STDB -= litr1c_STDB_to_GRZ;
+	cs->GRZsnk += litr2c_STDB_to_GRZ;
+	cs->litr2c_STDB -= litr2c_STDB_to_GRZ;
+	cs->GRZsnk += litr3c_STDB_to_GRZ;
+	cs->litr3c_STDB -= litr3c_STDB_to_GRZ;
+	cs->GRZsnk += litr4c_STDB_to_GRZ;
+	cs->litr4c_STDB -=litr4c_STDB_to_GRZ;
+
+	cs->SNSCsrc += cf->STDBc_to_GRZ;
+	cs->STDBc -= cf->STDBc_to_GRZ;
+
+
 	cs->gresp_transfer -= cf->gresp_transfer_to_GRZ;
 	cs->GRZsnk += cf->gresp_storage_to_GRZ;
 	cs->gresp_storage -= cf->gresp_storage_to_GRZ;
@@ -212,6 +290,28 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	ns->GRZsnk += nf->fruitn_storage_to_GRZ;
 	ns->fruitn_storage -= nf->fruitn_storage_to_GRZ;
 
+	/* softstem simulation - Hidy 2013. */
+	ns->GRZsnk += nf->softstemn_to_GRZ;
+	ns->softstemn -= nf->softstemn_to_GRZ;
+	ns->GRZsnk += nf->softstemn_transfer_to_GRZ;
+	ns->softstemn_transfer -= nf->softstemn_transfer_to_GRZ;
+	ns->GRZsnk += nf->softstemn_storage_to_GRZ;
+	ns->softstemn_storage -= nf->softstemn_storage_to_GRZ;
+
+/* dead standing biomass */
+	ns->GRZsnk += litr1n_STDB_to_GRZ;
+	ns->litr1n_STDB -= litr1n_STDB_to_GRZ;
+	ns->GRZsnk += litr2n_STDB_to_GRZ;
+	ns->litr2n_STDB -= litr2n_STDB_to_GRZ;
+	ns->GRZsnk += litr3n_STDB_to_GRZ;
+	ns->litr3n_STDB -= litr3n_STDB_to_GRZ;
+	ns->GRZsnk += litr4n_STDB_to_GRZ;
+	ns->litr4n_STDB -=litr4n_STDB_to_GRZ;
+
+	ns->SNSCsrc += nf->STDBn_to_GRZ;
+	ns->STDBn -= nf->STDBn_to_GRZ;
+
+
 	ns->litr1n += nf->GRZ_to_litr1n;
 	ns->litr2n += nf->GRZ_to_litr2n;
 	ns->litr3n += nf->GRZ_to_litr3n;
@@ -222,6 +322,9 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	/* 3. water */
 	ws->canopyw_GRZsnk += wf->canopyw_to_GRZ;
 	ws->canopyw -= wf->canopyw_to_GRZ;
+
+		
+
 	
    return (!ok);
 }

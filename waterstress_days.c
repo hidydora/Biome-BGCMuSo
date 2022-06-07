@@ -1,10 +1,11 @@
 /* 
 waterstress_days.c
-Hidy 2011 -  calculating the number of the days since water stress occurs in the vegetation period based on soil water status
+calculating the number of the days since water stress occurs in the vegetation period based on soil water status
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

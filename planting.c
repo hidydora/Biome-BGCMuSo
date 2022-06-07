@@ -3,8 +3,8 @@ planting.c
 planting  - planting seeds in soil - increase transfer pools
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -22,13 +22,13 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 
 int planting(const control_struct* ctrl,const epconst_struct* epc, planting_struct* PLT, cflux_struct* cf, nflux_struct* nf, 
-			 cstate_struct* cs, nstate_struct*ns)
+			 cstate_struct* cs, nstate_struct* ns)
 {
 	/* planting parameters Hidy 2012.*/	   
 
 	double seed_quantity,seed_Ccontent;					
 	double utiliz_coeff;
-	double prop_leaf, prop_froot, prop_fruit;	
+	double prop_leaf, prop_froot, prop_fruit, prop_softstem;	
 	
 	int ok=1;
 	int ny;
@@ -54,17 +54,10 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 		utiliz_coeff  = PLT->utiliz_coeff_array[mgmd][ny]/100;	         /* change unit: % to number */
 	
 		/* allocation is calculated based on leafC - EPC alloc.params: unit is leafC content */
-		prop_leaf     = 1.0/(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + 1.);											
-		prop_froot    = epc->alloc_frootc_leafc/(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + 1.);
-		prop_fruit    = epc->alloc_fruitc_leafc/(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + 1.);
-
-		/* CONTROL: seed C content must cover plant material required leaf/froot/fruit composition 
-		            EPC allocation paramters (new frootC:leafC, new fruitC:leafC) and INI planting paramters (seed prod. to leaf) */
-		if (prop_leaf+prop_froot+prop_fruit - 1.0 > 0.0001)
-		{
-			printf("Fatal error: seed C content does not cover plant material required leaf/froot/fruit composition - see EPC allocation and INI planting paramters (planting.c)\n");
-			ok=0;
-		}
+		prop_leaf     = 1.0                       /(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + epc->alloc_softstemc_leafc + 1.);											
+		prop_froot    = epc->alloc_frootc_leafc   /(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + epc->alloc_softstemc_leafc + 1.);
+		prop_fruit    = epc->alloc_fruitc_leafc   /(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + epc->alloc_softstemc_leafc + 1.);
+		prop_softstem = epc->alloc_softstemc_leafc/(epc->alloc_frootc_leafc + epc->alloc_fruitc_leafc + epc->alloc_softstemc_leafc + 1.);
 
 		cf->leafc_transfer_from_PLT  = (seed_quantity * utiliz_coeff * prop_leaf)  * seed_Ccontent;
 		nf->leafn_transfer_from_PLT  =  cf->leafc_transfer_from_PLT  / epc->leaf_cn;
@@ -73,6 +66,9 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 		/* fruit simulation - Hidy 2013 */
 		cf->fruitc_transfer_from_PLT = (seed_quantity * utiliz_coeff * prop_fruit) * seed_Ccontent;
 		nf->fruitn_transfer_from_PLT =  cf->fruitc_transfer_from_PLT / epc->fruit_cn;
+		/* softstem simulation - Hidy 2013 */
+		cf->softstemc_transfer_from_PLT = (seed_quantity * utiliz_coeff * prop_softstem) * seed_Ccontent;
+		nf->softstemn_transfer_from_PLT =  cf->softstemc_transfer_from_PLT / epc->softstem_cn;
 
 	}
 	else
@@ -83,6 +79,8 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 		nf->frootn_transfer_from_PLT = 0.;
 		cf->fruitc_transfer_from_PLT = 0.;
 		nf->fruitn_transfer_from_PLT = 0.;
+		cf->softstemc_transfer_from_PLT = 0.;
+		nf->softstemn_transfer_from_PLT = 0.;
 	}
 
 	
@@ -98,6 +96,9 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 	/* fruit simulation - Hidy 2013 */
 	cs->fruitc_transfer += cf->fruitc_transfer_from_PLT;
 	cs->PLTsrc += cf->fruitc_transfer_from_PLT;
+	/* softstem simulation - Hidy 2013 */
+	cs->softstemc_transfer += cf->softstemc_transfer_from_PLT;
+	cs->PLTsrc += cf->softstemc_transfer_from_PLT;
 
 	/* 2. nitrogen */
 	ns->leafn_transfer += nf->leafn_transfer_from_PLT;
@@ -107,6 +108,9 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 	/* fruit simulation - Hidy 2013 */
 	ns->fruitn_transfer += nf->fruitn_transfer_from_PLT;
 	ns->PLTsrc += nf->fruitn_transfer_from_PLT;
+	/* softstem simulation - Hidy 2013 */
+	ns->softstemn_transfer += nf->softstemn_transfer_from_PLT;
+	ns->PLTsrc += nf->softstemn_transfer_from_PLT;
 
 
    return (!ok);

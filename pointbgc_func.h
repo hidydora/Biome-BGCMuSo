@@ -1,12 +1,11 @@
 /*
 pointbgc_func.h
 function prototypes for pointbgc
-for use with pointbgc front-end to BBGC MuSo v3.0.8 library
+for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -29,12 +28,13 @@ int cnstate_init(file init, const epconst_struct* epc, cstate_struct* cs,
 	cinit_struct* cinit, nstate_struct* ns);
 int output_init(file init, output_struct* output);
 int end_init(file init);
-int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,
-int nyears);
+int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc, const siteconst_struct* sitec,int nyears);
 int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns,
 	cinit_struct* cinit);
-int prephenology(const control_struct* ctrl, const epconst_struct* epc, 
+int prephenology(file logfile, const control_struct* ctrl, const epconst_struct* epc, 
 	const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* phenarr);
+/* limitation factors of conductance calculation - Hidy 2012. */
+int conduct_limit_factors(file logfile, const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, epvar_struct* epv);
 
 /* new init functions - modified by Hidy 2008.*/
 int thinning_init(file init, control_struct* ctrl, thinning_struct* THN);
@@ -43,13 +43,16 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ);
 int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV);
 int ploughing_init(file init,  control_struct* ctrl, ploughing_struct* PLG);
 int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ);
+int irrigation_init(file init, control_struct* ctrl, irrigation_struct* IRG);
 int planting_init(file init, control_struct* ctrl, planting_struct* PLT);
 int GSI_init(file init, GSI_struct* GSI);
 int read_mgmarray(int simyr, int varMGM, file MGM_file, double*** mgmarray);
 int groundwater_init(siteconst_struct* sitec, control_struct* ctrl);
 
 /* model corrections - Hidy 2009. */
-int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, const siteconst_struct* sitec,
+int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, 
 	GSI_struct* GSI, phenarray_struct* phenarr);
+
+
 
 

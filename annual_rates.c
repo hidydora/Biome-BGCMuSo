@@ -3,10 +3,10 @@ annual_rates.c
 Functions called annually from bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -34,6 +34,9 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 		/* fruit simulation */
 		epv->day_fruitc_litfall_increment = epv->annmax_fruitc * epc->fruit_turnover / NDAY_OF_YEAR;
 		epv->annmax_fruitc = 0.0;
+		/* softstem simulation */
+		epv->day_softstemc_litfall_increment = epv->annmax_softstemc * epc->softstem_turnover / NDAY_OF_YEAR;
+		epv->annmax_softstemc = 0.0;
 	}
 	else
 	{
@@ -43,8 +46,9 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 		epv->day_frootc_litfall_increment = 0.0;
 		/* fruit simulation */
 		epv->day_fruitc_litfall_increment = 0.0;
-	}
 	
+	}
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
 		/* live wood turnover rates */
@@ -52,6 +56,11 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 		epv->day_livecrootc_turnover_increment = epv->annmax_livecrootc * epc->livewood_turnover / NDAY_OF_YEAR;
 		epv->annmax_livestemc = 0.0;
 		epv->annmax_livecrootc = 0.0;
+	}
+	else
+	{
+		/* softstem simulation */
+		epv->day_softstemc_litfall_increment = 0.0;
 	}
 	
 	return (!ok);

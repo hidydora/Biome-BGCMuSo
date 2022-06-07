@@ -4,9 +4,11 @@ functions called to copy restart info between restart structure and
 active structures
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Copyright 2014, D. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -19,8 +21,8 @@ Copyright 2014, D. Hidy
 #include "bgc_func.h"       /* function prototypes */
 #include "bgc_constants.h"
 
-int restart_input(const control_struct* ctrl, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, int* metyr, 
-				  restart_data_struct* restart)
+int restart_input(const control_struct* ctrl, const epconst_struct* epc, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns,
+				  epvar_struct* epv, int* metyr, restart_data_struct* restart)
 {
 	int ok=1;
 	int layer;
@@ -44,6 +46,11 @@ int restart_input(const control_struct* ctrl, wstate_struct* ws, cstate_struct* 
 	cs->fruitc                            = restart->fruitc;
 	cs->fruitc_storage                    = restart->fruitc_storage;
 	cs->fruitc_transfer                   = restart->fruitc_transfer;
+	/* softstem simulation - Hidy 2013. */
+	cs->softstemc                         = restart->softstemc;
+	cs->softstemc_storage                 = restart->softstemc_storage;
+	cs->softstemc_transfer                = restart->softstemc_transfer;
+
 	cs->livestemc                         = restart->livestemc;
 	cs->livestemc_storage                 = restart->livestemc_storage;
 	cs->livestemc_transfer                = restart->livestemc_transfer;
@@ -68,36 +75,125 @@ int restart_input(const control_struct* ctrl, wstate_struct* ws, cstate_struct* 
 	cs->soil3c                            = restart->soil3c;
 	cs->soil4c                            = restart->soil4c;
 	cs->cpool                             = restart->cpool;
-	/* Hidy 2013 - temporary senescence pool */
-	cs->litr1c_strg_SNSC				  = restart->litr1c_strg_SNSC;
-	cs->litr2c_strg_SNSC				  = restart->litr2c_strg_SNSC;
-	cs->litr3c_strg_SNSC				  = restart->litr3c_strg_SNSC;
-	cs->litr4c_strg_SNSC				  = restart->litr4c_strg_SNSC;
+
+	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
+	cs->litr1c_STDB				  = restart->litr1c_STDB;
+	cs->litr2c_STDB				  = restart->litr2c_STDB;
+	cs->litr3c_STDB				  = restart->litr3c_STDB;
+	cs->litr4c_STDB				  = restart->litr4c_STDB;
+	cs->litr1c_strg_HRV           = restart->litr1c_strg_HRV;
+	cs->litr2c_strg_HRV           = restart->litr2c_strg_HRV;
+	cs->litr3c_strg_HRV           = restart->litr3c_strg_HRV;
+	cs->litr4c_strg_HRV           = restart->litr4c_strg_HRV;
+	cs->litr1c_strg_MOW           = restart->litr1c_strg_MOW;
+	cs->litr2c_strg_MOW           = restart->litr2c_strg_MOW;
+	cs->litr3c_strg_MOW           = restart->litr3c_strg_MOW;
+	cs->litr4c_strg_MOW           = restart->litr4c_strg_MOW;
+	cs->litr1c_strg_THN           = restart->litr1c_strg_THN;
+	cs->litr2c_strg_THN           = restart->litr2c_strg_THN;
+	cs->litr3c_strg_THN           = restart->litr3c_strg_THN;
+	cs->litr4c_strg_THN           = restart->litr4c_strg_THN;
+	cs->litr_aboveground          = restart->litr_aboveground;
+	cs->litr_belowground          = restart->litr_belowground;
+	cs->CTDBc                     = restart->CTDBc;
+
 	
-	ns->leafn                             = restart->leafn;
-	ns->leafn_storage                     = restart->leafn_storage;
-	ns->leafn_transfer                    = restart->leafn_transfer;
-	ns->frootn                            = restart->frootn;
-	ns->frootn_storage                    = restart->frootn_storage;
-	ns->frootn_transfer                   = restart->frootn_transfer;
+	/* spinup - normal C and N pool adjustment in order to avoud negative N pools in case of land use change (changing EOC) */
+	if (epc->leaf_cn > 0)
+	{
+		ns->leafn                         = cs->leafc           / epc->leaf_cn;
+		ns->leafn_storage                 = cs->leafc_storage   / epc->leaf_cn;
+		ns->leafn_transfer                = cs->leafc_transfer  / epc->leaf_cn;
+	}
+	else
+	{
+		ns->leafn                         = 0;
+		ns->leafn_storage                 = 0;
+		ns->leafn_transfer                = 0;
+	}
+
+	if (epc->froot_cn)
+	{
+		ns->frootn                        = cs->frootc          / epc->froot_cn;
+		ns->frootn_storage                = cs->frootc_storage  / epc->froot_cn;
+		ns->frootn_transfer               = cs->frootc_transfer / epc->froot_cn;
+	}
+	else
+	{
+		ns->frootn                        = 0;
+		ns->frootn_storage                = 0;
+		ns->frootn_transfer               = 0;
+	}
+
 	/* fruit simulation - Hidy 2013. */
-	ns->fruitn                            = restart->fruitn;
-	ns->fruitn_storage                    = restart->fruitn_storage;
-	ns->fruitn_transfer                   = restart->fruitn_transfer;
-	ns->livestemn                         = restart->livestemn;
-	ns->livestemn_storage                 = restart->livestemn_storage;
-	ns->livestemn_transfer                = restart->livestemn_transfer;
-	ns->deadstemn                         = restart->deadstemn;
-	ns->deadstemn_storage                 = restart->deadstemn_storage;
-	ns->deadstemn_transfer                = restart->deadstemn_transfer;
-	ns->livecrootn                        = restart->livecrootn;
-	ns->livecrootn_storage                = restart->livecrootn_storage;
-	ns->livecrootn_transfer               = restart->livecrootn_transfer;
-	ns->deadcrootn                        = restart->deadcrootn;
-	ns->deadcrootn_storage                = restart->deadcrootn_storage;
-	ns->deadcrootn_transfer               = restart->deadcrootn_transfer;
-	ns->cwdn                              = restart->cwdn;
-	ns->litr1n                            = restart->litr1n;
+	if (epc->fruit_cn > 0)
+	{
+		ns->fruitn                        = cs->fruitc          / epc->fruit_cn;
+		ns->fruitn_storage                = cs->fruitc_storage  / epc->fruit_cn;
+		ns->fruitn_transfer               = cs->fruitc_transfer / epc->fruit_cn;
+	}
+	else
+	{
+		ns->fruitn                        =	0;
+		ns->fruitn_storage                = 0;
+		ns->fruitn_transfer               = 0;
+	}
+	/* softstem simulation - Hidy 2015.*/ 
+	if (epc->softstem_cn)
+	{
+		ns->softstemn                     = cs->softstemc          / epc->softstem_cn;
+		ns->softstemn_storage             = cs->softstemc_storage  / epc->softstem_cn;
+		ns->softstemn_transfer            = cs->softstemc_transfer / epc->softstem_cn;
+	}
+	else
+	{
+		ns->softstemn                     = 0;
+		ns->softstemn_storage             = 0;
+		ns->softstemn_transfer            = 0;
+	}
+
+	if (epc->livewood_cn > 0)
+	{
+		ns->livestemn                     = cs->livestemc          / epc->livewood_cn;
+		ns->livestemn_storage             = cs->livestemc_storage  / epc->livewood_cn;
+		ns->livestemn_transfer            = cs->livestemc_transfer / epc->livewood_cn;
+		ns->livecrootn                    = cs->livecrootc         / epc->livewood_cn;
+		ns->livecrootn_storage            = cs->livecrootc_storage / epc->livewood_cn;
+		ns->livecrootn_transfer           = cs->livecrootc_transfer/ epc->livewood_cn;
+	}
+	else
+	{
+		ns->livestemn                     = 0;
+		ns->livestemn_storage             = 0;
+		ns->livestemn_transfer            = 0;
+		ns->livecrootn                    = 0;
+		ns->livecrootn_storage            = 0;
+		ns->livecrootn_transfer           = 0;
+	}
+	
+	if (epc->deadwood_cn > 0)
+	{
+		ns->deadstemn                     = cs->deadstemc          / epc->deadwood_cn; 
+		ns->deadstemn_storage             = cs->deadstemc_storage  / epc->deadwood_cn;
+		ns->deadstemn_transfer            = cs->deadstemc_transfer / epc->deadwood_cn;
+		ns->deadcrootn                    = cs->deadcrootc         / epc->deadwood_cn;
+		ns->deadcrootn_storage            = cs->deadcrootc_storage / epc->deadwood_cn;
+		ns->deadcrootn_transfer           = cs->deadcrootc_transfer/ epc->deadwood_cn;
+		ns->cwdn                          = cs->cwdc / epc->deadwood_cn;
+	}
+	else
+	{
+		ns->deadstemn                     = 0; 
+		ns->deadstemn_storage             = 0;
+		ns->deadstemn_transfer            = 0;
+		ns->deadcrootn                    = 0;
+		ns->deadcrootn_storage            = 0;
+		ns->deadcrootn_transfer           = 0;
+		ns->cwdn						  = 0;
+	}
+
+
+ 	ns->litr1n                            = restart->litr1n;
 	ns->litr2n                            = restart->litr2n;
 	ns->litr3n                            = restart->litr3n;
 	ns->litr4n                            = restart->litr4n;
@@ -105,12 +201,24 @@ int restart_input(const control_struct* ctrl, wstate_struct* ws, cstate_struct* 
 	ns->soil2n                            = restart->soil2n;
 	ns->soil3n                            = restart->soil3n;
 	ns->soil4n                            = restart->soil4n;
-	/* Hidy 2013 - temporary senescence pool */
-	ns->litr1n_strg_SNSC				  = restart->litr1n_strg_SNSC;
-	ns->litr2n_strg_SNSC				  = restart->litr2n_strg_SNSC;
-	ns->litr3n_strg_SNSC				  = restart->litr3n_strg_SNSC;
-	ns->litr4n_strg_SNSC				  = restart->litr4n_strg_SNSC;
 
+	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
+	ns->litr1n_STDB				  = restart->litr1n_STDB;
+	ns->litr2n_STDB				  = restart->litr2n_STDB;
+	ns->litr3n_STDB				  = restart->litr3n_STDB;
+	ns->litr4n_STDB				  = restart->litr4n_STDB;
+	ns->litr1n_strg_HRV           = restart->litr1n_strg_HRV;
+	ns->litr2n_strg_HRV           = restart->litr2n_strg_HRV;
+	ns->litr3n_strg_HRV           = restart->litr3n_strg_HRV;
+	ns->litr4n_strg_HRV           = restart->litr4n_strg_HRV;
+	ns->litr1n_strg_MOW           = restart->litr1n_strg_MOW;
+	ns->litr2n_strg_MOW           = restart->litr2n_strg_MOW;
+	ns->litr3n_strg_MOW           = restart->litr3n_strg_MOW;
+	ns->litr4n_strg_MOW           = restart->litr4n_strg_MOW;
+	ns->litr1n_strg_THN           = restart->litr1n_strg_THN;
+	ns->litr2n_strg_THN           = restart->litr2n_strg_THN;
+	ns->litr3n_strg_THN           = restart->litr3n_strg_THN;
+	ns->litr4n_strg_THN           = restart->litr4n_strg_THN;
 	/*-----------------------------*/
 	/* Hidy 2011 - multilayer soil */
 	
@@ -125,12 +233,20 @@ int restart_input(const control_struct* ctrl, wstate_struct* ws, cstate_struct* 
 
 	epv->day_leafc_litfall_increment      = restart->day_leafc_litfall_increment;
 	epv->day_frootc_litfall_increment     = restart->day_frootc_litfall_increment;
+	/* fruit simulation - Hidy 2013. */
+	epv->day_fruitc_litfall_increment     = restart->day_fruitc_litfall_increment;
+	/* softstem simulation - Hidy 2015. */
+	epv->day_softstemc_litfall_increment     = restart->day_softstemc_litfall_increment;
+	
 	epv->day_livestemc_turnover_increment = restart->day_livestemc_turnover_increment;
 	epv->day_livecrootc_turnover_increment= restart->day_livecrootc_turnover_increment;
 	epv->annmax_leafc                     = restart->annmax_leafc;
 	epv->annmax_frootc                    = restart->annmax_frootc;
 	/* fruit simulation - Hidy 2013. */
 	epv->annmax_fruitc                    = restart->annmax_fruitc;
+	/* softstem simulation - Hidy 2015. */
+	epv->annmax_softstemc                 = restart->annmax_softstemc;
+
 	epv->annmax_livestemc                 = restart->annmax_livestemc;
 	epv->annmax_livecrootc                = restart->annmax_livecrootc;
 	epv->dsr                              = restart->dsr;
@@ -167,6 +283,11 @@ int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar
 	restart->fruitc 						  = cs->fruitc;
 	restart->fruitc_storage 				  = cs->fruitc_storage;
 	restart->fruitc_transfer				  = cs->fruitc_transfer;
+	/* softstem simulation - Hidy 2013. */
+	restart->softstemc 						  = cs->softstemc;
+	restart->softstemc_storage 				  = cs->softstemc_storage;
+	restart->softstemc_transfer				  = cs->softstemc_transfer;
+
 	restart->livestemc  					  = cs->livestemc;
 	restart->livestemc_storage  			  = cs->livestemc_storage;
 	restart->livestemc_transfer 			  = cs->livestemc_transfer;
@@ -186,11 +307,27 @@ int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar
 	restart->litr2c 						  = cs->litr2c;
 	restart->litr3c 						  = cs->litr3c;
 	restart->litr4c 						  = cs->litr4c;
-	/* Hidy 2013 - temporary senescence pool */
-	restart->litr1c_strg_SNSC				  = cs->litr1c_strg_SNSC;
-	restart->litr2c_strg_SNSC				  = cs->litr2c_strg_SNSC;
-	restart->litr3c_strg_SNSC				  = cs->litr3c_strg_SNSC;
-	restart->litr4c_strg_SNSC				  = cs->litr4c_strg_SNSC;
+
+	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
+	restart->litr1c_STDB		= cs->litr1c_STDB;
+	restart->litr2c_STDB		= cs->litr2c_STDB;
+	restart->litr3c_STDB		= cs->litr3c_STDB;
+	restart->litr4c_STDB		= cs->litr4c_STDB;
+	restart->litr1c_strg_HRV	= cs->litr1c_strg_HRV;
+	restart->litr2c_strg_HRV	= cs->litr2c_strg_HRV;
+	restart->litr3c_strg_HRV	= cs->litr3c_strg_HRV;
+	restart->litr4c_strg_HRV	= cs->litr4c_strg_HRV;
+	restart->litr1c_strg_MOW	= cs->litr1c_strg_MOW;
+	restart->litr2c_strg_MOW	= cs->litr2c_strg_MOW;
+	restart->litr3c_strg_MOW	= cs->litr3c_strg_MOW;
+	restart->litr4c_strg_MOW	= cs->litr4c_strg_MOW;
+	restart->litr1c_strg_THN	= cs->litr1c_strg_THN;
+	restart->litr2c_strg_THN	= cs->litr2c_strg_THN;
+	restart->litr3c_strg_THN	= cs->litr3c_strg_THN;
+	restart->litr4c_strg_THN	= cs->litr4c_strg_THN;
+	restart->litr_aboveground	= cs->litr_aboveground;
+	restart->litr_belowground	= cs->litr_belowground;
+
 	restart->soil1c 						  = cs->soil1c;
 	restart->soil2c 						  = cs->soil2c;
 	restart->soil3c 						  = cs->soil3c;
@@ -207,6 +344,11 @@ int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar
 	restart->fruitn  						  = ns->fruitn;
 	restart->fruitn_storage  				  = ns->fruitn_storage;
 	restart->fruitn_transfer 				  = ns->fruitn_transfer;
+	/* softstem simulation - Hidy 2013. */
+	restart->softstemn  					  = ns->softstemn;
+	restart->softstemn_storage  			  = ns->softstemn_storage;
+	restart->softstemn_transfer 			  = ns->softstemn_transfer;
+
 	restart->livestemn  					  = ns->livestemn;
 	restart->livestemn_storage  			  = ns->livestemn_storage;
 	restart->livestemn_transfer 			  = ns->livestemn_transfer;
@@ -224,11 +366,25 @@ int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar
 	restart->litr2n 						  = ns->litr2n;
 	restart->litr3n 						  = ns->litr3n;
 	restart->litr4n 						  = ns->litr4n;
-	/* Hidy 2013 - temporary senescence pool */
-	restart->litr1n_strg_SNSC				  = ns->litr1n_strg_SNSC;
-	restart->litr2n_strg_SNSC				  = ns->litr2n_strg_SNSC;
-	restart->litr3n_strg_SNSC				  = ns->litr3n_strg_SNSC;
-	restart->litr4n_strg_SNSC				  = ns->litr4n_strg_SNSC;
+	
+	/* Hidy 2015 - standing dead biomass, cut-down dead biomass and litter pools */
+	restart->litr1n_STDB		= ns->litr1n_STDB;
+	restart->litr2n_STDB		= ns->litr2n_STDB;
+	restart->litr3n_STDB		= ns->litr3n_STDB;
+	restart->litr4n_STDB		= ns->litr4n_STDB;
+	restart->litr1n_strg_HRV	= ns->litr1n_strg_HRV;
+	restart->litr2n_strg_HRV	= ns->litr2n_strg_HRV;
+	restart->litr3n_strg_HRV	= ns->litr3n_strg_HRV;
+	restart->litr4n_strg_HRV	= ns->litr4n_strg_HRV;
+	restart->litr1n_strg_MOW	= ns->litr1n_strg_MOW;
+	restart->litr2n_strg_MOW	= ns->litr2n_strg_MOW;
+	restart->litr3n_strg_MOW	= ns->litr3n_strg_MOW;
+	restart->litr4n_strg_MOW	= ns->litr4n_strg_MOW;
+	restart->litr1n_strg_THN	= ns->litr1n_strg_THN;
+	restart->litr2n_strg_THN	= ns->litr2n_strg_THN;
+	restart->litr3n_strg_THN	= ns->litr3n_strg_THN;
+	restart->litr4n_strg_THN	= ns->litr4n_strg_THN;
+
 	restart->soil1n 						  = ns->soil1n;
 	restart->soil2n 						  = ns->soil2n;
 	restart->soil3n 						  = ns->soil3n;
@@ -249,12 +405,18 @@ int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar
 	restart->day_frootc_litfall_increment	  = epv->day_frootc_litfall_increment;
 	/* fruit simulation - Hidy 2013. */
 	restart->day_fruitc_litfall_increment	  = epv->day_fruitc_litfall_increment;
+	/* softstem simulation - Hidy 2013. */
+	restart->day_softstemc_litfall_increment  = epv->day_softstemc_litfall_increment;
+
 	restart->day_livestemc_turnover_increment = epv->day_livestemc_turnover_increment;
 	restart->day_livecrootc_turnover_increment= epv->day_livecrootc_turnover_increment;
 	restart->annmax_leafc					  = epv->annmax_leafc;
 	restart->annmax_frootc  				  = epv->annmax_frootc;
 	/* fruit simulation - Hidy 2013. */
 	restart->annmax_fruitc  				  = epv->annmax_fruitc;
+	/* softstem simulation - Hidy 2013. */
+	restart->annmax_softstemc  				  = epv->annmax_softstemc;
+
 	restart->annmax_livestemc				  = epv->annmax_livestemc;
 	restart->annmax_livecrootc  			  = epv->annmax_livecrootc;
 	restart->dsr							  = epv->dsr;

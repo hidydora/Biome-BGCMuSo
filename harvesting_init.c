@@ -3,8 +3,8 @@ harvesting_init.c
 read harvesting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -35,6 +35,7 @@ int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV)
 	int ok = 1;
 	int ny=1;
 
+
 	/********************************************************************
 	**                                                                 **
 	** Begin reading initialization file block starting with keyword:  **
@@ -58,14 +59,14 @@ int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV)
 	{
 		if (ok && scan_value(init, HRV_filename, 's'))
 		{
-			printf("Error reading harvesting calculating flag\n");
+			printf("Error reading harvesting calculating file\n");
 			ok=0;
 		}
 		else
 		{
 			
 			ok=1;
-			printf("harvesting information from file\n");
+			if (ctrl->onscreen) printf("INFORMATION: harvesting information from file\n");
 			HRV->HRV_flag = 2;
 			strcpy(HRV_file.name, HRV_filename);
 		}
@@ -79,7 +80,7 @@ int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV)
 		/* open the main init file for ascii read and check for errors */
 		if (file_open(&HRV_file,'i'))
 		{
-			printf("Error opening HRV_file, harvesting_int.c\n");
+			printf("Error opening HRV_file  (harvesting_init.c)\n");
 			exit(1);
 		}
 
@@ -96,7 +97,7 @@ int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV)
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, HRV->HRV_flag, HRV_file, &(HRV->LAI_snag_array)))
+	if (ok && read_mgmarray(ny, HRV->HRV_flag, HRV_file, &(HRV->snag_array)))
 	{
 		printf("Error reading LAI_snag\n");
 		ok=0;
@@ -113,6 +114,10 @@ int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV)
 	{
 		fclose (HRV_file.ptr);
 	}
+
+	HRV->mgmd = -1;
+	HRV->afterHRV = 0;
+
 
 	return (!ok);
 }

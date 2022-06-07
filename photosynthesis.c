@@ -3,10 +3,10 @@ photosynthesis.c
 C3/C4 photosynthesis model
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -28,7 +28,7 @@ Hidy 2013: correction of c4 photosynthesis routine based on the work of Vittorio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int photosynthesis(psn_struct* psn)
+int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, psn_struct* psn)
 {
 	/*
 	The following variables are assumed to be defined in the psn struct
@@ -98,6 +98,11 @@ int photosynthesis(psn_struct* psn)
 	static double Q10Kp = 2.1; /*(DIM) Q10 for pep carboxylase activity*/
 	static double Rbs = 0.000130; /* (m2s/umol) - bundle sheath resistance to co2 flux perleaf area, bundle sheath area bases -- average of 3 types of C4 plant, von Caemmerer 2003*/
 
+	/* acclimation - Hidy 2015 */
+	static double acclim_a  = 2.59;
+	static double acclim_b  = -0.035;
+	double acclim_rVJ;
+	
 	double flnp = psn->flnp;
 
 	
@@ -167,8 +172,16 @@ int photosynthesis(psn_struct* psn)
 		in C3 plants - A retrospective analysis of the A/Ci curves from
 		109 species. Journal of Experimental Botany, 44:907-920.
 	*/
+
 	psn->Jmax = Jmax = 1.97*Vmax;
-	
+	if (epc->acclimation_flag == 2 || epc->acclimation_flag == 3)
+	{
+		acclim_rVJ = acclim_a + acclim_b * metv->tavg30_ra;
+		psn->Jmax  = acclim_rVJ * Vmax;
+
+	}
+
+		
 	/* calculate J = f(Jmax, ppfd), reference:
 	de Pury and Farquhar 1997
 	Plant Cell and Env.

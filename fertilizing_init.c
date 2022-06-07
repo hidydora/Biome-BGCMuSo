@@ -3,8 +3,8 @@ fertilizing_init.c
 read fertilizing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -35,6 +35,7 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 	int ok = 1;
 	int ny=1;
 
+
 	/********************************************************************
 	**                                                                 **
 	** Begin reading initialization file block starting with keyword:  **
@@ -58,14 +59,14 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 	{
 		if (ok && scan_value(init, FRZ_filename, 's'))
 		{
-			printf("Error reading fertilizing calculating flag\n");
+			printf("Error reading fertilizing calculating file\n");
 			ok=0;
 		}
 		else
 		{
 			
 			ok=1;
-			printf("fertilizing information from file\n");
+			if (ctrl->onscreen) printf("INFORMATION: fertilizing information from file\n");
 			FRZ->FRZ_flag = 2;
 			strcpy(FRZ_file.name, FRZ_filename);
 		}
@@ -163,11 +164,31 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 		ok=0;
 	}
 
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->EFfert_N2O)))
+	{
+		printf("Error reading fertilization emission factor of N2O\n");
+		ok=0;
+	}
+
+
 	if (FRZ->FRZ_flag == 2)
 	{
 		fclose (FRZ_file.ptr);
 	}
 
+	/* local variables - Hidy 2015.*/
+	FRZ->FRZ_pool_act   = 0;
+	FRZ->DC_act         = 0;        
+	FRZ->UC_act         = 0;
+	FRZ->Ccontent_act   = 0;
+	FRZ->Ncontent_act   = 0;	
+	FRZ->NH3content_act = 0;
+	FRZ->flab_act       = 0;
+	FRZ->fucel_act      = 0;
+	FRZ->fscel_act		= 0;
+	FRZ->flig_act		= 0;
+	FRZ->EFf_N2O_act	= 0;
+	FRZ->mgmd           = -1;
 
 	return (!ok);
 }

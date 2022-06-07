@@ -3,7 +3,7 @@ bgc_constants.h
 Holds macro definitions for constants used in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
@@ -44,42 +44,41 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 /* precision control */
 /* This constant determines the lower limit of state variables before they
 are set to 0.0 to control rounding and overflow errors */
-#define CRIT_PREC 1e-15
+#define CRIT_PREC 1e-12
 
 /* spinup control */
 /* maximum allowable trend in slow soil carbon at steady-state (kgC/m2/yr) */
-#define SPINUP_TOLERANCE 0.0005
+#define SPINUP_TOLERANCE 0.005
 
 /* output control constants */
 #define NMAP 700
 
 /* Hidy 2010 - contants for multilayer soil model calculation */
-#define HC_water			4200000		/* (J/m3/K) heat capacity of water */
-#define HC_soil				1260000		/* (J/m3/K) heat capacity of soil */
-#define HC_air				1004		/* (J/m3/K) heat capacity of air */
+#define HC_water			4200000.	/* (J/m3/K) heat capacity of water */
+#define HC_soil				1260000.	/* (J/m3/K) heat capacity of soil */
+#define HC_air				1004.		/* (J/m3/K) heat capacity of air */
 #define n_sec_in_day		86400		/* (s/day)  calculation of daily value from second values */
 #define n_hour_in_day		24.			/* (hour/day)  calculation of daily value from hourly values */
-
 #define water_density		1000		/* (kg/m3)  mean value of water density */
 #define pF_hygroscopw		6.2			/* (dimless)  pF value at hygroscopic water point (dry air) */
 #define pF_wiltingpoint		4.2			/* (dimless)  pF value at wilting point */
 #define pF_fieldcapacity	2.5			/* (dimless)  pF value at field capacity */
-
+#define TP					2.65		/* (g/cm3) total porosity */
 /* Hidy 2013 - contants for snow estimation in GSI calculation */
 #define sn_abs				0.6			/* absorptivity of snow */
 #define lh_fus				335.0		/* (kJ/kg) latent heat of fusion */
 #define lh_sub				2845.0		/* (kJ/kg) latent heal of sublimation */
 #define tcoef				0.65		/* (kg/m2/deg C/d) temp. snowmelt coef */
 
-
 #define NDAY_OF_YEAR	    365	
-#define DATA_GAP			999.9
-#define CAMPBELL_PARAM		200    /* (dimless) based on Cambell and Diaz 1988: Simplifiled soil-water balance model (runoff calc. in mm) */
+#define DATA_GAP			-9999	
+
 /* Hidy 2015 - number of parameter arrays regarding to management sections */
-#define n_FRZparam			11
-#define n_GRZparam			9
+#define n_FRZparam			12
+#define n_GRZparam			14
 #define n_HRVparam			3
+#define n_IRGparam			2
 #define n_MOWparam			3
 #define n_PLTparam			4
-#define n_PLGparam			1
+#define n_PLGparam			3
 #define n_THNparam			4

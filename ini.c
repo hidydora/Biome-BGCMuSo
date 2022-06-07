@@ -3,7 +3,7 @@ ini.c
 Rudimentary file I/O functions
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -30,7 +30,7 @@ int file_open (file *target, char mode)
         case 'r':
             if ((target->ptr = fopen(target->name,"rb")) == NULL)
             {
-                printf("Can't open %s for binary read ... Exiting\n",target->name);
+                printf("Can't open %s for binary read\n",target->name);
                 ok=0;
             }
             break;
@@ -38,7 +38,13 @@ int file_open (file *target, char mode)
         case 'i':
             if ((target->ptr = fopen(target->name,"r")) == NULL)
             {
-                printf("Can't open %s for ascii read ... Exiting\n",target->name);
+                printf("Can't open %s for ascii read\n",target->name);
+                ok=0;
+            }
+            break;
+		case 'j':
+            if ((target->ptr = fopen(target->name,"r")) == NULL)
+            {
                 ok=0;
             }
             break;
@@ -46,7 +52,7 @@ int file_open (file *target, char mode)
         case 'w':
             if ((target->ptr = fopen(target->name,"wb")) == NULL)
             {
-                printf("Can't open %s for binary write ... Exiting\n",target->name);
+                printf("Can't open %s for binary write\n",target->name);
                 ok=0;
             }
             break;
@@ -54,7 +60,7 @@ int file_open (file *target, char mode)
         case 'o':
             if ((target->ptr = fopen(target->name,"w")) == NULL)
             {
-                printf("Can't open %s for ascii write ... Exiting\n",target->name);
+                printf("Can't open %s for ascii write\n",target->name);
                 ok=0;
             }
             break;
@@ -88,7 +94,7 @@ int scan_array (file ini, void *var, char type, int nl)
 			else ok_scan = fscanf(ini.ptr, "%d",(int*)var);
             if (ok_scan == 0 || ok_scan == EOF) 
 			{
-				printf("Error reading int value from %s ... exiting\n",ini.name);
+				printf("Error reading int value from %s \n",ini.name);
 				ok=0;
 			}
             break;
@@ -98,7 +104,7 @@ int scan_array (file ini, void *var, char type, int nl)
 			else ok_scan = fscanf(ini.ptr, "%lf",(double*)var);
             if (ok_scan == 0 || ok_scan == EOF)
 			{
-				printf("Error reading double value from %s... exiting\n",ini.name);
+				printf("Error reading double value from %s\n",ini.name);
 				ok=0;
 			}
             break;
@@ -108,7 +114,7 @@ int scan_array (file ini, void *var, char type, int nl)
 			else ok_scan = fscanf(ini.ptr, "%s",(char*)var);
             if (ok_scan == 0 || ok_scan == EOF) 
 			{
-				printf("Error reading string value from %s... exiting\n",ini.name);
+				printf("Error reading string value from %s\n",ini.name);
 				ok=0;
 			}
             break;

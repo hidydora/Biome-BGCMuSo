@@ -3,10 +3,12 @@ precision_control.c
 Detects very low values in state variable structures, and forces them to
 0.0, in order to avoid rounding and overflow errors.
 
-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+*-*-*-*-*-*-*-*-*0-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Copyright 2014, D. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 Updated:
@@ -32,15 +34,34 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 	Fine root C and N follow leaf C and N. This control is triggered
 	at a higher value than the others because leafc is used in exp()
 	in radtrans, and so can cause rounding error at larger values. */
-	if (fabs(cs->leafc) < 1e-7)
+
+	/************************/
+	if (fabs(cs->leafc) < 1e-7 || fabs(ns->leafn) < 1e-8)
 	{
 		cs->litr1c += cs->leafc;
 		ns->litr1n += ns->leafn;
 		cs->leafc = 0.0;
 		ns->leafn = 0.0;
+	}													 
+
+    if ((cs->leafc_storage < 0 && fabs(cs->leafc_storage) < 1e-7) || (ns->leafn_storage < 0 && fabs(ns->leafn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->leafc_storage;
+		ns->litr1n += ns->leafn_storage;
+		cs->leafc_storage = 0.0;
+		ns->leafn_storage = 0.0;
 	}
 
-	if (fabs(cs->frootc) < 1e-7)
+	if ((cs->leafc_transfer < 0 && fabs(cs->leafc_transfer) < 1e-7) || (ns->leafn_transfer < 0 && fabs(ns->leafn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->leafc_transfer;
+		ns->litr1n += ns->leafn_transfer;
+		cs->leafc_transfer = 0.0;
+		ns->leafn_transfer = 0.0;
+	}
+
+	/************************/
+	if (fabs(cs->frootc) < 1e-7 || fabs(ns->frootn) < 1e-8)
 	{
 		cs->litr1c += cs->frootc;
 		ns->litr1n += ns->frootn;
@@ -48,7 +69,24 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->frootn = 0.0;
 	}
 
-	if (fabs(cs->fruitc) < CRIT_PREC)
+    if ((cs->frootc_storage < 0 && fabs(cs->frootc_storage) < 1e-7) || (ns->frootn_storage < 0 && fabs(ns->frootn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->frootc_storage;
+		ns->litr1n += ns->frootn_storage;
+		cs->frootc_storage = 0.0;
+		ns->frootn_storage = 0.0;
+	}
+
+	if ((cs->frootc_transfer < 0 && fabs(cs->frootc_transfer) < 1e-7) || (ns->frootn_transfer < 0 && fabs(ns->frootn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->frootc_transfer;
+		ns->litr1n += ns->frootn_transfer;
+		cs->frootc_transfer = 0.0;
+		ns->frootn_transfer = 0.0;
+	}
+
+	/************************/
+	if (fabs(cs->fruitc) < 1e-7 || fabs(ns->fruitn) < 1e-8)
 	{
 		cs->litr1c += cs->fruitc;
 		ns->litr1n += ns->fruitn;
@@ -56,29 +94,125 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->fruitn = 0.0;
 	}
 
-	/* tests for other plant pools. Excess goes to litter 1 */
-	if (fabs(cs->livestemc) < CRIT_PREC)
+    if ((cs->fruitc_storage < 0 && fabs(cs->fruitc_storage) < 1e-7) || (ns->fruitn_storage < 0 && fabs(ns->fruitn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->fruitc_storage;
+		ns->litr1n += ns->fruitn_storage;
+		cs->fruitc_storage = 0.0;
+		ns->fruitn_storage = 0.0;
+	}
+
+	if ((cs->fruitc_transfer < 0 && fabs(cs->fruitc_transfer) < 1e-7) || (ns->fruitn_transfer < 0 && fabs(ns->fruitn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->fruitc_transfer;
+		ns->litr1n += ns->fruitn_transfer;
+		cs->fruitc_transfer = 0.0;
+		ns->fruitn_transfer = 0.0;
+	}
+
+	/************************/
+	if (fabs(cs->softstemc) < 1e-7 || fabs(ns->softstemn) < 1e-8)
+	{
+		cs->litr1c += cs->softstemc;
+		ns->litr1n += ns->softstemn;
+		cs->softstemc = 0.0;
+		ns->softstemn = 0.0;
+	}
+
+
+    if ((cs->softstemc_storage < 0 && fabs(cs->softstemc_storage) < 1e-7) || (ns->softstemn_storage < 0 && fabs(ns->softstemn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->softstemc_storage;
+		ns->litr1n += ns->softstemn_storage;
+		cs->softstemc_storage = 0.0;
+		ns->softstemn_storage = 0.0;
+	}
+
+	if ((cs->softstemc_transfer < 0 && fabs(cs->softstemc_transfer) < 1e-7) || (ns->softstemn_transfer < 0 && fabs(ns->softstemn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->softstemc_transfer;
+		ns->litr1n += ns->softstemn_transfer;
+		cs->softstemc_transfer = 0.0;
+		ns->softstemn_transfer = 0.0;
+	}
+
+	/************************/
+	if (fabs(cs->livestemc) < CRIT_PREC || fabs(ns->livestemn) < CRIT_PREC)
 	{
 		cs->litr1c += cs->livestemc;
 		ns->litr1n += ns->livestemn;
 		cs->livestemc = 0.0;
 		ns->livestemn = 0.0;
 	}
-	if (fabs(cs->deadstemc) < CRIT_PREC)
+    
+    if ((cs->livestemc_storage < 0 && fabs(cs->livestemc_storage) < 1e-7) || (ns->livestemn_storage < 0 && fabs(ns->livestemn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->livestemc_storage;
+		ns->litr1n += ns->livestemn_storage;
+		cs->livestemc_storage = 0.0;
+		ns->livestemn_storage = 0.0;
+	}
+
+	if ((cs->livestemc_transfer < 0 && fabs(cs->livestemc_transfer) < 1e-7) || (ns->livestemn_transfer < 0 && fabs(ns->livestemn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->livestemc_transfer;
+		ns->litr1n += ns->livestemn_transfer;
+		cs->livestemc_transfer = 0.0;
+		ns->livestemn_transfer = 0.0;
+	}
+
+	/************************/
+	if (fabs(cs->deadstemc) < CRIT_PREC || fabs(ns->deadstemn) < CRIT_PREC)
 	{
 		cs->litr1c += cs->deadstemc;
 		ns->litr1n += ns->deadstemn;
 		cs->deadstemc = 0.0;
 		ns->deadstemn = 0.0;
 	}
-	if (fabs(cs->livecrootc) < CRIT_PREC)
+   
+    if ((cs->deadstemc_storage < 0 && fabs(cs->deadstemc_storage) < 1e-7) || (ns->deadstemn_storage < 0 && fabs(ns->deadstemn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->deadstemc_storage;
+		ns->litr1n += ns->deadstemn_storage;
+		cs->deadstemc_storage = 0.0;
+		ns->deadstemn_storage = 0.0;
+	}
+
+	if ((cs->deadstemc_transfer < 0 && fabs(cs->deadstemc_transfer) < 1e-7) || (ns->deadstemn_transfer < 0 && fabs(ns->deadstemn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->deadstemc_transfer;
+		ns->litr1n += ns->deadstemn_transfer;
+		cs->deadstemc_transfer = 0.0;
+		ns->deadstemn_transfer = 0.0;
+	}
+
+	/************************/
+	if (fabs(cs->livecrootc) < CRIT_PREC || fabs(ns->livecrootn) < CRIT_PREC)
 	{
 		cs->litr1c += cs->livecrootc;
 		ns->litr1n += ns->livecrootn;
 		cs->livecrootc = 0.0;
 		ns->livecrootn = 0.0;
 	}
-	if (fabs(cs->deadcrootc) < CRIT_PREC)
+
+    if ((cs->livecrootc_storage < 0 && fabs(cs->livecrootc_storage) < 1e-7) || (ns->livecrootn_storage < 0 && fabs(ns->livecrootn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->livecrootc_storage;
+		ns->litr1n += ns->livecrootn_storage;
+		cs->livecrootc_storage = 0.0;
+		ns->livecrootn_storage = 0.0;
+	}
+
+	if ((cs->livecrootc_transfer < 0 && fabs(cs->livecrootc_transfer) < 1e-7) || (ns->livecrootn_transfer < 0 && fabs(ns->livecrootn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->livecrootc_transfer;
+		ns->litr1n += ns->livecrootn_transfer;
+		cs->livecrootc_transfer = 0.0;
+		ns->livecrootn_transfer = 0.0;
+	}
+
+	/************************/
+	if (fabs(cs->deadcrootc) < CRIT_PREC || fabs(ns->deadcrootn) < CRIT_PREC)
 	{
 		cs->litr1c += cs->deadcrootc;
 		ns->litr1n += ns->deadcrootn;
@@ -86,23 +220,40 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->deadcrootn = 0.0;
 	}
 
-	/* missing gresp_transfer check - Hidy 2009 */
+    if ((cs->deadcrootc_storage < 0 && fabs(cs->deadcrootc_storage) < 1e-7) || (ns->deadcrootn_storage < 0 && fabs(ns->deadcrootn_storage) < 1e-8) )
+	{
+		cs->litr1c += cs->deadcrootc_storage;
+		ns->litr1n += ns->deadcrootn_storage;
+		cs->deadcrootc_storage = 0.0;
+		ns->deadcrootn_storage = 0.0;
+	}
+
+	if ((cs->deadcrootc_transfer < 0 && fabs(cs->deadcrootc_transfer) < 1e-7) || (ns->deadcrootn_transfer < 0 && fabs(ns->deadcrootn_transfer) < 1e-8) )
+	{
+		cs->litr1c += cs->deadcrootc_transfer;
+		ns->litr1n += ns->deadcrootn_transfer;
+		cs->deadcrootc_transfer = 0.0;
+		ns->deadcrootn_transfer = 0.0;
+	}
+
+	/************************/
 	if (fabs(cs->gresp_transfer) < CRIT_PREC)
 	{
 		cs->litr1c += cs->gresp_transfer;
 		cs->gresp_transfer = 0.0;
 
 	}
-	/* ---------------------------------------*/
-	
-	if (fabs(cs->cwdc) < CRIT_PREC)
+
+	if (fabs(cs->cwdc) < CRIT_PREC || fabs(ns->cwdn) < CRIT_PREC )
 	{
 		cs->litr1c += cs->cwdc;
 		ns->litr1n += ns->cwdn;
 		cs->cwdc = 0.0;
 		ns->cwdn = 0.0;
 	}
-	
+
+
+	/************************/	
 	/* test for litter and soil poils. Excess goes to hr sink (C)
 	or volatilized sink (N) */
 	if (fabs(cs->litr1c) < CRIT_PREC || fabs(ns->litr1n) < CRIT_PREC)
@@ -160,6 +311,12 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->nvol_snk += ns->soil4n;
 		cs->soil4c = 0.0;
 		ns->soil4n = 0.0;
+	}
+
+	if (fabs(cs->litr_aboveground) < CRIT_PREC)
+	{
+		cs->litr1_hr_snk += cs->litr_aboveground;
+		cs->litr_aboveground = 0.0;
 	}
 	
 	/* additional tests for soil mineral N and retranslocated N */

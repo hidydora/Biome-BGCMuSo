@@ -4,10 +4,10 @@ create structures initialized with zero for forcing fluxes to zero
 between simulation days
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -47,7 +47,9 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->canopyw_to_HRV = 0.0;
 	wf->canopyw_to_PLG = 0.0;
 	wf->canopyw_to_GRZ = 0.0;
-
+	wf->IRG_to_prcp = 0.0;
+	wf->pot_evap = 0.0;
+	
 	/* Hidy 2010 - multilayer soil */
 	for (layer = 0; layer < N_SOILLAYERS; layer ++)
 	{
@@ -109,9 +111,9 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->m_litr3c_to_fire = 0.0;
 	cf->m_litr4c_to_fire = 0.0;
 	cf->m_cwdc_to_fire = 0.0;
+	cf->m_STDBc_to_SNSC = 0;
     cf->leafc_transfer_to_leafc = 0.0;
     cf->frootc_transfer_to_frootc = 0.0;
-	cf->fruitc_transfer_to_fruitc = 0.0;
     cf->livestemc_transfer_to_livestemc = 0.0;
     cf->deadstemc_transfer_to_deadstemc = 0.0;
     cf->livecrootc_transfer_to_livecrootc = 0.0;
@@ -220,17 +222,21 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->THN_to_litr3c = 0.0;				
 	cf->THN_to_litr4c = 0.0;
 	cf->THN_to_cwdc = 0.0;
+	cf->STDBc_to_THN = 0.0;
 	/* mowing */
 	cf->leafc_to_MOW =0.0;
 	cf->leafc_storage_to_MOW =0.0;
 	cf->leafc_transfer_to_MOW =0.0;
+	cf->STDBc_to_MOW = 0.0;
 	cf->gresp_transfer_to_MOW =0.0;
     cf->gresp_storage_to_MOW =0.0;
 	cf->leafc_transfer_to_MOW =0.0;
+	cf->STDBc_to_MOW = 0.0;
 	cf->MOW_to_litr1c = 0.0;				
 	cf->MOW_to_litr2c = 0.0;				 
 	cf->MOW_to_litr3c = 0.0;				
-	cf->MOW_to_litr4c = 0.0;		
+	cf->MOW_to_litr4c = 0.0;
+	cf->STDBc_to_MOW = 0.0;
 	/* harvesting */
 	cf->leafc_to_HRV =0.0;
 	cf->leafc_storage_to_HRV =0.0;
@@ -241,6 +247,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->HRV_to_litr2c = 0.0;				 
 	cf->HRV_to_litr3c = 0.0;				
 	cf->HRV_to_litr4c = 0.0;
+	cf->STDBc_to_HRV = 0.0;
 	/* ploughing */
 	cf->leafc_to_PLG =0.0;
 	cf->leafc_storage_to_PLG =0.0;
@@ -254,6 +261,8 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->PLG_to_litr2c = 0.0;				 
 	cf->PLG_to_litr3c = 0.0;				
 	cf->PLG_to_litr4c = 0.0;
+	cf->STDBc_to_PLG = 0.0;
+	cf->CTDBc_to_PLG = 0.0;
 	/* grazing */
 	cf->leafc_to_GRZ =0.0;
 	cf->leafc_storage_to_GRZ =0.0;
@@ -264,17 +273,23 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->GRZ_to_litr2c = 0.0;				 
 	cf->GRZ_to_litr3c = 0.0;				
 	cf->GRZ_to_litr4c = 0.0;
+	cf->STDBc_to_GRZ = 0.0;
 	/* fertilizing */
 	cf->FRZ_to_litr1c = 0.0;				
 	cf->FRZ_to_litr2c = 0.0;				 
-	cf->FRZ_to_litr3c = 0.0;				
+	cf->FRZ_to_litr3c = 0.0;	
 	cf->FRZ_to_litr4c = 0.0;
+	/* Hidy 2015 - OTHER GHG */
+	cf->CH4_flux_soil = 0.0;
+	cf->CH4_flux_MANURE = 0.0;
+	cf->CH4_flux_FERMENT = 0.0;
        
       /* Hidy 2010 -  senescence */
 	cf->SNSC_to_litr1c = 0.0;
 	cf->SNSC_to_litr2c = 0.0;
 	cf->SNSC_to_litr3c = 0.0;
 	cf->SNSC_to_litr4c = 0.0;
+	cf->m_vegc_to_SNSC = 0.0;
 	cf->m_leafc_to_SNSC = 0.0;
 	cf->m_frootc_to_SNSC = 0.0;
 	cf->m_leafc_storage_to_SNSC = 0.0;
@@ -324,6 +339,42 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->transfer_fruit_gr = 0.0;
 	cf->fruitc_transfer_to_fruitc = 0.0;
 
+	/* softstem simulation - Hidy 2013. */
+	cf->softstem_mr = 0.0;
+	cf->softstemc_storage_to_softstemc_transfer = 0.0;
+	cf->softstemc_storage_to_GRZ = 0.0;
+	cf->softstemc_storage_to_HRV = 0.0;
+	cf->softstemc_storage_to_PLG = 0.0;
+	cf->softstemc_storage_to_MOW = 0.0;
+	cf->softstemc_transfer_to_GRZ = 0.0;
+	cf->softstemc_transfer_to_HRV = 0.0;
+	cf->softstemc_transfer_to_PLG = 0.0;
+	cf->softstemc_transfer_to_MOW = 0.0;
+	cf->softstemc_to_GRZ = 0.0;
+	cf->softstemc_to_HRV = 0.0;
+	cf->softstemc_to_PLG = 0.0;
+	cf->softstemc_to_MOW = 0.0;
+	cf->softstemc_to_litr1c = 0.0;
+	cf->softstemc_to_litr2c = 0.0;
+	cf->softstemc_to_litr2c = 0.0;
+	cf->softstemc_to_litr3c = 0.0;
+	cf->softstemc_to_litr4c = 0.0;
+	cf->softstemc_transfer_from_PLT = 0.0;
+	cf->m_softstemc_storage_to_fire = 0.0;
+	cf->m_softstemc_storage_to_litr1c = 0.0;
+	cf->m_softstemc_storage_to_SNSC = 0.0;
+	cf->m_softstemc_transfer_to_fire = 0.0;
+	cf->m_softstemc_transfer_to_litr1c = 0.0;
+	cf->m_softstemc_transfer_to_SNSC = 0.0;
+	cf->m_softstemc_to_fire = 0.0;
+	cf->m_softstemc_to_litr1c = 0.0;
+	cf->m_softstemc_to_SNSC = 0.0;
+	cf->cpool_softstem_gr = 0.0;
+	cf->cpool_softstem_storage_gr = 0.0;
+	cf->cpool_to_softstemc = 0.0;
+	cf->cpool_to_softstemc_storage = 0.0;
+	cf->transfer_softstem_gr = 0.0;
+	cf->softstemc_transfer_to_softstemc = 0.0;
 	         	
 	/* daily nitrogen fluxes */
 	nf->m_leafn_to_litr1n = 0.0;
@@ -379,7 +430,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->m_cwdn_to_fire = 0.0;
     nf->leafn_transfer_to_leafn = 0.0;
     nf->frootn_transfer_to_frootn = 0.0;
-	nf->fruitn_transfer_to_fruitn = 0.0;
     nf->livestemn_transfer_to_livestemn = 0.0;
     nf->deadstemn_transfer_to_deadstemn = 0.0;
     nf->livecrootn_transfer_to_livecrootn = 0.0;
@@ -423,11 +473,12 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->sminn_to_soil_SUM = 0.0;
 	for (layer = 0; layer < N_SOILLAYERS; layer ++)
 	{
-		nf->sminn_leached[layer]      = 0.0;
-		nf->sminn_diffused[layer]      = 0.0;
+		nf->sminn_leached[layer]  = 0.0;
+		nf->sminn_diffused[layer] = 0.0;
 		nf->sminn_to_soil[layer]  = 0.0; 
 	}
 	nf->retransn_to_npool = 0.0;  
+	nf->nplus = 0.0;
     nf->sminn_to_npool = 0.0;
     nf->npool_to_leafn = 0.0;
     nf->npool_to_leafn_storage = 0.0;
@@ -479,14 +530,18 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->THN_to_litr3n = 0.0;
 	nf->THN_to_litr4n = 0.0;				 
 	nf->THN_to_cwdn = 0.0;
+	nf->STDBn_to_THN = 0.0;
 	/* mowing - by Hidy 2008. */
 	nf->leafn_to_MOW= 0.0;                 
 	nf->leafn_storage_to_MOW = 0.0;        
 	nf->leafn_transfer_to_MOW = 0.0;
+	nf->STDBn_to_MOW = 0.0;
 	nf->MOW_to_litr1n = 0.0;				 
 	nf->MOW_to_litr2n = 0.0;				 
 	nf->MOW_to_litr3n = 0.0;				 
-	nf->MOW_to_litr4n = 0.0;				 
+	nf->MOW_to_litr4n = 0.0;
+	nf->retransn_to_MOW = 0.0;
+	nf->STDBn_to_MOW = 0.0;
 	/* harvesting - by Hidy 2012. */
 	nf->leafn_to_HRV= 0.0;                 
 	nf->leafn_storage_to_HRV= 0.0;         
@@ -494,7 +549,9 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->HRV_to_litr1n = 0.0;				 
 	nf->HRV_to_litr2n = 0.0;				 
 	nf->HRV_to_litr3n = 0.0;				 
-	nf->HRV_to_litr4n = 0.0;				 
+	nf->HRV_to_litr4n = 0.0;
+	nf->retransn_to_HRV = 0.0;
+	nf->STDBn_to_HRV = 0.0;
 	/* ploughing - Hidy 2012. */
 	nf->leafn_to_PLG = 0.0;                 
 	nf->leafn_storage_to_PLG = 0.0;        
@@ -506,6 +563,8 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->PLG_to_litr2n = 0.0;
 	nf->PLG_to_litr3n = 0.0;
 	nf->PLG_to_litr4n = 0.0;
+	nf->retransn_to_PLG = 0.0;
+	nf->STDBn_to_PLG = 0.0;
 	/* grazing - by Hidy 2008. */
 	nf->leafn_to_GRZ = 0.0;                 
 	nf->leafn_storage_to_GRZ = 0.0;        
@@ -513,13 +572,18 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->GRZ_to_litr1n = 0.0;				 
 	nf->GRZ_to_litr2n = 0.0;				 
 	nf->GRZ_to_litr3n = 0.0;				 
-	nf->GRZ_to_litr4n = 0.0;				 
+	nf->GRZ_to_litr4n = 0.0;
+	nf->retransn_to_GRZ = 0.0;
 	/* fertiliziation -  by Hidy 2008 */
 	nf->FRZ_to_sminn = 0.0;      
 	nf->FRZ_to_litr1n = 0.0;				 
 	nf->FRZ_to_litr2n = 0.0;				 
 	nf->FRZ_to_litr3n = 0.0;				 
-	nf->FRZ_to_litr4n = 0.0;				 
+	nf->FRZ_to_litr4n = 0.0;	
+	/* Hidy 2015 - OTHER GHG */
+	nf->N2O_flux_soil = 0.0;
+	nf->N2O_flux_GRZ  = 0.0;
+	nf->N2O_flux_FRZ  = 0.0;
     /* Hidy 2010 - senescence */
 	nf->SNSC_to_litr1n = 0.0;
 	nf->SNSC_to_litr2n = 0.0;
@@ -532,7 +596,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->m_leafn_transfer_to_SNSC = 0.0;
 	nf->m_frootn_transfer_to_SNSC = 0.0;
 	/* fruit simulation - Hidy 2013. */
-	nf->leafn_transfer_to_leafn = 0.0;
+	nf->fruitn_transfer_to_fruitn = 0.0;
 	nf->fruitn_storage_to_fruitn_transfer = 0.0;
 	nf->fruitn_storage_to_GRZ = 0.0;
 	nf->fruitn_storage_to_HRV = 0.0;
@@ -554,7 +618,6 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->fruitn_to_litr2n = 0.0;
 	nf->fruitn_to_litr3n = 0.0;
 	nf->fruitn_to_litr4n = 0.0;
-	nf->fruitn_to_retransn = 0.0;
 	nf->fruitn_transfer_from_PLT = 0.0;
 	nf->m_fruitn_storage_to_fire = 0.0;
 	nf->m_fruitn_storage_to_litr1n = 0.0;
@@ -565,6 +628,37 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->m_fruitn_to_fire = 0.0;
 	nf->m_fruitn_to_litr1n = 0.0;
 	nf->m_fruitn_to_SNSC = 0.0;
+
+	/* softstem simulation - Hidy 2013. */
+	nf->softstemn_transfer_to_softstemn = 0.0;
+	nf->softstemn_storage_to_softstemn_transfer = 0.0;
+	nf->softstemn_storage_to_GRZ = 0.0;
+	nf->softstemn_storage_to_HRV = 0.0;
+	nf->softstemn_storage_to_PLG = 0.0;
+	nf->softstemn_storage_to_MOW = 0.0;
+	nf->softstemn_transfer_to_GRZ = 0.0;
+	nf->softstemn_transfer_to_HRV = 0.0;
+	nf->softstemn_transfer_to_PLG = 0.0;
+	nf->softstemn_transfer_to_MOW = 0.0;
+	nf->softstemn_to_GRZ = 0.0;
+	nf->softstemn_to_HRV = 0.0;
+	nf->softstemn_to_PLG = 0.0;
+	nf->softstemn_to_MOW = 0.0;
+	nf->softstemn_to_litr1n = 0.0;
+	nf->softstemn_to_litr2n = 0.0;
+	nf->softstemn_to_litr2n = 0.0;
+	nf->softstemn_to_litr3n = 0.0;
+	nf->softstemn_to_litr4n = 0.0;
+	nf->softstemn_transfer_from_PLT = 0.0;
+	nf->m_softstemn_storage_to_fire = 0.0;
+	nf->m_softstemn_storage_to_litr1n = 0.0;
+	nf->m_softstemn_storage_to_SNSC = 0.0;
+	nf->m_softstemn_transfer_to_fire = 0.0;
+	nf->m_softstemn_transfer_to_litr1n = 0.0;
+	nf->m_softstemn_transfer_to_SNSC = 0.0;
+	nf->m_softstemn_to_fire = 0.0;
+	nf->m_softstemn_to_litr1n = 0.0;
+	nf->m_softstemn_to_SNSC = 0.0;
 
 
 	return (!ok);

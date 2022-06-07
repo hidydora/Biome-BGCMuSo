@@ -4,10 +4,10 @@ daily allocation of carbon and nitrogen, as well as the final reconciliation
 of N immobilization by microbes (see decomp.c)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -83,9 +83,8 @@ the accumulation of soil mineral N.
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
-					 nflux_struct* nf, nstate_struct* ns, epconst_struct* epc, epvar_struct* epv,
-					 ntemp_struct* nt, int* n_limitation_ptr)
+int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, 
+					 cflux_struct* cf, cstate_struct* cs,nflux_struct* nf, nstate_struct* ns, epvar_struct* epv, ntemp_struct* nt)
 {
 	int ok=1;
     double day_gpp;     /* daily gross production */
@@ -93,13 +92,15 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	double avail_c;     /* total C available for new production */
 	double f1;          /* RATIO   new fine root C : new leaf C     */
 	double f2;          /* RATIO   new fruit C : new leaf C - fruit simulation (Hidy 2013.) */
-	double f3;          /* RATIO   new coarse root C : new stem C   */
-	double f4;          /* RATIO   new stem C : new leaf C          */
-	double f5;          /* RATIO   new live wood C : new wood C     */
+	double f3;          /* RATIO   new softstem C : new leaf C - softstem simulation (Hidy 2015.) */
+	double f4;          /* RATIO   new coarse root C : new stem C   */
+	double f5;          /* RATIO   new stem C : new leaf C          */
+	double f6;          /* RATIO   new live wood C : new wood C     */
 	double g1;          /* RATIO   C respired for growth : C grown  */ 
 	double g2;          /* proportion of growth resp to release at fixation */
 	double cnl;         /* RATIO   leaf C:N */  
 	double cnf;         /* RATIO   fruit C:N - fruit simulation (Hidy 2013.) */
+	double cnss;        /* RATIO   softstem C:N - softstem simulation (Hidy 2013.) */
 	double cnfr;        /* RATIO   fine root C:N */
 	double cnlw;        /* RATIO   live wood C:N */
 	double cndw;        /* RATIO   dead wood C:N */
@@ -117,34 +118,34 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	int nlimit;
 	double cn_l1,cn_l2,cn_l4,cn_s1,cn_s2,cn_s3,cn_s4;
 	double rfl1s1, rfl2s2, rfl4s3, rfs1s2, rfs2s3, rfs3s4;
-	double daily_net_nmin;
+	double daily_net_nmin, bulk_denitrif_prop;
 	double fpi = 0.0;
-	int allocfruit = 0;		/* fruit simulation Hidy 2013.*/
+	double excessn = 0;
 
-	/* Hidy 2009. */
-	int n_limitation = 0;
-	
+    
+     
+    int n_limitation = 0;   /* nitrogen limitation flag Hidy 2009. */
+
+ 	cn_l1 = cn_l2 = cn_l4 = cn_s1 = cn_s2 = cn_s3 = cn_s4 = 0;
 	
 	woody = epc->woody;
-
-	/* fruit simulation Hidy 2013. - after flowering day allocation to fruit */
-	if (yday > epc->flowerday)
-	{
-		allocfruit = 1;	
-	}
 
 	
 	/* Assess the carbon availability on the basis of this day's
 	gross production and maintenance respiration costs */
 	day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
-	if (woody)
+	
+     /* TREE-SPECIFIC and NON_WOODY specifix fluxes - Hidy 2015 */
+     if (woody)
 	{
 		day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->fruit_mr +  /* fruit simulation (Hidy 2013.) */
+
 			cf->livestem_mr + cf->livecroot_mr;
 	}
 	else
 	{
-		day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->fruit_mr;  /* fruit simulation (Hidy 2013.) */
+		day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + 
+                       cf->fruit_mr + cf->softstem_mr;  /* fruit and softstem simulation (Hidy 2013.) */
 	}
 	avail_c = day_gpp - day_mresp;
 	
@@ -181,14 +182,18 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	f1 = epc->alloc_frootc_leafc;
 	/* fruit simulation */
 	f2 = epc->alloc_fruitc_leafc;
-	f3 = epc->alloc_crootc_stemc;
-	f4 = epc->alloc_newstemc_newleafc; 
-	f5 = epc->alloc_newlivewoodc_newwoodc;
+	/* sofstem simulation */
+	f3 = epc->alloc_softstemc_leafc;
+	f4 = epc->alloc_crootc_stemc;
+	f5 = epc->alloc_newstemc_newleafc; 
+	f6 = epc->alloc_newlivewoodc_newwoodc;
+
 
 	g1 = epc->GR_ratio;
 	g2 = GRPNOW;
 	cnl = epc->leaf_cn;
 	cnf = epc->fruit_cn;
+	cnss = epc->softstem_cn;
 	cnfr = epc->froot_cn;
 	cnlw = epc->livewood_cn;
 	cndw = epc->deadwood_cn;
@@ -197,30 +202,47 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	/* given the available C, use constant allometric relationships to
 	determine how much N is required to meet this potential growth
 	demand */
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
-		c_allometry = ((1.0+g1)*(1.0 + f1 + f4*(1.0+f3)));
-		n_allometry = (1.0/cnl + f1/cnfr + f2/cnf +(f4*f5*(1.0+f3))/cnlw + 
-			(f4*(1.0-f5)*(1.0+f3))/cndw);
+		c_allometry = ((1.0+g1)*(1.0 + f1 + f5*(1.0+f4)));
+		n_allometry = (1.0/cnl + f1/cnfr + f2/cnf +(f5*f6*(1.0+f4))/cnlw + 
+			(f5*(1.0-f6)*(1.0+f4))/cndw);
 	}
 	else
 	{
-		c_allometry = (1.0 + g1 + f1 + f1*g1);
-		n_allometry = (1.0/cnl + f1/cnfr);
+		c_allometry = (1.0 + g1 + f1 + f1*g1 + f3 + f3*g1);
+		n_allometry = (1.0/cnl + f1/cnfr + f3/cnss);
 	}
 
-	if (allocfruit)
+	if (epv->flowering)
 	{
 		c_allometry += f2 + f2 * g1;
 		n_allometry += f2 / cnf;
+		
+
 	}
 	plant_ndemand = avail_c * (n_allometry / c_allometry);
 
 
-	
 	/* now compare the combined decomposition immobilization and plant
 	growth N demands against the available soil mineral N pool. */
 	sum_ndemand = plant_ndemand + nt->potential_immob;
+
+	ns->sum_ndemand = sum_ndemand;
+/* Hidy 2013 - NO spinup control: add N to sminn to meet demand */
+	/* naddfrac scales N additions from 1.0 to 0.0 */
+/*	if (sum_ndemand > ns->sminn_RZ)
+	{
+		dif = sum_ndemand - ns->sminn[0];
+		ns->sminn[0] += dif * naddfrac;
+		ns->sminn_RZ += dif * naddfrac;
+		ns->ndep_src += dif * naddfrac;
+		nf->nplus    = dif;
+	}
+	else
+		nf->nplus    = 0;
+		*/
 	if (sum_ndemand <= ns->sminn_RZ)
 	{
 		/* N availability is not limiting immobilization or plant
@@ -245,6 +267,18 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 		nf->sminn_to_npool = plant_ndemand - nf->retransn_to_npool;
 		plant_nalloc = nf->retransn_to_npool + nf->sminn_to_npool;
 		plant_calloc = avail_c;
+
+		/* under conditions of excess N, some proportion of excess N is
+		assumed to be lost to denitrification, in addition to the constant
+		proportion lost in the decomposition pathways. */
+		excessn = ns->sminn_RZ - sum_ndemand;
+
+		if (epv->vwc[0] > 0.95 * sitec->vwc_sat[0]) 
+			bulk_denitrif_prop = epc->bulkN_denitrif_prop_WET;
+		else
+			bulk_denitrif_prop = epc->bulkN_denitrif_prop_DRY;
+
+		nf->sminn_to_denitrif = excessn * bulk_denitrif_prop;
 	}
 	else
 	{
@@ -315,7 +349,7 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	nlc = plant_calloc / c_allometry; 
 
 	/* fruit simulation - Hidy 2013.: after flowering date the priority is to allucating fruit */
-	if (plant_calloc > 0 && allocfruit)
+	if (plant_calloc > 0 && epv->flowering)
 	{
 		cf->cpool_to_fruitc             = nlc * f2 * pnow;
 		cf->cpool_to_fruitc_storage     = nlc * f2 * (1.0-pnow);
@@ -325,6 +359,8 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	    plant_calloc                   -= cf->cpool_to_fruitc_storage;
 		plant_nalloc                   -= nf->npool_to_fruitn;
 	    plant_nalloc                   -= nf->npool_to_fruitn_storage;
+
+	
 	}
 	else
 	{
@@ -334,22 +370,32 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
         nf->npool_to_fruitn_storage = 0.0;
 	}
 
+
+
 	/* daily C fluxes out of cpool and into new growth or storage */
 	cf->cpool_to_leafc              = nlc * pnow;
 	cf->cpool_to_leafc_storage      = nlc * (1.0-pnow);
 	cf->cpool_to_frootc             = nlc * f1 * pnow;
 	cf->cpool_to_frootc_storage     = nlc * f1 * (1.0-pnow);
 
+
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
-		cf->cpool_to_livestemc          = nlc * f4 * f5 * pnow;
-		cf->cpool_to_livestemc_storage  = nlc * f4 * f5 * (1.0-pnow);
-		cf->cpool_to_deadstemc          = nlc * f4 * (1.0-f5) * pnow;
-		cf->cpool_to_deadstemc_storage  = nlc * f4 * (1.0-f5) * (1.0-pnow);
-		cf->cpool_to_livecrootc         = nlc * f3 * f4 * f5 * pnow;
-		cf->cpool_to_livecrootc_storage = nlc * f3 * f4 * f5 * (1.0-pnow);
-		cf->cpool_to_deadcrootc         = nlc * f3 * f4 * (1.0-f5) * pnow;
-		cf->cpool_to_deadcrootc_storage = nlc * f3 * f4 * (1.0-f5) * (1.0-pnow);
+		cf->cpool_to_livestemc          = nlc * f5 * f6 * pnow;
+		cf->cpool_to_livestemc_storage  = nlc * f5 * f6 * (1.0-pnow);
+		cf->cpool_to_deadstemc          = nlc * f5 * (1.0-f6) * pnow;
+		cf->cpool_to_deadstemc_storage  = nlc * f5 * (1.0-f6) * (1.0-pnow);
+		cf->cpool_to_livecrootc         = nlc * f4 * f5 * f6 * pnow;
+		cf->cpool_to_livecrootc_storage = nlc * f4 * f5 * f6 * (1.0-pnow);
+		cf->cpool_to_deadcrootc         = nlc * f4 * f5 * (1.0-f6) * pnow;
+		cf->cpool_to_deadcrootc_storage = nlc * f4 * f5 * (1.0-f6) * (1.0-pnow);
+	}
+	else
+	{
+		/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		cf->cpool_to_softstemc             = nlc * f3 * pnow;
+		cf->cpool_to_softstemc_storage     = nlc * f3 * (1.0-pnow);
 	}
 	/* daily N fluxes out of npool and into new growth or storage */
 	nf->npool_to_leafn              = (nlc / cnl) * pnow;
@@ -357,16 +403,25 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	nf->npool_to_frootn             = (nlc * f1 / cnfr) * pnow;
 	nf->npool_to_frootn_storage     = (nlc * f1 / cnfr) * (1.0-pnow);
 
+
+	 /* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
-		nf->npool_to_livestemn          = (nlc * f4 * f5 / cnlw) * pnow;
-		nf->npool_to_livestemn_storage  = (nlc * f4 * f5 / cnlw) * (1.0-pnow);
-		nf->npool_to_deadstemn          = (nlc * f4 * (1.0-f5) / cndw) * pnow;
-		nf->npool_to_deadstemn_storage  = (nlc * f4 * (1.0-f5) / cndw) * (1.0-pnow);
-		nf->npool_to_livecrootn         = (nlc * f3 * f4 * f5 / cnlw) * pnow;
-		nf->npool_to_livecrootn_storage = (nlc * f3 * f4 * f5 / cnlw) * (1.0-pnow);
-		nf->npool_to_deadcrootn         = (nlc * f3 * f4 * (1.0-f5) / cndw) * pnow;
-		nf->npool_to_deadcrootn_storage = (nlc * f3 * f4 * (1.0-f5) / cndw) * (1.0-pnow);
+		nf->npool_to_livestemn          = (nlc * f5 * f6 / cnlw) * pnow;
+		nf->npool_to_livestemn_storage  = (nlc * f5 * f6 / cnlw) * (1.0-pnow);
+		nf->npool_to_deadstemn          = (nlc * f5 * (1.0-f6) / cndw) * pnow;
+		nf->npool_to_deadstemn_storage  = (nlc * f5 * (1.0-f6) / cndw) * (1.0-pnow);
+		nf->npool_to_livecrootn         = (nlc * f4 * f5 * f6 / cnlw) * pnow;
+		nf->npool_to_livecrootn_storage = (nlc * f4 * f5 * f6 / cnlw) * (1.0-pnow);
+		nf->npool_to_deadcrootn         = (nlc * f4 * f5 * (1.0-f6) / cndw) * pnow;
+		nf->npool_to_deadcrootn_storage = (nlc * f4 * f5 * (1.0-f6) / cndw) * (1.0-pnow);
+	}
+	else
+	{
+		/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		nf->npool_to_softstemn             = (nlc * f3 / cnss) * pnow;
+		nf->npool_to_softstemn_storage     = (nlc * f3 / cnss) * (1.0-pnow);
+    
 	}
 	
 	/* calculate the amount of carbon that needs to go into growth
@@ -378,18 +433,25 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	fluxes that get released on a given day are calculated in growth_resp(),
 	but that the storage of C for growth resp during display of transferred
 	growth is assigned here. */
+	
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
-		gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage + cf->cpool_to_fruitc_storage +  /* fruit simulation - Hidy 2013.) */
-			+ cf->cpool_to_livestemc_storage + cf->cpool_to_deadstemc_storage
-			+ cf->cpool_to_livecrootc_storage + cf->cpool_to_deadcrootc_storage)
-			* g1 * (1.0-g2);
+		gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage 
+						+ cf->cpool_to_fruitc_storage +  /* fruit simulation - Hidy 2013.) */
+						+ cf->cpool_to_livestemc_storage + cf->cpool_to_deadstemc_storage
+						+ cf->cpool_to_livecrootc_storage + cf->cpool_to_deadcrootc_storage)
+						* g1 * (1.0-g2);
 	}
 	else
-	{
-		gresp_storage = (cf->cpool_to_leafc_storage	+ cf->cpool_to_frootc_storage + cf->cpool_to_fruitc_storage)/* fruit simulation - Hidy 2013.) */
-			* g1 * (1.0-g2);
+	{   /* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage 
+						+ cf->cpool_to_fruitc_storage +     /* fruit simulation - Hidy 2013.) */
+						+ cf->cpool_to_softstemc_storage)  /* softstem simulation - Hidy 2015.) */
+						* g1 * (1.0-g2);
 	}
+	
 	cf->cpool_to_gresp_storage = gresp_storage;	
 
 	/* now use the N limitation information to assess the final decomposition
@@ -398,9 +460,9 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	plant uptake, but immobilizing fluxes are reduced when soil mineral
 	N is limiting */
 	/* calculate litter and soil compartment C:N ratios */
-	cn_l1 = cs->litr1c/ns->litr1n;
-	cn_l2 = cs->litr2c/ns->litr2n;
-	cn_l4 = cs->litr4c/ns->litr4n;
+	if (ns->litr1n > 0.0) cn_l1 = cs->litr1c/ns->litr1n;
+	if (ns->litr2n > 0.0) cn_l2 = cs->litr2c/ns->litr2n;
+	if (ns->litr4n > 0.0) cn_l4 = cs->litr4c/ns->litr4n;
 	cn_s1 = SOIL1_CN;
 	cn_s2 = SOIL2_CN;
 	cn_s3 = SOIL3_CN;
@@ -537,7 +599,7 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	epv->daily_net_nmin = daily_net_nmin;
 	epv->daily_gross_nimmob = actual_immob;
 
-	*n_limitation_ptr = n_limitation; // Hidy 2009.
+	epv->n_limitation = n_limitation; // Hidy 2009.
 	
 	return (!ok);
 }

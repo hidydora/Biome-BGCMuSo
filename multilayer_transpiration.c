@@ -3,8 +3,8 @@ multilayer_transpiration.c
 Hidy 2011 - part-transpiration (regarding to the different layers of the soil) calculation based on the layer's soil water content
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -52,7 +52,7 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		/* actual soil water content at theoretical lower limit of water content: hygroscopic water point */
-		soilw_hw = sitec->vwc_hw * sitec->soillayer_thickness[layer] * water_density;
+		soilw_hw = sitec->vwc_hw[layer] * sitec->soillayer_thickness[layer] * water_density;
 
 		/* root water uptake is be possible from the layers where root is located  */
 		if (layer < epv->n_rootlayers && epv->m_soilstress > 0)
@@ -73,7 +73,7 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 		if (wf->soilw_trans_SUM > 0) wf->soilw_trans[layer]=wf->soilw_trans[layer] *  wf->soilw_trans_SUM / soilw_trans_ctrl1;
 
 		/* actual soil water content at theoretical lower limit of water content: hygroscopic water point */
-		soilw_hw = sitec->vwc_hw * sitec->soillayer_thickness[layer] * water_density;
+		soilw_hw = sitec->vwc_hw[layer] * sitec->soillayer_thickness[layer] * water_density;
 
 		/* transp_diff: control parameter to avoid negative soil water content (due to overestimated transpiration + dry soil) */
 		transp_diff = ws->soilw[layer] - wf->soilw_trans[layer] - soilw_hw;
@@ -83,12 +83,12 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 		{
 			wf->soilw_trans[layer] += transp_diff;
 			transp_diff_SUM += transp_diff;
-			if (ctrl->onscreen) printf("WARNING: Limited transpiration due to dry soil (multilayer_transpiration.c)\n");
+			if (ctrl->onscreen && fabs(transp_diff) > CRIT_PREC) printf("Limited transpiration due to dry soil (multilayer_transpiration.c)\n");
 		}
 
 		ws->soilw[layer] -= wf->soilw_trans[layer];
 		soilw_trans_ctrl2 += wf->soilw_trans[layer];
-                epv->vwc[layer]  = ws->soilw[layer] / sitec->soillayer_thickness[layer] / water_density;
+		epv->vwc[layer]  = ws->soilw[layer] / sitec->soillayer_thickness[layer] / water_density;
 	}
 
 	wf->soilw_trans_SUM += transp_diff_SUM;

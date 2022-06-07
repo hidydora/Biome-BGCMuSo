@@ -4,10 +4,10 @@ Initialize water, carbon, and nitrogen state variables to 0.0 before
 each simulation.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.7
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -88,11 +88,15 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->litr2c = 0.0;
 	cs->litr3c = 0.0;
 	cs->litr4c = 0.0;
+	cs->litr_belowground = 0.0;
+	cs->litr_aboveground = 0.0;
 	/* Hidy 2013 - senescence */
-	cs->litr1c_strg_SNSC = 0.0;
-	cs->litr2c_strg_SNSC = 0.0;
-	cs->litr3c_strg_SNSC = 0.0;
-	cs->litr4c_strg_SNSC = 0.0;
+	cs->litr1c_STDB = 0.0;
+	cs->litr2c_STDB = 0.0;
+	cs->litr3c_STDB = 0.0;
+	cs->litr4c_STDB = 0.0;
+	cs->STDBc = 0.0;
+	cs->CTDBc = 0.0;
 	cs->soil1c = 0.0;
 	cs->soil2c = 0.0;
 	cs->soil3c = 0.0;
@@ -151,6 +155,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* ploughing - Hidy 2012. */
 	cs->PLGsnk = 0.0;	
 	cs->PLGsrc = 0.0;
+	cs->PLG_cpool = 0.0;
 	/* fertilizing - Hidy 2009.*/
 	cs->FRZsrc = 0.0;
 	/* senescence - Hidy 2012.*/
@@ -162,6 +167,12 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->fruitc_transfer = 0.0;
 	cs->fruit_gr_snk = 0.0;
 	cs->fruit_mr_snk = 0.0;
+	/* softstem simulation - Hidy 2013.*/
+	cs->softstemc = 0.0;
+	cs->softstemc_storage = 0.0;
+	cs->softstemc_transfer = 0.0;
+	cs->softstem_gr_snk = 0.0;
+	cs->softstem_mr_snk = 0.0;
 	
 	ns->leafn = 0.0;
 	ns->leafn_storage = 0.0;
@@ -187,10 +198,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->litr3n = 0.0;
 	ns->litr4n = 0.0;
 	/* Hidy 2013 - senescence */
-	ns->litr1n_strg_SNSC = 0.0;
-	ns->litr2n_strg_SNSC = 0.0;
-	ns->litr3n_strg_SNSC = 0.0;
-	ns->litr4n_strg_SNSC = 0.0;
+	ns->litr1n_STDB = 0.0;
+	ns->litr2n_STDB = 0.0;
+	ns->litr3n_STDB = 0.0;
+	ns->litr4n_STDB = 0.0;
+	ns->STDBn = 0.0;
 	ns->soil1n = 0.0;
 	ns->soil2n = 0.0;
 	ns->soil3n = 0.0;
@@ -207,9 +219,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->ndep_src = 0.0;
 	ns->nleached_snk = 0.0;
 	ns->ndiffused_snk = 0.0;
-	ns->BNDRYsrc = 0.0;
 	ns->nvol_snk = 0.0;
 	ns->fire_snk = 0.0;
+	/* effect of boundary layer with constant N-content - Hidy 2015 */
+	ns->BNDRYsrc = 0.0;
+	ns->sum_ndemand = 0.0;
 	/* planting - Hidy 2012. */
 	ns->PLTsrc  = 0.0;  
 	/* thining - Hidy 2012. */
@@ -243,6 +257,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* ploughing - Hidy 2012. */
 	ns->PLGsnk = 0.0;	
 	ns->PLGsrc = 0.0;
+	ns->PLG_npool = 0.0;
     /* fertilization - Hidy 2008. */
 	ns->FRZsrc = 0.0;  
 	/* senescence - Hidy 2012.*/
@@ -252,6 +267,10 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->fruitn = 0.0;
 	ns->fruitn_storage = 0.0;
 	ns->fruitn_transfer = 0.0;
+	/* softstem simulation - Hidy 2013.*/
+	ns->softstemn = 0.0;
+	ns->softstemn_storage = 0.0;
+	ns->softstemn_transfer = 0.0;
 	
 	
 	return(!ok);

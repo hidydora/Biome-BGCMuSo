@@ -5,7 +5,7 @@ constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 BBGC MuSo v4
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -58,8 +58,7 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 
 	int ok=1;
 	int layer;
-	double vwc_avg=0;
-	double psi_avg=0;
+
 
 
 	/* ***************************************************************************************************** */
@@ -74,7 +73,7 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 
 	   
 		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
-		epv->psi[layer]  = sitec->psi_sat * pow( (epv->vwc[layer] /sitec->vwc_sat), -1* sitec->soil_b);
+		epv->psi[layer]  = sitec->psi_sat[layer] * pow( (epv->vwc[layer] /sitec->vwc_sat[layer]), -1* sitec->soil_b[layer]);
 		
 	
 		/* pF from psi: cm from MPa */
@@ -83,32 +82,26 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
        
 
 		/* CONTROL - unrealistic VWC content (higher than saturation value) */
-		if (epv->vwc[layer] > sitec->vwc_sat)       
+		if (epv->vwc[layer] > sitec->vwc_sat[layer])       
 		{
-			if (epv->vwc[layer] - sitec->vwc_sat > 0.001)       
+			if (epv->vwc[layer] - sitec->vwc_sat[layer] > 0.001)       
 			{
-				printf("Fatal error: soil water content is higher than saturation value (multilayer_hydrolprocess.c)\n");
+				printf("Fatal error: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
 				ok=0;	
 			}
 			else
 			{
-				ws->deeppercolation_snk += epv->vwc[layer] - sitec->vwc_sat;
-				epv->vwc[layer]         = sitec->vwc_sat;
+				ws->deeppercolation_snk += epv->vwc[layer] - sitec->vwc_sat[layer];
+				epv->vwc[layer]         = sitec->vwc_sat[layer];
 				ws->soilw[layer]        = epv->vwc[layer] * sitec->soillayer_thickness[layer] * water_density;
 			}
 		}
 
-		/* average values regarding to soil without bottom layer */
-		vwc_avg		     +=	epv->vwc[layer] * epv->rootlength_prop[layer];
-		psi_avg			 +=	epv->psi[layer] * epv->rootlength_prop[layer];
-
-	
 
 	}
 
 
-	epv->vwc_avg			= vwc_avg;
-	epv->psi_avg			= psi_avg;
+
 
 
 

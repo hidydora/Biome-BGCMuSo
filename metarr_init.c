@@ -3,10 +3,10 @@ metarr_init.c
 Initialize meteorological data arrays for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -36,8 +36,7 @@ daylength   s      (daylight duration)
 
 */
 
-int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,
-int nyears) 
+int metarr_init(file metf, metarr_struct* metarr, const climchange_struct* scc,const siteconst_struct* sitec,int nyears) 
 {
 	int ok = 1;
 	int i;
@@ -50,6 +49,8 @@ int nyears)
 	double vpd = 0;
 	double swavgfd = 0;
 	double dayl = 0;
+	double sw_MJ;
+
 	
 	ndays = NDAY_OF_YEAR * nyears;
 
@@ -109,17 +110,59 @@ int nyears)
 		metarr->tavg = (double*) malloc(ndays * sizeof(double));
 		if (!metarr->tavg)
 		{
-			printf("Error allocating for tavg array\n");
+			printf("Error allocating for tavg11 array\n");
 			ok=0;
 		}
 	}
 
 	if (ok)
 	{
-		metarr->tavg_ra = (double*) malloc(ndays * sizeof(double));
-		if (!metarr->tavg_ra)
+		metarr->tavg11_ra = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tavg11_ra)
 		{
-			printf("Error allocating for tavg_ra array\n");
+			printf("Error allocating for tavg11_ra array\n");
+			ok=0;
+		}
+	}
+
+	/* Hidy 2015 - new arrays */
+	
+	if (ok)
+	{
+		metarr->tavg30_ra = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tavg30_ra)
+		{
+			printf("Error allocating for tavg30_ra array\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		metarr->tavg10_ra = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tavg10_ra)
+		{
+			printf("Error allocating for tavg10_ra array\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		metarr->F_temprad = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->F_temprad)
+		{
+			printf("Error allocating for F_temprad array\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		metarr->F_temprad_ra = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->F_temprad_ra)
+		{
+			printf("Error allocating for F_temprad_ra array\n");
 			ok=0;
 		}
 	}
@@ -127,7 +170,7 @@ int nyears)
 	if (ok)
 	{
 		metarr->swavgfd = (double*) malloc(ndays * sizeof(double));
-		if (!metarr->tavg_ra)
+		if (!metarr->swavgfd)
 		{
 			printf("Error allocating for swavgfd array\n");
 			ok=0;
@@ -197,7 +240,15 @@ int nyears)
 		metarr->swavgfd[i] = swavgfd * scc->s_swavgfd;
 		metarr->par[i] = swavgfd * 0.45 * scc->s_swavgfd;
 		metarr->dayl[i] = dayl;
-	
+
+		/* factor for soil temp. calculation - Hidy 2015 */
+		sw_MJ = swavgfd * dayl / 1000000;
+		if (i == 0)
+			metarr->F_temprad[i] = metarr->tavg[i] +  (tmax - metarr->tavg[i]) * sqrt(sw_MJ*0.03);
+		else
+			metarr->F_temprad[i] = (1 - sitec->sw_alb) * (metarr->tavg[i] +  (tmax - metarr->tavg[i]) * sqrt(sw_MJ*0.03))
+			                      + sitec->sw_alb * metarr->F_temprad[i-1];
+
 	}
 
 	/* perform running averages of daily average temperature for 
@@ -208,11 +259,29 @@ int nyears)
 	running average, respectively. 
 	*/
 	
-	if (ok && run_avg(metarr->tavg, metarr->tavg_ra, ndays, 11, 1))
+	if (ok && run_avg(metarr->tavg, metarr->tavg11_ra, ndays, 11, 1))
 	{
 		printf("Error: run_avg() in metv_init.c \n");
 		ok = 0;
 	}
 	
+	/* Hidy 2015- new averages */
+	if (ok && run_avg(metarr->tavg, metarr->tavg30_ra, ndays, 30, 0))
+	{
+		printf("Error: run_avg() in metv_init.c \n");
+		ok = 0;
+	}
+
+	if (ok && run_avg(metarr->tavg, metarr->tavg10_ra, ndays, 10, 0))
+	{
+		printf("Error: run_avg() in metv_init.c \n");
+		ok = 0;
+	}
+
+	if (ok && run_avg(metarr->F_temprad, metarr->F_temprad_ra, ndays, 5, 0))
+	{
+		printf("Error: run_avg() in metv_init.c \n");
+		ok = 0;
+	}
 	return (!ok);
 }

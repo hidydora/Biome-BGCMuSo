@@ -3,9 +3,11 @@ state_init.c
 Initialize water, carbon, and nitrogen state variables for pointbgc simulation  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Copyright 2014, D. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -63,8 +65,8 @@ int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws)
 		field capacity volumetric water content, depth, and density of water */
 		for (layer = 0; layer < N_SOILLAYERS; layer ++)
 		{
-			ws->soilw[layer] = sitec->vwc_fc * (sitec->soillayer_thickness[layer]) * 1000.0;
-			ws->soilw_SUM += ws->soilw[layer];
+			ws->soilw[layer] = sitec->vwc_fc[layer] * (sitec->soillayer_thickness[layer]) * 1000.0;
+			if (layer < N_SOILLAYERS-2) ws->soilw_SUM += ws->soilw[layer];
 
 		}
 	

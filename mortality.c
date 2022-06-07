@@ -3,10 +3,10 @@ mortality.c
 daily mortality fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -40,7 +40,7 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, cstate_stru
 nstate_struct* ns, nflux_struct* nf, int simyr)
 {
 	int ok=1;
-	double mort;
+	double mort, flux_from_carbon;
 
 	/* dead stem combustion proportion */
 	double dscp = 0.2;
@@ -53,7 +53,7 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 
 
 	/* Hidy 2012 -  if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * NDAY_OF_YEAR */
-	if (ctrl->varWPM_flag)
+	if (ctrl->varWPM_flag && ctrl->spinup != 1)
 	{
 		mort = epc->wpm_array[simyr]/NDAY_OF_YEAR;
 	}
@@ -78,7 +78,6 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cf->m_fruitc_to_litr2c = mort * cs->fruitc * epc->fruitlitr_fucel;
 	cf->m_fruitc_to_litr3c = mort * cs->fruitc * epc->fruitlitr_fscel;  	 
 	cf->m_fruitc_to_litr4c = mort * cs->fruitc * epc->fruitlitr_flig;  	 
-	
 	/* mortality fluxes out of storage and transfer pools */
 	cf->m_leafc_storage_to_litr1c  = mort * cs->leafc_storage;
 	cf->m_frootc_storage_to_litr1c  = mort * cs->frootc_storage;
@@ -98,13 +97,26 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cf->m_fruitc_storage_to_litr1c  = mort * cs->fruitc_storage;
 	cf->m_fruitc_transfer_to_litr1c = mort * cs->fruitc_transfer;
 
-	/* TREE-specific carbon fluxes */
+
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
-		cf->m_livestemc_to_cwdc = mort * cs->livestemc;	 
-		cf->m_deadstemc_to_cwdc = (mort + (1.0-dscp)*epc->daily_fire_turnover) * cs->deadstemc;	 
+		cf->m_livestemc_to_cwdc  = mort * cs->livestemc;	 
+		cf->m_deadstemc_to_cwdc  = (mort + (1.0-dscp)*epc->daily_fire_turnover) * cs->deadstemc;	 
 		cf->m_livecrootc_to_cwdc = mort * cs->livecrootc;   
 		cf->m_deadcrootc_to_cwdc = (mort + (1.0-dscp)*epc->daily_fire_turnover) * cs->deadcrootc; 
+	}
+	else
+	{
+		/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		cf->m_softstemc_to_litr1c = mort * cs->softstemc * epc->softstemlitr_flab;  	 
+		cf->m_softstemc_to_litr2c = mort * cs->softstemc * epc->softstemlitr_fucel;
+		cf->m_softstemc_to_litr3c = mort * cs->softstemc * epc->softstemlitr_fscel;  	 
+		cf->m_softstemc_to_litr4c = mort * cs->softstemc * epc->softstemlitr_flig;  
+		cf->m_softstemc_storage_to_litr1c  = mort * cs->softstemc_storage;
+		cf->m_softstemc_transfer_to_litr1c = mort * cs->softstemc_transfer;
+
+
 	}
 	
 	/* daily nitrogen fluxes due to mortality */
@@ -140,16 +152,26 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	/* fruit simulation - Hidy 2013. */
 	nf->m_fruitn_storage_to_litr1n  = mort * ns->fruitn_storage;
 	nf->m_fruitn_transfer_to_litr1n = mort * ns->fruitn_transfer;
-	
-	/* woody-specific nitrogen fluxes */
+
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
-	{
+	{	/* woody-specific nitrogen fluxes */
 		nf->m_livestemn_to_cwdn = cf->m_livestemc_to_cwdc / epc->deadwood_cn;	
-		nf->m_livestemn_to_litr1n = (mort * ns->livestemn) - nf->m_livestemn_to_cwdn;
+       	nf->m_livestemn_to_litr1n = (mort * ns->livestemn) - nf->m_livestemn_to_cwdn;
 		nf->m_deadstemn_to_cwdn = cf->m_deadstemc_to_cwdc / epc->deadwood_cn;	
 		nf->m_livecrootn_to_cwdn = cf->m_livecrootc_to_cwdc / epc->deadwood_cn;  
 		nf->m_livecrootn_to_litr1n = (mort * ns->livecrootn) - nf->m_livecrootn_to_cwdn;
 		nf->m_deadcrootn_to_cwdn = cf->m_deadcrootc_to_cwdc / epc->deadwood_cn;  
+	}
+	else
+	{
+		/* softstem simulation - Hidy 2013. */
+		nf->m_softstemn_to_litr1n = cf->m_softstemc_to_litr1c / epc->softstem_cn;  	
+		nf->m_softstemn_to_litr2n = cf->m_softstemc_to_litr2c / epc->softstem_cn;  	
+		nf->m_softstemn_to_litr3n = cf->m_softstemc_to_litr3c / epc->softstem_cn;  	
+		nf->m_softstemn_to_litr4n = cf->m_softstemc_to_litr4c / epc->softstem_cn;  	
+		nf->m_softstemn_storage_to_litr1n  = mort * ns->softstemn_storage;
+		nf->m_softstemn_transfer_to_litr1n = mort * ns->softstemn_transfer;	
 	}
 	
 	/* update state variables */
@@ -221,6 +243,7 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cs->litr1c              += cf->m_fruitc_transfer_to_litr1c;
 	cs->fruitc_transfer     -= cf->m_fruitc_transfer_to_litr1c;
 
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
 		/*    Stem wood mortality */
@@ -234,6 +257,25 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 		cs->cwdc       += cf->m_deadcrootc_to_cwdc;
 		cs->deadcrootc -= cf->m_deadcrootc_to_cwdc;
 	}
+	else
+	{
+
+		/* softstem mortality - Hidy 2013. */
+		cs->litr1c         += cf->m_softstemc_to_litr1c;
+		cs->softstemc      -= cf->m_softstemc_to_litr1c;
+		cs->litr2c         += cf->m_softstemc_to_litr2c;
+		cs->softstemc      -= cf->m_softstemc_to_litr2c;
+		cs->litr3c         += cf->m_softstemc_to_litr3c;
+		cs->softstemc      -= cf->m_softstemc_to_litr3c;
+		cs->litr4c         += cf->m_softstemc_to_litr4c;
+		cs->softstemc      -= cf->m_softstemc_to_litr4c;
+		cs->litr1c              += cf->m_softstemc_storage_to_litr1c;
+		cs->softstemc_storage   -= cf->m_softstemc_storage_to_litr1c;
+		cs->litr1c              += cf->m_softstemc_transfer_to_litr1c;
+		cs->softstemc_transfer  -= cf->m_softstemc_transfer_to_litr1c;
+
+	}
+
 	/* NITROGEN mortality state variable update */
 	/*  Leaf mortality */
 	ns->litr1n         += nf->m_leafn_to_litr1n;
@@ -294,11 +336,12 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	ns->fruitn_storage      -= nf->m_fruitn_storage_to_litr1n;
 	ns->litr1n              += nf->m_fruitn_transfer_to_litr1n;
 	ns->fruitn_transfer     -= nf->m_fruitn_transfer_to_litr1n;
-
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
-		/*    Stem wood mortality */
-		ns->litr1n     += nf->m_livestemn_to_litr1n;
+		/*  Stem wood mortality */
+	    ns->litr1n     += nf->m_livestemn_to_litr1n;
 		ns->livestemn  -= nf->m_livestemn_to_litr1n;
 		ns->cwdn       += nf->m_livestemn_to_cwdn;
 		ns->livestemn  -= nf->m_livestemn_to_cwdn;
@@ -310,6 +353,22 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 		ns->livecrootn -= nf->m_livecrootn_to_cwdn;
 		ns->cwdn       += nf->m_deadcrootn_to_cwdn;
 		ns->deadcrootn -= nf->m_deadcrootn_to_cwdn;
+	}
+	else
+	{
+		/* softstem mortality - Hidy 2013. */
+		ns->litr1n				+= nf->m_softstemn_to_litr1n;
+		ns->softstemn			-= nf->m_softstemn_to_litr1n;
+		ns->litr2n				+= nf->m_softstemn_to_litr2n;
+		ns->softstemn			-= nf->m_softstemn_to_litr2n;
+		ns->litr3n				+= nf->m_softstemn_to_litr3n;
+		ns->softstemn			-= nf->m_softstemn_to_litr3n;
+		ns->litr4n				+= nf->m_softstemn_to_litr4n;
+		ns->softstemn			-= nf->m_softstemn_to_litr4n;
+		ns->litr1n              += nf->m_softstemn_storage_to_litr1n;
+		ns->softstemn_storage   -= nf->m_softstemn_storage_to_litr1n;
+		ns->litr1n              += nf->m_softstemn_transfer_to_litr1n;
+		ns->softstemn_transfer  -= nf->m_softstemn_transfer_to_litr1n;
 	}
 	
 	/************************************************************/
@@ -345,14 +404,24 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cf->m_fruitc_storage_to_fire  = mort * cs->fruitc_storage;
 	cf->m_fruitc_transfer_to_fire = mort * cs->fruitc_transfer;
 
-	/* TREE-specific carbon fluxes */
+	
+		
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
-		cf->m_livestemc_to_fire = mort * cs->livestemc;	 
+        cf->m_livestemc_to_fire = mort * cs->livestemc;	 
 		cf->m_deadstemc_to_fire = dscp * mort * cs->deadstemc;	 
 		cf->m_livecrootc_to_fire = mort * cs->livecrootc;   
 		cf->m_deadcrootc_to_fire = dscp * mort * cs->deadcrootc; 
 	}
+	else
+    {
+         /* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+	     cf->m_softstemc_to_fire = mort * cs->softstemc;  
+         cf->m_softstemc_storage_to_fire  = mort * cs->softstemc_storage;
+	     cf->m_softstemc_transfer_to_fire = mort * cs->softstemc_transfer;
+
+     } 
 	
 	/* litter and CWD fire fluxes */
 	cf->m_litr1c_to_fire = mort * cs->litr1c;
@@ -387,21 +456,45 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	nf->m_fruitn_storage_to_fire  = mort * ns->fruitn_storage;
 	nf->m_fruitn_transfer_to_fire = mort * ns->fruitn_transfer;
 	
-	/* woody-specific nitrogen fluxes */
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
-	{
-		nf->m_livestemn_to_fire = mort * ns->livestemn;	
+	{   /* woody-specific nitrogen fluxes */
+        nf->m_livestemn_to_fire = mort * ns->livestemn;	
 		nf->m_deadstemn_to_fire = dscp * mort * ns->deadstemn;
 		nf->m_livecrootn_to_fire =  mort * ns->livecrootn;
 		nf->m_deadcrootn_to_fire =  dscp * mort * ns->deadcrootn;
 	}
+	else
+	{ /* softstem simulation - Hidy 2015 */
+		nf->m_softstemn_to_fire = cf->m_softstemc_to_fire / epc->softstem_cn;  
+		nf->m_softstemn_storage_to_fire  = mort * ns->softstemn_storage;
+		nf->m_softstemn_transfer_to_fire = mort * ns->softstemn_transfer;
 	
-	/* litter and CWD fire fluxes */
+	}
+
+	
+	/* litter and CWD fire fluxes - Hidy 2015: modified in order to avoid negative fluxes */
+
 	nf->m_litr1n_to_fire = mort * ns->litr1n;
+	flux_from_carbon = cf->m_litr1c_to_fire * (cs->litr1c / ns->litr1n);
+	if (nf->m_litr1n_to_fire > flux_from_carbon) nf->m_litr1n_to_fire = flux_from_carbon;
+
 	nf->m_litr2n_to_fire = mort * ns->litr2n;
+	flux_from_carbon = cf->m_litr2c_to_fire * (cs->litr2c / ns->litr2n);
+	if (nf->m_litr2n_to_fire > flux_from_carbon) nf->m_litr2n_to_fire = flux_from_carbon;
+		
 	nf->m_litr3n_to_fire = mort * ns->litr3n;
+	flux_from_carbon = cf->m_litr3c_to_fire * (cs->litr3c / ns->litr3n);
+	if (nf->m_litr3n_to_fire > flux_from_carbon) nf->m_litr3n_to_fire = flux_from_carbon;
+		
 	nf->m_litr4n_to_fire = mort * ns->litr4n;
-	nf->m_cwdn_to_fire =   0.30 * mort * ns->cwdn;
+	flux_from_carbon = cf->m_litr4c_to_fire * (cs->litr4c / ns->litr4n);
+	if (nf->m_litr4n_to_fire > flux_from_carbon) nf->m_litr4n_to_fire = flux_from_carbon;
+
+	nf->m_cwdn_to_fire = 0.30 * mort * ns->cwdn;
+	flux_from_carbon = cf->m_cwdc_to_fire * (cs->cwdc / ns->cwdn);
+	if (nf->m_cwdn_to_fire > flux_from_carbon) nf->m_cwdn_to_fire = flux_from_carbon;
+
 	
 	/* update state variables for fire fluxes */
 	/* this is the only place other than daily_state_update() routines where
@@ -454,10 +547,12 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	cs->fire_snk            += cf->m_fruitc_transfer_to_fire;
 	cs->fruitc_transfer     -= cf->m_fruitc_transfer_to_fire;
 
-
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
-		/*    Stem wood mortality */
+		/*  Stem wood mortality */
+
 		cs->fire_snk   += cf->m_livestemc_to_fire;
 		cs->livestemc  -= cf->m_livestemc_to_fire;
 		cs->fire_snk   += cf->m_deadstemc_to_fire;
@@ -468,6 +563,16 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 		cs->fire_snk   += cf->m_deadcrootc_to_fire;
 		cs->deadcrootc -= cf->m_deadcrootc_to_fire;
 	}
+	else /* softstem simulation - Hidy 2015*/
+	{
+		cs->fire_snk            += cf->m_softstemc_to_fire;
+		cs->softstemc           -= cf->m_softstemc_to_fire;
+		cs->fire_snk            += cf->m_softstemc_storage_to_fire;
+		cs->softstemc_storage   -= cf->m_softstemc_storage_to_fire;
+		cs->fire_snk            += cf->m_softstemc_transfer_to_fire;
+		cs->softstemc_transfer  -= cf->m_softstemc_transfer_to_fire;
+	}
+
 	/* litter and CWD carbon state updates */
 	cs->fire_snk += cf->m_litr1c_to_fire;
 	cs->litr1c   -= cf->m_litr1c_to_fire;
@@ -522,7 +627,8 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 	ns->fruitn_storage      -= nf->m_fruitn_storage_to_fire;
 	ns->fire_snk            += nf->m_fruitn_transfer_to_fire;
 	ns->fruitn_transfer     -= nf->m_fruitn_transfer_to_fire;
-
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
 		/*    Stem wood mortality */
@@ -534,6 +640,17 @@ nstate_struct* ns, nflux_struct* nf, int simyr)
 		ns->livecrootn -= nf->m_livecrootn_to_fire;
 		ns->fire_snk   += nf->m_deadcrootn_to_fire;
 		ns->deadcrootn -= nf->m_deadcrootn_to_fire;
+	}
+	else 	/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+
+	{
+		ns->fire_snk			+= nf->m_softstemn_to_fire;
+		ns->softstemn			-= nf->m_softstemn_to_fire;
+		ns->fire_snk            += nf->m_softstemn_storage_to_fire;
+		ns->softstemn_storage   -= nf->m_softstemn_storage_to_fire;
+		ns->fire_snk            += nf->m_softstemn_transfer_to_fire;
+		ns->softstemn_transfer  -= nf->m_softstemn_transfer_to_fire;
+	
 	}
 	/* litter and CWD nitrogen state updates */
 	ns->fire_snk += nf->m_litr1n_to_fire;

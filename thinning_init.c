@@ -3,8 +3,9 @@ thinning_init.c
 read thinning information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -18,6 +19,7 @@ Copyright 2014, D. Hidy
 #include "bgc_struct.h"
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 
 int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
@@ -33,7 +35,7 @@ int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
 	int i;
 	int ok = 1;
 	int ny=1;
-	int n_THNparam=4;
+
 
 	/********************************************************************
 	**                                                                 **
@@ -58,14 +60,14 @@ int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
 	{
 		if (ok && scan_value(init, THN_filename, 's'))
 		{
-			printf("Error reading thinning calculating flag\n");
+			printf("Error reading thinning calculating file\n");
 			ok=0;
 		}
 		else
 		{
 			
 			ok=1;
-			printf("thinning information from file\n");
+			if (ctrl->onscreen) printf("INFORMATION: thinning information from file\n");
 			THN->THN_flag = 2;
 			strcpy(THN_file.name, THN_filename);
 		}
@@ -118,6 +120,8 @@ int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
 	{
 		fclose (THN_file.ptr);
 	}
+
+	THN->mgmd = -1;
 	
 	return (!ok);
 }

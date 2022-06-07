@@ -4,11 +4,9 @@ header file to hold the structures used to communicate with bgc()
 also contains the function prototype for bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
-Hungarian Academy of Sciences
+Copyright 2013, PD. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -35,6 +33,7 @@ typedef struct
 	harvesting_struct HRV;			/* parameters for harvesting */
 	ploughing_struct PLG;			/* parameters for ploughing */
 	fertilizing_struct FRZ;			/* parameters for fertilizing */
+	irrigation_struct IRG;			/* parameters for irrigation */
 	GSI_struct GSI;					/* parameters for calculating growing season */
 } bgcin_struct;
 
@@ -50,6 +49,7 @@ typedef struct
 	double spinup_resid_trend; /* kgC/m2/yr remaining trend after spinup */
 	int spinup_years;       /* number of years before reaching steady-state */
 	file control_file;
+	file log_file;
 } bgcout_struct;
 
 /* function prototypes for calling bgc */

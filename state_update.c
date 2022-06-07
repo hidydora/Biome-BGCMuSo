@@ -3,9 +3,11 @@ state_update.c
 Resolve the fluxes in bgc() daily loop to update state variables
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Copyright 2014, D. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 4/17/2000 (PET): Included the new denitrification flux. See daily_allocation.c
@@ -46,9 +48,10 @@ int daily_water_state_update(wflux_struct* wf, wstate_struct* ws)
 	ws->canopyw        -= wf->canopyw_evap;
 	ws->canopyw        -= wf->canopyw_to_soilw;
 
-	/* pind water evaporation */
+	/* pond water evaporation */
 	ws->pondwevap_snk  += wf->pondw_evap;
 	ws->pond_water     -= wf->pondw_evap;
+
 
 	/* snowmelt fluxes */
 	ws->snoww          -= wf->snoww_to_soilw;
@@ -73,7 +76,7 @@ int daily_water_state_update(wflux_struct* wf, wstate_struct* ws)
 	/* deep diffusion: diffusion (downward) of the bottom layer is net loss for the sytem*/
 	ws->deepdiffusion_snk += wf->soilw_diffused[N_SOILLAYERS-2];
 
-	/* deep transpiration: transpiration from bottom layer is net surplus for the sytem*/
+	/* deep transpiration: transpiration from bottom layer is net gain for the sytem*/
 	ws->deeptrans_src += wf->soilw_trans[N_SOILLAYERS-1];
 
    
@@ -119,6 +122,8 @@ int alloc, int woody, int evergreen)
 	cs->fruitc           += cf->fruitc_transfer_to_fruitc;
 	cs->fruitc_transfer  -= cf->fruitc_transfer_to_fruitc;
 
+ 
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
 		/* Stem and coarse root transfer growth */
@@ -130,6 +135,12 @@ int alloc, int woody, int evergreen)
 		cs->livecrootc_transfer   -= cf->livecrootc_transfer_to_livecrootc;
 		cs->deadcrootc            += cf->deadcrootc_transfer_to_deadcrootc;
 		cs->deadcrootc_transfer   -= cf->deadcrootc_transfer_to_deadcrootc;
+	}
+	else
+	{ 	/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		cs->softstemc           += cf->softstemc_transfer_to_softstemc;
+		cs->softstemc_transfer  -= cf->softstemc_transfer_to_softstemc;
+	
 	}
 	/* Leaf and fine root litterfall */
 	cs->litr1c     += cf->leafc_to_litr1c;
@@ -158,13 +169,26 @@ int alloc, int woody, int evergreen)
 	cs->litr4c     += cf->fruitc_to_litr4c;
 	cs->fruitc     -= cf->fruitc_to_litr4c;
 
-	/* livewood turnover fluxes */
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
-	{
+	{  /* livewood turnover fluxes */
 		cs->deadstemc  += cf->livestemc_to_deadstemc;
 		cs->livestemc  -= cf->livestemc_to_deadstemc;
 		cs->deadcrootc += cf->livecrootc_to_deadcrootc;
 		cs->livecrootc -= cf->livecrootc_to_deadcrootc;
+	}
+	else
+	{
+		/* soft stem simulation - Hidy 2015. */
+		cs->litr1c     += cf->softstemc_to_litr1c;
+		cs->softstemc  -= cf->softstemc_to_litr1c;
+		cs->litr2c     += cf->softstemc_to_litr2c;
+		cs->softstemc  -= cf->softstemc_to_litr2c;
+		cs->litr3c     += cf->softstemc_to_litr3c;
+		cs->softstemc  -= cf->softstemc_to_litr3c;
+		cs->litr4c     += cf->softstemc_to_litr4c;
+		cs->softstemc  -= cf->softstemc_to_litr4c;
+	
 	}
 	
 	/* Maintenance respiration fluxes */
@@ -178,13 +202,22 @@ int alloc, int woody, int evergreen)
     cs->fruit_mr_snk += cf->fruit_mr;
 	cs->cpool        -= cf->fruit_mr;
 
+	
 
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
 		cs->livestem_mr_snk  += cf->livestem_mr;
 		cs->cpool            -= cf->livestem_mr;
 		cs->livecroot_mr_snk += cf->livecroot_mr;
 		cs->cpool            -= cf->livecroot_mr;
+	}
+	else
+	{
+		/*softstem simulation - Hidy 2013. */
+		cs->softstem_mr_snk += cf->softstem_mr;
+		cs->cpool        -= cf->softstem_mr;
+	
 	}
 	
 	/* Photosynthesis fluxes */
@@ -256,6 +289,7 @@ int alloc, int woody, int evergreen)
 	cs->fruitc_storage += cf->cpool_to_fruitc_storage;
 	cs->cpool          -= cf->cpool_to_fruitc_storage; 
 
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
 		/* Daily live stem wood allocation fluxes */
@@ -278,6 +312,15 @@ int alloc, int woody, int evergreen)
 		cs->cpool              -= cf->cpool_to_deadcrootc;
 		cs->deadcrootc_storage += cf->cpool_to_deadcrootc_storage;
 		cs->cpool              -= cf->cpool_to_deadcrootc_storage;
+	}
+	else
+	{ /* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		/* softstem simulation - Hidy 2013. */
+		cs->softstemc			+= cf->cpool_to_softstemc;
+		cs->cpool				-= cf->cpool_to_softstemc;
+		cs->softstemc_storage	+= cf->cpool_to_softstemc_storage;
+		cs->cpool				-= cf->cpool_to_softstemc_storage; 
+	
 	}
 	/* Daily allocation for transfer growth respiration */
 	cs->gresp_storage  += cf->cpool_to_gresp_storage;
@@ -305,9 +348,11 @@ int alloc, int woody, int evergreen)
 		cs->cpool            -= cf->cpool_fruit_storage_gr;
 		cs->fruit_gr_snk     += cf->transfer_fruit_gr;
 		cs->gresp_transfer   -= cf->transfer_fruit_gr;
+	
 
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (woody)
-		{
+		{	
 			/* Live stem growth respiration */ 
 			cs->livestem_gr_snk  += cf->cpool_livestem_gr;
 			cs->cpool            -= cf->cpool_livestem_gr;
@@ -336,8 +381,17 @@ int alloc, int woody, int evergreen)
 			cs->cpool            -= cf->cpool_deadcroot_storage_gr;
 			cs->deadcroot_gr_snk += cf->transfer_deadcroot_gr;
 			cs->gresp_transfer   -= cf->transfer_deadcroot_gr;
-	}
-	
+		}
+		else
+		{	/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+
+			cs->softstem_gr_snk     += cf->cpool_softstem_gr;
+			cs->cpool            -= cf->cpool_softstem_gr;
+			cs->softstem_gr_snk     += cf->cpool_softstem_storage_gr;
+			cs->cpool            -= cf->cpool_softstem_storage_gr;
+			cs->softstem_gr_snk     += cf->transfer_softstem_gr;
+			cs->gresp_transfer   -= cf->transfer_softstem_gr;
+		}
 
 	
 	/* Annual allocation fluxes, one day per year */
@@ -353,12 +407,19 @@ int alloc, int woody, int evergreen)
 		cf->gresp_storage_to_gresp_transfer = cs->gresp_storage;
 		/* fruit simulation - Hidy 2013. */
 		cf->fruitc_storage_to_fruitc_transfer = cs->fruitc_storage;
+	
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (woody)
 		{
 			cf->livestemc_storage_to_livestemc_transfer = cs->livestemc_storage;
 			cf->deadstemc_storage_to_deadstemc_transfer = cs->deadstemc_storage;
 			cf->livecrootc_storage_to_livecrootc_transfer = cs->livecrootc_storage;
 			cf->deadcrootc_storage_to_deadcrootc_transfer = cs->deadcrootc_storage;
+		}
+		else
+		{ 	/* SOFT STEM SIMULATION  of non-woody biomes - Hidy 2015. */
+			cf->softstemc_storage_to_softstemc_transfer = cs->softstemc_storage;
+	
 		}
 		/* update states variables */
 		cs->leafc_transfer    += cf->leafc_storage_to_leafc_transfer;
@@ -371,16 +432,23 @@ int alloc, int woody, int evergreen)
 		cs->fruitc_transfer    += cf->fruitc_storage_to_fruitc_transfer;
 		cs->fruitc_storage     -= cf->fruitc_storage_to_fruitc_transfer;
 
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (woody)
 		{
 			cs->livestemc_transfer  += cf->livestemc_storage_to_livestemc_transfer;
 			cs->livestemc_storage   -= cf->livestemc_storage_to_livestemc_transfer;
+
 			cs->deadstemc_transfer  += cf->deadstemc_storage_to_deadstemc_transfer;
 			cs->deadstemc_storage   -= cf->deadstemc_storage_to_deadstemc_transfer;
 			cs->livecrootc_transfer += cf->livecrootc_storage_to_livecrootc_transfer;
 			cs->livecrootc_storage  -= cf->livecrootc_storage_to_livecrootc_transfer;
 			cs->deadcrootc_transfer += cf->deadcrootc_storage_to_deadcrootc_transfer;
 			cs->deadcrootc_storage  -= cf->deadcrootc_storage_to_deadcrootc_transfer;
+		}
+		else
+		{	/* softstem simulation - Hidy 2013. */
+			cs->softstemc_transfer    += cf->softstemc_storage_to_softstemc_transfer;
+			cs->softstemc_storage     -= cf->softstemc_storage_to_softstemc_transfer;
 		}
 		
 		/* for deciduous system, force leafc and frootc to exactly 0.0 on the
@@ -418,7 +486,8 @@ int alloc, int woody, int evergreen)
 	/* fruit simulation - Hidy 2013. */
 	ns->fruitn           += nf->fruitn_transfer_to_fruitn;
 	ns->fruitn_transfer  -= nf->fruitn_transfer_to_fruitn;
-
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
 		/* Stem and coarse root transfer growth */
@@ -430,6 +499,12 @@ int alloc, int woody, int evergreen)
 		ns->livecrootn_transfer -= nf->livecrootn_transfer_to_livecrootn;
 		ns->deadcrootn          += nf->deadcrootn_transfer_to_deadcrootn;
 		ns->deadcrootn_transfer -= nf->deadcrootn_transfer_to_deadcrootn;
+	}
+	else
+	{
+		/* softstem simulation - Hidy 2013. */
+		ns->softstemn           += nf->softstemn_transfer_to_softstemn;
+		ns->softstemn_transfer  -= nf->softstemn_transfer_to_softstemn;
 	}
 	/* Leaf and fine root litterfall */
 	ns->litr1n     += nf->leafn_to_litr1n;
@@ -452,15 +527,22 @@ int alloc, int woody, int evergreen)
 	ns->frootn     -= nf->frootn_to_litr4n;
 	/* fruit simulation - Hidy 2013. */
 	ns->litr1n     += nf->fruitn_to_litr1n;
-	ns->fruitn      -= nf->fruitn_to_litr1n;
+	ns->fruitn     -= nf->fruitn_to_litr1n;
 	ns->litr2n     += nf->fruitn_to_litr2n;
-	ns->fruitn      -= nf->fruitn_to_litr2n;
+	ns->fruitn     -= nf->fruitn_to_litr2n;
 	ns->litr3n     += nf->fruitn_to_litr3n;
-	ns->fruitn      -= nf->fruitn_to_litr3n;
+	ns->fruitn     -= nf->fruitn_to_litr3n;
 	ns->litr4n     += nf->fruitn_to_litr4n;
-	ns->fruitn      -= nf->fruitn_to_litr4n;
-	ns->retransn   += nf->fruitn_to_retransn;   /* N retranslocation */
-	ns->fruitn      -= nf->fruitn_to_retransn;
+	ns->fruitn     -= nf->fruitn_to_litr4n;
+	/* softstemn simulation - Hidy 2013. */
+	ns->litr1n     += nf->softstemn_to_litr1n;
+	ns->softstemn  -= nf->softstemn_to_litr1n;
+	ns->litr2n     += nf->softstemn_to_litr2n;
+	ns->softstemn  -= nf->softstemn_to_litr2n;
+	ns->litr3n     += nf->softstemn_to_litr3n;
+	ns->softstemn  -= nf->softstemn_to_litr3n;
+	ns->litr4n     += nf->softstemn_to_litr4n;
+	ns->softstemn  -= nf->softstemn_to_litr4n;
 
 	/* live wood turnover to dead wood */
 	ns->deadstemn  += nf->livestemn_to_deadstemn;
@@ -481,6 +563,15 @@ int alloc, int woody, int evergreen)
 	ns->cwdn       -= nf->cwdn_to_litr3n;
 	ns->litr4n     += nf->cwdn_to_litr4n;
 	ns->cwdn       -= nf->cwdn_to_litr4n;
+
+	if (ns->cwdn < 0)
+	{
+		double cwdnflux=nf->cwdn_to_litr2n+nf->cwdn_to_litr3n+nf->cwdn_to_litr4n;
+		nf->cwdn_to_litr2n += ns->cwdn * nf->cwdn_to_litr2n/cwdnflux;
+		nf->cwdn_to_litr3n += ns->cwdn * nf->cwdn_to_litr3n/cwdnflux;
+		nf->cwdn_to_litr4n += ns->cwdn * nf->cwdn_to_litr4n/cwdnflux;
+		ns->cwdn = 0;
+	}
 	/* N fluxes for immobilization and mineralization */
 	ns->soil1n     += nf->litr1n_to_soil1n;
 	ns->litr1n     -= nf->litr1n_to_soil1n;
@@ -582,7 +673,6 @@ int alloc, int woody, int evergreen)
 	nf->sminn_to_soil_SUM += nf->sminn_to_nvol_s4;
 
 	/* Bulk denitrification of soil mineral N */
-	nf->sminn_to_soil_SUM   += nf->sminn_to_denitrif;
 	ns->nvol_snk            += nf->sminn_to_denitrif;
 	
 	/* Plant allocation flux, from N retrans pool */
@@ -603,9 +693,11 @@ int alloc, int woody, int evergreen)
 	ns->npool          -= nf->npool_to_frootn_storage;
 	/* Daily fruit allocation fluxes - Hidy 2013. */
 	ns->fruitn          += nf->npool_to_fruitn;
-	ns->npool          -= nf->npool_to_fruitn;
+	ns->npool           -= nf->npool_to_fruitn;
 	ns->fruitn_storage  += nf->npool_to_fruitn_storage;
-	ns->npool          -= nf->npool_to_fruitn_storage;
+	ns->npool           -= nf->npool_to_fruitn_storage;
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
 		/* Daily live stem allocation fluxes */
@@ -629,7 +721,14 @@ int alloc, int woody, int evergreen)
 		ns->deadcrootn_storage += nf->npool_to_deadcrootn_storage;
 		ns->npool              -= nf->npool_to_deadcrootn_storage;
 	}
-
+	else
+	{
+		/* Daily softstem allocation fluxes - Hidy 2013. */
+		ns->softstemn          += nf->npool_to_softstemn;
+		ns->npool              -= nf->npool_to_softstemn;
+		ns->softstemn_storage  += nf->npool_to_softstemn_storage;
+		ns->npool              -= nf->npool_to_softstemn_storage;
+	}
 	
 	
 	/* Annual allocation fluxes, one day per year */
@@ -644,12 +743,18 @@ int alloc, int woody, int evergreen)
 		nf->frootn_storage_to_frootn_transfer = ns->frootn_storage;
 		/* fruit simulation - Hidy 2013. */
 		nf->fruitn_storage_to_fruitn_transfer = ns->fruitn_storage;
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (woody)
 		{
 			nf->livestemn_storage_to_livestemn_transfer = ns->livestemn_storage;
 			nf->deadstemn_storage_to_deadstemn_transfer = ns->deadstemn_storage;
 			nf->livecrootn_storage_to_livecrootn_transfer = ns->livecrootn_storage;
 			nf->deadcrootn_storage_to_deadcrootn_transfer = ns->deadcrootn_storage;
+		}
+		else
+		{
+			/* softstem simulation - Hidy 2013. */
+			nf->softstemn_storage_to_softstemn_transfer = ns->softstemn_storage;
 		}
 		/* update states variables */
 		ns->leafn_transfer    += nf->leafn_storage_to_leafn_transfer;
@@ -659,6 +764,9 @@ int alloc, int woody, int evergreen)
 		/* fruit simulation - Hidy 2013. */
 		ns->fruitn_transfer    += nf->fruitn_storage_to_fruitn_transfer;
 		ns->fruitn_storage     -= nf->fruitn_storage_to_fruitn_transfer;
+
+		
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (woody)
 		{
 			ns->livestemn_transfer  += nf->livestemn_storage_to_livestemn_transfer;
@@ -669,6 +777,13 @@ int alloc, int woody, int evergreen)
 			ns->livecrootn_storage  -= nf->livecrootn_storage_to_livecrootn_transfer;
 			ns->deadcrootn_transfer += nf->deadcrootn_storage_to_deadcrootn_transfer;
 			ns->deadcrootn_storage  -= nf->deadcrootn_storage_to_deadcrootn_transfer;
+		}
+		else
+		{
+			/* softstem simulation - Hidy 2013. */
+			ns->softstemn_transfer    += nf->softstemn_storage_to_softstemn_transfer;
+			ns->softstemn_storage     -= nf->softstemn_storage_to_softstemn_transfer;
+
 		}
 		/* for deciduous system, force leafn and frootn to exactly 0.0 on the
 		last day */

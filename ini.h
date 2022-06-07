@@ -1,12 +1,12 @@
 /*
 ini.h
 header file for file I/O handling and initialization file reading
-for use with BBGC MuSo v3.0.8 library
+for use with BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

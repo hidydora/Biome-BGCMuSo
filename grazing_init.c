@@ -3,8 +3,8 @@ grazing_init.c
 read grazinz information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -37,6 +37,7 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 	int ny=1;
 
 
+
 	/********************************************************************
 	**                                                                 **
 	** Begin reading initialization file block starting with keyword:  **
@@ -60,14 +61,14 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 	{
 		if (ok && scan_value(init, GRZ_filename, 's'))
 		{
-			printf("Error reading grazing calculating flag\n");
+			printf("Error reading grazing calculating file\n");
 			ok=0;
 		}
 		else
 		{
 			
 			ok=1;
-			printf("grazing information from file\n");
+			if (ctrl->onscreen) printf("INFORMATION: grazing information from file\n");
 			GRZ->GRZ_flag = 2;
 			strcpy(GRZ_file.name, GRZ_filename);
 		}
@@ -90,8 +91,8 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 
 	}
 	else GRZ_file=init;
-	
 
+	
 	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->GRZ_start_array)))
 	{
 		printf("Error reading first day of grazing\n");
@@ -104,15 +105,29 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->DMintake_array)))
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->weight_LSU)))
 	{
-		printf("Error reading last day of grazing\n");
+		printf("Error reading livestock unit\n");
 		ok=0;
 	}
 
 	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->stocking_rate_array)))
 	{
 		printf("Error reading animal stocking rate\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->DMintake_array)))
+	{
+		printf("Error reading last day of grazing\n");
+		ok=0;
+	}
+
+
+	/* trampling effect */
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->trampling_effect)))
+	{
+		printf("Error reading trampling_effect\n");
 		ok=0;
 	}
 
@@ -136,21 +151,48 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 		
 	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EXCR_Ncontent_array)))
 	{
-		printf("Error reading nitrogen content of the fertilizer\n");
+		printf("Error reading EXCR_Ncontent_array\n");
 		ok=0;
 	}
 			
 	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EXCR_Ccontent_array)))
 	{
-		printf("Error reading carbon content of the fertilizer\n");
+		printf("Error reading EXCR_Ccontent_array\n");
 		ok=0;
 	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EFman_N2O)))
+	{
+		printf("Error reading manure emission factor of N2O\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->Nexrate)))
+	{
+		printf("Error reading manure emission factor of N2O\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EFman_CH4)))
+	{
+		printf("Error reading manure emission factor of CH4\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EFfer_CH4)))
+	{
+		printf("Error reading fermentation emission factor of CH4\n");
+		ok=0;
+	}
+
 
 	if (GRZ->GRZ_flag == 2)
 	{
 		fclose (GRZ_file.ptr);
 	}
 		
+	GRZ->mgmd = -1;
+
 	return (!ok);	
 
 }

@@ -3,10 +3,10 @@ prephenology.c
 Initialize phenology arrays, called prior to annual loop in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -22,7 +22,7 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 #include "misc_func.h"
 
-int prephenology(const control_struct* ctrl, const epconst_struct* epc, 
+int prephenology(file logfile, const control_struct* ctrl, const epconst_struct* epc, 
 const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* phenarr)
 
 {
@@ -74,8 +74,13 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 	double tmax_ann, tmax, new_tmax;
 	double tmin_annavg;
 
+	int onday_min=364;
+	int onday_max=0;
+	int offday_min=364;
+	int offday_max=0;
 
 
+	onday = offday = 0;
 	nyears = ctrl->metyears;
 	ndays = n_yday * nyears;
 	
@@ -190,6 +195,9 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 	if (south) phenyears = nyears+1;
 	else phenyears = nyears;
 	
+
+	fprintf(logfile.ptr, "Information about SGS and EGS values (yday of onday and offday)\n");
+
 	/* define the phenology signals for cases in which the phenology signals
 	are constant between years */
 	if (evergreen || !model)
@@ -204,16 +212,48 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 			predays_litfall[pday] = 0;
 		}
 		
-		/* user defined on and off days (base zero) */
-		onday = epc->onday;
-		offday = epc->offday;
 
-		/* Hidy 2012 - fix the onday and offday value */
+		/* Hidy 2015 - user defined on and off days (base zero) */
 		for (py=0 ; py<phenyears ; py++)
 		{
+	
+			if (ctrl->varSGS_flag && ctrl->spinup != 1)
+				onday = (int) epc->sgs_array[py];
+			else
+				onday = epc->onday;
+			
+			if (ctrl->varEGS_flag && ctrl->spinup != 1)
+				offday = (int) epc->egs_array[py];
+			else
+				offday = epc->offday;
+
+			if (evergreen)
+			{
+				onday=0;
+				offday=364;
+			}
+
+		
+			if (onday >= offday) 
+			{
+				printf("FATAL ERROR: user-defined onday is greater or equal than offday (prephenology.c)\n");
+				ok = 0;
+			}
+		
 			phenarr->onday_arr[py]  = onday;
 			phenarr->offday_arr[py] = offday;
+
+			/* Hidy 2015  - wrinting out log file */
+			if (onday  < onday_min)  onday_min  = onday;
+			if (onday  > onday_max)  onday_max  = onday;
+			if (offday < offday_min) offday_min = offday;
+			if (offday > offday_max) offday_max = offday;
 		}
+
+		/* Hidy 2015  - wrinting log file */
+		fprintf(logfile.ptr, "SGS value (min and max): %6i %6i\n", onday_min, onday_max);
+		fprintf(logfile.ptr, "EGS value (min and max): %6i %6i\n", offday_min, offday_max);
+		fprintf(logfile.ptr, " \n");
 
 		if (!model && onday == -1 && offday == -1)
 		{
@@ -438,16 +478,16 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 							{
 								/* use the beginning of the last year to fill the
 								end of the last phenological year */
-								phensoilt = metarr->tavg_ra[ndays-547+pday];
+								phensoilt = metarr->tavg11_ra[ndays-547+pday];
 							}
 							else
 							{
-								phensoilt = metarr->tavg_ra[py*n_yday-182+pday];
+								phensoilt = metarr->tavg11_ra[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg_ra[py*n_yday+pday];
+							phensoilt = metarr->tavg11_ra[py*n_yday+pday];
 						}
 						
 						fall_tavg += phensoilt;
@@ -471,25 +511,25 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 								/* use the end of the first year to fill the 
 								beginning of a southern hemisphere phenological
 								year */
-								phensoilt = metarr->tavg_ra[183+pday];
+								phensoilt = metarr->tavg11_ra[183+pday];
 								phendayl = metarr->dayl[183+pday];
 							}
 							else if (py==phenyears-1 && pday>181)
 							{
 								/* use the beginning of the last year to fill the
 								end of the last phenological year */
-								phensoilt = metarr->tavg_ra[ndays-547+pday];
+								phensoilt = metarr->tavg11_ra[ndays-547+pday];
 								phendayl = metarr->dayl[ndays-547+pday];
 							}
 							else
 							{
-								phensoilt = metarr->tavg_ra[py*n_yday-182+pday];
+								phensoilt = metarr->tavg11_ra[py*n_yday-182+pday];
 								phendayl = metarr->dayl[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg_ra[py*n_yday+pday];
+							phensoilt = metarr->tavg11_ra[py*n_yday+pday];
 							phendayl = metarr->dayl[py*n_yday+pday];
 						}
 						
@@ -556,6 +596,8 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					phenological year */
 					onday_arr[py] = onset_day;
 					offday_arr[py] = offset_day;
+
+			
 					
 				} /* end phenyears loop for filling onset and offset arrays */
 			} /* end if woody (tree phenology model) */
@@ -651,7 +693,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 								/* use the end of the first year to fill the 
 								beginning of a southern hemisphere phenological
 								year */
-								phensoilt = metarr->tavg_ra[183+pday];
+								phensoilt = metarr->tavg11_ra[183+pday];
 								phenprcp = metarr->prcp[183+pday];
 								grass_prcpyear[pday] = phenprcp;
 								grass_tminyear[pday] = metarr->tmin[183+pday];
@@ -661,7 +703,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 							{
 								/* use the beginning of the last year to fill the
 								end of the last phenological year */
-								phensoilt = metarr->tavg_ra[ndays-547+pday];
+								phensoilt = metarr->tavg11_ra[ndays-547+pday];
 								phenprcp = metarr->prcp[ndays-547+pday];
 								grass_prcpyear[pday] = phenprcp;
 								grass_tminyear[pday] = metarr->tmin[ndays-547+pday];
@@ -669,7 +711,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 							}
 							else
 							{
-								phensoilt = metarr->tavg_ra[py*n_yday-182+pday];
+								phensoilt = metarr->tavg11_ra[py*n_yday-182+pday];
 								phenprcp = metarr->prcp[py*n_yday-182+pday];
 								grass_prcpyear[pday] = phenprcp;
 								grass_tminyear[pday] = metarr->tmin[py*n_yday-182+pday];
@@ -678,7 +720,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg_ra[py*n_yday+pday];
+							phensoilt = metarr->tavg11_ra[py*n_yday+pday];
 							phenprcp = metarr->prcp[py*n_yday+pday];
 							grass_prcpyear[pday] = phenprcp;
 							grass_tminyear[pday] = metarr->tmin[py*n_yday+pday];
@@ -794,7 +836,20 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 			{
 				phenarr->onday_arr[py]  = onday_arr[py];
 				phenarr->offday_arr[py] = offday_arr[py];
+
+				/* Hidy 2015  - wrinting out log file */
+				if (onday_arr[py]  < onday_min)  onday_min  = onday_arr[py];
+				if (onday_arr[py]  > onday_max)  onday_max  = onday_arr[py];
+				if (offday_arr[py] < offday_min) offday_min = offday_arr[py];
+				if (offday_arr[py] > offday_max) offday_max = offday_arr[py];
+
 			}
+
+
+		/* Hidy 2015  - wrinting log file */
+		//fprintf(logfile.ptr, "SGS value (min and max) %6i %6i\n", onday_min, onday_max);
+		//fprintf(logfile.ptr, "EGS value (min and max) %6i %6i\n", offday_min, offday_max);
+		//fprintf(logfile.ptr, " \n");
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////		
 		}
@@ -805,8 +860,23 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 			{
 				onday_arr[py] = phenarr->onday_arr[py];
 				offday_arr[py] = phenarr->offday_arr[py];
+
+
+				/* Hidy 2015  - wrinting out log file */
+				if (onday_arr[py]  < onday_min)  onday_min  = onday_arr[py];
+				if (onday_arr[py]  > onday_max)  onday_max  = onday_arr[py];
+				if (offday_arr[py] < offday_min) offday_min = offday_arr[py];
+				if (offday_arr[py] > offday_max) offday_max = offday_arr[py];
+
+				
 			}
 		}
+
+	
+		/* Hidy 2015  - wrinting log file */
+		fprintf(logfile.ptr, "SGS value (min and max): %6i %6i\n", onday_min, onday_max);
+		fprintf(logfile.ptr, "EGS value (min and max): %6i %6i\n", offday_min, offday_max);
+		fprintf(logfile.ptr, " \n");
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

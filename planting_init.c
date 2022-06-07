@@ -3,8 +3,8 @@ planting_init.c
 read planting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -95,14 +95,14 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT)
 	{
 		if (ok && scan_value(init, PLT_filename, 's'))
 		{
-			printf("Error reading planting calculating flag\n");
+			printf("Error reading planting calculating file\n");
 			ok=0;
 		}
 		else
 		{
 			
 			ok=1;
-			printf("planting information from file\n");
+			if (ctrl->onscreen) printf("INFORMATION: planting information from file\n");
 			PLT->PLT_flag = 2;
 			strcpy(PLT_file.name, PLT_filename);
 		}
@@ -157,6 +157,9 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT)
 		fclose (PLT_file.ptr);
 	}
 	
-		
+	
+	PLT->mgmd = -1;
+	PLT->afterPLT = 0;
+	
 	return (!ok);
 }

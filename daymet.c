@@ -1,12 +1,11 @@
-/* 
-daymet.c
+/*daymet.c
 transfer one day of meteorological data from metarr struct to metv struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -20,31 +19,63 @@ Hungarian Academy of Sciences
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteconst_struct* sitec, const wstate_struct* ws, 
-		   metvar_struct* metv, double* tair_annavg_ptr, int metday)
+int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteconst_struct* sitec, const epconst_struct* epc,  
+		   planting_struct* PLT, wstate_struct* ws, epvar_struct* epv, metvar_struct* metv, double* tair_annavg_ptr, int metday)
 {
 	/* generates daily meteorological variables from the metarray struct */
 	int ok=1;
-	int layer;
-	double tmax,tmin,tavg,tavg_ra,tday,tdiff;
+	double tmax,tmin,tavg,tavg11_ra,tavg30_ra,tavg10_ra,tday,tdiff, tsoil_top;
 
-	/* Hidy 2010 - multilayer soil */
-	double depth_top, depth_bottom, tsoil_top, tsoil_bottom;
-
-	/* Hidy 2010 - new tsoil calculation */
-	double temp_grad;
-	double tsoil_avg = 0;
 
 	/* convert prcp from cm --> kg/m2 */
 	metv->prcp = metarr->prcp[metday] * 10.0;
 
 	/* air temperature calculations (all temperatures deg C) */
-	metv->tmax    = tmax    = metarr->tmax[metday];
-	metv->tmin    = tmin    = metarr->tmin[metday];
-	metv->tavg    = tavg    = metarr->tavg[metday];
-	metv->tday    = tday	= metarr->tday[metday];
-	metv->tnight  = (tday + tmin) / 2.0;
-	metv->tavg_ra = tavg_ra = metarr->tavg_ra[metday];
+	metv->tmax			= tmax    = metarr->tmax[metday];
+	metv->tmin			= tmin    = metarr->tmin[metday];
+	metv->tavg		    = tavg  = metarr->tavg[metday];
+
+	metv->tday			= tday	= metarr->tday[metday];
+	metv->tnight		= (tday + tmin) / 2.0;
+	metv->tavg11_ra	= tavg11_ra = metarr->tavg11_ra[metday];
+	metv->tavg30_ra	= tavg30_ra = metarr->tavg30_ra[metday];
+	metv->tavg10_ra	= tavg10_ra = metarr->tavg10_ra[metday];
+
+	metv->F_temprad     = metarr->F_temprad[metday];
+	metv->F_temprad_ra  = metarr->F_temprad_ra[metday];
+
+
+	/* **********************************************************************************/
+	/* Hidy 2015 - growing degree day calculation for fruit allocation and leaf senescence */
+
+	if (ctrl->PLT_flag == 0)
+	{
+		if (ctrl->yday == 0) metv->GDD = 0;
+	}
+	else
+	{
+		if (PLT->afterPLT == 0) metv->GDD = 0;
+	}
+
+	/* start of GDD calucaltion - first day of vegetation period (if no planting), day of planting (if planting) */
+	if ((ctrl-> PLT_flag == 0 && ctrl->yday > 0) || 
+		(ctrl->PLT_flag > 0 && PLT->afterPLT == 1)) 
+	{
+		if (metv->tavg > epc->base_temp) metv->GDD += (metv->tavg - epc->base_temp);
+	}
+
+	if (metv->GDD > epc->GDD_fruitalloc)     
+		epv->flowering = 1;
+	else 
+ 		epv->flowering = 0;
+
+
+	if (metv->GDD > epc->GDD_maturity) 	
+		epv->maturity = 1;
+	else
+		epv->maturity = 0;
+
+
 	
 	/* **********************************************************************************/
 	/* Hidy 2010 - new estimation of tsoil () - on the first day original method is used */
@@ -55,7 +86,7 @@ int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteco
 
 	if (metday < 1)
 	{
-		tsoil_top = metv->tavg_ra;
+		tsoil_top = metv->tavg11_ra;
 		/* soil temperature correction using difference from annual average tair */
 		tdiff =  *tair_annavg_ptr - tsoil_top;
 		
@@ -68,52 +99,18 @@ int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteco
 			tsoil_top += 0.1 * tdiff;
 		}
 
-		metv->tsoil[0]      = tsoil_top;
+		metv->tsoil_surface     = tsoil_top;
 
-		metv->tsoil_top_pre = tsoil_top;
-		metv->tday_pre      = (metv->tmax + metv->tmin)/2.;
+		metv->tsoil_surface_pre = tsoil_top;
+		metv->tday_pre          = (metv->tmax + metv->tmin)/2.;
 	}
+
+	/* 3 m below the ground surface (last layer) is specified by the annual mean surface air temperature */
+	metv->tsoil[N_SOILLAYERS-1] = sitec->tair_annavg;
 	
 	/* **********************************************************************************/
 	/* Hidy 2010 - initalizing  multilayer soil temperatures */
 	
-	depth_top = 0;
-	depth_bottom = 0;
-
-	if (ctrl->spinyears == 0 && ctrl->yday == 0)
-	{
-		/* 3 m below the ground surface (last layer) is specified by the annual mean surface air temperature */
-		metv->tsoil[N_SOILLAYERS-1] = sitec->mean_surf_air_temp;
-		
-	
-		/* on the first day the temperature of the soil layers are calculated based on the temperature of top and bottom layer */
-		temp_grad = (metv->tsoil[N_SOILLAYERS-1] - metv->tsoil[0]) / sitec->soillayer_depth[N_SOILLAYERS-2];
-		
-		for (layer = 1; layer < N_SOILLAYERS-1; layer++)
-		{
-			depth_top	 = sitec->soillayer_depth[layer-1];
-			depth_bottom = sitec->soillayer_depth[layer];
-				
-			tsoil_top	   	   = metv->tsoil[0] + temp_grad * depth_top;
-			tsoil_bottom	   = metv->tsoil[0] + temp_grad * depth_bottom;
-			
-			metv->tsoil[layer] = (tsoil_top + tsoil_bottom)/2.;	
-
-			/* average value regarding to soil without bottom layer */
-			tsoil_avg		   += metv->tsoil[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
-		}
-			
-		metv->tsoil_avg = tsoil_avg;
-		
-		/* on the first day no soil tempreture change is calculated -> initalizing */
-		for (layer = 0; layer < N_SOILLAYERS; layer++)
-		{
-			metv->tsoil_change[layer] = 0;
-		}
-
-	}
-
-
 
 	
 	/* **********************************************************************************/
@@ -129,6 +126,7 @@ int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteco
 
 	/* daylength (s) */
 	metv->dayl = metarr->dayl[metday];
+
 
 	return (!ok);
 }

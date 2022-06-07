@@ -3,9 +3,9 @@ time_init.c
 Initialize the simulation timing control parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Copyright 2013, D. Hidy
+Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -78,6 +78,7 @@ int time_init(file init, control_struct *ctrl)
 		printf("Error reading max spinup years: time_init(), time_init.c\n");
 		ok=0;
 	}
+
 	
 	return (!ok);
 }

@@ -5,7 +5,7 @@ depostion and fixing). State update of sminn_RZ (mineral N content of rootzone).
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 BBGC MuSo v4
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -26,11 +26,11 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 	int layer=0;
 	double soilwater_nconc_downward, soilwater_nconc_upward, wflux_downward, wflux_upward, sminn0, sminn1;
 	double sminn_SOILPROC_SUM, sminn_RZ;
-	double sminn_to_soil_ctrl, diff, boundary_effect;
+	double sminn_to_soil_ctrl, diff, boundary_effect, sminn_flux;
 
 	double sminn_boundary=1e-4;
 
-	sminn_SOILPROC_SUM = sminn_to_soil_ctrl = sminn_RZ = 0;
+	sminn_SOILPROC_SUM = sminn_to_soil_ctrl = sminn_RZ = sminn_flux = 0;
 
 
 
@@ -44,24 +44,26 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 	if (ns->sminn_RZ > 0)
 	{
-		for (layer = 0; layer < epv->n_rootlayers-1; layer++)
-		{	
-			nf->sminn_to_soil[layer] = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) * (ns->sminn[layer]/ns->sminn_RZ);
-			sminn_SOILPROC_SUM += nf->sminn_to_soil[layer];
+		for (layer = 0; layer < epv->n_rootlayers; layer++)
+		{
+			sminn_flux               = nf->sminn_to_soil_SUM + nf->sminn_to_npool + nf->sminn_to_denitrif;
+			if (layer < epv->n_rootlayers-1)
+				nf->sminn_to_soil[layer] = sminn_flux * (ns->sminn[layer]/ns->sminn_RZ);
+			else
+				nf->sminn_to_soil[epv->n_rootlayers-1] = sminn_flux - sminn_SOILPROC_SUM;
+
+			sminn_SOILPROC_SUM       += nf->sminn_to_soil[layer];
 		}
 	}
-	else nf->sminn_to_soil[layer] = 0;
-
-
-	/* the rest comes from the last layer */
-	nf->sminn_to_soil[epv->n_rootlayers-1] = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) - sminn_SOILPROC_SUM;
-	sminn_SOILPROC_SUM                     += nf->sminn_to_soil[epv->n_rootlayers-1];
-
-	diff = ns->sminn[epv->n_rootlayers-1] - nf->sminn_to_soil[epv->n_rootlayers-1];
+	else 
+	{
+		nf->sminn_to_soil[layer] = 0;
+		sminn_flux               = 0;
+	}
 
 
 	/* calculation control */
-	diff = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) - sminn_SOILPROC_SUM;
+	diff = sminn_flux - sminn_SOILPROC_SUM;
 	if (fabs(diff) > CRIT_PREC)          
 	{
 		printf("Error in sminn change calculation in multilayer_sminn.c\n");
@@ -79,8 +81,18 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 	
 		if (diff < 0.0 && fabs(diff) > CRIT_PREC)       
 		{
- 			printf("Fatal error: negative N content (multilayer_sminn.c)\n");
-			ok = 0;
+			if (fabs(diff) < nf->sminn_to_soil[layer]) 
+			{
+				printf("WARNING: limited sminn_to_soil (multilayer_sminn.c)\n");
+				nf->sminn_to_soil[layer] += diff;
+				nf->sminn_to_soil_SUM += diff;
+				ns->sminn[layer] -= nf->sminn_to_soil[layer];
+			}
+			else
+			{
+				printf("Fatal error: negative N content (multilayer_sminn.c)\n");
+				ok = 0;
+			}
 		}
 		else
 		{
@@ -101,7 +113,7 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 	ns->nfix_src  += nf->nfix_to_sminn;
 	ns->ndep_src  += nf->ndep_to_sminn;
 
-	nf->sminn_to_soil_SUM = 0;
+//	nf->sminn_to_soil_SUM = 0;
 
 	/* ****************************************************************************/
 	/* 3. N leaching:
@@ -143,23 +155,33 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 		if (sminn0 < 0)
 		{
 			nf->sminn_leached[layer] += sminn0;
-			printf("WARNING: limited N-leaching (multilayer_sminn.c)\n");
+//			if (fabs(sminn1) > CRIT_PREC) printf("WARNING: limited N-leaching (multilayer_sminn.c)\n");
 		}
 
 		if (sminn1 < 0)
 		{
 			nf->sminn_diffused[layer] -= sminn1;
-			printf("WARNING: limited N-diffusion (multilayer_sminn.c)\n");
+//			if (fabs(sminn1) > CRIT_PREC) printf("WARNING: limited N-diffusion (multilayer_sminn.c)\n");
 		}
 
 		ns->sminn[layer]   -= (nf->sminn_leached[layer] + nf->sminn_diffused[layer]); 
 		ns->sminn[layer+1] += (nf->sminn_leached[layer] + nf->sminn_diffused[layer]); 
 
 		/* CONTROL */
-		if(ns->sminn[layer] < 0|| ns->sminn[layer]  < 0)
+		if(ns->sminn[layer] < 0)
 		{
-			printf("FATAL ERROR: negative sminn popol (multilayer_sminn.c)\n");
-			ok=0;
+			if (fabs (ns->sminn[layer]) > CRIT_PREC)
+			{
+				printf("FATAL ERROR: negative sminn pool (multilayer_sminn.c)\n");
+				ok=0;
+			}
+			else
+			{
+				ns->nvol_snk     += ns->sminn[layer];
+				ns->sminn[layer] = 0;
+
+			}
+
 		}
 	}
 	

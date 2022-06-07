@@ -2,8 +2,8 @@
 conduct_limit_factors.c
 calculate the limitation factors of conductance
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -20,88 +20,144 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 
 
-int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* epc, epvar_struct* epv)
+int conduct_limit_factors(file logfile, const control_struct* ctrl,const siteconst_struct* sitec, const epconst_struct* epc, 
+						  epvar_struct* epv)
 {
 	int ok = 1;
+	int layer;
+	double soil_b, psi_sat,psi_fc, vwc_sat,vwc_fc,vwc_wp; 
+	double psi_crit1, psi_crit2, vwc_crit1, vwc_crit2, vwc_ratio_crit1, vwc_ratio_crit2;
+
 
 	/* -------------------------------------------*/
-	/* control: using vwc_ratio OR psi to calculate conductance limitation */
-	if ((epc->relVWC_crit1  < (double) DATA_GAP && epc->relPSI_crit1  < (double) DATA_GAP) ||
-		(epc->relVWC_crit2 < (double) DATA_GAP && epc->relPSI_crit2 < (double) DATA_GAP))
+	/* control: using vwc_ratio OR psi to calculate conductance limitation  */
+	if ((epc->relVWC_crit1  != (double) DATA_GAP && epc->PSI_crit1  != (double) DATA_GAP) ||
+		(epc->relVWC_crit2 != (double) DATA_GAP && epc->PSI_crit2 != (double) DATA_GAP))
 	{
-		printf("Warning: if relSWC and relPSI data are set simultaneously in EPC file, relSWC data are used\n");
-	
+		printf("ERROR: critical relSWC and PSI data are set simultaneously in EPC file, please check it!\n");
+		ok=0;
+
 	}
 
-	/* -------------------------------------------*/
-	/* if no relSWC data are available: the crit1 and crit2 VWC value is calculated from relPSI
-	   if no relPSI data are available: the crit1 and crit2 VWC value is calculated from relSWC  */
-	
-	if (epc->relVWC_crit1 >= (double) DATA_GAP)
+	/* calculations layer by layer (due to different soil properties) */
+	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
-		if (epc->relPSI_crit1 >= (double) DATA_GAP)
-		{
-			epv->psi_crit1 = sitec->psi_fc;  
-			epv->vwc_crit1 = sitec->vwc_fc;
-		}
-		else
-		{
-			epv->psi_crit1 = sitec->psi_fc * epc->relPSI_crit1;  
-			epv->vwc_crit1 = sitec->vwc_sat * (log(sitec->soil_b) / log(epv->psi_crit1/sitec->psi_sat));
-		}
-	}
-	else
-	{
-		epv->vwc_crit1 = sitec->vwc_fc * epc->relVWC_crit1;
-		epv->psi_crit1 = sitec->psi_fc * pow((epv->vwc_crit1/sitec->vwc_fc), -1*sitec->soil_b);
-	}
-	
+		
+		soil_b  = sitec->soil_b[layer];
+		psi_sat = sitec->psi_sat[layer]; 
+		psi_fc  = sitec->psi_fc[layer];
+		vwc_sat = sitec->vwc_sat[layer]; 
+		vwc_fc  = sitec->vwc_fc[layer]; 
+		vwc_wp  = sitec->vwc_wp[layer];
 
 
-	if (epc->relVWC_crit2 >= (double) DATA_GAP)
-	{
-		if (epc->relPSI_crit2 >= (double) DATA_GAP)
+		/* -------------------------------------------*/
+		/* if no relSWC data are available: the crit1 and crit2 VWC value is calculated from relPSI
+		   if no relPSI data are available: the crit1 and crit2 VWC value is calculated from relSWC  */
+		
+		if (epc->relVWC_crit1 == (double) DATA_GAP)
 		{
-			epv->psi_crit2 = sitec->psi_sat;  
-			epv->vwc_crit2 = sitec->vwc_sat;
-		}
-		else
-		{
-			epv->psi_crit2 = sitec->psi_fc * epc->relPSI_crit2;  
-			if (epv->psi_crit2/sitec->psi_sat < sitec->soil_b)
+			if (epc->PSI_crit1 == (double) DATA_GAP)
 			{
-				 if (epv->psi_crit2/sitec->psi_sat < 1)
-				 {
-					 printf("ERROR: relPSI_crit2 in EPC file MUST less than 1 (saturation value)\n");
-					 ok=0;
-				 }
-				 else
-				 {
-					 epv->vwc_crit2 = sitec->vwc_sat;
-					 printf("WARNING: relPSI_crit2 in EPC file MUST less than a soil-dependent value -> saturation values used to calculate soil moisture limitation factors: conduct_limit_factors()\n");
-				 }
+				psi_crit1 = psi_fc;  
+				vwc_crit1 = vwc_fc;
 			}
 			else
-				epv->vwc_crit2 = sitec->vwc_sat * (log(sitec->soil_b) / log(epv->psi_crit2/sitec->psi_sat));
+			{
+				psi_crit1 = epc->PSI_crit1;  
+				vwc_crit1 = vwc_sat * (log(soil_b) / log(psi_crit1/psi_sat));
+
+				/* CONTROL */
+				if (epc->PSI_crit1 < psi_sat)
+				{
+					if (vwc_crit1 > vwc_sat) vwc_crit1 = vwc_sat;
+				}
+				else
+				{
+					printf("ERROR: PSI_crit1 data (EPC file) is greater than saturation value in layer:%i\n", layer);
+					ok=0;
+				}
+				
+			}
 		}
-	}
-	else
-	{
-		epv->vwc_crit2 = sitec->vwc_fc * epc->relVWC_crit2;
-		epv->psi_crit2 = sitec->psi_sat * pow((epv->vwc_crit2/sitec->vwc_sat), -1*sitec->soil_b);
-	}
+		else
+		{
+			vwc_crit1 = vwc_fc * epc->relVWC_crit1;
+			psi_crit1 = psi_fc * pow((vwc_crit1/vwc_fc), -1*soil_b);
+			/* CONTROL */
+			if (vwc_crit1 > vwc_sat)
+			{
+				printf("ERROR: VWC_crit1 data (calculated from relVWC_crit1 in EPC file) is greater than saturation value in layer:%i\n", layer);
+				ok=0;
+			}
+			
+		}
+		
 
-	epv->vwc_ratio_crit1  = (epv->vwc_crit1 - sitec->vwc_wp)/(sitec->vwc_sat - sitec->vwc_wp);
-	epv->vwc_ratio_crit2  = (epv->vwc_crit2 - sitec->vwc_wp)/(sitec->vwc_sat - sitec->vwc_wp);
 
-	/* CONTROL */
-	if (epv->vwc_ratio_crit1 > epv->vwc_ratio_crit2)
-	{
-		 epv->psi_crit2 = sitec->psi_sat;
-		 epv->vwc_crit2 = sitec->vwc_sat;
-		 printf("ERROR: VWC_crit2 in EPC file MUST GREATER than VWC_crit1 value, please check EPC file (relVWC_crit or relPSI_crit values) \n");
-		 ok=0;
+		if (epc->relVWC_crit2 == (double) DATA_GAP)
+		{
+			if (epc->PSI_crit2 == (double) DATA_GAP)
+			{
+				psi_crit2 = psi_sat;  
+				vwc_crit2 = vwc_sat;
+			}
+			else
+			{  
+				psi_crit2 = epc->PSI_crit2;  
+				vwc_crit2 = vwc_sat * (log(soil_b) / log(psi_crit2/psi_sat));
+
+				/* CONTROL */
+				if (epc->PSI_crit2 < psi_sat)
+				{
+					if (vwc_crit2 > vwc_sat) vwc_crit2 = vwc_sat;
+				}
+				else
+				{
+					printf("ERROR: PSI_crit2 data (EPC file) is greater than saturation value in layer:%i\n", layer);
+					ok=0;
+				}
+
+			}
+		}
+		else
+		{
+			vwc_crit2 = vwc_sat * epc->relVWC_crit2;
+			psi_crit2 = psi_sat * pow((vwc_crit2/vwc_sat), -1*soil_b);
+		
+		}
+
+		/* CONTROL */
+		if (vwc_crit2 > vwc_sat)
+		{
+			printf("ERROR: VWC_crit2 data (calculated from relVWC_crit2 in EPC file) is greater than saturation value in layer:%i\n", layer);
+			ok=0;
+		}
+
+		/* CONTROL */
+		if (ok && vwc_crit2 < vwc_crit1)
+		{
+			printf("ERROR: VWC_crit1 data is greater then VWC_crit2 data (calculated from relVWC_crit2 in EPC file) in layer:%i\n", layer);
+			ok=0;
+		}
+			
+
+		vwc_ratio_crit1  = (vwc_crit1 - vwc_wp)/(vwc_sat - vwc_wp);
+		vwc_ratio_crit2  = (vwc_crit2 - vwc_wp)/(vwc_sat - vwc_wp);
+
+
+		epv->psi_crit1[layer]		= psi_crit1;
+		epv->psi_crit2[layer]		= psi_crit2;
+		epv->vwc_crit1[layer]		= vwc_crit1;
+		epv->vwc_crit2[layer]		= vwc_crit2;
+		epv->vwc_ratio_crit1[layer] = vwc_ratio_crit1;
+		epv->vwc_ratio_crit2[layer] = vwc_ratio_crit2;
+
 	}
+	if (ctrl->spinup < 2) fprintf(logfile.ptr, "Limitation values of SWC (m3/m3) and PSI (MPa) in top soil layer\n");  
+	if (ctrl->spinup < 2) fprintf(logfile.ptr, "SWC (limit1 and limit2):  %12.3f %12.3f\n", epv->vwc_crit1[0], epv->vwc_crit2[0]);
+	if (ctrl->spinup < 2) fprintf(logfile.ptr, "PSI (limit1 and limit2):  %12.4f %12.4f\n", epv->psi_crit1[0], epv->psi_crit2[0]);
+	if (ctrl->spinup < 2) fprintf(logfile.ptr, " \n");
 		
 	return (!ok);
 }

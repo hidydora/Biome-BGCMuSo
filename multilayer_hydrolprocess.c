@@ -5,7 +5,7 @@ calculation of soil water content layer by layer taking into account soil hydrol
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 BBGC MuSo v4
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -19,7 +19,8 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 #include "bgc_func.h"    
 
-int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct* sitec, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf)
+int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, 
+							 epvar_struct* epv, wstate_struct* ws, wflux_struct* wf)
 {
 	/* given a list of site constants and the soil water mass (kg/m2),
 	this function returns the soil water potential (MPa)
@@ -39,7 +40,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	/* internal variables */
 	double prcp, runoff, prcp_to_soil,evap_diff;
 	double soilw_hw0, soilw_sat0;  /* (kgH2O/m2/min) */
-	
+	int layer;
 	double coeff_soiltype, coeff_soilmoist, RCN, coeff_runoff;
 	int ok=1;
 
@@ -48,7 +49,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	/* 1. PRECIPITATION AND RUNOFF*/
 
 	/* when the precipitation at the surface exceeds the max. infiltration rate, the excess water is put into surfacerunoff (Balsamo et al. 20008; Eq.(7)) */
-	prcp = (wf->prcp_to_soilw + wf->snoww_to_soilw);
+	prcp = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->IRG_to_prcp);
 
 
 	/* if the precipitation is greater than critical amount a fixed part of prcp is lost due to runoff (based on Campbell and Diaz, 1988) */
@@ -56,7 +57,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	RCN = sitec->RCN;
 	coeff_soiltype  = 254*(100 / RCN - 1);
 
-	coeff_soilmoist = 0.15 * ((sitec->vwc_sat - epv->vwc[0]) / (sitec->vwc_sat  - sitec->vwc_hw));
+	coeff_soilmoist = 0.15 * ((sitec->vwc_sat[0] - epv->vwc[0]) / (sitec->vwc_sat[0]  - sitec->vwc_hw[0]));
 
 	coeff_runoff = coeff_soiltype * coeff_soilmoist;
 
@@ -89,7 +90,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	
 
 	/* actual soil water content at theoretical lower limit of water content: hygroscopic water content */
-	soilw_hw0 = sitec->vwc_hw * sitec->soillayer_thickness[0] * water_density;
+	soilw_hw0 = sitec->vwc_hw[0] * sitec->soillayer_thickness[0] * water_density;
 
 	/* evap_diff: control parameter to avoid negative soil water content (due to overestimated evaporation + dry soil) */
 	evap_diff = ws->soilw[0] - wf->soilw_evap - soilw_hw0;
@@ -98,7 +99,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	if (evap_diff < 0)
 	{
 		wf->soilw_evap += evap_diff;
-		if (ctrl->onscreen) printf("WARNING: Limited evaporation due to dry soil (multilayer_hydrolprocess.c)\n");
+	//	if (ctrl->onscreen && fabs(evap_diff) > CRIT_PREC) printf("WARNING: Limited evaporation due to dry soil (multilayer_hydrolprocess.c)\n");
 	}
 	
 	ws->soilw[0] -= wf->soilw_evap;
@@ -111,7 +112,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	/* 3A. POND WATER ACCUMULATION: water stored on surface which can not infiltrated because of saturation */
 	
 	/* theoretical upper limit of water content: saturation value (amount above saturation is stored on the surface) */
-	soilw_sat0     = sitec->vwc_sat * sitec->soillayer_thickness[0] * water_density;
+	soilw_sat0     = sitec->vwc_sat[0] * sitec->soillayer_thickness[0] * water_density;
 
 	if (ws->soilw[0] > soilw_sat0)
 	{
@@ -121,26 +122,39 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 
 	epv->vwc[0]  = ws->soilw[0] / sitec->soillayer_thickness[0] / water_density;
 
-	
+
 	/* ********************************/
 	/* 4. PERCOLATION  AND DIFFUSION  */
-
-	if (ok && richards(sitec, epv, ws, wf))
+	if (epc->SHCM_flag == 0)
 	{
-		printf("ERROR in richards() from bgc()\n");
-		ok=0;
-	} 
-	#ifdef DEBUG
-				printf("%d\t%d\tdone richards\n",simyr,yday); 
-	#endif	
-	
+		if (ok && richards(sitec, epc, epv, ws, wf))
+		{
+			printf("Error in richards() from bgc()\n");
+			ok=0; 
+		} 
+		#ifdef DEBUG
+					printf("%d\t%d\tdone richards\n",simyr,yday);
+		#endif	
+	}
+	else
+	{
+		if (ok && tipping(sitec, epc, epv, ws, wf))
+		{
+			printf("Error in tipping() from bgc()\n");
+			ok=0;
+		} 
+		#ifdef DEBUG
+					printf("%d\t%d\tdone tipping\n",simyr,yday);
+		#endif	
+	}
+
 	/* ---------------------------------------------------------*/	
 	
 	/* BOTTOM LAYER IS SPECIAL: percolated water is net loss for the system, water content does not change */
-	if (sitec->gwd_act >= DATA_GAP || ( sitec->gwd_act != DATA_GAP && sitec->gwd_act > sitec->soillayer_depth[N_SOILLAYERS-1]))
+	if (sitec->gwd_act == DATA_GAP || ( sitec->gwd_act != DATA_GAP && sitec->gwd_act > sitec->soillayer_depth[N_SOILLAYERS-1]))
 	{
-		epv->vwc[N_SOILLAYERS-1]  = sitec->vwc_fc;
-		ws->soilw[N_SOILLAYERS-1] = sitec->vwc_fc * (sitec->soillayer_thickness[N_SOILLAYERS-1]) * 1000.0;
+		epv->vwc[N_SOILLAYERS-1]  = sitec->vwc_fc[N_SOILLAYERS-1];
+		ws->soilw[N_SOILLAYERS-1] = sitec->vwc_fc[N_SOILLAYERS-1] * (sitec->soillayer_thickness[N_SOILLAYERS-1]) * 1000.0;
 	}
 
 	
@@ -148,11 +162,52 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	/* 5. POND WATER EVAPORATION: water stored on surface which can not infiltrated because of saturation */
 	if (ws->pond_water > 0)
 	{
-		if (ctrl->onscreen && ctrl->spinup == 0) printf("INFORMATION: pond water on soil surface (multilayer_hydrolprocess.c)\n");
-		if (wf->soilw_evap < ws->pond_water)
-			wf->pondw_evap = wf->soilw_evap;
+		if (ctrl->onscreen && ctrl->spinup == 0) printf("INFORMATION: pond water on soil surface on yday: %3i\n", ctrl->yday);
+		if (wf->pot_evap < ws->pond_water)
+			wf->pondw_evap = wf->pot_evap;
 		else 
 			wf->pondw_evap = ws->pond_water;
+	}
+
+
+	/* ********************************/
+	/* 6. CONTROL - unrealistic VWC content (higher than saturation value or less then hygroscopic) */
+
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		if (epv->vwc[layer] < sitec->vwc_hw[layer])       
+		{
+			if (sitec->vwc_hw[layer] - epv->vwc[layer] < 1e-3)
+			{
+				wf->soilw_percolated[layer] -= (sitec->vwc_hw[layer] - epv->vwc[layer]);
+				ws->deeppercolation_snk -= (sitec->vwc_hw[layer] - epv->vwc[layer]);
+				epv->vwc[layer] = sitec->vwc_hw[layer];
+				ws->soilw[layer] = epv->vwc[layer] * water_density * sitec->soillayer_thickness[layer];
+			}
+			else
+			{
+				printf("FATAL ERROR in soil water content calculation (multilayer_hydrolprocess.c)\n");
+				ok=0;	
+			}
+
+		}
+		
+		if (epv->vwc[layer] > sitec->vwc_sat[layer])       
+		{
+			if (epv->vwc[layer] - sitec->vwc_sat[layer] < 1e-2)
+			{
+				wf->soilw_percolated[layer] += (epv->vwc[layer] - sitec->vwc_sat[layer]);
+				ws->deeppercolation_snk += (epv->vwc[layer] - sitec->vwc_sat[layer]);
+				epv->vwc[layer] = sitec->vwc_sat[layer];
+				ws->soilw[layer] = epv->vwc[layer] * water_density * sitec->soillayer_thickness[layer];
+			}
+			else
+			{
+				printf("FATAL ERROR in soil water content calculation (multilayer_hydrolprocess)\n");
+				ok=0;	
+			}
+
+		}
 	}
 
 	return (!ok);

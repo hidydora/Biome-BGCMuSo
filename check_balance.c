@@ -3,10 +3,10 @@ check_balance.c
 daily test of mass balance (water, carbon, and nitrogen state variables)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Siulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -29,7 +29,7 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 	/* DAILY CHECK ON WATER BALANCE */
 	
 	/* sum of sources */
-	in = ws->prcp_src + ws->deeptrans_src + ws->groundwater_src;
+	in = ws->prcp_src + ws->deeptrans_src + ws->groundwater_src + ws->IRGsrc;
 	
 	/* sum of sinks */
 	out = ws->soilevap_snk + ws->snowsubl_snk + 
@@ -57,18 +57,10 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 	 
 	if (!first_balance)
 	{
-		if (fabs(old_balance - balance) > 1e-8)// && ws->groundwater_src == 0)
+		if (fabs(old_balance - balance) > 1e-4)
 		{
-			printf("FATAL ERRROR: Water balance error:\n");
-			printf("Balance from previous day = %lf\n",old_balance);
-			printf("Balance from current day  = %lf\n",balance);
+			printf("WARNING: Water balance error:\n");
 			printf("Difference (previous - current) = %lf\n",old_balance-balance);
-			printf("Components of current balance:\n");
-			printf("Sources (summed over entire run)  = %lf\n",in);
-			printf("Sinks   (summed over entire run)  = %lf\n",out);
-			printf("Storage (current state variables) = %lf\n",store);
-		 	printf("Exiting...\n");
-		//	ok=0; 
 		}
 	}
 	old_balance = balance;
@@ -86,13 +78,14 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	if (cs->leafc < 0.0 ||  cs->leafc_storage < 0.0 || cs->leafc_transfer < 0.0 || 
 	cs->frootc < 0.0 || cs->frootc_storage < 0.0 || cs->frootc_transfer < 0.0 || 
 	cs->fruitc < 0.0 || cs->fruitc_storage < 0.0 || cs->fruitc_transfer < 0.0 || 
+	cs->softstemc < 0.0 || cs->softstemc_storage < 0.0 || cs->softstemc_transfer < 0.0 || 
 	cs->livestemc < 0.0 || cs->livestemc_storage < 0.0 || cs->livestemc_transfer < 0.0 || 
 	cs->deadstemc < 0.0 || cs->deadstemc_storage < 0.0 || cs->deadstemc_transfer < 0.0 || 
 	cs->livecrootc < 0.0 ||  cs->livecrootc_storage < 0.0 || cs->livecrootc_transfer < 0.0 || 
 	cs->deadcrootc < 0.0 || cs->deadcrootc_storage < 0.0 || cs->deadcrootc_transfer < 0.0 || 
 	cs->gresp_storage < 0.0 || cs->gresp_transfer < 0.0 || cs->cwdc < 0.0 || 
 	cs->litr1c < 0.0 || cs->litr2c < 0.0 || cs->litr3c < 0.0 || cs->litr4c < 0.0 || 
-	cs->soil1c < 0.0 || cs->soil2c < 0.0 || cs->soil3c < 0.0 || cs-> soil4c < 0.0)
+	cs->soil1c < 0.0 || cs->soil2c < 0.0 || cs->soil3c < 0.0 || cs-> soil4c < 0.0 || cs->litr_aboveground < 0.0)
 	{	
 		printf("ERROR: negative carbon stock\n");
 		ok=0;
@@ -118,7 +111,9 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		/* management and senescence - Hidy 2012. */
 		cs->SNSCsnk + cs->THNsnk + cs->MOWsnk + cs->GRZsnk + cs->HRVsnk + cs->PLGsnk + 
 		/* fruit simulation - Hidy 2013. */
-		cs->fruit_gr_snk + cs->fruit_mr_snk; 
+		cs->fruit_gr_snk + cs->fruit_mr_snk +
+		/* softstem simulation - Hidy 2013. */
+		cs->softstem_gr_snk + cs->softstem_mr_snk; 
 		     
 		
 	/* sum of current storage */
@@ -132,25 +127,19 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		cs->litr2c + cs->litr3c + cs->litr4c + cs->soil1c + cs->soil2c +
 		cs->soil3c + cs->soil4c + cs->cpool +
 		/* fruit simulation */
-		cs->fruitc + cs->fruitc_storage + cs->fruitc_transfer;   
+		cs->fruitc + cs->fruitc_storage + cs->fruitc_transfer +
+		/* softstem simulation */
+		cs->softstemc + cs->softstemc_storage + cs->softstemc_transfer;   
 	
 	/* calculate current balance */
 	balance = in - out - store;
 	 
 	if (!first_balance)
 	{
-		if (fabs(old_balance - balance) > 1e-10)
+		if (fabs(old_balance - balance) > 1e-4)
 		{
-	 		printf("FATAL ERRROR: carbon balance error:\n");
-			printf("Balance from previous day = %lf\n",old_balance);
-			printf("Balance from current day  = %lf\n",balance);
+	 		printf("WARNING: carbon balance error:\n");
 			printf("Difference (previous - current) = %lf\n",old_balance-balance);
-			printf("Components of current balance:\n");
-			printf("Sources (summed over entire run)  = %lf\n",in);
-			printf("Sinks   (summed over entire run)  = %lf\n",out);
-			printf("Storage (current state variables) = %lf\n",store);
-			printf("Exiting...\n");
-			ok=0;
 		}
 	}
 	old_balance = balance;
@@ -166,15 +155,17 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	static double old_balance = 0.0;
 	
 	/* Hidy 2010 -	CONTROL AVOIDING NITROGEN POOLS */
-	if (ns->leafn < 0.0  ||  ns->leafn_storage < 0.0 || ns->leafn_transfer < 0.0 || 
+	if (ns->leafn < 0.0 || ns->leafn < 0.0 ||  ns->leafn_storage < 0.0 || ns->leafn_transfer < 0.0 || 
 		ns->frootn < 0.0 || ns->frootn_storage < 0.0 || ns->frootn_transfer < 0.0 || 
 		ns->fruitn < 0.0 || ns->fruitn_storage < 0.0 || ns->fruitn_transfer < 0.0 || 
+		ns->softstemn < 0.0 || ns->softstemn_storage < 0.0 || ns->softstemn_transfer < 0.0 || 
 		ns->livestemn < 0.0 || ns->livestemn_storage < 0.0 || ns->livestemn_transfer < 0.0 || 
 		ns->deadstemn < 0.0 || ns->deadstemn_storage < 0.0 || ns->deadstemn_transfer < 0.0 || 
 		ns->livecrootn < 0.0 ||  ns->livecrootn_storage < 0.0 || ns->livecrootn_transfer < 0.0 || 
 		ns->deadcrootn < 0.0 || ns->deadcrootn_storage < 0.0 || ns->deadcrootn_transfer < 0.0 || 
 		ns->cwdn < 0.0 || 
 		ns->sminn[0] < 0.0 || ns->sminn[1] < 0.0 || ns->sminn[2] < 0.0 || ns->sminn[3] < 0.0 || 
+		ns->sminn[4] < 0.0 || ns->sminn[5] < 0.0 || ns->sminn[6] < 0.0 || 
 		ns->litr1n < 0.0  || ns->litr2n < 0.0  || ns->litr3n < 0.0  || ns->litr4n < 0.0 || 
 		ns->soil1n < 0.0  || ns->soil2n < 0.0  || ns->soil3n < 0.0  || ns->soil4n < 0.0)
 	{	
@@ -212,28 +203,22 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		ns->deadcrootn + ns->deadcrootn_storage + ns->deadcrootn_transfer + 
 		ns->cwdn + ns->litr1n + ns->litr2n + ns->litr3n + ns->litr4n +
 		ns->soil1n + ns->soil2n + ns->soil3n + ns->soil4n +
-		ns->sminn[0] + ns->sminn[1] + ns->sminn[2] + ns->sminn[3] + ns->sminn[4] + ns->sminn[5] + 
+		ns->sminn[0] + ns->sminn[1] + ns->sminn[2] + ns->sminn[3] + ns->sminn[4] + ns->sminn[5] + ns->sminn[6] +
 		ns->npool + ns->retransn +
 		/* fruit simulation */
-		ns->fruitn + ns->fruitn_storage + ns->fruitn_transfer;
+		ns->fruitn + ns->fruitn_storage + ns->fruitn_transfer +
+		/* softstem simulation */
+		ns->softstemn + ns->softstemn_storage + ns->softstemn_transfer;
 	
 	/* calculate current balance */
 	balance = in - out - store;
 	 
 	if (!first_balance)
 	{
-		if (fabs(old_balance - balance) > 1e-6)
+		if (fabs(old_balance - balance) > 1e-4)
 		{
-			printf("FATAL ERRROR: nitrogen balance error:\n");
-			printf("Balance from previous day = %lf\n",old_balance);
-			printf("Balance from current day  = %lf\n",balance);
+			printf("WARNING: nitrogen balance error:\n");
 			printf("Difference (previous - current) = %lf\n",old_balance-balance);
-			printf("Components of current balance:\n");
-			printf("Sources (summed over entire run)  = %lf\n",in);
-			printf("Sinks   (summed over entire run)  = %lf\n",out);
-			printf("Storage (current state variables) = %lf\n",store);
-			printf("Exiting...\n");
-			ok=0;
 		}
 	}
 	old_balance = balance;
@@ -242,6 +227,4 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	
 	return (!ok);
 }
-
-
 

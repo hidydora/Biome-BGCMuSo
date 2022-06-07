@@ -4,10 +4,10 @@ defines an array of pointers to doubles that map to all the intermediate
 variables in bgc
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -53,7 +53,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[13] = &metv->ppfd_per_plaisun;
 		output_map[14] = &metv->ppfd_per_plaishade;
 		output_map[15] = &metv->par;
-		output_map[16] = &metv->parabs;
+		output_map[16] = &metv->GDD;
 		output_map[17] = &metv->pa;
 		output_map[18] = &metv->co2;
 		output_map[19] = &metv->dayl;
@@ -124,9 +124,9 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[76] = &cs->soil2c;
 		output_map[77] = &cs->soil3c;
 		output_map[78] = &cs->soil4c;
-		output_map[79] = &cs->cpool;
-		output_map[80] = &cs->psnsun_src;
-		output_map[81] = &cs->psnshade_src;
+		output_map[79] = &cs->STDBc;
+		output_map[80] = &cs->CTDBc;
+		output_map[81] = &cs->psnsun_src;
 		output_map[82] = &cs->leaf_mr_snk;
 		output_map[83] = &cs->leaf_gr_snk;
 		output_map[84] = &cs->froot_mr_snk;
@@ -148,22 +148,27 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[100] = &cs->fruitc;
 		output_map[101] = &cs->fruitc_storage;
 		output_map[102] = &cs->fruitc_transfer;
+		output_map[103] = &cs->softstemc;
+		output_map[104] = &cs->softstemc_storage;
+		output_map[105] = &cs->softstemc_transfer;
+
+
 		/* management and senescence - Hidy 2012. */
-		output_map[104] = &cs->THNsnk;
-		output_map[105] = &cs->THNsrc;	
-		output_map[106] = &cs->MOWsnk;	
-		output_map[107] = &cs->MOWsrc;
-		output_map[108] = &cs->GRZsnk;	
-		output_map[109] = &cs->GRZsrc;	
-		output_map[110] = &cs->HRVsnk;	
-		output_map[111] = &cs->HRVsrc;
-		output_map[112] = &cs->PLGsnk;	
-		output_map[113] = &cs->PLGsrc;
-		output_map[114] = &cs->PLTsrc;
-		output_map[115] = &cs->FRZsrc;						
-		output_map[116] = &cs->SNSCsnk;		
-		output_map[117] = &cs->SNSCsrc;	
-		
+		output_map[106] = &cs->THNsnk;
+		output_map[107] = &cs->THNsrc;	
+		output_map[108] = &cs->MOWsnk;	
+		output_map[109] = &cs->MOWsrc;
+		output_map[110] = &cs->GRZsnk;	
+		output_map[111] = &cs->GRZsrc;	
+		output_map[112] = &cs->HRVsnk;	
+		output_map[113] = &cs->HRVsrc;
+		output_map[114] = &cs->PLGsnk;	
+		output_map[115] = &cs->PLGsrc;
+		output_map[116] = &cs->PLTsrc;
+		output_map[117] = &cs->FRZsrc;						
+		output_map[118] = &cs->SNSCsnk;		
+		output_map[119] = &cs->SNSCsrc;	
+
 		/* carbon flux variables */
 		output_map[120] = &cf->m_leafc_to_litr1c;
 		output_map[121] = &cf->m_leafc_to_litr2c;
@@ -289,7 +294,16 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[241] = &cf->livestemc_to_deadstemc;
 		output_map[242] = &cf->livecrootc_to_deadcrootc;
 		output_map[243] = &cf->leafc_to_MOW;
-	
+		output_map[244] = &cf->STDBc_to_GRZ;
+		output_map[245] = &cf->STDBc_to_MOW;
+		output_map[246] = &cf->STDBc_to_HRV;
+		output_map[247] = &cf->STDBc_to_PLG;
+		output_map[248] = &cf->CTDBc_to_PLG;
+		output_map[249] = &cf->CH4_flux_soil;
+		output_map[250] = &cf->CH4_flux_FERMENT;
+		output_map[251] = &cf->CH4_flux_MANURE;
+		output_map[252] = &cf->m_vegc_to_SNSC;
+		output_map[253] = &cf->m_STDBc_to_SNSC;
 		
 		/* nitrogen state variables */
 		output_map[280] = &ns->leafn;
@@ -340,7 +354,9 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[324] = &ns->FRZsrc;						
 		output_map[325] = &ns->SNSCsnk;		
 		output_map[326] = &ns->SNSCsrc;	
-	
+		output_map[327] = &ns->BNDRYsrc;	
+		output_map[328] = &ns->ndiffused_snk;
+		output_map[329] = &ns->STDBn;
 		/* nitrogen flux variables */
 		output_map[340] = &nf->m_leafn_to_litr1n;
 		output_map[341] = &nf->m_leafn_to_litr2n;
@@ -458,7 +474,14 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[454] = &nf->livestemn_to_retransn;
 		output_map[455] = &nf->livecrootn_to_deadcrootn;
 		output_map[456] = &nf->livecrootn_to_retransn;
-
+		output_map[457] = &nf->STDBn_to_GRZ;
+		output_map[458] = &nf->STDBn_to_HRV;
+		output_map[459] = &nf->STDBn_to_PLG;
+		output_map[460] = &nf->STDBn_to_MOW;
+		output_map[461] = &nf->N2O_flux_soil;
+		output_map[462] = &nf->N2O_flux_GRZ;
+		output_map[463] = &nf->N2O_flux_FRZ;
+        output_map[464] = &nf->nplus;
 		/* phenological variables */
 		output_map[480] = &phen->remdays_curgrowth;
 		output_map[481] = &phen->remdays_transfer;
@@ -490,15 +513,13 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[520] = &epv->gl_t_wv_shade;
 		output_map[521] = &epv->assim_sun;
 		output_map[522] = &epv->assim_shade;
-		output_map[523] = &epv->t_scalar;
-		output_map[524] = &epv->w_scalar;
-		output_map[525] = &epv->rate_scalar;
+
 		output_map[526] = &epv->daily_gross_nmin;
 		output_map[527] = &epv->daily_gross_nimmob;
 		output_map[528] = &epv->daily_net_nmin;
 		output_map[529] = &epv->m_tmin;
 		output_map[530] = &epv->m_soilstress;
-		output_map[531] = &epv->m_co2;
+		output_map[531] = &epv->max_conduct;
 		output_map[532] = &epv->m_ppfd_sun;
 		output_map[533] = &epv->m_ppfd_shade;
 		output_map[534] = &epv->m_vpd;
@@ -519,6 +540,8 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[549] = &epv->vwc[3];
 		output_map[550] = &epv->vwc[4];
 		output_map[551] = &epv->vwc[5];
+		output_map[552] = &epv->vwc[6];
+		output_map[553] = &epv->n_limitation;
 		
 		/* photosynthesis variables */
 		/* sunlit canopy fraction */
@@ -565,7 +588,14 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[607] = &psn_shade->Av;
 		output_map[608] = &psn_shade->Aj;
 		output_map[609] = &psn_shade->A;
-
+		
+		output_map[612] = &summary->abgc;
+		output_map[613] = &summary->cum_npp_ann;
+		output_map[614] = &ns->sum_ndemand;
+		output_map[615] = &cs->PLG_cpool;
+		output_map[616] = &ns->PLG_npool;
+		output_map[617] = &cs->litr_aboveground;
+		output_map[618] = &cs->litr_belowground;
 		output_map[619] = &summary->daily_nbp;	/* Hidy 2009 (instead of nep = nee + fire). */
 		output_map[620] = &summary->daily_npp;
 		output_map[621] = &summary->daily_nep; 	
@@ -586,18 +616,27 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[636] = &summary->vegc;
 		output_map[637] = &summary->litrc;
 		output_map[638] = &summary->soilc;
-		output_map[639] = &summary->totalc;
+		output_map[639] = &summary->soiln;
 		output_map[640] = &summary->daily_litfallc;
-		output_map[641] = &summary->Cchange_MOW;		/* Hidy 2008. */
-		output_map[642] = &summary->Cchange_HRV;		/* Hidy 2008. */
-		output_map[643] = &summary->Cchange_PLG;		/* Hidy 2008. */
+		output_map[641] = &summary->Cchange_MOW;	/* Hidy 2008. */
+		output_map[642] = &summary->Cchange_HRV;	/* Hidy 2008. */
+		output_map[643] = &summary->Cchange_PLG;	/* Hidy 2008. */
 		output_map[644] = &summary->Cchange_GRZ;	/* Hidy 2008. */
 		output_map[645] = &summary->Cchange_FRZ;	/* Hidy 2008. */
 		output_map[646] = &summary->Cchange_PLT;	/* Hidy 2008. */
 		output_map[647] = &summary->Cchange_SNSC;	/* Hidy 2013. */
-		output_map[648] = &summary->daily_sr;			/* Hidy 2008. */
-		output_map[649] = &summary->daily_tr;			/* Hidy 2013 - merging output data */
-
+		output_map[648] = &summary->daily_sr;		/* Hidy 2008. */
+		output_map[649] = &summary->daily_tr;		/* Hidy 2013 - merging output data */
+		output_map[650] = &summary->cum_ET;			/* Hidy 2015. - new type of ET output */
+		
+		output_map[651] = &metv->tsoil[0];	/* Hidy 2015 */
+		output_map[652] = &metv->tsoil[1];	/* Hidy 2015 */
+		output_map[653] = &metv->tsoil[2];	/* Hidy 2015 */
+		output_map[654] = &metv->tsoil[3];	/* Hidy 2015 */
+		output_map[655] = &metv->tsoil[4];	/* Hidy 2015 */
+		output_map[656] = &metv->tsoil[5];	/* Hidy 2015 */
+		output_map[657] = &metv->tsoil[6];	/* Hidy 2015 */
+		output_map[658] = &metv->tsoil_surface;	/* Hidy 2015 */
 		
 		
 	}

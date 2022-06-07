@@ -4,10 +4,10 @@ A single-function treatment of canopy evaporation and transpiration
 fluxes.  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -21,33 +21,22 @@ Hungarian Academy of Sciences
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
+int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
 {
 	int ok=1;
 
-	double tday;
-	double dayl;
-	double vpd;
-	double canopy_w;
-	
+
 	double e, cwe, t, trans, trans_sun, trans_shade, e_dayl,t_dayl;
 	
 
 	pmet_struct pmet_in;
 
-	/* assign variables that are used more than once */
-	tday =      metv->tday;
-	vpd  =      0; // Hidy 2012 - error correction
-	vpd =       metv->vpd;
-	dayl =      metv->dayl;
-    canopy_w =  wf->prcp_to_canopyw;
-	
 	
         cwe = trans = 0.0;
 	/* Assign values in pmet_in that don't change */
-	pmet_in.ta = tday;
+	pmet_in.ta = metv->tday;
 	pmet_in.pa = metv->pa;
-	pmet_in.vpd = vpd;
+	pmet_in.vpd = metv->vpd;
 	
 	/* Canopy evaporation, if any water was intercepted */
 	/* Calculate Penman-Monteith evaporation, given the canopy conductances to
@@ -55,7 +44,7 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 	evaporate all the canopy water at the daily average conditions, and 
 	subtract that time from the daylength to get the effective daylength for
 	transpiration. */
-	if (canopy_w)
+	if (wf->prcp_to_canopyw)
 	{
 		/* assign appropriate resistance and radiation for pmet_in */
 		pmet_in.rv = 1.0/epv->gc_e_wv;
@@ -65,26 +54,26 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 		/* call penman-monteith function, returns e in kg/m2/s */
 		if (penmon(&pmet_in, 0, &e))
 		{
-			printf("Error: penmon() for canopy evap... \n");
+			printf("ERROR: penmon() for canopy evap... \n");
 			ok=0;
 		}
 		
 		/* calculate the time required to evaporate all the canopy water */
-		e_dayl = canopy_w/e;
+		e_dayl = wf->prcp_to_canopyw/e;
 		
-		if (e_dayl > dayl)  
+		if (e_dayl > metv->dayl)  
 		{
 			/* day not long enough to evap. all int. water */
 			trans = 0.0;    /* no time left for transpiration */
-			cwe = e * dayl;   /* daylength limits canopy evaporation */
+			cwe = e * metv->dayl;   /* daylength limits canopy evaporation */
 		}
 		else                
 		{
 			/* all intercepted water evaporated */
-			cwe = canopy_w;
+			cwe = wf->prcp_to_canopyw;
 			
 			/* adjust daylength for transpiration */
-			t_dayl = dayl - e_dayl;
+			t_dayl = metv->dayl - e_dayl;
 			 
 			/* calculate transpiration using adjusted daylength */
 			/* first for sunlit canopy fraction */
@@ -93,7 +82,7 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 			pmet_in.irad = metv->swabs_per_plaisun;
 			if (penmon(&pmet_in, 0, &t))
 			{
-				printf("Error: penmon() for adjusted transpiration... \n");
+				printf("ERROR: penmon() for adjusted transpiration... \n");
 				ok=0;
 			}
 			trans_sun = t * t_dayl * epv->plaisun;
@@ -104,7 +93,7 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 			pmet_in.irad = metv->swabs_per_plaishade;
 			if (penmon(&pmet_in, 0, &t))
 			{
-				printf("Error: penmon() for adjusted transpiration... \n");
+				printf("ERROR: penmon() for adjusted transpiration... \n");
 				ok=0;
 			}
 			trans_shade = t * t_dayl * epv->plaishade;
@@ -120,10 +109,10 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 		pmet_in.irad = metv->swabs_per_plaisun;
 		if (penmon(&pmet_in, 0, &t))
 		{
-			printf("Error: penmon() for adjusted transpiration... \n");
+			printf("ERROR: penmon() for adjusted transpiration... \n");
 			ok=0;
 		}
-		trans_sun = t * dayl * epv->plaisun;
+		trans_sun = t * metv->dayl * epv->plaisun;
 		
 		/* next for shaded canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_shade;
@@ -131,10 +120,10 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 		pmet_in.irad = metv->swabs_per_plaishade;
 		if (penmon(&pmet_in, 0, &t))
 		{
-			printf("Error: penmon() for adjusted transpiration... \n");
+			printf("ERROR: penmon() for adjusted transpiration... \n");
 			ok=0;
 		}
-		trans_shade = t * dayl * epv->plaishade;
+		trans_shade = t * metv->dayl * epv->plaishade;
 		trans = trans_sun + trans_shade;
 		
 
@@ -149,14 +138,14 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 	else
 	{
 		wf->soilw_trans_SUM = (epv->m_soilstress / epc->m_soilstress_crit) * trans;
-		if (ctrl->onscreen && !ctrl->spinup) printf("WARNING: Limited transpiration due to dry soil (canopy_et.c)\n");
+	//	if (ctrl->onscreen && ctrl->spinup == 0) printf("WARNING: Limited transpiration due to dry soil (canopy_et.c)\n");
 	}
 
 	wf->soilw_trans_SUM = epv->m_soilstress * trans;
 	
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
 	wf->canopyw_evap = cwe;
-    wf->canopyw_to_soilw = canopy_w - cwe;
+    wf->canopyw_to_soilw = wf->prcp_to_canopyw - cwe;
 
 
 

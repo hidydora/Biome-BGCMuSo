@@ -3,10 +3,10 @@ growth_resp.c
 daily growth respiration rates
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -37,13 +37,16 @@ int growth_resp(epconst_struct* epc, cflux_struct* cf)
 	cf->transfer_leaf_gr  = cf->leafc_transfer_to_leafc * g1 * (1.0-g2);
 	cf->transfer_froot_gr = cf->frootc_transfer_to_frootc * g1 * (1.0-g2);
 	/* fruit simulation - Hidy 2013. */
-	cf->cpool_fruit_gr     = cf->cpool_to_fruitc * g1;
+	cf->cpool_fruit_gr          = cf->cpool_to_fruitc * g1;
 	cf->cpool_fruit_storage_gr  = cf->cpool_to_fruitc_storage * g1 * g2;
-	cf->transfer_fruit_gr = cf->fruitc_transfer_to_fruitc * g1 * (1.0-g2);
+	cf->transfer_fruit_gr       = cf->fruitc_transfer_to_fruitc * g1 * (1.0-g2);
 	
-	/* woody tissue growth respiration only for trees */
+
+
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
+		/* woody tissue growth respiration only for trees */
 		cf->cpool_livestem_gr     = cf->cpool_to_livestemc * g1;
 		cf->cpool_deadstem_gr     = cf->cpool_to_deadstemc * g1;
 		cf->cpool_livecroot_gr    = cf->cpool_to_livecrootc * g1;
@@ -56,6 +59,13 @@ int growth_resp(epconst_struct* epc, cflux_struct* cf)
 		cf->transfer_deadstem_gr  = cf->deadstemc_transfer_to_deadstemc * g1 * (1.0-g2);
 		cf->transfer_livecroot_gr = cf->livecrootc_transfer_to_livecrootc * g1 * (1.0-g2);
 		cf->transfer_deadcroot_gr = cf->deadcrootc_transfer_to_deadcrootc * g1 * (1.0-g2);
+	}
+	else
+	{
+		/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		cf->cpool_softstem_gr     = cf->cpool_to_softstemc * g1;
+		cf->cpool_softstem_storage_gr  = cf->cpool_to_softstemc_storage * g1 * g2;
+		cf->transfer_softstem_gr = cf->softstemc_transfer_to_softstemc * g1 * (1.0-g2);
 	}
 	
 	return (!ok);

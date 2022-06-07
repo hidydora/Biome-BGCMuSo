@@ -3,8 +3,8 @@ mowing_init.c
 read mowing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -59,14 +59,14 @@ int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
 	{
 		if (ok && scan_value(init, MOW_filename, 's'))
 		{
-			printf("Error reading mowing calculating flag\n");
+			printf("Error reading mowing calculating file\n");
 			ok=0;
 		}
 		else
 		{
 			
 			ok=1;
-			printf("mowing information from file\n");
+			if (ctrl->onscreen) printf("INFORMATION: mowing information from file\n");
 			MOW->MOW_flag = 2;
 			strcpy(MOW_file.name, MOW_filename);
 		}
@@ -135,6 +135,7 @@ int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
 		fclose (MOW_file.ptr);
 	}
 		
-		
+	MOW->mgmd = -1;	
+
 	return (!ok);
 }

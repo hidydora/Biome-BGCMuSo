@@ -9,9 +9,11 @@ Includes in-line output handling routines that write to daily and annual
 output files. 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
-Copyright 2014, D. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -41,9 +43,10 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	control_struct     ctrl;
 
 	/* meteorological variables */
-	metarr_struct      metarr;
-	metvar_struct      metv;
-	co2control_struct  co2;
+	metarr_struct			metarr;
+	metvar_struct			metv;
+	co2control_struct		co2;
+	ndep_control_struct		ndep;
 	
 	/* state and flux variables for water, carbon, and nitrogen */
 	wstate_struct      ws;
@@ -76,6 +79,9 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* summary variable structure */
 	summary_struct     summary;
 
+	planting_struct	    PLT;
+	grazing_struct		GRZ;
+	harvesting_struct	HRV;
 
 	/* GSI variables - by Hidy 2009. */
 	GSI_struct      GSI;
@@ -124,11 +130,13 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	ns = bgcin->ns;
 	sitec = bgcin->sitec;
 	epc = bgcin->epc;
-	
+
+	PLT = bgcin->PLT;
+	GRZ = bgcin->GRZ;
+	HRV = bgcin->HRV;
+
 	/* Hidy 2012.*/
 	GSI = bgcin->GSI;		/* GSI variables - by Hidy 2009*/
-
-	
 
 
 	/* note that the following three structures have dynamic memory elements,
@@ -137,13 +145,15 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	are being copied, so the local members use the same memory that was
 	allocated in the calling function. Note also that bgc() does not modify
 	the contents of these structures. */
-	ctrl = bgcin->ctrl;
-	metarr = bgcin->metarr;
-	co2 = bgcin->co2;
-	
+	ctrl	= bgcin->ctrl;
+	metarr	= bgcin->metarr;
+	co2		= bgcin->co2;
+	ndep	= bgcin->ndep;
 #ifdef DEBUG
 	printf("done copy input\n");
 #endif
+
+ 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	if (ctrl.onscreen)
@@ -152,11 +162,102 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		{
 			file_open (&GSI.GSI_file, 'w');				/* file of GSI parameters - Hidy 2009.*/
 		}
-		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2010.*/
-		fprintf(bgcout->control_file.ptr, "yday vwc0 vwc2 vwc4 m_soilstress leafc frootc leafc_storage leafc_transfer cpool_to_leafc SNSCsnk SNSCsrc GRZsnk GRZsrc MOWsnk MOWsrc litr1c soil1c sminn0 sminn1 sminn2 gpp ter evap transp0 transp1 transp2\n");
+	
+		file_open (&bgcout->control_file, 'o');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
+		fprintf(bgcout->control_file.ptr, "simyr yday tsoil0 tsoil1 tsoil2 GDD vwc0 vwc1 vwc2 SMSI STDBc CTDBc sminn soilc litr_aboveground litr_belowground leafc frootc fruitc softstemc GPP TER evapotransp nplus\n");
 	}
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	/********************************************************************************************************* */
+	/* Hidy 2015 - writing log file */
+	fprintf(bgcout->log_file.ptr, "SPINUP RUN\n");
+	fprintf(bgcout->log_file.ptr, " \n");
+
+	fprintf(bgcout->log_file.ptr, "Critical SWC (m3/m3) and PSI (MPa) values of top soil layer \n");
+	fprintf(bgcout->log_file.ptr, "saturation:                    %12.3f%12.4f\n",sitec.vwc_sat[0],sitec.psi_sat[0]);
+	fprintf(bgcout->log_file.ptr, "field capacity:                %12.3f%12.4f\n",sitec.vwc_fc[0], sitec.psi_fc[0]);
+	fprintf(bgcout->log_file.ptr, "wilting point:                 %12.3f%12.4f\n",sitec.vwc_wp[0], sitec.psi_wp[0]);
+	fprintf(bgcout->log_file.ptr, "hygroscopic water:             %12.3f%12.4f\n",sitec.vwc_hw[0], sitec.psi_hw);
+	fprintf(bgcout->log_file.ptr, "bulk density:                  %12.3f\n",sitec.BD[0]);
+	fprintf(bgcout->log_file.ptr, "Clapp-Hornberger b parameter:  %12.3f\n",sitec.soil_b[0]);
+	fprintf(bgcout->log_file.ptr, " \n");
+
+	fprintf(bgcout->log_file.ptr, "Soil calculation methods\n");
+	if (epc.SHCM_flag == 0)
+		fprintf(bgcout->log_file.ptr, "hydrology   - MuSo\n");
+	else
+		fprintf(bgcout->log_file.ptr, "hydrology   - DSSAT\n");
+
+	if (epc.STCM_flag == 0)
+		fprintf(bgcout->log_file.ptr, "temperature - MuSo\n");
+	else
+		fprintf(bgcout->log_file.ptr, "temperature - DSSAT\n");
+	fprintf(bgcout->log_file.ptr, " \n");
+
+
+	fprintf(bgcout->log_file.ptr, "Data sources\n");
+	if (epc.phenology_flag == 0) 
+	{
+		if (ctrl.varSGS_flag == 0) 
+			fprintf(bgcout->log_file.ptr, "SGS data - constant\n");
+		else
+		{
+			fprintf(bgcout->log_file.ptr, "SGS data - annual varying (in transient phase)\n");
+			printf("INFORMATION: reading onday_transient.txt: annual varying SGS data in transient phase\n");
+		}
+
+		if (ctrl.varEGS_flag == 0) 
+			fprintf(bgcout->log_file.ptr, "EGS data - constant\n");
+		else
+		{
+			fprintf(bgcout->log_file.ptr, "EGS data - annual varying (in transient phase)\n");
+			printf("INFORMATION: reading offday_transient.txt: annual varying EGS data in transient phase\n");
+		}
+	}
+	else
+	{
+		if (ctrl.GSI_flag == 0) 
+		{
+			fprintf(bgcout->log_file.ptr, "SGS data - original method\n");
+			fprintf(bgcout->log_file.ptr, "EGS data - original method\n");
+		}
+		else
+		{
+			fprintf(bgcout->log_file.ptr, "SGS data - GSI method\n");
+			fprintf(bgcout->log_file.ptr, "EGS data - GSI method\n");
+		}
+	}
+
+	if (ctrl.varWPM_flag == 0) 
+		fprintf(bgcout->log_file.ptr, "WPM data - constant \n");
+	else
+	{
+		fprintf(bgcout->log_file.ptr, "WPM data- annual varying (in transient phase)\n");
+		printf("INFORMATION: reading mortality_transient.txt: annual varying WPM data in transient phase\n");
+	}
+
+	if (ctrl.varMSC_flag == 0) 
+		fprintf(bgcout->log_file.ptr, "MSC data - constant\n");
+	else
+	{
+		fprintf(bgcout->log_file.ptr, "MSC data - annual varying (in transient phase)\n");
+		printf("INFORMATION: reading conductance_transient.txt: annual varying MSC data in transient phase\n");
+	}
+
+	if (ctrl.FRZ_flag || ctrl.GRZ_flag || ctrl.MOW_flag || ctrl.THN_flag || ctrl.PLG_flag || ctrl.PLT_flag || ctrl.IRG_flag || ctrl.HRV_flag)
+		fprintf(bgcout->log_file.ptr, "management  - YES (in transient phase)\n");
+	else
+		fprintf(bgcout->log_file.ptr, "management  - NO\n");
+
+	if (ctrl.GWD_flag == 0) 
+		fprintf(bgcout->log_file.ptr, "groundwater - NO\n");
+	else
+	{
+		fprintf(bgcout->log_file.ptr, "groundwater - YES\n");
+		printf("INFORMATION: reading groundwater_spinup.txt: annual varying GWD data\n");
+	}
+
+	fprintf(bgcout->log_file.ptr, " \n");
+	/********************************************************************************************************* */
 
 	/* local variable that signals the need for daily output array */
 	dayout = (ctrl.dodaily || ctrl.domonavg || ctrl.doannavg);
@@ -230,9 +331,9 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	}
 	
-	/* initialize the output mapping array */
+	/* initialize the output mapping array*/ 
 	if (ok && output_map_init(output_map,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&phen,
-		&epv,&psn_sun,&psn_shade,&summary))
+		                  &epv,&psn_sun,&psn_shade,&summary))
 	{
 		printf("Error in call to output_map_init() from bgc()\n");
 		ok=0;
@@ -264,21 +365,12 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	printf("done atm_pres\n");
 #endif
 		
-	/* Hidy 2012. - calculate conductance limitation factors 	*/	
-	if (ok && conduct_limit_factors(&sitec, &epc, &epv))
-	{
-		printf("Error in call to conduct_limit_factors(), from bgc()\n");
-		ok=0;
-	}
-
-#ifdef DEBUG
-	printf("done conduct_limit_factors\n");
-#endif
+     
 
 	/* Hidy 2009. - calculate GSI to deterime onday and offday 	*/
 	if (ctrl.GSI_flag)
 	{
-		if (ok && GSI_calculation(&metarr, &ctrl, &sitec, &GSI, &phenarr))
+		if (ok && GSI_calculation(&metarr, &ctrl, &sitec, &epc, &GSI, &phenarr))
 		{
 			printf("Error in call to GSI_calculation(), from bgc()\n");
 			ok=0;
@@ -290,9 +382,26 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 	printf("done GSI_calculation\n");
 #endif
-	
+
+	/* Hidy 2012. - calculate conductance limitation factors 	*/	
+	if (ok && conduct_limit_factors(bgcout->log_file, &ctrl, &sitec, &epc, &epv))
+	{
+		printf("Error in call to conduct_limit_factors(), from bgc()\n");
+		ok=0;
+	}
+
+#ifdef DEBUG
+	printf("done conduct_limit_factors\n");
+#endif
+
+	/********************************************************************************************************* */
+	fprintf(bgcout->log_file.ptr, "---------------- \n");
+	fprintf(bgcout->log_file.ptr, "spinup phase\n");
+	fprintf(bgcout->log_file.ptr, "---------------- \n");
+	/********************************************************************************************************* */
+
 	/* determine phenological signals */		
-	if (ok && prephenology(&ctrl, &epc, &sitec, &metarr, &phenarr))
+	if (ok && prephenology(bgcout->log_file, &ctrl, &epc, &sitec, &metarr, &phenarr))
 	{
 		printf("Error in call to prephenology(), from bgc()\n");
 		ok=0;
@@ -319,7 +428,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	conditions, then copy restart info into structures */
 	if (ok && ctrl.read_restart)
 	{
-		if (ok && restart_input(&ctrl, &ws, &cs, &ns, &epv, &metyr,
+		if (ok && restart_input(&ctrl, &epc, &ws, &cs, &ns, &epv, &metyr,
 			&(bgcin->restart_input)))
 		{
 			printf("Error in call to restart_input() from bgc()\n");
@@ -360,6 +469,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 	printf("done zero_srcsnk\n");
 #endif
+
+
 	
 	/* initialize the indicator for first day of current simulation, so
 	that the checks for mass balance can have two days for comparison */
@@ -386,6 +497,9 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	rising = 1;
 
 
+				
+	
+
 
 	/* do loop for spinup */
 	do
@@ -394,15 +508,16 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		/* annual model loop, one cycle of metyears at a time */
 		for (simyr=0 ; ok && simyr<nblock ; simyr++)
 		{
+
 			/* set current month to 0 (january) at the beginning of each year */
 			curmonth = 0;
-
-
 	
 			
 			/* calculate scaling for N additions (decreasing with
 			time since the beginning of metcycle = 0 block */
-			naddfrac = 1.0 - ((double)simyr/(double)nblock);
+			
+			naddfrac = (1.0 - ((double)simyr/(double)nblock));
+		
 			
 			if (metcycle == 0)
 			{
@@ -422,15 +537,22 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 
 			/* output to screen to indicate start of simulation year */
-			printf("Year: %6d\n",spinyears);
+			if (spinyears == 0 && ctrl.onscreen) 
+			{
+				printf("-----------------------------------------\n");
+				printf("Start of spinup simulation. Please, wait!\n");
+			}
+			if (ctrl.onscreen) printf("*");
 			
-			/* set the max lai variable, for annual diagnostic output */
+			/* set the max lai, maturity and flowering variables, for annual diagnostic output */
 			epv.ytd_maxplai = 0.0;
+			epv.maturity    = 0;
+			epv.flowering   = 0;
 
 			/* atmospheric concentration of CO2 (ppm) */
-			if (!(co2.varco2)) metv.co2 = co2.co2ppm;
-			else metv.co2 = co2.co2ppm_array[simyr];
-
+			metv.co2 = co2.co2ppm;
+	
+	
 			/* begin the daily model loop */
 			for (yday=0 ; ok && yday<NDAY_OF_YEAR ; yday++)
 			{
@@ -441,7 +563,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				ctrl.simyr = simyr;
 				ctrl.yday = yday;
 				ctrl.spinyears = spinyears;
-		
+
+
 							
 				/* Test for very low state variable values and force them
 				to 0.0 to avoid rounding and floating point overflow errors */
@@ -459,8 +582,18 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				cf = zero_cf;
 				nf = zero_nf;
 
+	               /* soil hydrological parameters: psi and vwc  */
+ 			if (ok && multilayer_hydrolparams(&sitec, &ws, &epv))
+			{
+				printf("Error in multilayer_hydrolparams() from bgc()\n");
+				ok=0;
+			}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone multilayer_hydrolparams\n",simyr,yday);
+#endif
 				/* daily meteorological variables from metarrays */
-				if (ok && daymet(&ctrl, &metarr, &sitec, &ws, &metv, &tair_annavg, metday))
+				if (ok && daymet(&ctrl, &metarr, &sitec, &epc, &PLT, &ws, &epv, &metv, &tair_annavg, metday))
 				{
 					printf("Error in daymet() from bgc()\n");
 					ok=0;
@@ -468,6 +601,19 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 #ifdef DEBUG
 				printf("%d\t%d\tdone daymet\n",simyr,yday);
+#endif
+
+		
+
+			/* soil temperature calculations */
+				if (ok && multilayer_tsoil(yday, &epc, &sitec, &ws, &metv, &epv))
+				{
+					printf("Error in multilayer_tsoil() from bgc()\n");
+					ok=0;
+				}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone multilayer_tsoil\n",simyr,yday);
 #endif
 
 
@@ -487,7 +633,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				else annual_alloc = 0;
 
 				/* phenology fluxes */
-				if (ok && phenology(yday,&epc, &phen, &epv, &cs, &cf, &ns, &nf))
+				if (ok && phenology(&ctrl, &epc, &phen, &epv, &cs, &cf, &ns, &nf))
 				{
 					printf("Error in phenology() from bgc()\n");
 					ok=0;
@@ -497,11 +643,12 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				printf("%d\t%d\tdone phenology\n",simyr,yday);
 #endif
 			
+			
 
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hidy 2011 - MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 				/* rooting depth */
 
- 				 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &epv, &ns))
+ 				 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &PLT, &HRV, &epv, &ns, &metv))
 				 {
 					printf("Error in multilayer_rootdepth() from bgc()\n");
 					ok=0;
@@ -509,33 +656,10 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 #ifdef DEBUG
 			printf("%d\t%d\tdone multilayer_rootdepth\n",simyr,yday);
+			
 #endif
-				
-				/* soil temperature calculations */
-				if (ok && multilayer_tsoil(&epc, &sitec, &ws, &metv, &epv))
-				{
-					printf("Error in multilayer_tsoil() from bgc()\n");
-					ok=0;
-				}
-
-#ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_tsoil\n",simyr,yday);
-#endif
-
-				/* soil hydrological parameters: psi, vwc, conductivity */
- 			   if (ok && multilayer_hydrolparams(&sitec, &ws, &epv))
-			     {
-				    printf("Error in multilayer_hydrolparams() from bgc()\n");
-				    ok=0;
-			     }
-
-#ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_hydrolparams\n",simyr,yday);
-#endif
-
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 			
-
 				/* calculate leaf area index, sun and shade fractions, and specific
 				leaf area for sun and shade canopy fractions, then calculate
 				canopy radiation interception and transmission */
@@ -586,6 +710,16 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				printf("%d\t%d\tdone bare_soil evap\n",simyr,yday);
 #endif
 
+				/* conductance - Hidy 2011 */
+				if (ok && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
+				{
+					printf("Error in conduct_calc() from bgc()\n");
+					ok=0;
+				}
+			
+#ifdef DEBUG
+			printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
+#endif
 			
 				/* daily maintenance respiration */
 				if (ok && maint_resp(&cs, &ns, &epc, &metv, &cf, &epv))
@@ -599,16 +733,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 	
-				/* conductance - Hidy 2011 */
-				if (ok && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
-				{
-					printf("Error in conduct_calc() from bgc()\n");
-					ok=0;
-				}
-			
-#ifdef DEBUG
-			printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
-#endif
+
 				/* begin canopy bio-physical process simulation */
 				/* do canopy ET calculations whenever there is leaf area
 				displayed, since there may be intercepted water on the 
@@ -617,7 +742,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				{
 
 					/* evapo-transpiration */
-					if (ok && canopy_et(&ctrl, &epc, &metv, &epv, &wf))
+					if (ok && canopy_et(&epc, &metv, &epv, &wf))
 					{
 						printf("Error in canopy_et() from bgc()\n");
 						ok=0;
@@ -644,13 +769,14 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 					psn_sun.t = metv.tday;
 					psn_sun.lnc = 1.0 / (epv.sun_proj_sla * epc.leaf_cn);
 					psn_sun.flnr = epc.flnr;
+                                        psn_sun.flnp = epc.flnp;
 					psn_sun.ppfd = metv.ppfd_per_plaisun;
 					/* convert conductance from m/s --> umol/m2/s/Pa, and correct
 					for CO2 vs. water vapor */
 					psn_sun.g = epv.gl_t_wv_sun * 1e6/(1.6*R*(metv.tday+273.15));
 					psn_sun.dlmr = epv.dlmr_area_sun;
 					
-					if (ok && photosynthesis(&psn_sun))
+					if (ok && photosynthesis(&epc, &metv, &psn_sun))
 					{
 						printf("Error in photosynthesis() from bgc()\n");
 						ok=0;
@@ -681,7 +807,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 					for CO2 vs. water vapor */
 					psn_shade.g = epv.gl_t_wv_shade * 1e6/(1.6*R*(metv.tday+273.15));
 					psn_shade.dlmr = epv.dlmr_area_shade;
-					if (ok && photosynthesis(&psn_shade))
+					if (ok && photosynthesis(&epc, &metv, &psn_shade))
 					{
 						printf("Error in photosynthesis() from bgc()\n");
 						ok=0;
@@ -740,9 +866,10 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
             /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 			
 			/* nitrogen deposition and fixation */
-			nf.ndep_to_sminn = sitec.ndep / NDAY_OF_YEAR;
-			nf.nfix_to_sminn = sitec.nfix / NDAY_OF_YEAR;
+			nf.ndep_to_sminn = ndep.ndep / NDAY_OF_YEAR;
+			nf.nfix_to_sminn = epc.nfix / NDAY_OF_YEAR;
 
+	
 
 			/* daily litter and soil decomp and nitrogen fluxes */
 			if (ok && decomp(&metv,&epc,&epv,&sitec,&cs,&cf,&ns,&nf,&nt))
@@ -755,7 +882,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone decomp\n",simyr,yday);
 #endif
 
-		
+	
 			/* Daily allocation gets called whether or not this is a
 			current growth day, because the competition between decomp
 			immobilization fluxes and plant growth N demand is resolved
@@ -764,23 +891,24 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* spinup control */
 			/* in the rising limb, use the spinup allocation code
 			that supplements N supply */
-			if (!steady1 && rising && metcycle == 0)
+			if ((!steady1 && rising && metcycle == 0))
 			{
-				if (ok && spinup_daily_allocation(yday,&cf,&cs,&nf,&ns,&epc,&epv,&nt,naddfrac))
+				if (ok && spinup_daily_allocation(&epc,&sitec,&cf,&cs,&nf,&ns,&epv,&nt,naddfrac))
 				{
 					printf("Error in daily_allocation() from bgc.c\n");
 					ok=0;
 				}
+
 			}
 			else
 			{
-				ctrl.n_limitation = 0;
-				if (ok && daily_allocation(yday,&cf,&cs,&nf,&ns,&epc,&epv,&nt, &ctrl.n_limitation))
+				if (ok && daily_allocation(&epc,&sitec,&cf,&cs,&nf,&ns,&epv,&nt))
 				{
 					printf("Error in daily_allocation() from bgc.c\n");
 					ok=0;
 				}
 			}
+
 
 #ifdef DEBUG
 			printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
@@ -813,12 +941,12 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone growth_resp\n",simyr,yday);
 #endif
-		
-			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
-			/* Hidy 2010 - multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
 
-     		if (ok && multilayer_hydrolprocess(&ctrl, &sitec,&epv, &ws, &wf))
-			{
+	
+			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
+			/* Hidy 2013 - multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
+     		if (ok && multilayer_hydrolprocess(&ctrl, &sitec, &epc, &epv, &ws, &wf))
+			{ 
 				printf("Error in multilayer_hydrolprocess() from bgc()\n");
 				ok=0;
 			}
@@ -827,7 +955,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		printf("%d\t%d\tdone multilayer_hydrolprocess\n",simyr,yday);
 #endif
 
-			/* if gound water calculation */
+			/* ground water calculation */
 			if (ok && groundwater(&ctrl, &sitec, &epv, &ws, &wf))
 			{
 				printf("Error in groundwater() from bgc()\n");
@@ -861,7 +989,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone carbon state update\n",simyr,yday);
 #endif
-
+	
 			/* daily update of nitrogen state variables */
 			if (ok && daily_nitrogen_state_update(&epc, &nf, &ns, annual_alloc, epc.woody, epc.evergreen))
 			{
@@ -890,14 +1018,14 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* Hidy 2013 - calculate daily senescence mortality fluxes and update state variables */
-			if (ok && senescence(&epc, &metv, &sitec, &cs, &cf, &ns, &nf, &epv))
+			if (ok && senescence(&epc, &GRZ, &cs, &cf, &ns, &nf, &epv))
 			{
 				printf("Error in senescence() from bgc()\n");
 				ok=0;
 			}
 					
 #ifdef DEBUG
-		printf("%d\t%d\tdone mortality\n",simyr,yday);
+		printf("%d\t%d\tdone senescence\n",simyr,yday);
 #endif
 
 
@@ -905,7 +1033,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
 			/* Hidy 2011 - calculate the change of soil mineralized N in multilayer soil.  
 			This is a special state variable update routine, done after the other fluxes and states are reconciled 
-			in order to avoid negative sminn */
+			in order to avoid negative sminn (nleaching is included) */
 			if (ok && multilayer_sminn(&epc, &sitec, &epv, &ns, &nf, &ws, &wf))
 			{
 				printf("Error in multilayer_sminn() from bgc()\n");
@@ -917,7 +1045,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 		
 
-			/* Hidy 2010 - test again for very low state variable values and force them
+			/* Hidy 2013 - test again for very low state variable values and force them
 			to 0.0 to avoid rounding and floating point overflow errors */
 			if (ok && precision_control(&ws, &cs, &ns))
 			{
@@ -929,6 +1057,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone precision_control\n",simyr,yday);
 #endif
 
+
+		
 
 			/* test for water balance */
 			if (ok && check_water_balance(&ws, first_balance))
@@ -955,8 +1085,9 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone carbon balance\n",simyr,yday);
 #endif
+			
 
-			/* test for nitrogen balance */
+			/* test for nitrogen balance -  modified by Hidy 2008 */
 			if (ok && check_nitrogen_balance(&ns, first_balance))
 			{
 				printf("Error in check_nitrogen_balance() from bgc()\n");
@@ -969,27 +1100,30 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 			
-            /* calculate carbon summary variables */
-			if (ok && csummary(&cf, &cs, &nf, &summary))
+            /* calculate summary variables */
+			if (ok && cnw_summary(yday, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
 			{
-				printf("Error in csummary() from bgc()\n");
+				printf("Error in cnw_summary() from bgc()\n");
 				ok=0;
 			} 
 #ifdef DEBUG
 			printf("%d\t%d\tdone carbon summary\n",simyr,yday);
 #endif
-						
-				/* INTERNAL VARIALBE CONTROL - Hidy 2013 */		
-			if (ctrl.onscreen && ctrl.simyr < 3 && ctrl.spinyears < 3)
-			{	
-				fprintf(bgcout->control_file.ptr, "%i %5.3f %5.3f %5.3f %5.3f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
-		        yday, epv.vwc[0], epv.vwc[2], epv.vwc[4], epv.m_soilstress, 
-				cs.leafc*1000, cs.frootc*1000, cs.leafc_storage*1000, cs.leafc_transfer*1000, cf.cpool_to_leafc*1000, 
-				cs.SNSCsnk*1000, cs.SNSCsrc*1000, cs.GRZsnk*1000, cs.GRZsrc*1000, cs.MOWsnk*1000, cs.MOWsrc*1000, 
-				cs.litr1c*1000, cs.soil1c*1000, 
-				ns.sminn[0]*1000, ns.sminn[1]*1000, ns.sminn[2]*1000,
-				summary.daily_gpp*1000, summary.daily_tr*1000, wf.evapotransp,
-				wf.soilw_trans[0], wf.soilw_trans[1], wf.soilw_trans[2]); 
+
+	
+
+			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */
+			if (ctrl.onscreen && (ctrl.spinyears == 0 || ctrl.spinyears == 1 ||  ctrl.spinyears == 100 ||
+			    ctrl.spinyears == 600 || ctrl.spinyears == 1000 || ctrl.spinyears == 2000))
+			{
+				fprintf(bgcout->control_file.ptr, "%i %i %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n",
+		        ctrl.spinyears, yday, metv.tsoil[0], metv.tsoil[1], metv.tsoil[2], metv.GDD, 
+						epv.vwc[0], epv.vwc[5], epv.vwc[6], epv.m_soilstress,
+						cs.STDBc, cs.CTDBc,
+						(ns.sminn[0]+ns.sminn[1]+ns.sminn[2]+ns.sminn[3]+ns.sminn[4]+ns.sminn[5]+ns.sminn[6]), 
+				        summary.soilc, cs.litr_aboveground, cs.litr_belowground, 
+						cs.leafc, cs.frootc, cs.fruitc, cs.softstemc, summary.daily_gpp,summary.daily_tr, wf.evapotransp, nf.nplus);
+
 			}
 
 
@@ -1216,21 +1350,97 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				rising,steady1);
 			printf("metcycle = %d tally1 = %lf tally2 = %lf pdif = %lf\n",
 				metcycle,tally1,tally2,t1);
+
+		
 #endif
 		
 			metcycle++;
 		}
+
 
 	
 	/* end of do block, test for steady state */	
 	} while (!(steady1 && steady2) && (spinyears < ctrl.maxspinyears || 
 		metcycle != 0));
 	
+
+	/********************************************************************************************************* */
+	/* Hidy 2015 - writing log file */
+	fprintf(bgcout->log_file.ptr, "Some important annual outputs\n");
+	fprintf(bgcout->log_file.ptr, "Mean annual GPP (gC/m2/year):                           %12.1f\n",summary.cum_gpp/ctrl.spinyears*1000);
+	fprintf(bgcout->log_file.ptr, "Mean annual NEE (gC/m2/year):                           %12.1f\n",summary.cum_nee/ctrl.spinyears*1000);
+	fprintf(bgcout->log_file.ptr, "Maximum projected LAI (m2/m2):                          %12.2f\n",epv.ytd_maxplai);
+	fprintf(bgcout->log_file.ptr, "Recalcitrant SOM carbon content (kgC/m2):               %12.1f\n",cs.soil4c);
+	fprintf(bgcout->log_file.ptr, "Total soil carbon content (kgC/m2):                     %12.1f\n",summary.soilc);
+	fprintf(bgcout->log_file.ptr, "Total soil mineralized nitrogen content (gN/m2):        %12.2f\n",summary.sminn*1000);
+	fprintf(bgcout->log_file.ptr, "Mean annual SWC in rootzone (m3/m3):                    %12.2f\n",summary.vwc_annavg/(ctrl.spinyears*NDAY_OF_YEAR));
+	fprintf(bgcout->log_file.ptr, " \n");
+ 	fprintf(bgcout->log_file.ptr, "Mean annual N-plus (spinup_daily_allocation) (gN/year): %12.2f\n",summary.cum_nplus/ctrl.spinyears*1000);
+	fprintf(bgcout->log_file.ptr, " \n");
+
+	fprintf(bgcout->log_file.ptr,"spinyears = %d \n",spinyears);
+	fprintf(bgcout->log_file.ptr, " \n");
+	
+	/********************************************************************************************************* */
+
 	/* save some information on the end status of spinup */
 	tally1b /= (double)nblock * NDAY_OF_YEAR;
 	tally2b /= (double)nblock * NDAY_OF_YEAR;
 	bgcout->spinup_resid_trend = (tally2b-tally1b)/(double)nblock;
 	bgcout->spinup_years = spinyears;
+	
+	if (ctrl.onscreen) printf("\n");
+	if (ctrl.onscreen) printf("SPINUP: residual trend   = %.6lf\n",bgcout->spinup_resid_trend);
+ 	if (ctrl.onscreen) printf("SPINUP: number of years  = %d\n",bgcout->spinup_years);
+
+	/********************************************************************************************************* */
+	 /* !!!!!!!!!!! close control file - Hidy 2009.!!!!!!!!!!!!*/
+
+	/* free phenology memory */
+	if (ok && free_phenmem(&phenarr))
+	{
+		printf("Error in free_phenmem() from bgc()\n");
+		ok=0;
+	}
+	
+	if (ctrl.onscreen)
+	{
+		if (ctrl.GSI_flag)
+		{
+			fclose (GSI.GSI_file.ptr);
+		}
+		fclose (bgcout->control_file.ptr);
+	}
+   
+	/*----------------------------------------------------------*/
+	/* TRANSIENT RUN between spinup and normal run - Hidy 2014 */
+  	if (ok && (co2.varco2 || ndep.varndep))
+	{
+	
+		bgcin->ws = ws;
+		bgcin->cs = cs;
+		bgcin->ns = ns;
+
+		if (ctrl.onscreen) 
+		{
+			printf("-----------------------------------------\n");
+			printf("Start of transient run.\n");
+		}
+
+		if (transient_bgc(bgcin, bgcout))
+		{
+			printf("Error in call to bgc()\n");
+			exit(1);
+		}
+
+		ws = bgcin->ws;
+		cs = bgcin->cs;
+		ns = bgcin->ns;
+	}
+
+
+
+	/*----------------------------------------------------------*/
 
 	/* RESTART OUTPUT HANDLING */
 	/* if write_restart flag is set, copy data to the output restart struct */
@@ -1247,12 +1457,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 	}
 
-	/* free phenology memory */
-	if (ok && free_phenmem(&phenarr))
-	{
-		printf("Error in free_phenmem() from bgc()\n");
-		ok=0;
-	}
 
 #ifdef DEBUG
 	printf("%d\t%d\tdone free phenmem\n",simyr,yday);
@@ -1272,16 +1476,9 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		printf("ERROR at yday %d\n",yday-1);
 	}
 	
-	/* !!!!!!!!!!! close control file - Hidy 2009.!!!!!!!!!!!!*/
-	if (ctrl.onscreen)
-	{
-		if (ctrl.GSI_flag)
-		{
-			fclose (GSI.GSI_file.ptr);
-		}
-		fclose (bgcout->control_file.ptr);
-	}
+
+
 
 	/* return error status */	
 	return (!ok);
-}
+ }

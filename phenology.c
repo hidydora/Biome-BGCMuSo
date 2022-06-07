@@ -3,10 +3,10 @@ phenology.c
 daily phenology fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -20,17 +20,17 @@ Hungarian Academy of Sciences
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen, epvar_struct* epv, 
+int phenology(const control_struct* ctrl, const epconst_struct* epc, const phenology_struct* phen, epvar_struct* epv, 
 			  cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf)
 {
 	int ok=1;
-	double ndays;
+	double ndays, coeff;
 	double leaflitfallc, frootlitfallc;
 	double livestemtovrc, livestemtovrn;
 	double livecroottovrc, livecroottovrn;
 	double drate;
 	double fruitlitfallc = 0;	/* fruit simulation - Hidy 2013. */
-
+	double softstemlitfallc = 0;	/* softstem simulation - Hidy 2013. */
 	
 	/* phenological control for EVERGREENS */
 	if (epc->evergreen)
@@ -47,18 +47,9 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 			nf->leafn_transfer_to_leafn = ns->leafn_transfer / ndays;
 			cf->frootc_transfer_to_frootc = cs->frootc_transfer / ndays;
 			nf->frootn_transfer_to_frootn = ns->frootn_transfer / ndays;
-			/* fruit simulation - Hidy 2013. */
-			if (yday > epc->flowerday)
-			{
-				cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer / ndays;
-				nf->fruitn_transfer_to_fruitn = ns->fruitn_transfer / ndays;
-			}
-			else
-			{
-				cf->fruitc_transfer_to_fruitc = 0;
-				nf->fruitn_transfer_to_fruitn = 0;
-			}
-
+		
+			
+			/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 			if (epc->woody)
 			{
 				cf->livestemc_transfer_to_livestemc = cs->livestemc_transfer / ndays;
@@ -69,6 +60,11 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				nf->livecrootn_transfer_to_livecrootn = ns->livecrootn_transfer / ndays;
 				cf->deadcrootc_transfer_to_deadcrootc = cs->deadcrootc_transfer / ndays;
 				nf->deadcrootn_transfer_to_deadcrootn = ns->deadcrootn_transfer / ndays;
+			}
+			else
+			{
+				cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer / ndays;
+				nf->softstemn_transfer_to_softstemn = ns->softstemn_transfer / ndays;
 			}
 		}
 	
@@ -87,18 +83,7 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 			ok=0;
 		}
 		
-		/* fruit simulation - Hidy 2013. */
-		if (yday > epc->flowerday)
-		{
-			fruitlitfallc = epv->day_fruitc_litfall_increment;
-			if (fruitlitfallc > cs->fruitc) fruitlitfallc = cs->fruitc;
-			if (ok && fruit_litfall(epc,fruitlitfallc,cf,nf))
-			{
-				printf("Error in call to fruit_litfall() from phenology()\n");
-				ok=0;
-			}
-		}
-
+	
 		/* fine root litterfall */
 		frootlitfallc = epv->day_frootc_litfall_increment;
 		if (frootlitfallc > cs->frootc) frootlitfallc = cs->frootc;
@@ -108,11 +93,14 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 			ok=0;
 		}
 		
-		/* turnover of live wood to dead wood also happens every day, at a
-		rate determined once each year, using the annual maximum livewoody
-		compartment masses and the specified livewood turnover rate */
+
+	
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (epc->woody)
-		{
+		{ 	/* turnover of live wood to dead wood also happens every day, at a
+			rate determined once each year, using the annual maximum livewoody
+			compartment masses and the specified livewood turnover rate */
+			
 			/* turnover from live stem wood to dead stem wood */
 			livestemtovrc = epv->day_livestemc_turnover_increment;
 			livestemtovrn = livestemtovrc / epc->livewood_cn;
@@ -137,6 +125,17 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				nf->livecrootn_to_retransn = livecroottovrn - nf->livecrootn_to_deadcrootn;
 			}
 		}
+		else
+		{
+			/* softstem litterfall */
+			softstemlitfallc = epv->day_softstemc_litfall_increment;
+			if (softstemlitfallc > cs->softstemc) softstemlitfallc = cs->softstemc;
+			if (ok && softstem_litfall(epc,softstemlitfallc,cf,nf))
+			{
+				printf("Error in call to softstem_litfall() from phenology()\n");
+				ok=0;
+			}
+		}
 		
 	} /* end if evergreen */
 	else
@@ -144,6 +143,9 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 		/* deciduous */
 		/* transfer growth fluxes */
 		/* check for days left in transfer growth period */
+
+
+
 		ndays = phen->remdays_transfer;
 		if (ndays > 0)
 		{
@@ -154,21 +156,9 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 			nf->leafn_transfer_to_leafn = 2.0*ns->leafn_transfer / ndays;
 			cf->frootc_transfer_to_frootc = 2.0*cs->frootc_transfer / ndays;
 			nf->frootn_transfer_to_frootn = 2.0*ns->frootn_transfer / ndays;
-			/* fruit simulation - Hidy 2013. */
-			if (yday > epc->flowerday)
-			{
-				cf->fruitc_transfer_to_fruitc = 2.0*cs->fruitc_transfer / ndays;
-				nf->fruitn_transfer_to_fruitn = 2.0*ns->fruitn_transfer / ndays;
-				if (cf->fruitc_transfer_to_fruitc > cs->fruitc_transfer) cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer;
-				if (nf->fruitn_transfer_to_fruitn > ns->fruitn_transfer) nf->fruitn_transfer_to_fruitn = ns->fruitn_transfer;
-
-			}
-			else
-			{
-				cf->fruitc_transfer_to_fruitc = 0;
-				nf->fruitn_transfer_to_fruitn = 0;
-			}
-
+		
+			
+			/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 			if (epc->woody)
 			{
 				cf->livestemc_transfer_to_livestemc = 2.0*cs->livestemc_transfer / ndays;
@@ -179,6 +169,14 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				nf->livecrootn_transfer_to_livecrootn = 2.0*ns->livecrootn_transfer / ndays;
 				cf->deadcrootc_transfer_to_deadcrootc = 2.0*cs->deadcrootc_transfer / ndays;
 				nf->deadcrootn_transfer_to_deadcrootn = 2.0*ns->deadcrootn_transfer / ndays;
+			}
+			else
+			{ 	/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+				cf->softstemc_transfer_to_softstemc = 2.0*cs->softstemc_transfer / ndays;
+				nf->softstemn_transfer_to_softstemn = 2.0*ns->softstemn_transfer / ndays;
+				if (cf->softstemc_transfer_to_softstemc > cs->softstemc_transfer) cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer;
+				if (nf->softstemn_transfer_to_softstemn > ns->softstemn_transfer) nf->softstemn_transfer_to_softstemn = ns->softstemn_transfer;
+			
 			}
 		}
 	
@@ -196,8 +194,8 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				that pools go to 0.0 */
 				leaflitfallc = cs->leafc;
 				frootlitfallc = cs->frootc;
-				/* fruit simulation - Hidy 2013. */
-				fruitlitfallc = cs->fruitc;
+				/* softstem simulation - Hidy 2015. */
+				softstemlitfallc = cs->softstemc;
 			}
 			else
 			{
@@ -206,16 +204,16 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				leaflitfallc = epv->day_leafc_litfall_increment;
 				drate = 2.0*(cs->leafc - leaflitfallc*ndays)/(ndays*ndays);
 				epv->day_leafc_litfall_increment += drate;
+				
 				frootlitfallc = epv->day_frootc_litfall_increment;
 				drate = 2.0*(cs->frootc - frootlitfallc*ndays)/(ndays*ndays);
 				epv->day_frootc_litfall_increment += drate;
-				/* fruit simulation - Hidy 2013. */
-				if (yday > epc->flowerday)
-				{
-					fruitlitfallc = epv->day_fruitc_litfall_increment;
-					drate = 2.0*(cs->fruitc - fruitlitfallc*ndays)/(ndays*ndays);
-					epv->day_fruitc_litfall_increment += drate;
-				}
+
+				softstemlitfallc = epv->day_softstemc_litfall_increment;
+				drate = 2.0*(cs->softstemc - softstemlitfallc*ndays)/(ndays*ndays);
+				epv->day_softstemc_litfall_increment += drate;
+				
+		
 			}
 			/* leaf litterfall */
 			if (leaflitfallc > cs->leafc) leaflitfallc = cs->leafc;
@@ -224,17 +222,7 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				printf("Error in call to leaf_litfall() from phenology()\n");
 				ok=0;
 			}
-			/* fruit litterfall - Hidy 2013. */
-			if (yday > epc->flowerday)
-			{
-				if (fruitlitfallc > cs->fruitc) fruitlitfallc = cs->fruitc;
-				if (ok && fruitlitfallc && fruit_litfall(epc,fruitlitfallc,cf,nf))
-				{
-					printf("Error in call to fruit_litfall() from phenology()\n");
-					ok=0;
-				}
-			}
-
+	
 			/* fine root litterfall */
 			if (frootlitfallc > cs->frootc) frootlitfallc = cs->frootc;
 			if (ok && frootlitfallc && froot_litfall(epc,frootlitfallc,cf,nf))
@@ -244,11 +232,12 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 			}
 		} /* end if deciduous litterfall day */
 		
-		/* turnover of livewood to deadwood happens each day, just as for
-		evergreen types, at a rate determined from the annual maximum
-		livewood mass and the specified turnover rate */
+	
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (epc->woody)
-		{
+		{	/* turnover of livewood to deadwood happens each day, just as for
+			evergreen types, at a rate determined from the annual maximum
+			livewood mass and the specified turnover rate */
 			/* turnover from live stem wood to dead stem wood */
 			livestemtovrc = epv->day_livestemc_turnover_increment;
 			livestemtovrn = livestemtovrc / epc->livewood_cn;
@@ -273,22 +262,89 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				nf->livecrootn_to_retransn = livecroottovrn - nf->livecrootn_to_deadcrootn;
 			}
 		}
+		else
+		{ /* soft stem simulation Hidy 2015 */
+			/* softstem litterfall */
+			if (softstemlitfallc > cs->softstemc) softstemlitfallc = cs->softstemc;
+			if (ok && softstemlitfallc && softstem_litfall(epc,softstemlitfallc,cf,nf))
+			{
+				printf("Error in call to softstem_litfall() from phenology()\n");
+				ok=0;
+			}
+		} 
 		
 	} /* end if deciduous */
-	
-	/* for woody types, find annual maximum value for live stemc and live crootc
-	calculation of livewood turnover rates */
-	if (epc->woody)
+
+		
+	/* fruit simulation - Hidy 2013. */
+	if (epc->alloc_fruitc_leafc)
 	{
+		ndays = phen->offday - ctrl->yday;
+		if (epv->flowering && ndays > 0)
+		{
+			
+			if (epc->evergreen)
+				coeff = 1;
+			else
+				coeff = 2;
+			cf->fruitc_transfer_to_fruitc = coeff*cs->fruitc_transfer / ndays;
+			nf->fruitn_transfer_to_fruitn = coeff*ns->fruitn_transfer / ndays;
+			if (cf->fruitc_transfer_to_fruitc > cs->fruitc_transfer) cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer;
+			if (nf->fruitn_transfer_to_fruitn > ns->fruitn_transfer) nf->fruitn_transfer_to_fruitn = ns->fruitn_transfer;
+
+			fruitlitfallc = epv->day_fruitc_litfall_increment;
+            
+			if (!epc->evergreen)
+			{
+				drate = 2.0*(cs->fruitc - fruitlitfallc*ndays)/(ndays*ndays);
+				epv->day_fruitc_litfall_increment += drate;
+			}
+
+            if (fruitlitfallc > cs->fruitc || ndays == 1) fruitlitfallc = cs->fruitc;
+		}
+		else
+		{
+			cf->fruitc_transfer_to_fruitc = 0;
+			nf->fruitn_transfer_to_fruitn = 0;
+			fruitlitfallc = cs->fruitc;
+		
+		}
+		if (fruitlitfallc > cs->fruitc) fruitlitfallc = cs->fruitc;
+		if (ok && fruitlitfallc && fruit_litfall(epc,fruitlitfallc,cf,nf))
+		{
+			printf("Error in call to fruit_litfall() from phenology()\n");
+			ok=0;
+		}
+	
+	}
+	else
+	{
+		cf->fruitc_transfer_to_fruitc = 0;
+		nf->fruitn_transfer_to_fruitn = 0;
+	}
+
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
+	if (epc->woody)
+	{	/* for woody types, find annual maximum value for live stemc and live crootc
+		calculation of livewood turnover rates */
 		if (epv->annmax_livestemc < cs->livestemc) epv->annmax_livestemc = cs->livestemc;
 		if (epv->annmax_livecrootc < cs->livecrootc) epv->annmax_livecrootc = cs->livecrootc;
-	}	
+	}
+	else
+	{
+		/* softstem simulation - Hidy 2013. */
+		if (epv->annmax_softstemc < cs->softstemc) epv->annmax_softstemc = cs->softstemc;
+	
+	}
 	
 	/* for all types, find annual maximum leafc */
 	if (epv->annmax_leafc < cs->leafc) epv->annmax_leafc = cs->leafc;
 	if (epv->annmax_frootc < cs->frootc) epv->annmax_frootc = cs->frootc;
 	/* fruit simulation - Hidy 2013. */
 	if (epv->annmax_fruitc < cs->fruitc) epv->annmax_fruitc = cs->fruitc;
+	/* softstem simulation - Hidy 2013. */
+	if (epv->annmax_softstemc < cs->softstemc) epv->annmax_softstemc = cs->softstemc;
 	
 	return (!ok);
 }
@@ -402,4 +458,40 @@ cflux_struct* cf, nflux_struct* nf)
 	
 	return (!ok);
 }
+
+int softstem_litfall(const epconst_struct* epc, double litfallc, 
+cflux_struct* cf, nflux_struct* nf)
+{
+	int ok=1;
+	double c1,c2,c3,c4;
+	double n1,n2,n3,n4;
+	double avg_cn;
+	
+	avg_cn = epc->softstem_cn;
+	
+	c1 = litfallc * epc->softstemlitr_flab;
+	n1 = c1 / avg_cn;
+	c2 = litfallc * epc->softstemlitr_fucel;
+	n2 = c2 / avg_cn;
+	c3 = litfallc * epc->softstemlitr_fscel;
+	n3 = c3 / avg_cn;
+	c4 = litfallc * epc->softstemlitr_flig;
+	n4 = c4 / avg_cn;
+	
+	if (ok)
+	{
+		/* set fluxes in daily flux structure */
+		cf->softstemc_to_litr1c = c1;
+		cf->softstemc_to_litr2c = c2;
+		cf->softstemc_to_litr3c = c3;
+		cf->softstemc_to_litr4c = c4;
+ 		nf->softstemn_to_litr1n = n1;
+		nf->softstemn_to_litr2n = n2;
+		nf->softstemn_to_litr3n = n3;
+		nf->softstemn_to_litr4n = n4;
+	}
+	
+	return (!ok);
+}
+
 

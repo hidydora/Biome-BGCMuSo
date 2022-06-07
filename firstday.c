@@ -4,10 +4,10 @@ Initializes the state variables for the first day of a simulation that
 is not using a restart file.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -29,7 +29,8 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	int woody;
 	int predays,remdays;
 	int layer;
-	double max_leafc,max_frootc,max_fruitc; /* fruit simulation - Hidy 2013. */
+	double max_leafc,max_frootc,max_fruitc;
+	double max_softstemc =0; /* fruit and softstem simulation - Hidy 2013. */
 	double max_stemc,new_stemc;
 	double prop_transfer,transfer;
 	double prop_litfall;
@@ -54,30 +55,35 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	/* fruit simulation - Hidy 2013. */
 	cs->fruitc_storage = 0.0;
 	ns->fruitn_storage = 0.0;
+	/* softstem simulation - Hidy 2015. */
+	cs->softstemc_storage = 0.0;
+	ns->softstemn_storage = 0.0;
 	
 	/* *****************************************************************************- */
 	/* Hidy 2010 - initialize days-since-rain and day-since-waterstress counter */
 	epv->dsr = 0.0;
 	epv->dsws = 0.0;
 	epv->dsws_FULL = 0.0;
+	epv->flowering = 0;
+	epv->maturity  = 0;
 
 	/* Hidy 2010 - initialize multilayer variables (first approximation: field cap.) and multipliers for stomatal limitation calculation */
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		epv->vwc[layer]				  = sitec->vwc_fc;
-		epv->psi[layer]				  = sitec->psi_fc;
-		epv->hydr_conduct[layer]	  = sitec->hydr_conduct_fc;
-		epv->hydr_diffus[layer]		  = sitec->hydr_diffus_fc;
-		epv->pF[layer]				  = log10(fabs(10000*sitec->psi_fc));	// dimension of psi: MPa to cm (10000 MPa = 1 cm)
+		epv->vwc[layer]				  = sitec->vwc_fc[layer];
+		epv->psi[layer]				  = sitec->psi_fc[layer];
+		epv->hydr_conduct_S[layer]	  = sitec->hydr_conduct_fc[layer];
+		epv->hydr_diffus_S[layer]	  = sitec->hydr_diffus_fc[layer];
+		epv->hydr_conduct_E[layer]	  = sitec->hydr_conduct_fc[layer];
+		epv->hydr_diffus_E[layer]	  = sitec->hydr_diffus_fc[layer];
+		epv->pF[layer]				  = log10(fabs(10000*sitec->psi_fc[layer]));	// dimension of psi: MPa to cm (10000 MPa = 1 cm)
 		epv->m_soilstress_layer[layer]= 1;
 	}
 
-	epv->vwc_avg		    = sitec->vwc_fc;
-	epv->psi_avg		    = sitec->psi_fc;
-	epv->hydr_conduct_avg   = sitec->hydr_conduct_fc;
-	epv->hydr_diffus_avg    = sitec->hydr_diffus_fc;
-	metv->tsoil_avg	   	    = sitec->mean_surf_air_temp;
-	metv->tsoil_top_pre	    = sitec->mean_surf_air_temp;	
+	epv->vwc_avg		    = sitec->vwc_fc[layer];
+	epv->psi_avg		    = sitec->psi_fc[layer];
+	metv->tsoil_avg	   	    = sitec->tair_annavg;
+	metv->tsoil_surface_pre	= sitec->tair_annavg;	
 	epv->m_soilstress	    = 1;
 
 	/* *****************************************************************************- */
@@ -96,12 +102,12 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	cs->frootc = max_frootc - cs->frootc_transfer;
 	/* fruit simulation - Hidy 2013. */
 	max_fruitc = max_leafc * epc->alloc_fruitc_leafc;
-	cs->fruitc_transfer = cinit->max_leafc * epc->alloc_fruitc_leafc * 
-	epc->fruit_turnover;
+	cs->fruitc_transfer = cinit->max_leafc * epc->alloc_fruitc_leafc * epc->fruit_turnover;
 	cs->fruitc = max_fruitc - cs->fruitc_transfer;
 
+    /* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
-	{
+	{	
 		max_stemc = cinit->max_stemc;
 		new_stemc = cs->leafc_transfer * epc->alloc_newstemc_newleafc;
 		cs->livestemc_transfer = new_stemc * epc->alloc_newlivewoodc_newwoodc;
@@ -115,7 +121,14 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		cs->deadcrootc_transfer = cs->deadstemc_transfer * epc->alloc_crootc_stemc;
 		cs->deadcrootc = cs->deadstemc * epc->alloc_crootc_stemc;
 	} 
-	
+	else
+	{
+		/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		max_softstemc = max_leafc * epc->alloc_softstemc_leafc;
+		cs->softstemc_transfer = cinit->max_leafc * epc->alloc_softstemc_leafc * epc->softstem_turnover;
+		cs->softstemc = max_softstemc - cs->softstemc_transfer;
+	}
+
 	/* calculate initial leaf and froot nitrogen pools from carbon pools and
 	user-specified initial C:N for each component */
 	ns->leafn_transfer = cs->leafc_transfer / epc->leaf_cn;
@@ -126,7 +139,7 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	ns->fruitn_transfer = cs->fruitc_transfer / epc->fruit_cn;
 	ns->fruitn = cs->fruitc / epc->fruit_cn;
 
-
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (epc->woody)
 	{
 		ns->livestemn_transfer = cs->livestemc_transfer / epc->livewood_cn;
@@ -137,6 +150,13 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		ns->livecrootn = cs->livecrootc / epc->livewood_cn;
 		ns->deadcrootn_transfer = cs->deadcrootc_transfer / epc->deadwood_cn;
 		ns->deadcrootn = cs->deadcrootc / epc->deadwood_cn;
+	}
+	else
+	{
+		/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+		ns->softstemn_transfer = cs->softstemc_transfer / epc->softstem_cn;
+		ns->softstemn = cs->softstemc / epc->softstem_cn;
+
 	}
 	
 	/* use then penology array information to determine, for the first
@@ -168,6 +188,7 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		ns->fruitn          += transfer;
 		ns->fruitn_transfer -= transfer;
 
+		/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 		if (woody)
 		{
 			transfer = prop_transfer * cs->livestemc_transfer;
@@ -195,6 +216,17 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 			ns->deadcrootn          += transfer;
 			ns->deadcrootn_transfer -= transfer;
 		}
+		else
+		{
+			/* SOFT STEM SIMULATION of non-woody biomes - Hidy 2015 */
+			transfer = prop_transfer * cs->softstemc_transfer;
+			cs->softstemc          += transfer;
+			cs->softstemc_transfer -= transfer;
+			transfer = prop_transfer * ns->softstemn_transfer;
+			ns->softstemn          += transfer;
+			ns->softstemn_transfer -= transfer;
+
+		}
 		
 		/* only test for litterfall if there has already been some
 		transfer growth this year */
@@ -210,6 +242,8 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 			cs->frootc -= prop_litfall * cs->frootc * epc->froot_turnover;
 			/* fruit simulation - Hidy 2013. */
 			cs->fruitc -= prop_litfall * cs->fruitc * epc->fruit_turnover;
+			/* softstem simulation - Hidy 2013. */
+			cs->softstemc -= prop_litfall * cs->softstemc * epc->softstem_turnover;
 		}
 	} /* end if transfer */
 
@@ -218,10 +252,16 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	gresp_transfer pool */
 	cs->gresp_transfer = 0.0;
 	cs->gresp_transfer += (cs->leafc_transfer + cs->frootc_transfer + cs->frootc_transfer) * epc->GR_ratio; /* fruit simulation - Hidy 2013. */
+	
+	/* TREE-specific and NON-WOODY SPECIFIC fluxes */
 	if (woody)
 	{
-		cs->gresp_transfer += (cs->livestemc_transfer + cs->deadstemc_transfer +
-			cs->livecrootc_transfer + cs->deadcrootc_transfer) * epc->GR_ratio;
+		cs->gresp_transfer += (cs->livestemc_transfer + cs->deadstemc_transfer + 
+								cs->livecrootc_transfer + cs->deadcrootc_transfer) * epc->GR_ratio;
+	}
+	else
+	{	
+		cs->gresp_transfer += (cs->softstemc_transfer) * epc->GR_ratio;
 	}
 	
 	/* set the initial rates of litterfall and live wood turnover */
@@ -232,6 +272,8 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		epv->day_frootc_litfall_increment = max_frootc * epc->froot_turnover / NDAY_OF_YEAR;
 		/* fruit simulation - Hidy 2013. */
 		epv->day_fruitc_litfall_increment = max_fruitc * epc->fruit_turnover / NDAY_OF_YEAR;
+		/* softstem simulation - Hidy 2013. */
+		epv->day_softstemc_litfall_increment = max_softstemc * epc->softstem_turnover / NDAY_OF_YEAR;
 	}
 	else
 	{
@@ -241,20 +283,22 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 		epv->day_frootc_litfall_increment = 0.0;
 		/* fruit simulation - Hidy 2013. */
 		epv->day_fruitc_litfall_increment = 0.0;
+		/* softstem simulation - Hidy 2013. */
+		epv->day_softstemc_litfall_increment = 0.0;
 	}
 	/* all types can use annmax leafc and frootc */
 	epv->annmax_leafc = 0.0;
 	epv->annmax_frootc = 0.0;
 	/* fruit simulation - Hidy 2013. */
 	epv->annmax_fruitc = 0.0;
+	epv->annmax_softstemc = 0.0;
+	epv->annmax_livestemc = 0.0;
+	epv->annmax_livecrootc = 0.0;
+
+	epv->day_livestemc_turnover_increment = cs->livestemc * epc->livewood_turnover / NDAY_OF_YEAR;
+	epv->day_livecrootc_turnover_increment = cs->livecrootc * epc->livewood_turnover / NDAY_OF_YEAR;
 	
-	if (epc->woody)
-	{
-		/* live wood turnover rates */
-		epv->day_livestemc_turnover_increment = cs->livestemc * epc->livewood_turnover / NDAY_OF_YEAR;
-		epv->day_livecrootc_turnover_increment = cs->livecrootc * epc->livewood_turnover / NDAY_OF_YEAR;
-		epv->annmax_livestemc = 0.0;
-		epv->annmax_livecrootc = 0.0;
-	}
+
+	
 	return (!ok);
 }

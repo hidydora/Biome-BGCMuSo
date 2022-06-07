@@ -3,8 +3,8 @@ GSI_init.c
 read GSI file for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -62,12 +62,6 @@ int GSI_init(file init, GSI_struct* GSI)
 		ok=0;
 	}
 
-	/* basic_temperature for calculation heatsum */
-	if (ok && scan_value(init, &GSI->basic_temperature, 'd'))
-	{
-		printf("Error reading basic_temperature parameter: GSI_init()\n");
-		ok=0;
-	}
 
 	/* heatsum_limit1 for calculation heatsum index */
 	if (ok && scan_value(init, &GSI->heatsum_limit1, 'd'))

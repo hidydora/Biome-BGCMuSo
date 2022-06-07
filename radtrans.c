@@ -5,10 +5,10 @@ leaf area for sun and shade canopy fractions, then calculate
 canopy radiation interception and transmission 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -43,6 +43,8 @@ metvar_struct* metv, epvar_struct* epv, double albedo)
 	double swabs_per_plaisun, swabs_per_plaishade;
 	double parabs_plaisun, parabs_plaishade;
 	double parabs_per_plaisun, parabs_per_plaishade;
+	
+	double crit_albedo = 0.23;
 	
 	/* The following equations estimate the albedo and extinction 
 	coefficients for the shortwave and PAR spectra from the values given for the
@@ -92,9 +94,14 @@ metvar_struct* metv, epvar_struct* epv, double albedo)
 	k = epc->ext_coef;
 	proj_lai = epv->proj_lai;
 	
+	/* calculate LAI dependent albedo (Hidy 2015)*/
+	if (albedo < crit_albedo)
+		albedo_sw = crit_albedo - (crit_albedo - albedo)* exp(-0.75*proj_lai);
+	else
+		albedo_sw = albedo;
+
 	/* calculate total shortwave absorbed */
 	k_sw = k;
-	albedo_sw = albedo;
 	sw = 0;
 	sw = metv->swavgfd * (1.0 - albedo_sw);
 	swabs = sw * (1.0 - exp(-k_sw*proj_lai));

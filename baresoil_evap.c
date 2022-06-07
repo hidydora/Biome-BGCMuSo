@@ -3,10 +3,10 @@ baresoil_evap.c
 daily bare soil evaporation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
+BBGC MuSo v4
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
@@ -62,6 +62,8 @@ int baresoil_evap(const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
 
 	/* convert to daily total kg/m2 */
 	pot_evap *= metv->dayl;
+
+	wf->pot_evap=pot_evap;
 	
 	/* consider only the precipitation flux reaching the soil */
 	/* check for precipitation >= potential evaporation */

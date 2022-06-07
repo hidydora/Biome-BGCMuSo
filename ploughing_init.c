@@ -3,8 +3,8 @@ ploughing_init.c
 read ploughing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v3.0.8
-Copyright 2014, D. Hidy
+BBGC MuSo v4
+Copyright 2014, D. Hidy (dori.hidy@gmail.com)
 Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
@@ -59,14 +59,14 @@ int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
 	{
 		if (ok && scan_value(init, PLG_filename, 's'))
 		{
-			printf("Error reading ploughing calculating flag\n");
+			printf("Error reading ploughing calculating file\n");
 			ok=0;
 		}
 		else
 		{
 			
 			ok=1;
-			printf("ploughing information from file\n");
+			if (ctrl->onscreen) printf("INFORMATION: ploughing information from file\n");
 			PLG->PLG_flag = 2;
 			strcpy(PLG_file.name, PLG_filename);
 		}
@@ -97,11 +97,37 @@ int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
 		ok=0;
 	}
 
+	if (ok && read_mgmarray(ny, PLG->PLG_flag, PLG_file, &(PLG->PLGdepths_array)))
+	{
+		printf("Error reading depth of ploughing\n");
+		ok=0;
+	}
+	
+	/* scan for the ploughing file keyword, exit if not next */
+	if (ok && read_mgmarray(ny, PLG->PLG_flag, PLG_file, &(PLG->dissolv_coeff_array)))
+	{
+		printf("Error reading dissolv_coeff_array\n");
+		ok=0;
+	}
+
 
 	if (PLG->PLG_flag == 2)
 	{
 		fclose (PLG_file.ptr);
 	}
+
+	
+	PLG->PLG_pool_litr1c = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr2c = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr3c = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr4c = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr1n = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr2n = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr3n = 0;				    /* local pool - Hidy 2014.*/
+	PLG->PLG_pool_litr4n = 0;				    /* local pool - Hidy 2014.*/
+	PLG->DC_act = 0.0;
+	PLG->mgmd = -1;
+
 	
 	return (!ok);
 }

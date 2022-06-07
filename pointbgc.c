@@ -1,14 +1,15 @@
 	/*
 pointbgc.c
 front-end to BIOME-BGC for single-point, single-biome simulations
-Uses BBGC MuSo v4 library function
+Uses BBGC MuSo v6 library function
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Original code: Copyright 2000, Peter E. Thornton
+Numerical Terradynamic Simulation Group, The University of Montana, USA
+Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -25,9 +26,12 @@ Hungarian Academy of Sciences
 #include "pointbgc_func.h"     /* function prototypes for point driver */
 #include "bgc_io.h"           /* bgc() interface definition */
 #include "bgc_epclist.h"      /* array structure for epc-by-vegtype */
+#include "bgc_constants.h"      /* array structure for epc-by-vegtype */
 
 int main(int argc, char *argv[])
 {
+	int errflag = 0;
+
 	/* bgc input and output structures */
 	bgcin_struct bgcin;
 	bgcout_struct bgcout;
@@ -45,22 +49,48 @@ int main(int argc, char *argv[])
 	struct tm *tm_ptr;
 	time_t lt;
 	
-	/* get the system time at start of simulation */
+	/* get the system time at start of simulation  - WARNING: unsafe functions: localtime, asctime */
 	lt = time(NULL);
 	tm_ptr = localtime(&lt);
 	strcpy(point.systime,asctime(tm_ptr));
 	
+	errflag = 0;
+
 
 	/* initialize the bgcin state variable structures before filling with
 	values from ini file */
 	if (presim_state_init(&bgcin.ws, &bgcin.cs, &bgcin.ns, &bgcin.cinit))
 	{
-		printf("Error in call to presim_state_init() from pointbgc()\n");
-		exit(1);
+		printf("ERROR in call to presim_state_init() from pointbgc.c ... Exiting()\n");
+		exit(101);
 	}
 
-
-
+	/* initialization */
+	bgcin.ctrl.simyr = 0;								
+	bgcin.ctrl.yday = 0;								
+	bgcin.ctrl.plantyr = -1;								
+	bgcin.ctrl.spinyears = 0;							
+	bgcin.ctrl.month = 1;								
+	bgcin.ctrl.day = 1;									
+	bgcin.ctrl.CNerror = 0;
+	bgcin.ctrl.gwd_act=DATA_GAP;
+	bgcin.ctrl.limitevap_flag = 0;
+	bgcin.ctrl.limittransp_flag = 0;
+	bgcin.ctrl.limitMR_flag = 0;
+	bgcin.ctrl.limitSNSC_flag = 0;
+	bgcin.ctrl.limitleach_flag = 0;
+	bgcin.ctrl.limitdiffus_flag = 0;
+	bgcin.ctrl.pond_flag = 0;
+	bgcin.ctrl.notransp_flag = 0;
+	bgcin.ctrl.noMR_flag = 0;
+	bgcin.ctrl.grazingW_flag = 0;
+	bgcin.ctrl.condMOWerr_flag = 0;      
+	bgcin.ctrl.condIRGerr_flag = 0;        
+	bgcin.ctrl.prephen1_flag = 0;         
+	bgcin.ctrl.prephen2_flag = 0;          
+	bgcin.ctrl.bareground_flag = 0;
+	bgcin.ctrl.vegper_flag = 0;
+	
 
 	/******************************
 	**                           **
@@ -72,228 +102,182 @@ int main(int argc, char *argv[])
 	and store as init.name */
 	if (argc != 2)
 	{
-		printf("usage: <executable name>  <initialization file name>\n");
-		exit(1);
+		printf("ERROR in reading the main init file from command line. Exiting\n");
+		printf("Correct usage: <executable name>  <initialization file name>\n");
+		exit(102);
 	}
 	strcpy(init.name, argv[1]);
 
 	/* open the main init file for ascii read and check for errors */
-	if (file_open(&init,'i'))
+	if (file_open(&init,'i',1))
 	{
-		printf("Error opening init file, pointbgc.c\n");
-		exit(1);
+		printf("ERROR opening init file, pointbg.c ... Exiting\n");
+		exit(103);
 	}
 
 	/* read the header string from the init file */
 	if (fgets(point.header, 100, init.ptr)==NULL)
 	{
-		printf("Error reading header string: pointbgc.c\n");
-		exit(1);
+		printf("ERROR reading header string: pointbgc.c ... Exiting\n");
+		exit(201);
 	}
 
 	/* open met file, discard header lines */
-	if (met_init(init, &point))
+	errflag = met_init(init, &point);
+	if (errflag)
 	{
-		printf("Error in call to met_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to met_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 
 	/* read restart control parameters */
-	if (restart_init(init, &restart))
+	errflag = restart_init(init, &restart);
+	if (errflag)
 	{
-		printf("Error in call to restart_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to restart_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 
 	/* read simulation timing control parameters */
-	if (time_init(init, &(bgcin.ctrl)))
+	errflag = time_init(init, &(bgcin.ctrl));
+	if (errflag)
 	{
-		printf("Error in call to time_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to time_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 	
-	/* read scalar climate change parameters */
-	if (scc_init(init, &scc))
-	{
-		printf("Error in call to scc_init() from pointbgc.c... Exiting\n");
-		exit(1);
-	}
 	
 	/* read CO2 control parameters */
-	if (co2_init(init, &(bgcin.co2), bgcin.ctrl.simyears))
+	errflag = co2_init(init, &(bgcin.co2), &(bgcin.ctrl));
+	if (errflag)
 	{
-		printf("Error in call to co2_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to co2_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 
 
 	/* read varied nitrogen deposition block */
-	if (ndep_init(init, &bgcin.ndep, bgcin.ctrl.simyears))
+	errflag = ndep_init(init, &bgcin.ndep, &(bgcin.ctrl));
+	if (errflag)
 	{
-		printf("Error in call to ndep_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to ndep_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 
 
 	/* read site constants */
-	if (sitec_init(init, &bgcin.sitec))
+	errflag = sitec_init(init, &bgcin.sitec);
+	if (errflag)
 	{
-		printf("Error in call to sitec_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to sitec_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 	
+	/* read soil properties */
+	errflag = sprop_init(init, &bgcin.sprop, &bgcin.ctrl);
+	if (errflag)
+	{
+		printf("ERROR in call to sprop_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
+	}
 	
 	/* read ecophysiological constants */
-	if (epc_init(init, &bgcin.epc, &bgcin.GSI, &bgcin.ctrl))
+	errflag = epc_init(init, &bgcin.epc, &bgcin.ctrl, 1);
+	if (errflag)
 	{
-		printf("Error in call to epc_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to epc_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 
+	/* read management file with management information */
+	errflag = mgm_init(init, &bgcin.ctrl, &bgcin.epc, &bgcin.FRZ, &bgcin.GRZ, &bgcin.HRV, &bgcin.MOW, &bgcin.PLT, &bgcin.PLG, &bgcin.THN, &bgcin.IRG, &output);
+	if (errflag)
+	{
+		printf("ERROR in call to mgm_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
+	}
+
+	/* read simulation control flags */
+	errflag = simctrl_init(init, &bgcin.epc, &bgcin.ctrl, &bgcin.PLT);
+	if (errflag)
+	{
+		printf("ERROR in call to simctrl_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
+	}
 
 	/* initialize water state structure */
-	if (wstate_init(init, &bgcin.sitec, &bgcin.ws))
+	errflag = wstate_init(init, &bgcin.sitec, &bgcin.sprop, &bgcin.ws);
+	if (errflag)
 	{
-		printf("Error in call to wstate_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to wstate_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 
 	/* initialize carbon and nitrogen state structures */
-	if (cnstate_init(init, &bgcin.epc, &bgcin.cs, &bgcin.cinit,
-		&bgcin.ns))
+	errflag = cnstate_init(init, &bgcin.epc, &bgcin.cs, &bgcin.cinit, &bgcin.ns);
+	if (errflag)
 	{
-		printf("Error in call to cstate_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to cstate_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
   
+	/* read scalar climate change parameters */
+	errflag = scc_init(init, &scc);
+	if (errflag)
+	{
+		printf("ERROR in call to scc_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
+	}
+
+	/* read conditional management strategies parameters */
+	errflag = conditionalMGM_init(init, &bgcin.ctrl, &bgcin.IRG, &bgcin.MOW);
+	if (errflag)
+	{
+		printf("ERROR in call to scc_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
+	}
 
 	/* read the output control information */
-	if (output_init(init, &output))
+	errflag = output_init(init, &output);
+	if (errflag)
 	{
-		printf("Error in call to output_init() from pointbgc.c... Exiting\n");
-		exit(1);
+		printf("ERROR in call to output_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 	
-	 /* -------------------------------------------------------------------------*/
-	/* MANAGEMENT SECTION - Hidy 2012.. */
-	
-	/* read the planting information */
-	if (planting_init(init, &bgcin.ctrl, &bgcin.PLT))
-	{
-		printf("Error in call to planting_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading planting section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
 
-	/* read the thinning  information */
-	if (thinning_init(init, &bgcin.ctrl, &bgcin.THN))
-	{
-		printf("Error in call to thinning_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading thinning section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
-
-	/* read the mowing  information */
-	if (mowing_init(init, &bgcin.ctrl, &bgcin.MOW))
-	{
-		printf("Error in call to mowing_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading mowing section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
-
-	/* read the grazing information */
-	if (grazing_init(init, &bgcin.ctrl, &bgcin.GRZ))
-	{
-		printf("Error in call to grazing_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading grazing section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
-
-	/* read the harvesting information */
-	if (harvesting_init(init, &bgcin.ctrl, &bgcin.HRV))
-	{
-		printf("Error in call to harvesting_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading harvesting section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
-
-	/* read the harvesting information */
-	if (ploughing_init(init, &bgcin.ctrl, &bgcin.PLG))
-	{
-		printf("Error in call to ploughing_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading ploughing section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
-
-	/* read the fertilizing  information */
-	if (fertilizing_init(init, &bgcin.ctrl, &bgcin.FRZ))
-	{
-		printf("Error in call to fertilizing_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading fertilizing section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
-
-	/* read the irrigation information */
-	if (irrigation_init(init, &bgcin.ctrl, &bgcin.IRG))
-	{
-		printf("Error in call to irrigation_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading irrigation section of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
-	}
 	
 	/* -------------------------------------------------------------------------*/
 
 	/* read final line out of init file to test for proper file structure */
-	if (end_init(init))
+	errflag = end_init(init);
+	if (errflag)
 	{
-		printf("Error in call to end_init() from pointbgc.c... exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading final line of INI file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
+		printf("ERROR in call to end_init() from pointbgc.c... exiting\n");
+		exit(errflag);
 	}
 	fclose(init.ptr);
 
 	/* read meteorology file, build metarr arrays, compute running avgs */
-	if (metarr_init(point.metf, &bgcin.metarr, &scc, &bgcin.sitec, bgcin.ctrl.metyears))
+	errflag = metarr_init(&point, &bgcin.metarr, &scc, &bgcin.sitec, &bgcin.ctrl);
+	if (errflag)
 	{
-		printf("Error in call to metarr_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading meteorological file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
-		exit(1);
+		printf("ERROR in call to metarr_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 	fclose(point.metf.ptr);
 
 	/* read groundwater depth if it is available */
-	if (groundwater_init(&bgcin.sitec, &bgcin.ctrl))
+	errflag = groundwater_init(&bgcin.sitec, &bgcin.ctrl);
+	if (errflag)
 	{
-		printf("Error in call to groundwater_init() from pointbgc.c... Exiting\n");
-		fprintf(output.log_file.ptr, "ERROR in reading groundwater file\n");
-		fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
-		fprintf(output.log_file.ptr, "0\n");
+		printf("ERROR in call to groundwater_init() from pointbgc.c... Exiting\n");
+		exit(errflag);
 	}
 	
 
 
-	/* copy some of the info from input structure to bgc simulation control
-	structure */
+	/* copy some of the info from input structure to bgc simulation control structure */
  	bgcin.ctrl.onscreen = output.onscreen;
 	bgcin.ctrl.dodaily = output.dodaily;
 	bgcin.ctrl.domonavg = output.domonavg;
@@ -302,30 +286,20 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.ndayout = output.ndayout;
 	bgcin.ctrl.nannout = output.nannout;
 	bgcin.ctrl.daycodes = output.daycodes;
+	bgcin.ctrl.daynames = output.daynames;
 	bgcin.ctrl.anncodes = output.anncodes;
+	bgcin.ctrl.annnames = output.annnames;
 	bgcin.ctrl.read_restart = restart.read_restart;
 	bgcin.ctrl.write_restart = restart.write_restart;
-	bgcin.ctrl.keep_metyr = restart.keep_metyr;
-	bgcin.ctrl.GSI_flag = bgcin.GSI.GSI_flag;		/* do GSI calc - Hidy 2009.*/
-	bgcin.ctrl.FRZ_flag = bgcin.FRZ.FRZ_flag;		/* do FRZ - Hidy 2009.*/
-	bgcin.ctrl.THN_flag = bgcin.THN.THN_flag;       /* do MOW - Hidy 2009.*/
-	bgcin.ctrl.MOW_flag = bgcin.MOW.MOW_flag;       /* do MOW - Hidy 2009.*/
-	bgcin.ctrl.GRZ_flag = bgcin.GRZ.GRZ_flag;       /* do GR - Hidy 2009.*/
-	bgcin.ctrl.HRV_flag = bgcin.HRV.HRV_flag;       /* do HRV - Hidy 2009.*/
-	bgcin.ctrl.PLG_flag = bgcin.PLG.PLG_flag;       /* do PL - Hidy 2009.*/
-	bgcin.ctrl.PLT_flag = bgcin.PLT.PLT_flag;       /* do PLT - Hidy 2009.*/
-	bgcin.ctrl.IRG_flag = bgcin.IRG.IRG_flag;       /* do PLT - Hidy 2009.*/
-	bgcin.ctrl.simyr = 0;							/* counter - Hidy 2010.*/
-	bgcin.ctrl.yday = 0;							/* counter - Hidy 2010.*/
-	bgcin.ctrl.spinyears = 0;						/* counter - Hidy 2010.*/
+	bgcin.ctrl.GSI_flag = bgcin.epc.GSI_flag;			
+	bgcin.ctrl.condIRG_flag = bgcin.IRG.condIRG_flag;  
+	bgcin.ctrl.condMOW_flag = bgcin.MOW.condMOW_flag;   
 
 	/* copy the output file structures into bgcout */
 	if (output.dodaily) bgcout.dayout = output.dayout;
 	if (output.domonavg) bgcout.monavgout = output.monavgout;
 	if (output.doannavg) bgcout.annavgout = output.annavgout;
 	if (output.doannual) bgcout.annout = output.annout;
-	bgcout.anntext = output.anntext;
-	bgcout.control_file = output.control_file;
 	bgcout.log_file = output.log_file;
 	
 	
@@ -333,8 +307,7 @@ int main(int argc, char *argv[])
 	/* if using an input restart file, read a record */
 	if (restart.read_restart)
 	{
-		fread(&(bgcin.restart_input),sizeof(restart_data_struct),1,
-			restart.in_restart.ptr);
+		fread(&(bgcin.restart_input),sizeof(restart_data_struct),1,restart.in_restart.ptr);
 	}
 
 	/*********************
@@ -347,16 +320,19 @@ int main(int argc, char *argv[])
 	/* either call the spinup code or the normal simulation code */
 	if (bgcin.ctrl.spinup)
 	{
-	 	if (spinup_bgc(&bgcin, &bgcout))
+		errflag = spinup_bgc(&bgcin, &bgcout);
+	 	if (errflag)
 		{
-			printf("Error in call to bgc()\n");
+			fprintf(output.log_file.ptr, "\n");
 			fprintf(output.log_file.ptr, "ERROR in spinup run\n");
+			fprintf(output.log_file.ptr, "error code: %i\n", errflag);
 			fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
 			fprintf(output.log_file.ptr, "0\n");
-			exit(1);
+			exit(errflag);
 		}
 		else
 		{
+			fprintf(output.log_file.ptr, "\n");
 			fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
 			fprintf(output.log_file.ptr, "1\n");
 		}
@@ -364,16 +340,20 @@ int main(int argc, char *argv[])
 	}
 	else
 	{   
-		if (bgc(&bgcin, &bgcout))
+		errflag = bgc(&bgcin, &bgcout);
+		if (errflag)
 		{
-			printf("Error in call to bgc()\n");
+			fprintf(output.log_file.ptr, "\n");
 			fprintf(output.log_file.ptr, "ERROR in normal run\n");
+			fprintf(output.log_file.ptr, "error code: %i\n", errflag);
+			fprintf(output.log_file.ptr, "\n");
 			fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
 			fprintf(output.log_file.ptr, "0\n");
-			exit(1);
+			exit(errflag);
 		}
 		else
 		{
+			fprintf(output.log_file.ptr, "\n");
 			fprintf(output.log_file.ptr, "SIMULATION STATUS [0 - failure; 1 - success]\n");
 			fprintf(output.log_file.ptr, "1\n");
 		}
@@ -405,9 +385,118 @@ int main(int argc, char *argv[])
 	free(bgcin.metarr.par);
 	free(bgcin.metarr.dayl);
 
+	if(bgcin.PLT.PLT_num)
+	{
+		free(bgcin.PLT.PLTyear_array);  
+		free(bgcin.PLT.PLTmonth_array); 
+		free(bgcin.PLT.PLTday_array); 
+		free(bgcin.PLT.germ_depth_array); 
+		free(bgcin.PLT.n_seedlings_array); 
+		free(bgcin.PLT.weight_1000seed_array); 
+		free(bgcin.PLT.seed_carbon_array); 
+		free(bgcin.PLT.filename_array);
+	}
+
+	if (bgcin.THN.THN_num)
+	{
+		free(bgcin.THN.THNyear_array);  
+		free(bgcin.THN.THNmonth_array); 
+		free(bgcin.THN.THNday_array); 
+		free(bgcin.THN.thinningrate_w_array); 
+		free(bgcin.THN.thinningrate_nw_array); 
+		free(bgcin.THN.transpcoeff_w_array); 
+		free(bgcin.THN.transpcoeff_nw_array); 
+	}
+
+	if (bgcin.MOW.MOW_num)
+	{
+		free(bgcin.MOW.MOWyear_array);  
+		free(bgcin.MOW.MOWmonth_array); 
+		free(bgcin.MOW.MOWday_array); 
+		free(bgcin.MOW.LAI_limit_array); 
+		free(bgcin.MOW.transportMOW_array); 
+	}
+
+	if (bgcin.GRZ.GRZ_num)
+	{
+		free(bgcin.GRZ.GRZstart_year_array);  
+		free(bgcin.GRZ.GRZstart_month_array); 
+		free(bgcin.GRZ.GRZstart_day_array); 
+		free(bgcin.GRZ.GRZend_year_array);  
+		free(bgcin.GRZ.GRZend_month_array); 
+		free(bgcin.GRZ.GRZend_day_array); 
+		free(bgcin.GRZ.trampling_effect); 
+		free(bgcin.GRZ.weight_LSU); 
+		free(bgcin.GRZ.stocking_rate_array); 
+		free(bgcin.GRZ.DMintake_array);
+		free(bgcin.GRZ.prop_DMintake2excr_array); 
+		free(bgcin.GRZ.prop_excr2litter_array); 
+		free(bgcin.GRZ.DM_Ccontent_array); 
+		free(bgcin.GRZ.EXCR_Ncontent_array);
+		free(bgcin.GRZ.EXCR_Ccontent_array); 
+		free(bgcin.GRZ.Nexrate); 
+		free(bgcin.GRZ.EFman_N2O); 
+		free(bgcin.GRZ.EFman_CH4);
+		free(bgcin.GRZ.EFfer_CH4);
+	}
+
+	if (bgcin.HRV.HRV_num)
+	{
+		free(bgcin.HRV.HRVyear_array);  
+		free(bgcin.HRV.HRVmonth_array); 
+		free(bgcin.HRV.HRVday_array); 
+		free(bgcin.HRV.snagprop_array); 
+		free(bgcin.HRV.transportHRV_array); 
+	}
+
+	if (bgcin.PLG.PLG_num)
+	{
+		free(bgcin.PLG.PLGyear_array);  
+		free(bgcin.PLG.PLGmonth_array); 
+		free(bgcin.PLG.PLGday_array); 
+		free(bgcin.PLG.PLGdepths_array); 
+	}
+
+	if (bgcin.FRZ.FRZ_num)
+	{
+		free(bgcin.FRZ.FRZyear_array);  
+		free(bgcin.FRZ.FRZmonth_array); 
+		free(bgcin.FRZ.FRZday_array); 
+		free(bgcin.FRZ.FRZdepth_array); 
+		free(bgcin.FRZ.fertilizer_array); 
+		free(bgcin.FRZ.DM_array); 
+		free(bgcin.FRZ.NO3content_array); 
+		free(bgcin.FRZ.NH4content_array); 
+		free(bgcin.FRZ.UREAcontent_array); 
+		free(bgcin.FRZ.orgCcontent_array); 
+		free(bgcin.FRZ.orgNcontent_array);
+		free(bgcin.FRZ.litr_flab_array); 
+		free(bgcin.FRZ.litr_fcel_array); 
+		free(bgcin.FRZ.EFfert_N2O);
+	}
+
+	if (bgcin.IRG.IRG_num)
+	{
+		free(bgcin.IRG.IRGyear_array);  
+		free(bgcin.IRG.IRGmonth_array); 
+		free(bgcin.IRG.IRGday_array); 
+		free(bgcin.IRG.IRGquantity_array); 
+	}
 	if (bgcin.co2.varco2) free(bgcin.co2.co2ppm_array);
-	free(output.anncodes);
-	free(output.daycodes);
+	if (bgcin.co2.varco2) free(bgcin.co2.co2yrs_array);
+	if (bgcin.ndep.varndep) free(bgcin.ndep.Ndep_array);
+	if (bgcin.ndep.varndep) free(bgcin.ndep.Nyrs_array);
+
+	if (bgcin.ctrl.varSGS_flag) free(bgcin.epc.sgs_array);
+	if (bgcin.ctrl.varEGS_flag) free(bgcin.epc.egs_array);
+	if (bgcin.ctrl.varWPM_flag) free(bgcin.epc.wpm_array);
+	if (bgcin.ctrl.varMSC_flag) free(bgcin.epc.msc_array);
+	if (bgcin.ctrl.GWD_flag)    free(bgcin.sitec.gwd_array);
+
+	if (output.ndayout != 0) free(output.daycodes);
+	if (output.ndayout != 0) free(output.daynames);
+	if (output.nannout != 0) free(output.anncodes);
+	if (output.nannout != 0) free(output.annnames);
 	
 	/* close files */
 	if (restart.read_restart) fclose(restart.in_restart.ptr);
@@ -416,8 +505,11 @@ int main(int argc, char *argv[])
 	if (output.domonavg) fclose(output.monavgout.ptr);
 	if (output.doannavg) fclose(output.annavgout.ptr);
 	if (output.doannual) fclose(output.annout.ptr);
-	fclose(output.anntext.ptr);
+
 	fclose(output.log_file.ptr);
-	
- } /* end of main */
+
+	return (errflag); 
+
+    /* end of main */	
+ } 
 	

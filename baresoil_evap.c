@@ -3,11 +3,11 @@ baresoil_evap.c
 daily bare soil evaporation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
+Biome-BGCMuSo v6.0.
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Numerical Terradynamic Simulation Group (NTSG)
+School of Forestry, University of Montana
+Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -16,20 +16,22 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int baresoil_evap(const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
+int baresoil_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
 {
-	int ok=1;
+	int errflag=0;
 	double dsr;              /* number of days since rain */
 	double rbl;              /* (m/s) boundary layer resistance */
 	double pot_evap;         /* (kg/m2/s) potential evaporation (daytime) */
 	double evap;             /* (kg/m2/s) actual evaporation (daytime) */
-	pmet_struct pmet_in;     /* input structure for penmon function */
 	double rcorr;            /* correction factor for temp and pressure */
 	double ratio;            /* actual/potential evaporation for dry day */
+
+	pmet_struct pmet_in;     /* input structure for penmon function */
 
 	/* assign days since rain */
 	dsr = *dsr_ptr;
@@ -73,7 +75,7 @@ int baresoil_evap(const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
 		dsr = 0.0;
 		
 		/* soil evaporation proceeds at potential rate */
-		evap = 0.6 * pot_evap;
+		evap = sprop->BSE_PE_prop * pot_evap;
 	}
 	else
 	{
@@ -103,6 +105,6 @@ int baresoil_evap(const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr)
 	wf->soilw_evap = evap;
 	*dsr_ptr = dsr;
 	
-	return(!ok);
+	return(errflag);
 }
 

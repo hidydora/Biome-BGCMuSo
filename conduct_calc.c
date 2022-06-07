@@ -2,11 +2,12 @@
 conduct_calc.c
 Calculation of conductance values based on limitation factors (in original BBGC this subroutine is partly included in canopy_et.c)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Original code: Copyright 2000, Peter E. Thornton
+Numerical Terradynamic Simulation Group, The University of Montana, USA
+Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -15,6 +16,7 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_func.h"
 #include "bgc_constants.h"
@@ -22,28 +24,16 @@ Hungarian Academy of Sciences
 int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, 
                  epvar_struct* epv, int simyr)
 {
-	int ok=1;
-	double gl_bl, gl_c, gl_s_sun, gl_s_shade;
-	double gl_e_wv, gl_t_wv_sun, gl_t_wv_shade, gl_sh;
-	double gc_e_wv, gc_sh;
-	double m_ppfd_sun, m_ppfd_shade;
-	double m_tmin, m_co2, m_vpd, m_final_sun, m_final_shade;
-	double gcorr;
-
-	/* Hidy 2013 - changing MSC value */
-	double max_conduct;
-
-
-	/* Hidy 2010. - multiplier for soil properties in multilayer soil (instead of psi: vwc) */
+	int errflag=0;	
 	int layer;
-	double m_vwcR_layer; 
-	double vwc_ratio;	
-	double m_soilstress_avg = 0;
+	
+	double gl_bl, gl_c, gl_s_sun, gl_s_shade, gl_e_wv, gl_t_wv_sun, gl_t_wv_shade, gl_sh, gc_e_wv, gc_sh;
+	double m_ppfd_sun, m_ppfd_shade, m_tmin, m_co2, m_vpd, m_final_sun, m_final_shade, gcorr;
+	double max_conduct, m_vwcR_layer, vwc_ratio, m_soilstress_avg, p_co2;
 
-	/* Hidy 2015 - m_co2 */
-	double p_co2;
-
-
+	gl_bl=gl_c=gl_s_sun=gl_s_shade=gl_e_wv=gl_t_wv_sun=gl_t_wv_shade=gl_sh=gc_e_wv=gc_sh=0;
+	m_ppfd_sun=m_ppfd_shade=m_tmin=m_co2=m_vpd=m_final_sun=m_final_shade=gcorr=0;
+	max_conduct=m_vwcR_layer=vwc_ratio=m_soilstress_avg=p_co2=0;
 	
 	/* temperature and pressure correction factor for conductances */
 	gcorr = pow((metv->tday+273.15)/293.15, 1.75) * 101300/metv->pa;
@@ -95,45 +85,28 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 		m_co2 = 1;
 
 
-	/* Hidy 2015 - changing MSC value taking into account the effect of CO2 concentration */
-	if (ctrl->varMSC_flag && ctrl->spinup != 1)
+	/* changing MSC value taking into account the effect of CO2 concentration */
+	if (ctrl->varMSC_flag)
 		max_conduct=epc->msc_array[simyr] * m_co2;
 	else
 		max_conduct=epc->gl_smax * m_co2;
 
 	/* ******************/
 	/* 2. Soil water content
-		  Hidy 2014 - calculate the multipiers for soil properties (soil water content ratio) in multilayer soil  - Jarvis (1989)*/	
+		  calculate the multipiers for soil properties (soil water content ratio) in multilayer soil  - Jarvis (1989)*/	
 
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	/* m_soistress calculation based on VWC or transpiration demand-possibitiy */
+	if (epc->soilstress_flag == 0)
 	{
-
-		if (epv->vwc[layer] > sitec->vwc_wp[layer])
-			vwc_ratio  = (epv->vwc[layer] - sitec->vwc_wp[layer])/(sitec->vwc_sat[layer] - sitec->vwc_wp[layer]);
-		else
-			vwc_ratio  = 0;
-
-		if (vwc_ratio < epv->vwc_ratio_crit1[layer])    /* water stress due to drought */
-		{
-			m_vwcR_layer = vwc_ratio / epv->vwc_ratio_crit1[layer];
-		}
-		else
-		{
-			if (epv->vwc_ratio_crit1[layer] <= vwc_ratio && vwc_ratio <= epv->vwc_ratio_crit2[layer])    /* no water stress */
-			{
-				m_vwcR_layer = 1;
-			}	
-			else
-			{
-			   m_vwcR_layer = (1.01 - vwc_ratio) / (1.01 - epv->vwc_ratio_crit2[layer]);
-			}
-		}
-	
-		epv->m_soilstress_layer[layer] =  m_vwcR_layer;
-
-		m_soilstress_avg	 += epv->m_soilstress_layer[layer] * epv->rootlength_prop[layer];
-
+		for (layer = 0; layer < N_SOILLAYERS; layer++)
+		{	
+			m_soilstress_avg	 += epv->m_soilstress_layer[layer] * epv->rootlength_prop[layer];
+		}	
 	}
+	/* if soilstress is calculated based on transpiration demand-possibitiy, m_soilstress is calculated in canopy_et.c */ 
+	else
+		m_soilstress_avg = 1;
+
 
 	/* ******************/
 	/* 3. freezing night minimum temperature multiplier */
@@ -197,7 +170,8 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	epv->gl_t_wv_shade = gl_t_wv_shade;
 	
 	/* assign output variables */
-	epv->max_conduct			= max_conduct;
+	epv->gcorr          = gcorr;
+	epv->max_conduct	= max_conduct;
 	epv->m_ppfd_sun     = m_ppfd_sun;
 	epv->m_ppfd_shade   = m_ppfd_shade;
     epv->m_soilstress   = m_soilstress_avg;
@@ -215,5 +189,5 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	epv->gc_sh			= gc_sh;
 	
 	
-    return (!ok);
+    return (errflag);
 }

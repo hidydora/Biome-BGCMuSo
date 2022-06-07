@@ -3,11 +3,12 @@ state_init.c
 Initialize water, carbon, and nitrogen state variables for pointbgc simulation  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Original code: Copyright 2000, Peter E. Thornton
+Numerical Terradynamic Simulation Group, The University of Montana, USA
+Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -21,58 +22,58 @@ Hungarian Academy of Sciences
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
 
-int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws)
+int wstate_init(file init, const siteconst_struct* sitec, const soilprop_struct* sprop, wstate_struct* ws)
 {
-	int ok = 1;
+	int errflag=0;
 	int layer;
 	char key[] = "W_STATE";
-	char keyword[80];
+	char keyword[STRINGSIZE];
 	double prop_fc = 0;
 	
 	
 	/* read water state variable initialization values from *.init */
-	if (ok && scan_value(init, keyword, 's'))
+	if (!errflag && scan_value(init, keyword, 's'))
 	{
-		printf("Error reading keyword, wstate_init()\n");
-		ok=0;
+		printf("ERROR reading keyword, wstate_init()\n");
+		errflag=212;
 	}
-	if (ok && strcmp(keyword,key))
+	if (!errflag && strcmp(keyword,key))
 	{
 		printf("Expexting keyword --> %s in %s\n",key,init.name);
-		ok=0;
+		errflag=212;
 	}
 
-	if (ok && scan_value(init, &ws->snoww, 'd'))
+	if (!errflag && scan_value(init, &ws->snoww, 'd'))
 	{
-		printf("Error reading snowpack, wstate_init()\n");
-		ok=0;
+		printf("ERROR reading snowpack, wstate_init()\n");
+		errflag=21201;
 	}
-	if (ok && scan_value(init, &prop_fc, 'd'))
+	if (!errflag && scan_value(init, &prop_fc, 'd'))
 	{
-		printf("Error reading initial soilwater (FCprop), wstate_init()\n");
-		ok=0;
+		printf("ERROR reading initial soilwater (FCprop), wstate_init()\n");
+		errflag=21202;
 	}
 	
 	/* check that prop_fc is an acceptable proportion  */
-	if (ok && (prop_fc < 0.0))
+	if (!errflag && (prop_fc < 0.0))
 	{
-		printf("Error: initial soil water proportion must be >= 0.0 and <= 1.0\n");
-		ok=0;
+		printf("ERROR: initial soil water proportion must be >= 0.0 and <= 1.0\n");
+		errflag=21203;
 	}
-	if (ok)
+	if (!errflag)
 	{
 		/* calculate initial soilwater in kg/m2 from proportion of
 		field capacity volumetric water content, depth, and density of water */
 		for (layer = 0; layer < N_SOILLAYERS; layer ++)
 		{
-			if (prop_fc > sitec->vwc_sat[layer]/sitec->vwc_sat[layer])
+			if (prop_fc > sprop->vwc_sat[layer]/sprop->vwc_sat[layer])
 			{
-				printf("Error: initial soil water proportion must less than saturation proportion: %lf\n", sitec->vwc_sat[layer]/sitec->vwc_fc[layer]);
-				ok=0;
+				printf("ERROR: initial soil water proportion must less than saturation proportion: %lf\n", sprop->vwc_sat[layer]/sprop->vwc_fc[layer]);
+				errflag=21402;
 			}
 			else
 			{
-				ws->soilw[layer] = prop_fc * sitec->vwc_fc[layer] * (sitec->soillayer_thickness[layer]) * 1000.0;
+				ws->soilw[layer] = prop_fc * sprop->vwc_fc[layer] * (sitec->soillayer_thickness[layer]) * 1000.0;
 				ws->soilw_SUM += ws->soilw[layer];
 			}
 				
@@ -82,57 +83,76 @@ int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws)
 	
 	}
 	
-	return (!ok);
+	return (errflag);
 }
 
-int cnstate_init(file init, const epconst_struct* epc, cstate_struct* cs,
-cinit_struct* cinit, nstate_struct* ns)
+int cnstate_init(file init, const epconst_struct* epc, cstate_struct* cs, cinit_struct* cinit, nstate_struct* ns)
 {
-	int ok=1;
+	int errflag=0;
 	int layer, scanflag;
 	char key1[] = "CN_STATE";
-	char keyword[80];
+	char keyword[STRINGSIZE];
 
 	/* 1. read carbon state variable initial values from *.init */
-	if (ok && scan_value(init, keyword, 's'))
+	if (!errflag && scan_value(init, keyword, 's'))
 	{
-		printf("Error reading keyword, cstate_init()\n");
-		ok=0;
+		printf("ERROR reading keyword, cstate_init()\n");
+		errflag=213;
 	}
-	if (ok && strcmp(keyword,key1))
+	if (!errflag && strcmp(keyword,key1))
 	{
 		printf("Expecting keyword --> %s in %s\n",key1,init.name);
-		ok=0;
+		errflag=213;
 	}
-	if (ok && scan_value(init, &cinit->max_leafc, 'd'))
+	if (!errflag && scan_value(init, &cinit->max_leafc, 'd'))
 	{
-		printf("Error reading first-year maximum leaf carbon, cstate_init()\n");
-		ok=0;
+		printf("ERROR reading first-year maximum leaf carbon, cstate_init()\n");
+		errflag=21301;
 	}
-	if (ok && scan_value(init, &cinit->max_stemc, 'd'))
+	if (!errflag && scan_value(init, &cinit->max_frootc, 'd'))
 	{
-		printf("Error reading first-year maximum stem carbon, cstate_init()\n");
-		ok=0;
+		printf("ERROR reading first-year maximum fine root carbon, cstate_init()\n");
+		errflag=21301;
+	}
+	if (!errflag && scan_value(init, &cinit->max_fruitc, 'd'))
+	{
+		printf("ERROR reading first-year max_fruitc, cstate_init()\n");
+		errflag=21301;
+	}
+	if (!errflag && scan_value(init, &cinit->max_softstemc, 'd'))
+	{
+		printf("ERROR reading first-year max_sofstemc, cstate_init()\n");
+		errflag=21301;
+	}
+	if (!errflag && scan_value(init, &cinit->max_livestemc, 'd'))
+	{
+		printf("ERROR reading first-year max_livestemc, cstate_init()\n");
+		errflag=21301;
+	}
+	if (!errflag && scan_value(init, &cinit->max_livecrootc, 'd'))
+	{
+		printf("ERROR reading first-year max_livecrootc, cstate_init()\n");
+		errflag=21301;
 	}
 
 	/*--------------------------------------------------*/
-	/* 2. read the cwdc initial values in multilayer soil (Hidy 2016) */
+	/* 2. read the cwdc initial values in multilayer soil  */
 
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->cwdc[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->cwdc[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading cwdc in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading cwdc in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
     /* to avoid dividing by 0: if no deadwood, cwdn is zero. */
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		if (ok && epc->deadwood_cn > 0.0) 
+		if (!errflag && epc->deadwood_cn > 0.0) 
 			ns->cwdn[layer] = cs->cwdc[layer]/epc->deadwood_cn;
 		else
 			ns->cwdn[layer] = 0;
@@ -140,15 +160,15 @@ cinit_struct* cinit, nstate_struct* ns)
 
 
 	/*--------------------------------------------------*/
-	/* 3. read the litter carbon pool initial values in multilayer soil (Hidy 2016) */
+	/* 3. read the litter carbon pool initial values in multilayer soil  */
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->litr1c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->litr1c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading litter carbon in labile pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading litter carbon in labile pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 	
@@ -156,10 +176,10 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->litr2c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->litr2c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading litter carbon in unshielded cellulose pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading litter carbon in unshielded cellulose pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 	
@@ -167,10 +187,10 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->litr3c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->litr3c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading litter carbon in shielded cellulose pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading litter carbon in shielded cellulose pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
@@ -178,10 +198,10 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->litr4c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->litr4c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading litter carbon in lignin pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading litter carbon in lignin pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
@@ -189,7 +209,6 @@ cinit_struct* cinit, nstate_struct* ns)
 	/* calculate the litter nitrogen pool initial values for cellulose and and lignin pools, 
 	using the leaf litter C:N as the basis for determining N content in all litter components  */
 	
-	/* Hidy 2016 - multilayer soil */
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		ns->litr1n[layer] = cs->litr1c[layer] / epc->leaflitr_cn;
@@ -200,16 +219,16 @@ cinit_struct* cinit, nstate_struct* ns)
 
 
 	/*--------------------------------------------------*/
-	/* 4. read the soil carbon pool initial values in multilayer soil (Hidy 2016) */
+	/* 4. read the soil carbon pool initial values in multilayer soil  */
 
 	scanflag=0; 
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->soil1c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->soil1c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading fast microbial recycling carbon pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading fast microbial recycling carbon pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 		
@@ -217,10 +236,10 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->soil2c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->soil2c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading medium microbial recycling carbon pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading medium microbial recycling carbon pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
@@ -228,10 +247,10 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->soil3c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->soil3c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading slow microbial recycling carbon pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading slow microbial recycling carbon pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
@@ -240,15 +259,15 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(cs->soil3c[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(cs->soil3c[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading  recalcitrant SOM carbon pool in layer %i, cstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading  recalcitrant SOM carbon pool in layer %i, cstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
 
-	/* Hidy 2016 - multilayer soil */
+	/* multilayer soil */
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		ns->soil1n[layer] = cs->soil1c[layer]/SOIL1_CN;
@@ -262,10 +281,10 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(ns->litr1n[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(ns->litr1n[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading litter nitrogen in labile pool layer %i, cnstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading litter nitrogen in labile pool layer %i, cnstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
@@ -273,13 +292,24 @@ cinit_struct* cinit, nstate_struct* ns)
 	for (layer=0; layer<N_SOILLAYERS; layer++)
 	{
 		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (ok && scan_array(init, &(ns->sminn[layer]), 'd', scanflag))
+		if (!errflag && scan_array(init, &(ns->sminNH4[layer]), 'd', scanflag, 1))
 		{
-			printf("Error reading soil mineral nitrogen in layer %i, cnstate_init()\n", layer);
-			ok=0;
+			printf("ERROR reading soil mineral nitrogen (NH4 pool) in layer %i, cnstate_init()\n", layer);
+			errflag=21301;
+		}
+	}
+
+	scanflag=0; 
+	for (layer=0; layer<N_SOILLAYERS; layer++)
+	{
+		if (layer==N_SOILLAYERS-1) scanflag=1;
+		if (!errflag && scan_array(init, &(ns->sminNO3[layer]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading soil mineral nitrogen (NO3 pool) in layer %i, cnstate_init()\n", layer);
+			errflag=21301;
 		}
 	}
 
 
-	return (!ok);
+	return (errflag);
 }

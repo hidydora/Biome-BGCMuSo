@@ -3,9 +3,11 @@ smooth.c
 functions that perform smoothing on vectors
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
+Biome-BGCMuSo v6.0.
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
+Numerical Terradynamic Simulation Group (NTSG)
+School of Forestry, University of Montana
+Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -25,27 +27,27 @@ int run_avg(const double *input, double *output, int n, int w, int w_flag)
     */
 
     register int i,j;
-    int ok = 1;
+    int errflag=0;
     int *wt = 0;
     double total, sum;
 
     if (w>n)
     {
-        printf("Error: averaging window longer than input array\n");
-        ok=0;
+        printf("ERROR: averaging window longer than input array\n");
+        errflag=1;
     }
 
-    if (ok)
+    if (!errflag)
     {
 		wt = (int*) malloc(w * sizeof(int));
 		if (!wt)
 		{
     		printf("Allocation error in boxcar_smooth... Exiting\n");
-    		ok=0;
+    		errflag=1;
 		}
     }
 
-    if (ok)
+    if (!errflag)
     {
         if (w_flag)
             for (i=0 ; i<w ; i++)
@@ -80,7 +82,7 @@ int run_avg(const double *input, double *output, int n, int w, int w_flag)
         
         free(wt);
     }
-    return (!ok);
+    return (errflag);
 }
 
 /* boxcar_smooth() performs a windowed smoothing on the input array, returns
@@ -90,41 +92,41 @@ w = windowing width, w_flag (0=flat boxcar, 1=ramped boxcar, e.g. [1 2 3 2 1])
 
 int boxcar_smooth(double* input, double* output, int n, int w, int w_flag)
 {
-	int ok=1;
+	int errflag=0;
     int tail = 0;
 	int i,j;
     int* wt = 0;
     double total,sum;
 
-    if (ok && (w > n/2))
+    if (!errflag && (w > n/2))
     {
         printf("Boxcar window longer than 1/2 array length...\n");
         printf("Resize window and try again\n");
-        ok=0;
+        errflag=1;
     }
 
     /* establish the lengths of the boxcar tails */
-    if (ok)
+    if (!errflag)
     {
 	    if (!(w % 2))
 	        w += 1;
 	    tail = w/2;
 	}
 	
-	 if (ok)
+	 if (!errflag)
     {
 		wt = (int*) malloc(w * sizeof(int));
 		if (!wt)
 		{
     		printf("Allocation error in boxcar_smooth... Exiting\n");
-    		ok=0;
+    		errflag=1;
 		}
     }
 
     
     /* when w_flag != 0, use linear ramp to weight tails, 
     otherwise use constant weight */
-	if (ok)
+	if (!errflag)
 	{
 	    if (w_flag)
 	    {
@@ -174,7 +176,7 @@ int boxcar_smooth(double* input, double* output, int n, int w, int w_flag)
 		
 	} /* end if ok */
 	
-	return (!ok);
+	return (errflag);
 }   
 
 

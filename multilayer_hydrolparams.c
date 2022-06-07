@@ -4,9 +4,10 @@ calcultion of soil water potential, hydr. conductivity and hydr. diffusivity as 
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -15,22 +16,21 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, epvar_struct* epv)
+int multilayer_hydrolparams(const epconst_struct* epc,const siteconst_struct* sitec, const soilprop_struct* sprop, wstate_struct* ws, epvar_struct* epv)
 {
 	/* given a list of site constants and the soil water mass (kg/m2),
 	this function returns the soil water potential (MPa)
 	inputs:
 	ws.soilw				     (kg/m2) water mass per unit area
-	sitec.max_rootzone_depth     (m)     maximum depth of rooting zone               
-	sitec.soil_b				 (DIM)   slope of log(psi) vs log(rwc)
-	sitec.vwc_sat				 (DIM)   volumetric water content at saturation
-	sitec.psi_sat			   	(MPa)   soil matric potential at saturation
-	output:
-	psi						 (MPa)   soil matric potential
+	sprop.max_rootzone_depth     (m)     maximum depth of rooting zone               
+	sprop.soil_b				 (dimless)   slope of log(psi) vs log(rwc)
+	sprop.vwc_sat				 (m3/m3)   volumetric water content at saturation
+	sprop.psi_sat			   	(MPa)   soil matric potential at saturation
 
 	uses the relation:
 	psi = psi_sat * (vwc/vwc_sat)^(-b)
@@ -56,9 +56,8 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 
 	*/
 
-	int ok=1;
+	int errflag=0;
 	int layer;
-	double vwc_avg=0;
 
 
 	/* ***************************************************************************************************** */
@@ -71,30 +70,30 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 		/* convert kg/m2 --> m3/m2 --> m3/m3 */
 		epv->vwc[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 		
-		vwc_avg	  += epv->vwc[layer]    * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
 
 	   
 		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
-		epv->psi[layer]  = sitec->psi_sat[layer] * pow( (epv->vwc[layer] /sitec->vwc_sat[layer]), -1* sitec->soil_b[layer]);
+		epv->psi[layer]  = sprop->psi_sat[layer] * pow( (epv->vwc[layer] /sprop->vwc_sat[layer]), -1* sprop->soil_b[layer]);
 		
 	
 		/* pF from psi: cm from MPa */
 		epv->pF[layer] =log10(fabs(10000*epv->psi[layer] ));
 	
-     
+
 
 		/* CONTROL - unrealistic VWC content (higher than saturation value) */
-		if (epv->vwc[layer] > sitec->vwc_sat[layer])       
+		if (epv->vwc[layer] > sprop->vwc_sat[layer])       
 		{
-			if (epv->vwc[layer] - sitec->vwc_sat[layer] > 0.001)       
+			if (epv->vwc[layer] - sprop->vwc_sat[layer] > 0.001)       
 			{
-				printf("Fatal error: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
-				ok=0;	
+				printf("\n");
+				printf("ERROR: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
+				errflag=1;	
 			}
 			else
 			{
-				ws->deeppercolation_snk += epv->vwc[layer] - sitec->vwc_sat[layer];
-				epv->vwc[layer]         = sitec->vwc_sat[layer];
+				ws->deeppercolation_snk += epv->vwc[layer] - sprop->vwc_sat[layer];
+				epv->vwc[layer]         = sprop->vwc_sat[layer];
 				ws->soilw[layer]        = epv->vwc[layer] * sitec->soillayer_thickness[layer] * water_density;
 			}
 		}
@@ -103,13 +102,8 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 	}
 
 
+	 
 
-	epv->vwc_avg = vwc_avg;
-
-
-
-
-
-	return(!ok);
+	return(errflag);
 }
 

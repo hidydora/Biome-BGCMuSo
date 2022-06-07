@@ -3,11 +3,11 @@ prcp_route.c
 routing of daily precipitation to canopy, soil, snowpack
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
+Biome-BGCMuSo v6.0.
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Numerical Terradynamic Simulation Group (NTSG)
+School of Forestry, University of Montana
+Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -16,6 +16,7 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_func.h"
 #include "bgc_constants.h"
@@ -32,7 +33,7 @@ int prcp_route(const metvar_struct* metv, double precip_int_coef, double all_lai
 	There is no canopy interception of snow.
 	*/
 	
-	int ok=1;
+	int errflag=0;
 	double max_int;
 	double prcp, through;
 
@@ -65,5 +66,5 @@ int prcp_route(const metvar_struct* metv, double precip_int_coef, double all_lai
 		wf->prcp_to_snoww = prcp;     /* no interception */
 	}
 	
-	return(!ok);
+	return(errflag);
 }

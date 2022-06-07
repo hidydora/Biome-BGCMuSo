@@ -3,11 +3,12 @@ epc_init.c
 read epc file for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Original code: Copyright 2000, Peter E. Thornton
+Numerical Terradynamic Simulation Group, The University of Montana, USA
+Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 20.03.01 Galina Churkina added variable "sum" substituting  t1+t2+t3 in IF statement,
 which gave an error.
@@ -26,20 +27,22 @@ which gave an error.
 
 
 
-int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ctrl)
+int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromINI)
 {
-	int ok = 1;
-	int dofileclose = 1;
+	int errflag=0;
+	int dofilecloseEPC = 1;
 	double t1 = 0;
 	double t2 = 0;
 	double t3 = 0;
-	double diff = 0;
 	double t4,r1;
-	int i;
-	file temp, wpm_file, msc_file, sgs_file, egs_file; 	// Hidy 2011.
-	char key1[] = "EPC_FILE";
-	char key2[] = "ECOPHYS";
-	char keyword[80];
+	double sum;
+	int i, phenphase, scanflag;
+	file epc_file, wpm_file, msc_file, sgs_file, egs_file; 	
+	char key[] = "EPC_FILE";
+	char keyword[STRINGSIZE];
+	char header[STRINGSIZE];
+
+	
 
 	
 	/********************************************************************
@@ -49,179 +52,147 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 	**                                                                 **
 	********************************************************************/
 	
-	/* scan for the EPC file keyword, exit if not next */
-	if (ok && scan_value(init, keyword, 's'))
+	/* if EPC file reading occurs from INI  */
+	
+	if (EPCfromINI)
 	{
-		printf("Error reading keyword for control data\n");
-		ok=0;
+		/* scan for the EPC file keyword, exit if not next */
+		if (!errflag && scan_value(init, keyword, 's'))
+		{
+			printf("ERROR reading keyword for control data\n");
+			errflag=209;
+		}
+		if (!errflag && strcmp(keyword, key))
+		{
+			printf("Expecting keyword --> %s in file %s\n",key,init.name);
+			errflag=209;
+		}
+		/* open simple EPC file  */
+		if (!errflag && scan_open(init,&epc_file,'r',1)) 
+		{
+			printf("ERROR opening epconst file, epc_init()\n");
+			dofilecloseEPC = 0;
+			errflag=20900;
+		}
 	}
-	if (ok && strcmp(keyword, key1))
+	else
 	{
-		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		ok=0;
+		epc_file = init;
+		/* open simple EPC file  BALUUUS */
+		if (!errflag && file_open(&epc_file,'r',1)) 
+		{
+			printf("ERROR opening epconst file, epc_init()\n");
+			dofilecloseEPC = 0;
+			errflag=20900;
+		}
 	}
 
-	/* open file  */
-	if (ok && scan_open(init,&temp,'r')) 
+	/* first scan epc keyword to ensure proper *.epc format */
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error opening epconst file, epc_init()\n");
-		dofileclose = 0;
-		ok=0;
+		printf("ERROR reading keyword, epc_init()\n");
+		errflag=20900;
 	}
-	
-	/* first scan epc keyword to ensure proper *.init format */
-	if (ok && scan_value(temp, keyword, 's'))
-	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
-	}
-	if (ok && strcmp(keyword,key2))
-	{
-		printf("Expecting keyword --> %s in %s\n",key2,init.name);
-		ok=0;
-	}
-	/*---------------------------------------------------------------------------------------------------------------*/
+
+	/****************************************************************************************************************/
 	/* dividing line from file */ 
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading 1. dividing line, epc_init()\n");
+		errflag=20901;
 	}
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading 2. dividing line, epc_init()\n");
+		errflag=20901;
 	}
-	/*---------------------------------------------------------------------------------------------------------------*/
-	/* begin reading constants from *.init */
-	if (ok && scan_value(temp, &epc->woody, 'i'))
+	/****************************************************************************************************************/
+	/* FLAGS */
+	/****************************************************************************************************************/
+	if (!errflag && scan_value(epc_file, &epc->woody, 'i'))
 	{
-		printf("Error reading woody/non-woody flag, epc_init()\n");
-		ok=0;
+		printf("ERROR reading woody/non-woody flag, epc_init()\n");
+		errflag=20902;
 	}
-	if (ok && scan_value(temp, &epc->evergreen, 'i'))
+	if (!errflag && scan_value(epc_file, &epc->evergreen, 'i'))
 	{
-		printf("Error reading evergreen/deciduous flag, epc_init()\n");
-		ok=0;
+		printf("ERROR reading evergreen/deciduous flag, epc_init()\n");
+		errflag=20903;
 	}
-	if (ok && scan_value(temp, &epc->c3_flag, 'i'))
+	if (!errflag && scan_value(epc_file, &epc->c3_flag, 'i'))
 	{
-		printf("Error reading C3/C4 flag, epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->phenology_flag, 'i'))
-	{
-		printf("Error reading phenology flag, epc_init()\n");
-		ok=0;
-	}
-
-	/* temperature dependent q10 value */
-	if (ok && scan_value(temp, &epc->q10depend_flag, 'i'))
-	{
-		printf("Error reading q10depend_flag, epc_init()\n");
-		ok=0;
-	}
-	/* acclimation */
-	if (ok && scan_value(temp, &epc->acclimation_flag, 'i'))
-	{
-		printf("Error reading acclimation_flag, epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->CO2conduct_flag, 'i'))
-	{
-		printf("Error reading CO2conduct_flag, epc_init()\n");
-		ok=0;
-	}
-
-	/* get flag of GSI flag */
-	if (ok && scan_value(temp, &GSI->GSI_flag, 'i'))
-	{
-		printf("Error reading flag indicating usage of GSI file: epc_init()\n");
-		ok=0;
+		printf("ERROR reading C3/C4 flag, epc_init()\n");
+		errflag=20904;
 	}
 
 	
-	/* soil temperature calculation flag */
-	if (ok && scan_value(temp, &epc->STCM_flag, 'i'))
-	{
-		printf("Error reading soil temperature calculation flag: epc_init()\n");
-		ok=0;
-	}
-	
-	/* soil water calculation flag */
-	if (ok && scan_value(temp, &epc->SHCM_flag, 'i'))
-	{
-		printf("Error reading soil hydrological calculation method flag: epc_init()\n");
-		ok=0;
-	}
-
-	/*  discretitaion level of SWC calculation simulation */
-	if (ok && scan_value(temp, &epc->discretlevel_Richards, 'i'))
-	{
-		printf("Error reading discretitaion level of SWC calculation: epc_init.c\n");
-		ok=0;
-	}
-
-	/*---------------------------------------------------------------------------------------------------------------*/
+	/****************************************************************************************************************/
 	/* dividing line from file */ 
-	if (ok && scan_value(temp, keyword, 's'))
+	
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading 2. dividing line, epc_init()\n");
+		errflag=20905;
 	}
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading 2. dividing line, epc_init()\n");
+		errflag=20905;
 	}
 
-	/*---------------------------------------------------------------------------------------------------------------*/
-
-	/* Hidy 2015 - using varying onday values (in transient or in normal run)*/
-	if (ok && scan_value(temp, &epc->onday, 'i'))
+	/****************************************************************************************************************/
+	/* PLANT FUNCTIONING PARAMETERS */
+	/****************************************************************************************************************/
+	
+	/* using varying onday values (in transient or in normal run)*/
+	if (!errflag && scan_value(epc_file, &epc->onday, 'i'))
 	{
-		printf("Error reading onday, epc_init()\n");
-		ok=0;
+		printf("ERROR reading onday, epc_init()\n");
+		errflag=20906;
 	}
 
 
 	if (ctrl->spinup == 0) 
-		strcpy(sgs_file.name, "onday_normal.txt");
+		strcpy(sgs_file.name,  "onday_normal.txt");
 	else
-		strcpy(sgs_file.name, "onday_transient.txt");
+	{
+		if (ctrl->spinup == 1) 
+			strcpy(sgs_file.name,  "onday_spinup.txt");
+		else
+			strcpy(sgs_file.name,  "onday_transient.txt");
+	}
 	
 	/* SGS flag: constans or varying SGS from file */
-	if (ok && !file_open(&sgs_file,'j') && epc->phenology_flag == 0) 
+	if (!errflag && !file_open(&sgs_file,'j',1)) 
 		ctrl->varSGS_flag = 1;
 	else
 		ctrl->varSGS_flag = 0;
 
 
-	if (ok && ctrl->varSGS_flag) 
+	if (!errflag && ctrl->varSGS_flag) 
 	{
 		/* allocate space for the annual SGS array */
 		epc->sgs_array = (double*) malloc(ctrl->simyears * sizeof(double));
 		if (!epc->sgs_array)
 		{
-			printf("Error allocating for annual SGS array, epc_init()\n");
-			ok=0;
+			printf("ERROR allocating for annual SGS array, epc_init()\n");
+			errflag=20906;
 		}
 
 		/* read year and SGS for each simyear */
-		for (i=0 ; ok && i<ctrl->simyears ; i++)
+		for (i=0 ; !errflag && i<ctrl->simyears ; i++)
 		{
 			if (fscanf(sgs_file.ptr,"%*i%lf", &(epc->sgs_array[i]))==EOF)
 			{
-				printf("Error reading annual SGS array, epc_init()\n");
+				printf("ERROR reading annual SGS array, epc_init()\n");
 				printf("Note: file must contain a pair of values for each\n");
 				printf("simyear: year and SGS.\n");
-				ok=0;
+				errflag=20906;
 			}
-			if (epc->sgs_array[i] < 0.0)
+			if (epc->sgs_array[i] < 0.0 && epc->sgs_array[i] != DATA_GAP)
 			{
-				printf("Error in epc_init(): sgs must be positive\n");
-				ok=0;
+				printf("ERROR in epc_init(): sgs must be positive\n");
+				errflag=20906;
 			}
 		}
 		fclose(sgs_file.ptr);
@@ -231,54 +202,55 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 		epc->sgs_array = 0;
 	}	
 
-	/* ------------------------------------------------------ */
 
-
-	if (ok && scan_value(temp, &epc->offday, 'i'))
+	/* using varying offday values (in transient or in normal run)*/
+	if (!errflag && scan_value(epc_file, &epc->offday, 'i'))
 	{
-		printf("Error reading offday, epc_init()\n");
-		ok=0;
+		printf("ERROR reading offday, epc_init()\n");
+		errflag=20907;
 	}
-
-	/* ------------------------------------------------------ */
-	/* Hidy 2015 - using varying offday values (in transient or in normal run)*/
 
 	if (ctrl->spinup == 0) 
 		strcpy(egs_file.name, "offday_normal.txt");
 	else
-		strcpy(egs_file.name, "offday_transient.txt");
+	{
+		if (ctrl->spinup == 1) 
+			strcpy(egs_file.name, "offday_spinup.txt");
+		else
+			strcpy(egs_file.name, "offday_transient.txt");
+	}
 	
 	/* SGS flag: constans or varying SGS from file */
-	if (ok && !file_open(&egs_file,'j') && epc->phenology_flag == 0) 
+	if (!errflag && !file_open(&egs_file,'j',1)) 
 		ctrl->varEGS_flag = 1;
 	else
 		ctrl->varEGS_flag = 0;
 
 
-	if (ok && ctrl->varEGS_flag) 
+	if (!errflag && ctrl->varEGS_flag) 
 	{	
 		/* allocate space for the annual EGS array */
 		epc->egs_array = (double*) malloc(ctrl->simyears * sizeof(double));
 		if (!epc->egs_array)
 		{
-			printf("Error allocating for annual EGS array, epc_init()\n");
-			ok=0;
+			printf("ERROR allocating for annual EGS array, epc_init()\n");
+			errflag=20907;
 		}
 
 		/* read year and EGS for each simyear */
-		for (i=0 ; ok && i<ctrl->simyears ; i++)
+		for (i=0 ; !errflag && i<ctrl->simyears ; i++)
 		{
 			if (fscanf(egs_file.ptr,"%*i%lf", &(epc->egs_array[i]))==EOF)
 			{
-				printf("Error reading annual EGS array, epc_init()\n");
+				printf("ERROR reading annual EGS array, epc_init()\n");
 				printf("Note: file must contain a pair of values for each\n");
 				printf("simyear: year and EGS.\n");
-				ok=0;
+				errflag=20907;
 			}
-			if (epc->egs_array[i] < 0.0)
+			if (epc->egs_array[i] < 0.0 && epc->egs_array[i] != DATA_GAP)
 			{
-				printf("Error in epc_init(): egs must be positive\n");
-				ok=0;
+				printf("ERROR in epc_init(): egs must be positive\n");
+				errflag=20907;
 			}
 		}
 		fclose(egs_file.ptr);
@@ -288,107 +260,187 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
  		epc->egs_array = 0;
 	}	
 
-
-
-	/* ------------------------------------------------------ */
 	
-
-	if (ok && scan_value(temp, &epc->transfer_pdays, 'd'))
+	/* transfer growth and litterfall period */
+	if (!errflag && scan_value(epc_file, &epc->transfer_pdays, 'd'))
 	{
-		printf("Error reading transfer_pdays, epc_init()\n");
-		ok=0;
+		printf("ERROR reading transfer_pdays, epc_init()\n");
+		errflag=20908;
 	}
-	if (ok && scan_value(temp, &epc->litfall_pdays, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->litfall_pdays, 'd'))
 	{
-		printf("Error reading litfall_pdays, epc_init()\n");
-		ok=0;
-	}
-
-	/* basic_temperature for calculation GDD / heatsum - Hidy 2015 */
-	if (ok && scan_value(temp, &epc->base_temp, 'i'))
-	{
-		printf("Error reading base_temp parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading litfall_pdays, epc_init()\n");
+		errflag=20909;
 	}
 
-	/* growing degree days for start of fruit allocation and leaf senescence  - Hidy 2015*/
-	if (ok && scan_value(temp, &epc->GDD_fruitalloc, 'i'))
+	/* base temperature for calculation GDD / heatsum  */
+	if (!errflag && scan_value(epc_file, &epc->base_temp, 'd'))
 	{
-		printf("Error reading GDD_fruitalloc, epc_init()\n");
-		ok=0;
+		printf("ERROR reading base_temp parameter: epc_init()\n");
+		errflag=20910;
 	}
-	if (ok && scan_value(temp, &epc->GDD_maturity, 'i'))
+
+	/* minimum/optimal/maximum temperature for growth displayed on current day (-9999: no T-dependence of allocation) */
+	if (!errflag && scan_value(epc_file, &epc->pnow_minT, 'd'))
 	{
-		printf("Error reading GDD_maturity, epc_init()\n");
-		ok=0;
+		printf("ERROR reading pnow_minT parameter: epc_init()\n");
+		errflag=20911;
+	}
+	if (!errflag && scan_value(epc_file, &epc->pnow_opt1T, 'd'))
+	{
+		printf("ERROR reading pnow_opt1T parameter: epc_init()\n");
+		errflag=20911;
+	}
+	if (!errflag && scan_value(epc_file, &epc->pnow_opt2T, 'd'))
+	{
+		printf("ERROR reading pnow_opt1T parameter: epc_init()\n");
+		errflag=20911;
+	}
+	if (!errflag && scan_value(epc_file, &epc->pnow_maxT, 'd'))
+	{
+		printf("ERROR reading pnow_maxT parameter: epc_init()\n");
+		errflag=20911;
+	}
+
+	/* control of temperature for growth data */
+	if (!errflag)
+	{
+		if (epc->pnow_minT == DATA_GAP ||epc->pnow_opt1T == DATA_GAP || epc->pnow_opt2T == DATA_GAP || epc->pnow_maxT == DATA_GAP)
+		{
+			if (epc->pnow_minT != DATA_GAP ||epc->pnow_opt1T != DATA_GAP || epc->pnow_opt2T != DATA_GAP || epc->pnow_maxT != DATA_GAP) 
+			{
+				printf("ERROR in minimum/optimal/maximum temperature for growth data in EPC file\n");
+				printf("All or none temperature data should to be set by the user\n");
+				errflag=2091101;
+			}
+		}
+		if (epc->pnow_minT > epc->pnow_opt1T ||epc->pnow_opt1T > epc->pnow_opt2T || epc->pnow_opt2T > epc->pnow_maxT) 
+		{
+				printf("ERROR in minimum/optimal/maximum temperature for pnow data in EPC file\n");
+				printf("Correct temperature data: minT <= opt1T <= opt2T <= maxT\n");
+				errflag=2091102;
+		}
+	}
+
+	/* minimum/optimal/maximum temperature for C-assimilation displayed on current day (-9999: no limitation) */
+	
+	if (!errflag && scan_value(epc_file, &epc->assim_minT, 'd'))
+	{
+		printf("ERROR reading assim_minT parameter: epc_init()\n");
+		errflag=20912;
+	}
+	if (!errflag && scan_value(epc_file, &epc->assim_opt1T, 'd'))
+	{
+		printf("ERROR reading assim_opt1T parameter: epc_init()\n");
+		errflag=20912;
+	}
+	if (!errflag && scan_value(epc_file, &epc->assim_opt2T, 'd'))
+	{
+		printf("ERROR reading assim_opt1T parameter: epc_init()\n");
+		errflag=20912;
+	}
+	if (!errflag && scan_value(epc_file, &epc->assim_maxT, 'd'))
+	{
+		printf("ERROR reading assim_maxT parameter: epc_init()\n");
+		errflag=20912;
 	}
 	
-
-	if (ok && scan_value(temp, &epc->leaf_turnover, 'd'))
+	/* control of temperature data for C-assimilation */
+	if (!errflag)
 	{
-		printf("Error reading leaf turnover, epc_init()\n");
-		ok=0;
+		if (epc->assim_minT == DATA_GAP ||epc->assim_opt1T == DATA_GAP || epc->assim_opt2T == DATA_GAP || epc->assim_maxT == DATA_GAP)
+		{
+			if (epc->assim_minT != DATA_GAP ||epc->assim_opt1T != DATA_GAP || epc->assim_opt2T != DATA_GAP || epc->assim_maxT != DATA_GAP) 
+			{
+				printf("ERROR in minimum/optimal/maximum temperature for assim data in EPC file\n");
+				printf("All or none temperature data should to be set by the user\n");
+				errflag=2091201;
+			}
+		}
+		if (epc->assim_minT > epc->assim_opt1T ||epc->assim_opt1T > epc->assim_opt2T || epc->assim_opt2T > epc->assim_maxT) 
+		{
+				printf("ERROR in minimum/optimal/maximum temperature for assim data in EPC file\n");
+				printf("Correct temperature data: minT <= opt1T <= opt2T <= maxT\n");
+				errflag=2091202;
+		}
+	}
+	
+	/*  leaf turnover fraction */
+	if (!errflag && scan_value(epc_file, &epc->nonwoody_turnover, 'd'))
+	{
+		printf("ERROR reading non-woody biomass turnover, epc_init()\n");
+		errflag=20913;
 	}
 	/* force leaf turnover fraction to 1.0 if deciduous */
 	if (!epc->evergreen)
 	{
-		epc->leaf_turnover = 1.0;
+		epc->nonwoody_turnover = 1.0;
 	}
-	if (ok) epc->froot_turnover    = epc->leaf_turnover;
-	if (ok) epc->fruit_turnover    = epc->leaf_turnover;
-	if (ok) epc->softstem_turnover = epc->leaf_turnover;
-
-	if (ok && scan_value(temp, &epc->livewood_turnover, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->woody_turnover, 'd'))
 	{
-		printf("Error reading livewood turnover, epc_init()\n");
-		ok=0;
+		printf("ERROR reading woody biomass turnover, epc_init()\n");
+		errflag=20914;
 	}
-	if (ok && scan_value(temp, &t1, 'd'))
-	{
-		printf("Error reading whole-plant mortality, epc_init()\n");
-		ok=0;
-	}
-	if (ok) epc->daily_mortality_turnover = t1/NDAY_OF_YEAR;
 
 	/* ------------------------------------------------------ */
-	/* Hidy 2013 - using varying whole plant mortality values (in transient or in normal run)*/
+	/* fire mortality */
+	if (!errflag && scan_value(epc_file, &t1, 'd'))
+	{
+		printf("ERROR reading fire mortality, epc_init()\n");
+		errflag=20915;
+	}
+	if (!errflag) epc->daily_fire_turnover = t1/NDAYS_OF_YEAR;
 
+	if (!errflag && scan_value(epc_file, &epc->wholeplant_mortality, 'd'))
+	{
+		printf("ERROR reading whole-plant mortality, epc_init()\n");
+		errflag=20916;
+	}
+
+	
+	
+	/* using varying whole plant mortality values */
 	if (ctrl->spinup == 0)
 		strcpy(wpm_file.name, "mortality_normal.txt");
 	else
-		strcpy(wpm_file.name, "mortality_transient.txt");
+	{
+		if (ctrl->spinup == 1) 
+			strcpy(wpm_file.name, "mortality_spinup.txt");
+		else
+			strcpy(wpm_file.name, "mortality_transient.txt");
+	}
 	
 	/* WPM flag: constans or varying WPM from file */
-	if (ok && !file_open(&wpm_file,'j')) 
+	if (!errflag && !file_open(&wpm_file,'j',1)) 
 		ctrl->varWPM_flag = 1;
 	else
 		ctrl->varWPM_flag = 0;
 
 
-	if (ok && ctrl->varWPM_flag) 
+	if (!errflag && ctrl->varWPM_flag) 
 	{
 		/* allocate space for the annual WPM array */
 		epc->wpm_array = (double*) malloc(ctrl->simyears * sizeof(double));
 		if (!epc->wpm_array)
 		{
-			printf("Error allocating for annual WPM array, epc_init()\n");
-			ok=0;
+			printf("ERROR allocating for annual WPM array, epc_init()\n");
+			errflag=2091601;
 		}
 
 		/* read year and WPM for each simyear */
-		for (i=0 ; ok && i<ctrl->simyears ; i++)
+		for (i=0 ; !errflag && i<ctrl->simyears ; i++)
 		{
 			if (fscanf(wpm_file.ptr,"%*i%lf", &(epc->wpm_array[i]))==EOF)
 			{
-				printf("Error reading annual WPM array, epc_init()\n");
+				printf("ERROR reading annual WPM array, epc_init()\n");
 				printf("Note: file must contain a pair of values for each\n");
 				printf("simyear: year and WPM.\n");
-				ok=0;
+				errflag=2091602;
 			}
 			if (epc->wpm_array[i] < 0.0)
 			{
-				printf("Error in epc_init(): wpm must be positive\n");
-				ok=0;
+				printf("ERROR in epc_init(): wpm must be positive\n");
+				errflag=2091603;
 			}
 		}
 		fclose(wpm_file.ptr);
@@ -399,176 +451,175 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 	}	
 	
 
-	if (ok && scan_value(temp, &t1, 'd'))
+	/*--------------------------------------------------------------------*/
+	/* C:N ratios */
+	if (!errflag && scan_value(epc_file, &epc->leaf_cn, 'd'))
 	{
-		printf("Error reading fire mortality, epc_init()\n");
-		ok=0;
-	}
-	if (ok) epc->daily_fire_turnover = t1/NDAY_OF_YEAR;
-
-	if (ok && scan_value(temp, &epc->alloc_frootc_leafc, 'd'))
-	{
-		printf("Error reading froot C:leaf C, epc_init()\n");
-		ok=0;
-	}
-	/* fruit simulation - Hidy 2013. */
-	if (ok && scan_value(temp, &epc->alloc_fruitc_leafc, 'd'))
-	{
-		printf("Error reading fruit C: leaf c, epc_init()\n");
-		ok=0;
-	}
-	/* sofstem simulation - Hidy 2015. */
-	if (ok && scan_value(temp, &epc->alloc_softstemc_leafc, 'd'))
-	{
-		printf("Error reading sofstem C: leaf c, epc_init()\n");
-		ok=0;
+		printf("ERROR reading average leaf C:N, epc_init()\n");
+		errflag=20917;
 	}
 
-	if (ok && scan_value(temp, &epc->alloc_newstemc_newleafc, 'd'))
+	/* test for leaf C:N > 0 */
+	if (!errflag && epc->leaf_cn <= 0	)
 	{
-		printf("Error reading new stemC:new leaf C, epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->alloc_newlivewoodc_newwoodc, 'd'))
-	{
-		printf("Error reading new livewood C:new wood C, epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->alloc_crootc_stemc, 'd'))
-	{
-		printf("Error reading croot C:stem C, epc_init()\n");
-		ok=0;
-	}
-	
-	if (ok && scan_value(temp, &epc->alloc_prop_curgrowth, 'd'))
-	{
-		printf("Error reading new growth:storage growth, epc_init()\n");
-		ok=0;
+		printf("ERROR: leaf  C:N must be > 0\n");
+		printf("change the values in EPC file\n");
+		errflag=20917;
 	}
 
-	if (ok && scan_value(temp, &epc->leaf_cn, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->leaflitr_cn, 'd'))
 	{
-		printf("Error reading average leaf C:N, epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->leaflitr_cn, 'd'))
-	{
-		printf("Error reading leaf litter C:N, epc_init()\n");
-		ok=0;
+		printf("ERROR reading leaf litter C:N, epc_init()\n");
+		errflag=20917;
 	}
 	/* test for leaflitter C:N > leaf C:N */
-	if (ok && epc->leaflitr_cn < epc->leaf_cn)
+	if (!errflag && epc->leaflitr_cn < epc->leaf_cn)
 	{
-		printf("Error: leaf litter C:N must be >= leaf C:N\n");
-		printf("change the values in ECOPHYS block of initialization file\n");
-		ok=0;
+		printf("ERROR: leaf litter C:N must be >= leaf C:N\n");
+		printf("change the values in EPC file\n");
+		errflag=20917;
 	}
 
-	if (ok && scan_value(temp, &epc->froot_cn, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->froot_cn, 'd'))
 	{
-		printf("Error reading initial fine root C:N, epc_init()\n");
-		ok=0;
+		printf("ERROR reading initial fine root C:N, epc_init()\n");
+		errflag=20917;
 	}
+
+
+	if (!errflag && scan_value(epc_file, &epc->fruit_cn, 'd'))
+	{
+		printf("ERROR reading initial fruit C:N, epc_init()\n");
+		errflag=20917;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->softstem_cn, 'd'))
+	{
+		printf("ERROR reading initial softstem C:N, epc_init()\n");
+		errflag=20917;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->livewood_cn, 'd'))
+	{
+		printf("ERROR reading initial livewood C:N, epc_init()\n");
+		errflag=20917;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->deadwood_cn, 'd'))
+	{
+		printf("ERROR reading initial deadwood C:N, epc_init()\n");
+		errflag=20917;
+	}
+
 
 	/* test for froot C:N > leaf C:N */
-	if (ok && epc->froot_cn < epc->leaf_cn)
+	if (!errflag && epc->froot_cn < epc->leaf_cn)
 	{
-		printf("Error: fine root C:N must be >= leaf C:N\n");
-		printf("change the values in ECOPHYS block of initialization file\n");
-		ok=0;
+		printf("ERROR: fine root C:N must be >= leaf C:N\n");
+		printf("change the values in EPC file\n");
+		errflag=2091701;
 	}
 
-	/* fruit simulation - Hidy 2013. */
-	if (ok && scan_value(temp, &epc->fruit_cn, 'd'))
+	if (!errflag && epc->fruit_cn > 0 && epc->fruit_cn < epc->leaf_cn)
 	{
-		printf("Error reading initial fruit C:N, epc_init()\n");
-		ok=0;
+		printf("ERROR: fruit C:N must be >= leaf C:N\n");
+		printf("change the values in EPC file\n");
+		errflag=2091701;
 	}
 
-	if (ok && epc->fruit_cn < epc->leaf_cn && epc->alloc_fruitc_leafc > 0)
+	if (!errflag && epc->softstem_cn > 0 && epc->softstem_cn < epc->leaf_cn)
 	{
-		printf("Error: fruit C:N must be >= leaf C:N\n");
-		printf("change the values in ECOPHYS block of initialization file\n");
-		ok=0;
+		printf("ERROR: softstem C:N must be >= leaf C:N\n");
+		printf("change the values in EPC file\n");
+		errflag=2091701;
 	}
 
-
-	/* softstem simulation - Hidy 2013. */
-	if (ok && scan_value(temp, &epc->softstem_cn, 'd'))
+	
+	/* test for livewood C:N setting for woody biomes */
+	if (!errflag && epc->woody && epc->livewood_cn == 0)
 	{
-		printf("Error reading initial softstem C:N, epc_init()\n");
-		ok=0;
+		printf("ERROR: livewood C:N must be > 0 in woody simulation \n");
+		printf("change the values in EPC file\n");
+		errflag=2091702;
 	}
 
-	if (ok && epc->softstem_cn < epc->leaf_cn && epc->alloc_softstemc_leafc > 0 && !epc->woody)
-	{
-		printf("Error: softstem C:N must be >= leaf C:N\n");
-		printf("change the values in ECOPHYS block of initialization file\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->livewood_cn, 'd'))
-	{
-		printf("Error reading initial livewood C:N, epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->deadwood_cn, 'd'))
-	{
-		printf("Error reading initial deadwood C:N, epc_init()\n");
-		ok=0;
-	}
 	/* test for deadwood C:N > livewood C:N */
-	if (ok && epc->deadwood_cn < epc->livewood_cn)
+	if (!errflag && epc->deadwood_cn < epc->livewood_cn)
 	{
-		printf("Error: livewood C:N must be >= deadwood C:N\n");
-		printf("change the values in ECOPHYS block of initialization file\n");
-		ok=0;
+		printf("ERROR: deadwood C:N must be >= livewood C:N\n");
+		printf("change the values in EPC file\n");
+		errflag=2091703;
 	}
 
-	/* CONTROL to avoid division by zero - Hidy 2015 */
-	if (epc->leaf_cn == 0)     epc->leaf_cn     = fabs(DATA_GAP);
-	if (epc->leaflitr_cn == 0) epc->leaflitr_cn = fabs(DATA_GAP);
-	if (epc->froot_cn == 0)	   epc->froot_cn    = fabs(DATA_GAP);
-	if (epc->fruit_cn == 0)	   epc->fruit_cn    = fabs(DATA_GAP);
-	if (epc->softstem_cn == 0) epc->softstem_cn = fabs(DATA_GAP);
-	if (epc->livewood_cn == 0) epc->livewood_cn = fabs(DATA_GAP);
-	if (epc->deadwood_cn == 0) epc->deadwood_cn = fabs(DATA_GAP);
+	/*--------------------------------------------------------------------*/
+	/* C:DM ratios */
+	if (!errflag && scan_value(epc_file, &epc->leafC_DM, 'd'))
+	{
+		printf("ERROR reading dry matter carbon content of leaves, epc_init()\n");
+		errflag=20918;
+	}
+	if (!errflag && scan_value(epc_file, &epc->leaflitrC_DM, 'd'))
+	{
+		printf("ERROR reading dry matter carbon content of leaf litter, epc_init()\n");
+		errflag=20918;
+	}
+	if (!errflag && scan_value(epc_file, &epc->frootC_DM, 'd'))
+	{
+		printf("ERROR reading dry matter carbon content of fine root, epc_init()\n");
+		errflag=20918;
+	}
+	if (!errflag && scan_value(epc_file, &epc->fruitC_DM, 'd'))
+	{
+		printf("ERROR reading dry matter carbon content of fruit, epc_init()\n");
+		errflag=20918;
+	}
+	if (!errflag && scan_value(epc_file, &epc->softstemC_DM, 'd'))
+	{
+		printf("ERROR reading dry matter carbon content of softstem, epc_init()\n");
+		errflag=20918;
+	}
+	if (!errflag && scan_value(epc_file, &epc->livewoodC_DM, 'd'))
+	{
+		printf("ERROR reading dry matter carbon content of live wood, epc_init()\n");
+		errflag=20918;
+	}
+	if (!errflag && scan_value(epc_file, &epc->deadwoodC_DM, 'd'))
+	{
+		printf("ERROR reading dry matter carbon content of dead wood, epc_init()\n");
+		errflag=20918;
+	}
 	/*--------------------------------------------------------------------*/
 
 	/* LEAF LITTER PROPORTION */
-	if (ok && scan_value(temp, &t1, 'd'))
+	if (!errflag && scan_value(epc_file, &t1, 'd'))
 	{
-		printf("Error reading leaf litter labile proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading leaf litter labile proportion, epc_init()\n");
+		errflag=20919;
 	}
-	if (ok) epc->leaflitr_flab = t1;
+	if (!errflag) epc->leaflitr_flab = t1;
 
-	if (ok && scan_value(temp, &t2, 'd'))
+	if (!errflag && scan_value(epc_file, &t2, 'd'))
 	{
-		printf("Error reading leaf litter cellulose proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading leaf litter cellulose proportion, epc_init()\n");
+		errflag=20919;
 	}
 
-	/* Hidy 2015 - lignin proportion is calculated from labile and cellulose */
+	/* livecroot lignin proportion is calculated from labile and cellulose */
 	t3 = 1 - t2 - t1 ;
 
-        /* test for fractions sum to 1.0 */
-	if (ok) diff=1.0 - (t1+t2+t3);
-
-	if (ok && (fabs(diff) > 1e-6))
+    /* test for fractions sum to 1.0 */
+	if (!errflag && ((t1+t2) > 1))
 	{
-		printf("Error in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
-		printf("leaf litter proportions of labile, cellulose, and lignin\n");
-		printf("must sum to 1.0. Check initialization file and try again.\n");
-		ok=0;
+		printf("ERROR in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
+		printf("leaf litter proportions of labile and cellulose \n");
+		printf("must less than 1.0. Check initialization file and try again.\n");
+		errflag=2091901;
 	}
-	else t1 += diff;
 
-	if (ok) epc->leaflitr_flig = t3;
+	if (!errflag) epc->leaflitr_flig = t3;
 
 	/* calculate shielded and unshielded cellulose fraction */
-	if (ok)
+	if (!errflag)
 	{
 		r1 = t3/t2;
 		if (r1 <= 0.45)
@@ -590,37 +641,36 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 	}
 
 	/* FROOT LITTER PROPORTION */
-	if (ok && scan_value(temp, &t1, 'd'))
+	if (!errflag && scan_value(epc_file, &t1, 'd'))
 	{
-		printf("Error reading froot litter labile proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading froot litter labile proportion, epc_init()\n");
+		errflag=20921;
 	}
 	epc->frootlitr_flab = t1;
-	if (ok && scan_value(temp, &t2, 'd'))
+	if (!errflag && scan_value(epc_file, &t2, 'd'))
 	{
-		printf("Error reading froot litter cellulose proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading froot litter cellulose proportion, epc_init()\n");
+		errflag=20921;
 	}
 		
-	/* Hidy 2015 - lignin proportion is calculated from labile and cellulose */
+	/* livecroot lignin proportion is calculated from labile and cellulose */
 	t3 = 1 - t2 - t1;
 	
-       /* test for fractions sum to 1.0 */
-	if (ok) diff=1.0 - (t1+t2+t3);
-
-	if (ok && (fabs(diff) > 1e-6))
+     
+	/* test for fractions sum to 1.0 */
+	if (!errflag && ((t1+t2) > 1))
 	{
-		printf("Error in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
-		printf("froot proportions of labile, cellulose, and lignin\n");
-		printf("must sum to 1.0. Check initialization file and try again.\n");
-		ok=0;
+		printf("ERROR in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
+		printf("froot proportions of labile and cellulose \n");
+		printf("must less than 1.0. Check initialization file and try again.\n");
+		errflag=2092001;
 	}
-	else t1 += diff;
-	if (ok) epc->frootlitr_flig = t3;
+
+	if (!errflag) epc->frootlitr_flig = t3;
 	
 
 	/* calculate shielded and unshielded cellulose fraction */
-	if (ok)
+	if (!errflag)
 	{
 		r1 = t3/t2;
 		if (r1 <= 0.45)
@@ -643,38 +693,36 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 
 
 	/* FRUIT LITTER PROPORTION */
-	if (ok && scan_value(temp, &t1, 'd'))
+	if (!errflag && scan_value(epc_file, &t1, 'd'))
 	{
-		printf("Error reading fruit litter labile proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading fruit litter labile proportion, epc_init()\n");
+		errflag=20921;
 	}
 	epc->fruitlitr_flab = t1;
-	if (ok && scan_value(temp, &t2, 'd'))
+	if (!errflag && scan_value(epc_file, &t2, 'd'))
 	{
-		printf("Error reading fruit litter cellulose proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading fruit litter cellulose proportion, epc_init()\n");
+		errflag=20921;
 	}
 			
-	/* Hidy 2015 - lignin proportion is calculated from labile and cellulose */
+	/* livecroot lignin proportion is calculated from labile and cellulose */
 	t3 = 1 - t2 - t1;
 
-        /* test for fractions sum to 1.0 */
-	if (ok) diff=1.0 - (t1+t2+t3);
-
-	if (ok && (fabs(diff) > 1e-6))
+     
+	/* test for fractions sum to 1.0 */
+	if (!errflag && ((t1+t2) > 1))
 	{
-		printf("Error in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
-		printf("fruit proportions of labile, cellulose, and lignin\n");
-		printf("must sum to 1.0. Check initialization file and try again.\n");
-		ok=0;
+		printf("ERROR in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
+		printf("froot proportions of labile and cellulose \n");
+		printf("must less than 1.0. Check initialization file and try again.\n");
+		errflag=2092101;
 	}
 
-	else t1 += diff;
 
-	if (ok) epc->fruitlitr_flig = t3;
+	if (!errflag) epc->fruitlitr_flig = t3;
 
 	/* calculate shielded and unshielded cellulose fraction */
-	if (ok)
+	if (!errflag)
 	{
 		r1 = t3/t2;
 		if (r1 <= 0.45)
@@ -696,37 +744,35 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 	}
 
 	/* SOFT STEM LITTER PROPORTION */
-	if (ok && scan_value(temp, &t1, 'd'))
+	if (!errflag && scan_value(epc_file, &t1, 'd'))
 	{
-		printf("Error reading soft stem litter labile proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading soft stem litter labile proportion, epc_init()\n");
+		errflag=20922;
 	}
 	epc->softstemlitr_flab = t1;
-	if (ok && scan_value(temp, &t2, 'd'))
+	if (!errflag && scan_value(epc_file, &t2, 'd'))
 	{
-		printf("Error reading soft stem  litter cellulose proportion, epc_init()\n");
-		ok=0;
+		printf("ERROR reading soft stem  litter cellulose proportion, epc_init()\n");
+		errflag=20922;
 	}
 	
-	/* Hidy 2015 - lignin proportion is calculated from labile and cellulose */
+	/* livecroot lignin proportion is calculated from labile and cellulose */
 	t3 = 1 - t2 - t1;
 
-       /* test for fractions sum to 1.0 */
-	if (ok) diff=1.0 - (t1+t2+t3);
-
-	if (ok && (fabs(diff) > 1e-6))
+	 /* test for fractions sum to 1.0 */
+	if (!errflag && ((t1+t2) > 1))
 	{
-		printf("Error in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
-		printf("soft stem proportions of labile, cellulose, and lignin\n");
-		printf("must sum to 1.0. Check initialization file and try again.\n");
-		ok=0;
+		printf("ERROR in fractions: %.2f %.2f %.2f %.3f\n",t1, t2, t3, t1+t2+t3);
+		printf("softstem proportions of labile and cellulose \n");
+		printf("must less than 1.0. Check initialization file and try again.\n");
+		errflag=2092201;
 	}
-	else t1 += diff;
 
-	if (ok) epc->softstemlitr_flig = t3;
+
+	if (!errflag) epc->softstemlitr_flig = t3;
 
 	/* calculate shielded and unshielded cellulose fraction */
-	if (ok)
+	if (!errflag)
 	{
 		r1 = t3/t2;
 		if (r1 <= 0.45)
@@ -748,32 +794,39 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 	}
 
 	/* DEAD WOOD LITTER PROPORTION */
-	if (ok && scan_value(temp, &t1, 'd'))
+	if (!errflag && scan_value(epc_file, &t1, 'd'))
 	{
-		printf("Error reading dead wood %% cellulose, epc_init()\n");
-		ok=0;
+		printf("ERROR reading dead wood %% cellulose, epc_init()\n");
+		errflag=20923;
 	}
+
 	
-        /* Hidy 2015 - lignin proportion is calculated from labile and cellulose */
+     /* lignin proportion is calculated from cellulose */
 	t2 = 1 - t1;
 
-        /* test for fractions sum to 1.0 */
-	if (ok) diff=1.0 - (t1+t2);
-
-	if (ok && (fabs(diff) > 1e-6))
+      /* test for fractions sum to 1.0 */
+	if (!errflag && t1 > 1)
 	{
-		printf("Error in fractions: %.2f %.2f %.3f\n",t1, t2, t1+t2);
-		printf("leaf litter proportions of cellulose, and lignin\n");
-		printf("must sum to 1.0. Check initialization file and try again.\n");
-		ok=0;
+		printf("ERROR in fractions: %.2f %.2f %.3f\n",t1, t2, t1+t2);
+		printf("dead wood cellulose, and lignin\n");
+		printf("must less than 1.0. Check initialization file and try again.\n");
+		errflag=2092301;
 	}
-	else t1 += diff;
 
-	if (ok) epc->deadwood_flig = t2;
+
+	if (!errflag) epc->deadwood_flig = t2;
+
+	if (!errflag && epc->woody && epc->deadwood_flig == 0)
+	{
+		printf("ERROR: dead wood cellulose proportion must be > 0 in woody simulation \n");
+		printf("change the values in EPC file\n");
+		errflag=2092302;
+	}
+	
 
 
 	/* calculate shielded and unshielded cellulose fraction */
-	if (ok)
+	if (!errflag)
 	{
 		r1 = t2/t1;
 		if (r1 <= 0.45)
@@ -794,88 +847,110 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 		}
 	}
 
-	if (ok && scan_value(temp, &epc->int_coef, 'd'))
+	/* ---------------------------------------------- */
+	if (!errflag && scan_value(epc_file, &epc->int_coef, 'd'))
 	{
-		printf("Error reading canopy water int coef, epc_init()\n");
-		ok=0;
+		printf("ERROR reading canopy water int coef, epc_init()\n");
+		errflag=20924;
 	}
-	if (ok && scan_value(temp, &epc->ext_coef, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->ext_coef, 'd'))
 	{
-		printf("Error reading canopy light ext.coef, epc_init()\n");
-		ok=0;
+		printf("ERROR reading canopy light ext.coef, epc_init()\n");
+		errflag=20925;
 	}
-	if (ok && scan_value(temp, &epc->lai_ratio, 'd'))
+
+	if (!errflag && scan_value(epc_file, &epc->potRUE, 'd'))
 	{
-		printf("Error reading all to projected LAI ratio, epc_init()\n");
-		ok=0;
+		printf("ERROR reading potential radiation use efficiency, epc_init()\n");
+		errflag=20926;
 	}
-	if (ok && scan_value(temp, &epc->avg_proj_sla, 'd'))
+
+	if (!errflag && scan_value(epc_file, &epc->rad_param1, 'd'))
 	{
-		printf("Error reading canopy average projected specific leaf area, epc_init()\n");
-		ok=0;
+		printf("ERROR reading radiation parameter1, epc_init()\n");
+		errflag=20927;
 	}
-	if (ok && scan_value(temp, &epc->sla_ratio, 'd'))
+
+	if (!errflag && scan_value(epc_file, &epc->rad_param2, 'd'))
 	{
-		printf("Error reading shaded to sunlit SLA ratio, epc_init()\n");
-		ok=0;
+		printf("ERROR reading radiation parameter2, epc_init()\n");
+		errflag=20927;
 	}
-	if (ok && scan_value(temp, &epc->flnr, 'd'))
+
+
+	if (!errflag && scan_value(epc_file, &epc->lai_ratio, 'd'))
 	{
-		printf("Error reading Rubisco N fraction, epc_init()\n");
-		ok=0;
+		printf("ERROR reading all to projected LAI ratio, epc_init()\n");
+		errflag=20928;
 	}
-	if (ok && scan_value(temp, &epc->flnp, 'd'))
+
+	if (!errflag && scan_value(epc_file, &epc->sla_ratio, 'd'))
 	{
-		printf("Error reading PeP N fraction, epc_init()\n");
-		ok=0;
+		printf("ERROR reading shaded to sunlit SLA ratio, epc_init()\n");
+		errflag=20929;
 	}
-	if (ok && scan_value(temp, &epc->gl_smax, 'd'))
+
+	if (!errflag && scan_value(epc_file, &epc->flnr, 'd'))
 	{
-		printf("Error reading gl_smax, epc_init()\n");
-		ok=0;
+		printf("ERROR reading Rubisco N fraction, epc_init()\n");
+		errflag=20930;
+	}
+	if (!errflag && scan_value(epc_file, &epc->flnp, 'd'))
+	{
+		printf("ERROR reading PeP N fraction, epc_init()\n");
+		errflag=20931;
+	}
+	if (!errflag && scan_value(epc_file, &epc->gl_smax, 'd'))
+	{
+		printf("ERROR reading gl_smax, epc_init()\n");
+		errflag=20932;
 	}
 
 	/* ------------------------------------------------------ */
-	/* Hidy 2013 - using varying maximum stomatal conductance values */
-
+	/* using varying maximum stomatal conductance values */
 
 	if (ctrl->spinup == 0)
 		strcpy(msc_file.name, "conductance_normal.txt");
 	else
-		strcpy(msc_file.name, "conductance_transient.txt");
+	{
+		if (ctrl->spinup == 1) 
+			strcpy(msc_file.name, "conductance_spinup.txt");
+		else
+			strcpy(msc_file.name, "conductance_transient.txt");
+	}
 	
 	/* MSC flag: constans or varying MSC from file */
-	if (ok && !file_open(&msc_file,'j')) 
+	if (!errflag && !file_open(&msc_file,'j',1)) 
 		ctrl->varMSC_flag = 1;
 	else
 		ctrl->varMSC_flag = 0;
 
 
 
-	if (ok && ctrl->varMSC_flag) 
+	if (!errflag && ctrl->varMSC_flag) 
 	{
 		/* allocate space for the annual MSC array */
 		epc->msc_array = (double*) malloc(ctrl->simyears * sizeof(double));
 		if (!epc->msc_array)
 		{
-			printf("Error allocating for annual MSC array, epc_init()\n");
-			ok=0;
+			printf("ERROR allocating for annual MSC array, epc_init()\n");
+			errflag=2093201;
 		}
 
 		/* read year and co2 concentration for each simyear */
-		for (i=0 ; ok && i<ctrl->simyears ; i++)
+		for (i=0 ; !errflag && i<ctrl->simyears ; i++)
 		{
 			if (fscanf(msc_file.ptr,"%*i%lf", &(epc->msc_array[i]))==EOF)
 			{
-				printf("Error reading annual MSC array, epc_init()\n");
+				printf("ERROR reading annual MSC array, epc_init()\n");
 				printf("Note: file must contain a pair of values for each\n");
 				printf("simyear: year and MSC.\n");
-				ok=0;
+				errflag=2093202;
 			}
 			if (epc->msc_array[i] < 0.0)
 			{
-				printf("Error in epc_init(): msc must be positive\n");
-				ok=0;
+				printf("ERROR in epc_init(): msc must be positive\n");
+				errflag=2093203;
 			}
 		}
 		fclose(msc_file.ptr);
@@ -886,497 +961,736 @@ int epc_init(file init, epconst_struct* epc, GSI_struct* GSI, control_struct* ct
 	}	
 	
 	/* ------------------------------------------------------ */
-	if (ok && scan_value(temp, &epc->gl_c, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->gl_c, 'd'))
 	{
-		printf("Error reading gl_c, epc_init()\n");
-		ok=0;
+		printf("ERROR reading gl_c, epc_init()\n");
+		errflag=20933;
 	}
-	if (ok && scan_value(temp, &epc->gl_bl, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->gl_bl, 'd'))
 	{
-		printf("Error reading gl_bl, epc_init()\n");
-		ok=0;
+		printf("ERROR reading gl_bl, epc_init()\n");
+		errflag=20934;
 	}
-    /******************************************************************/
-	/* Hidy 2012: - multiplier for conductance limitation */
+
+	/* max_plant_height */
+	if (!errflag && scan_value(epc_file, &epc->max_plant_height, 'd'))
+	{
+		printf("ERROR reading number of max_plant_height\n");
+		errflag=20935;
+	}
+
+	/* plantheight parameter 1 (weight of stem at maximum height */  
+	if (!errflag && scan_value(epc_file, &epc->plantheight_par1, 'd'))
+	{
+		printf("ERROR reading plantheight_par1\n");
+		errflag=20936;
+	}
+
+	/* plantheight parameter 2 (slope) */  
+	if (!errflag && scan_value(epc_file, &epc->plantheight_par2, 'd'))
+	{
+		printf("ERROR reading plantheight_par2\n");
+		errflag=20936;
+	}
+
+	/* max_rootzone_depth  */
+	if (!errflag && scan_value(epc_file, &epc->max_rootzone_depth, 'd'))
+	{
+		printf("ERROR reading number of max_rootzone_depth\n");
+		errflag=20937;
+	}
+
+	/* CONTROL to avoid negative data */
+ 	if (!errflag && epc->max_rootzone_depth <= 0)
+	{
+		printf("ERROR in epc data in EPC file: negative or zero rootzone_depth, epc_init()\n");
+		errflag=2093701;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->rootdistrib_param, 'd'))
+	{
+		printf("ERROR reading rootdistrib_param: epc_init()\n");
+		errflag=20938;
+	}
 	
-	if (ok && scan_value(temp, &epc->relVWC_crit1, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->rootlenght_par1, 'd'))
 	{
-		printf("Error reading relVWC_crit1, epc_init()\n");
-		ok=0;
+		printf("ERROR reading rootlenght_par1: epc_init()\n");
+		errflag=20939;
 	}
 	
-    if (ok && scan_value(temp, &epc->relVWC_crit2, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->rootlenght_par2, 'd'))
 	{
-		printf("Error reading relVWC_crit2, epc_init()\n");
-		ok=0;
+		printf("ERROR reading rootlenght_par2: epc_init()\n");
+		errflag=20939;
 	}
 
-	/* -------------------------------------------*/
-	/* multiplier for PSI */
-	if (ok && scan_value(temp, &epc->PSI_crit1, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->rootweight2length, 'd'))
 	{
-		printf("Error reading PSI_crit1, epc_init()\n");
-		ok=0;
+		printf("ERROR reading rootweight2length: epc_init()\n");
+		errflag=20940;
 	}
 	
-    if (ok && scan_value(temp, &epc->PSI_crit2, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->GR_ratio, 'd'))
 	{
-		printf("Error reading PSI_crit2, epc_init()\n");
-		ok=0;
+		printf("ERROR reading growth resp.ratio: epc_init()\n");
+		errflag=20941;
 	}
 
 
-	/******************************************************************/
+	if (!errflag && scan_value(epc_file, &epc->mrpern, 'd'))
+	{
+		printf("ERROR reading mrpern: epc_init()\n");
+		errflag=20942;
+	}
 
-	if (ok && scan_value(temp, &epc->vpd_open, 'd')) 
+	if (!errflag && scan_value(epc_file, &epc->NSC_SC_prop, 'd'))
 	{
-		printf("Error reading vpd_max, epc_init()\n");
-		ok=0;
+		printf("ERROR reading NSC_SC_prop: epc_init()\n");
+		errflag=20943;
 	}
-	if (ok && scan_value(temp, &epc->vpd_close, 'd'))
+
+	if (!errflag && scan_value(epc_file, &epc->NSC_avail_prop, 'd'))
 	{
-		printf("Error reading vpd_min, epc_init()\n");
-		ok=0;
+		printf("ERROR reading NSC_avail_prop: epc_init()\n");
+		errflag=20944;
 	}
-	/*---------------------------------------------------------------------------------------------------------------*/
+
+	if (!errflag && scan_value(epc_file, &epc->nfix, 'd'))
+	{
+		printf("ERROR reading N fixation, epc_init()\n");
+		errflag=20945;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->tau, 'd'))
+	{
+		printf("ERROR reading tau (time delay photosynthesis acclim.), epc_init()\n");
+		errflag=20946;
+	}
+	
+	/*********************************************************************************************************************/
 	/* dividing line from file */ 
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading 3. dividing line, epc_init()\n");
+		errflag=20947;
 	}
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading header, epc_init()\n");
+		errflag=20947;
 	}
-	/*---------------------------------------------------------------------------------------------------------------*/
+	/*********************************************************************************************************************/
+	/* CROP SPECIFIC PARAMETERS */
+	/*********************************************************************************************************************/
 
-	/* Hidy 2011 - plant wilting mortality parameter */
-	if (ok && scan_value(temp, &epc->mort_SNSC_abovebiom, 'd'))
+	/* number of phenophase of germination */
+	if (!errflag && scan_value(epc_file, &epc->n_germ_phenophase, 'i'))
 	{
-		printf("Error reading senescence mortality parameter of aboveground biomass: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->mort_SNSC_belowbiom, 'd'))
-	{
-		printf("Error reading senescence mortality parameter of belowground biomass: epc_init()\n");
-		ok=0;
+		printf("ERROR reading number of phenophase of germination \n");
+		errflag=20948;
 	}
 
-	if (ok && scan_value(temp, &epc->mort_SNSC_leafphen, 'd'))
+	/* number of phenophase of emergence */
+	if (!errflag && scan_value(epc_file, &epc->n_emerg_phenophase, 'i'))
 	{
-		printf("Error reading leaf phenology mortality parameter: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->mort_SNSC_to_litter, 'd'))
-	{
-		printf("Error reading turnover rate of wilted standing biomass to litter parameter: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->mort_CnW_to_litter, 'd'))
-	{
-		printf("Error reading turnover rate of cut-down non-woody biomass to litter parameter: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->mort_CW_to_litter, 'd'))
-	{
-		printf("Error reading turnover rate of cut-down woody biomass to litter parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading number of phenophase of emergence\n");
+		errflag=20949;
 	}
 
 	
-	/* Hidy 2013 - denetirification proportion and mobilen proportion
-		original: BBGC constant - new version: can be set in EPC file*/
-	if (ok && scan_value(temp, &epc->denitrif_prop, 'd'))
+	/* critical relative VWC (prop. to FC) in germination */
+	if (!errflag && scan_value(epc_file, &epc->grmn_paramVWC, 'd'))
 	{
-		printf("Error reading denitrif_prop: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->bulkN_denitrif_prop_WET, 'd'))
-	{
-		printf("Error reading denitrif_prop: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->bulkN_denitrif_prop_DRY, 'd'))
-	{
-		printf("Error reading bulkN_denitrif_prop: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->mobilen_prop, 'd'))
-	{
-		printf("Error reading mobilen_prop: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->nfix, 'd'))
-	{
-		printf("Error reading N fixation, epc_init()\n");
-		ok=0;
-	}
-
-     if (ok && scan_value(temp, &epc->storage_MGMmort, 'd'))
-	{
-		printf("Error reading storage_MGMmort: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->m_soilstress_crit, 'd'))
-	{
-		printf("Error reading m_soilstress_crit: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->n_stressdays_crit, 'i'))
-	{
-		printf("Error reading n_stressdays_crit: epc_init()\n");
-		ok=0;
-	}
-
-	/* max_rootzone_depth - Hidy 2014 */
-	if (ok && scan_value(temp, &epc->max_rootzone_depth, 'd'))
-	{
-		printf("Error reading number of max_rootzone_depth\n");
-		ok=0;
-	}
-
-	/* CONTROL to avoid negative  data */
- 	if (epc->max_rootzone_depth <= 0)
-	{
-		printf("Error in epc data in EPC file: negative or zero rootzone_depth, epc_init()\n");
-		ok=0;
+		printf("ERROR reading critical VWC ratio in germination, epc_init()\n");
+		errflag=20950;
 	}
 	
-
-	if (ok && scan_value(temp, &epc->rootdistrib_param, 'd'))
+	/* number of phenophase of photoperiodic slowing effect */
+	if (!errflag && scan_value(epc_file, &epc->n_phpsl_phenophase, 'i'))
 	{
-		printf("Error reading rootdistrib_param: epc_init()\n");
-		ok=0;
+		printf("ERROR reading number of phenophase of photoperiodic slowing effect \n");
+		errflag=20951;
 	}
-	
-	if (ok && scan_value(temp, &epc->maturity_coeff, 'd'))
+
+	/* critical photoslow daylength */
+	if (!errflag && scan_value(epc_file, &epc->phpsl_parDL, 'd'))
 	{
-		printf("Error reading maturity_coeff: epc_init()\n");
-		ok=0;
+		printf("ERROR reading critical photoslow daylength, epc_init()\n");
+		errflag=20952;
 	}
 
 	
-	if (ok && scan_value(temp, &epc->GR_ratio, 'd'))
+	/* slope of relative photoslow development rate */
+	if (!errflag && scan_value(epc_file, &epc->phpsl_parDR, 'd'))
 	{
-		printf("Error reading growth resp.ratio: epc_init()\n");
-		ok=0;
+		printf("ERROR reading slope of relative photoslow development rate, epc_init()\n");
+		errflag=20952;
 	}
 
-	if (ok && scan_value(temp, &epc->c_param_tsoil, 'd'))
+	/* number of phenophase of vernalization */
+	if (!errflag && scan_value(epc_file, &epc->n_vern_phenophase, 'i'))
 	{
-		printf("Error reading c_param_tsoil: epc_init()\n");
-		ok=0;
+		printf("ERROR reading number of vernalization phenophase\n");
+		errflag=20953;
 	}
-	if (ok && scan_value(temp, &epc->mrpern, 'd'))
+
+	/* critical vernalization temperature data */
+	if (!errflag && scan_value(epc_file, &epc->vern_parT1, 'd'))
 	{
-		printf("Error reading mrpern: epc_init()\n");
-		ok=0;
+		printf("ERROR reading critical vernalization temperature 1, epc_init()\n");
+		errflag=20954;
 	}
 	
-	/*---------------------------------------------------------------------------------------------------------------*/
+	if (!errflag && scan_value(epc_file, &epc->vern_parT2, 'd'))
+	{
+		printf("ERROR reading critical vernalization temperature 2, epc_init()\n");
+		errflag=20954;
+	}
+	
+	if (!errflag && scan_value(epc_file, &epc->vern_parT3, 'd'))
+	{
+		printf("ERROR reading critical vernalization temperature 3, epc_init()\n");
+		errflag=20954;
+	}
+	
+	if (!errflag && scan_value(epc_file, &epc->vern_parT4, 'd'))
+	{
+		printf("ERROR reading critical vernalization temperature 4, epc_init()\n");
+		errflag=20954;
+	}
+	
+	/* control of vernalization temperature parameters */
+	if (!errflag)
+	{
+		if (epc->vern_parT1 > epc->vern_parT2 ||epc->vern_parT2 > epc->vern_parT3 || epc->vern_parT3 > epc->vern_parT4) 
+		{
+				printf("ERROR in vernalization temperature data in EPC file\n");
+				printf("Correct temperature data: vern_parT1 <= vern_parT2 <= vern_parT3 <= vern_parT4\n");
+				errflag=2095401;
+		}
+	}
+
+	/* slope of relative vernalization development rate  */
+	if (!errflag && scan_value(epc_file, &epc->vern_parDR1, 'd'))
+	{
+		printf("ERROR reading slope of relative vernalization development rate, epc_init()\n");
+		errflag=20955;
+	}
+
+	/* required vernalization days (in vernalization development rate  */
+	if (!errflag && scan_value(epc_file, &epc->vern_parDR2, 'd'))
+	{
+		printf("ERROR reading required vernalization days (in vernalization development rate, epc_init()\n");
+		errflag=20955;
+	}
+	
+	/* number of phenophase of flowering heat stress */
+	if (!errflag && scan_value(epc_file, &epc->n_flowHS_phenophase, 'i'))
+	{
+		printf("ERROR reading number of phenophase of flowering heat stress\n");
+		errflag=20956;
+	}
+
+	/* critical flowering heat stress temperatures */
+	if (!errflag && scan_value(epc_file, &epc->flowHS_parT1, 'd'))
+	{
+		printf("ERROR reading critical flowering heat stress temperature 1, epc_init()\n");
+		errflag=20957;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->flowHS_parT2, 'd'))
+	{
+		printf("ERROR reading critical flowering heat stress temperature 2, epc_init()\n");
+		errflag=20957;
+	}
+
+	/* control of flowering heat stress temperature parameter */
+	if (epc->flowHS_parT1 > epc->flowHS_parT2) 
+	{
+			printf("ERROR in flowering heat stress temperature data in EPC file\n");
+			printf("Correct temperature data: flowHS_parT1 <= flowHS_parT2 \n");
+			errflag=2095701;
+	}
+
+	/* mortality parameter of flowering heat stress */
+	if (!errflag && scan_value(epc_file, &epc->flowHS_parMORT, 'd'))
+	{
+		printf("ERROR reading mortality parameter of flowering heat stress, epc_init()\n");
+		errflag=20958;
+	}
+
+	/*********************************************************************************************************************/
 	/* dividing line from file */ 
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading 4. dividing line, epc_init()\n");
+		errflag=20959;
 	}
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading header, epc_init()\n");
+		errflag=20959;
 	}
-	/*---------------------------------------------------------------------------------------------------------------*/
+	/*********************************************************************************************************************/
+	/* STRESS AND SENESCENCE PARAMETERS */
+	/*********************************************************************************************************************/
 
-	/* GSI information - Hidy 2016. */	
+	if (!errflag && scan_value(epc_file, &epc->VWCratio_crit1, 'd'))
+	{
+		printf("ERROR reading VWCratio_crit1, epc_init()\n");
+		errflag=20960;
+	}
+	
+   if (!errflag && scan_value(epc_file, &epc->VWCratio_crit2, 'd'))
+	{
+		printf("ERROR reading VWCratio_crit2, epc_init()\n");
+		errflag=20961;
+	}
+	
+	 if (!errflag && scan_value(epc_file, &epc->m_fullstress2, 'd'))
+	{
+		printf("ERROR reading m_fullstress2, epc_init()\n");
+		errflag=20962;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->vpd_open, 'd')) 
+	{
+		printf("ERROR reading vpd_max, epc_init()\n");
+		errflag=20963;
+	}
+	if (!errflag && scan_value(epc_file, &epc->vpd_close, 'd'))
+	{
+		printf("ERROR reading vpd_min, epc_init()\n");
+		errflag=20964;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->SNSCmort_abovebiom_max, 'd'))
+	{
+		printf("ERROR reading senescence mortality parameter of aboveground biomass: epc_init()\n");
+		errflag=20965;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->SNSCmort_belowbiom_max, 'd'))
+	{
+		printf("ERROR reading senescence mortality parameter of belowground biomass: epc_init()\n");
+		errflag=20965;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->SNSCmort_nsc_max, 'd'))
+	{
+		printf("ERROR reading senescence mortality parameter of non-stuctured biomass: epc_init()\n");
+		errflag=20965;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->SNSC_extremT1, 'd'))
+	{
+		printf("ERROR reading lower limit extreme high temperature effect on senesncene mortality: epc_init()\n");
+		errflag=20966;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->SNSC_extremT2, 'd'))
+	{
+		printf("ERROR reading lower limit extreme high temperature effect on senesncene mortality: epc_init()\n");
+		errflag=20966;
+	}
+
+	/* control of flowering heat stress temperature parameter */
+	if (!errflag && epc->SNSC_extremT1 >= epc->SNSC_extremT2) 
+	{
+		printf("ERROR in extreme high temperature effect data in EPC file\n");
+		printf("Correct temperature data: SNSC_extremT1 < SNSC_extremT2 \n");
+		errflag=2096601;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->mort_SNSC_to_litter, 'd'))
+	{
+		printf("ERROR reading turnover rate of wilted standing biomass to litter parameter: epc_init()\n");
+		errflag=20967;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->mort_CnW_to_litter, 'd'))
+	{
+		printf("ERROR reading turnover rate of cut-down non-woody biomass to litter parameter: epc_init()\n");
+		errflag=20967;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->mort_CW_to_litter, 'd'))
+	{
+		printf("ERROR reading turnover rate of cut-down woody biomass to litter parameter: epc_init()\n");
+		errflag=20967;
+	}
+
+
+	if (!errflag && scan_value(epc_file, &epc->dsws_crit, 'd'))
+	{
+		printf("ERROR reading dsws_crit: epc_init()\n");
+		errflag=20968;
+	}
+
+
+	/*********************************************************************************************************************/
+	/* dividing line from file */ 
+	if (!errflag && scan_value(epc_file, header, 's'))
+	{
+		printf("ERROR reading 5. dividing line, epc_init()\n");
+		errflag=20969;
+	}
+	if (!errflag && scan_value(epc_file, header, 's'))
+	{
+		printf("ERROR reading 5. dividing line, epc_init()\n");
+		errflag=20969;
+	}
+	/*********************************************************************************************************************/
+	/* GROWING SEASON PARAMETERS */
+	/*********************************************************************************************************************/
 	
 	/* snowcover_limit for calculation heatsum */
-	if (ok && scan_value(temp, &GSI->snowcover_limit, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->snowcover_limit, 'd'))
 	{
-		printf("Error reading snowcover_limit parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading snowcover_limit parameter: epc_init()\n");
+		errflag=20970;
 	}
 	
+	/* heatsum_limit for calculation heatsum index */
+	if (!errflag && scan_value(epc_file, &epc->heatsum_limit1, 'd'))
+	{
+		printf("ERROR reading heatsum_limit1 parameter: epc_init()\n");
+		errflag=20971;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->heatsum_limit2, 'd'))
+	{
+		printf("ERROR reading heatsum_limit2 parameter: epc_init()\n");
+		errflag=20971;
+	}
+
+	if (!errflag && epc->heatsum_limit1 > epc->heatsum_limit2) 
+	{
+		printf("ERROR in heatsum_limit data in EPC file\n");
+		printf("Correct data: limit1 < limit2 \n");
+		errflag=2097101;
+	}
+
+	/* tmin_limit for calculation tmin index */
+	if (!errflag && scan_value(epc_file, &epc->tmin_limit1, 'd'))
+	{
+		printf("ERROR reading tmin_limit1 parameter: epc_init()\n");
+		errflag=20972;
+	}
+
+	if (!errflag && scan_value(epc_file, &epc->tmin_limit2, 'd'))
+	{
+		printf("ERROR reading tmin_limit2 parameter: epc_init()\n");
+		errflag=20972;
+	}
+
+	if (!errflag && epc->tmin_limit1 > epc->tmin_limit2) 
+	{
+		printf("ERROR in tmin_limit data in EPC file\n");
+		printf("Correct data: limit1 < limit2 \n");
+		errflag=2097201;
+	}
+
+	/* vpd_limit for calculation vpd index */
+	if (!errflag && scan_value(epc_file, &epc->vpd_limit1, 'd'))
+	{
+		printf("ERROR reading vpd_limit1 parameter: epc_init()\n");
+		errflag=20973;
+	}
+
 	
-	/* heatsum_limit1 for calculation heatsum index */
-	if (ok && scan_value(temp, &GSI->heatsum_limit1, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->vpd_limit2, 'd'))
 	{
-		printf("Error reading heatsum_limit1 parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading vpd_limit2 parameter: epc_init()\n");
+		errflag=20973;
+	}
+	
+	if (!errflag && epc->vpd_limit1 < epc->vpd_limit2) 
+	{
+		printf("ERROR in vpd_limit data in EPC file\n");
+		printf("Correct data: limit1 > limit2 \n");
+		errflag=2097301;
 	}
 
-	/* heatsum_limit2 for calculation heatsum index */
-	if (ok && scan_value(temp, &GSI->heatsum_limit2, 'd'))
+	/* dayl_limit for calculation dayl index */
+	if (!errflag && scan_value(epc_file, &epc->dayl_limit1, 'd'))
 	{
-		printf("Error reading heatsum_limit2 parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading dayl_limit1 parameter: epc_init()\n");
+		errflag=20974;
 	}
 
-	/* tmin_limit1 for calculation tmin index */
-	if (ok && scan_value(temp, &GSI->tmin_limit1, 'd'))
+	if (!errflag && scan_value(epc_file, &epc->dayl_limit2, 'd'))
 	{
-		printf("Error reading tmin_limit1 parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading dayl_limit2 parameter: epc_init()\n");
+		errflag=20974;
 	}
 
-	/* tmin_limit2 for calculation tmin index */
-	if (ok && scan_value(temp, &GSI->tmin_limit2, 'd'))
+	if (!errflag && epc->dayl_limit1 > epc->dayl_limit2) 
 	{
-		printf("Error reading tmin_limit2 parameter: epc_init()\n");
-		ok=0;
-	}
-
-	/* vpd_limit1 for calculation vpd index */
-	if (ok && scan_value(temp, &GSI->vpd_limit1, 'd'))
-	{
-		printf("Error reading vpd_limit1 parameter: epc_init()\n");
-		ok=0;
-	}
-
-	/* vpd for calculation vpd index */
-	if (ok && scan_value(temp, &GSI->vpd_limit2, 'd'))
-	{
-		printf("Error reading vpd_limit2 parameter: epc_init()\n");
-		ok=0;
-	}
-
-	/* dayl_limit1 for calculation dayl index */
-	if (ok && scan_value(temp, &GSI->dayl_limit1, 'd'))
-	{
-		printf("Error reading dayl_limit1 parameter: epc_init()\n");
-		ok=0;
-	}
-
-	/* dayl_limit2 for calculation dayl index */
-	if (ok && scan_value(temp, &GSI->dayl_limit2, 'd'))
-	{
-		printf("Error reading dayl_limit2 parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR in vpd_limit data in EPC file\n");
+		printf("Correct data: limit1 > limit2 \n");
+		errflag=2097401;
 	}
 
 	/* n_moving_avg for calculation moving average from indexes */
-	if (ok && scan_value(temp, &GSI->n_moving_avg, 'i'))
+	if (!errflag && scan_value(epc_file, &epc->n_moving_avg, 'i'))
 	{
-		printf("Error reading n_moving_avg parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading n_moving_avg parameter: epc_init()\n");
+		errflag=20975;
+	}
+	if (!errflag && (epc->n_moving_avg < 2))
+	{
+		printf("ERROR in moving average parameter of epc calculation:\n");
+		printf("must greater then 2. Check EPC file and try again.\n");
+		errflag=2097501;
 	}
 
-	/* GSI_limit for calculation yday of start growing season  */
-	if (ok && scan_value(temp, &GSI->GSI_limit_SGS, 'd'))
+	/* epc_limit for calculation yday of start growing season  */
+	if (!errflag && scan_value(epc_file, &epc->GSI_limit_SGS, 'd'))
 	{
-		printf("Error reading GSI_limit_SGS parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading epc_limit_SGS parameter: epc_init()\n");
+		errflag=20976;
 	}
 
-	/* GSI_limit for calculation yday of end growing season  */
-	if (ok && scan_value(temp, &GSI->GSI_limit_EGS, 'd'))
+	/* epc_limit for calculation yday of end growing season  */
+	if (!errflag && scan_value(epc_file, &epc->GSI_limit_EGS, 'd'))
 	{
-		printf("Error reading GSI_limit_EGS parameter: epc_init()\n");
-		ok=0;
+		printf("ERROR reading epc_limit_EGS parameter: epc_init()\n");
+		errflag=20977;
 	}
-
-	strcpy(GSI->GSI_file.name, "intvar/GSI.txt");
-
-	/*---------------------------------------------------------------------------------------------------------------*/
+	
+	/*********************************************************************************************************************/
 	/* dividing line from file */ 
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading 6. dividing line from, epc_init()\n");
+		errflag=20978;
 	}
-	if (ok && scan_value(temp, keyword, 's'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
+		printf("ERROR reading header, epc_init()\n");
+		errflag=20978;
 	}
-	/*---------------------------------------------------------------------------------------------------------------*/
+	/*********************************************************************************************************************/
+	/* PHENOLOGICAL (ALLOCATION) PARAMETERS (7 phenological phases) */
+    /*********************************************************************************************************************/
 
-	/* respiration fractions for fluxes between compartments - Hidy 2015 */
-	if (ok && scan_value(temp, &epc->rfl1s1, 'd'))
+	if (!errflag && scan_value(epc_file, header, 's'))
 	{
-		printf("Error reading rfl1s1: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->rfl2s2, 'd'))
-	{
-		printf("Error reading rfl2s2: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->rfl4s3, 'd'))
-	{
-		printf("Error reading rfl4s3: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->rfs1s2, 'd'))
-	{
-		printf("Error reading rfs1s2: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->rfs2s3, 'd'))
-	{
-		printf("Error reading rfs2s3: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->rfs3s4, 'd'))
-	{
-		printf("Error reading rfs3s4: epc_init()\n");
-		ok=0;
+		printf("ERROR reading name of the phenophases\n");
+		errflag=20979;
 	}
 
-	/* 	base values of rate constants are (1/day) - Hidy 2015  */
-	if (ok && scan_value(temp, &epc->kl1_base, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading kl1_base: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->kl2_base, 'd'))
-	{
-		printf("Error reading kl2_base: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->kl4_base, 'd'))
-	{
-		printf("Error reading kl4_base: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->ks1_base, 'd'))
-	{
-		printf("Error reading ks1_base: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->ks2_base, 'd'))
-	{
-		printf("Error reading ks2_base: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->ks3_base, 'd'))
-	{
-		printf("Error reading ks3_base: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->ks4_base, 'd'))
-	{
-		printf("Error reading ks4_base: epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, &epc->kfrag_base, 'd'))
-	{
-		printf("Error reading kfrag_base: epc_init()\n");
-		ok=0;
-	}
-	/*---------------------------------------------------------------------------------------------------------------*/
-	/* dividing line from file */ 
-	if (ok && scan_value(temp, keyword, 's'))
-	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
-	}
-	if (ok && scan_value(temp, keyword, 's'))
-	{
-		printf("Error reading keyword, epc_init()\n");
-		ok=0;
-	}
-	/*---------------------------------------------------------------------------------------------------------------*/
-	
-	/* empirical N2O and CH4 modeling - Hidy 2015 */
-	
-	if (ok && scan_value(temp, &epc->N_pCNR1, 'd'))
-	{
-		printf("Error reading N_pCNR1: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->phenophase_length[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading phenophase_length in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20980;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->N_pCNR2, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading N_pCNR2: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_leafc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_leafc in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20981;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->N_pVWC1, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading N_pVWC1: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_frootc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_frootc in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20982;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->N_pVWC2, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading N_pVWC2: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_fruitc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_fruitc in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20983;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->N_pVWC3, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading N_pVWC3: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_softstemc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_softstemc in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20984;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->N_pVWC4, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading N_pVWC4: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_livestemc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_woodystemc_live in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20985;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->N_pTS, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading N_pTS: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_deadstemc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_woodystemc_dead in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20986;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->C_pBD1, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading C_pBD1: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_livecrootc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_crootc_live in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20987;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->C_pBD2, 'd'))
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading C_pBD2: epc_init()\n");
-		ok=0;
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->alloc_deadcrootc[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading alloc_crootc_dead in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20988;
+		}
 	}
 
-	if (ok && scan_value(temp, &epc->C_pVWC1, 'd'))
-	{
-		printf("Error reading C_pVWC1: epc_init()\n");
-		ok=0;
-	}
+	/* control of allocation parameter: test for alloc.fractions sum to 1.0  in every phenophases */
 
-	if (ok && scan_value(temp, &epc->C_pVWC2, 'd'))
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		printf("Error reading C_pVWC2: epc_init()\n");
-		ok=0;
-	}
+		sum = epc->alloc_leafc[phenphase] + epc->alloc_frootc[phenphase] + epc->alloc_fruitc[phenphase] + epc->alloc_softstemc[phenphase] +
+			  epc->alloc_livestemc[phenphase]   + epc->alloc_deadstemc[phenphase] + 
+			  epc->alloc_livecrootc[phenphase]  + epc->alloc_deadcrootc[phenphase];
 
-	if (ok && scan_value(temp, &epc->C_pVWC3, 'd'))
-	{
-		printf("Error reading C_pVWC3: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->C_pVWC4, 'd'))
-	{
-		printf("Error reading C_pVWC4: epc_init()\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(temp, &epc->C_pTS, 'd'))
-	{
-		printf("Error reading C_pTS: epc_init()\n");
-		ok=0;
-	}
-	
-	/* -------------------------------------------*/
-	if (dofileclose) fclose(temp.ptr);
+		if (!errflag && sum != 0 && fabs(sum - 1.) > CRIT_PREC)
+		{
+			printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
+			printf("Allocation parameters must sum to 1.0 in every phenophase. Check EPC file and try again.\n");
+			errflag=2098801;
 		
-	return (!ok);
+		}
+
+		/* control: after germination allocation parameter setting is necessary */
+		if (!errflag && (phenphase == 0)
+			   && (epc->alloc_leafc[phenphase] == 0 || epc->alloc_frootc[phenphase] == 0))
+		{
+			printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
+			printf("In the first phenophase leaf and froot allocation parameter setting is necessary. Check EPC file and try again.\n");
+			errflag=2098802;
+		}
+
+		/* control: woody biomes - no softstem */
+		if (!errflag && epc->woody && epc->alloc_softstemc[phenphase] > 0)
+		{
+			printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
+			printf("No softstem allocation in case of woody biomass. Check EPC file and try again.\n");
+			errflag=2098803;
+		}
+
+		/* control: non-woody biomes - no woody allocation */
+		if (!errflag && !epc->woody && 
+		   (epc->alloc_livecrootc[phenphase] > 0 || epc->alloc_livestemc[phenphase] > 0 || epc->alloc_deadcrootc[phenphase] > 0 || epc->alloc_deadstemc[phenphase] > 0))
+		{
+			printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
+			printf("No woody allocation in case of non-woody biomass. Check EPC file and try again.\n");
+			errflag=2098804;
+		}
+
+	}
+
+
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
+	{
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->avg_proj_sla[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading avg_proj_sla in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20989;
+		}
+
+		if (!errflag && epc->avg_proj_sla[phenphase] < 0)
+		{
+			printf("ERROR in specific leaf area in phenophase %i, epc_init()\n", phenphase+1);
+			printf("Specific leaf area must be positive in every phenophase. Check EPC file and try again.\n");
+			errflag=2098901;
+		
+		}
+
+		if (!errflag && epc->avg_proj_sla[phenphase] == 0 && epc->alloc_leafc[phenphase] > 0)
+		{
+			printf("ERROR in specific leaf area in phenophase %i, epc_init()\n", phenphase+1);
+			printf("Specific leaf area must greater than to 0.0 in case of leaf allocation. Check EPC file and try again.\n");
+			errflag=2098902;
+		
+		}
+	}
+
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
+	{
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->curgrowth_prop[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading curgrowth_prop in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20990;
+		}
+	}
+
+	scanflag=0; 
+	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
+	{
+		if (phenphase==N_PHENPHASES-1) scanflag=1;
+		if (!errflag && scan_array(epc_file, &(epc->max_plantlifetime[phenphase]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading max_plantlifetime in phenophase %i, epc_init()\n", phenphase+1);
+			errflag=20991;
+		}
+
+
+		if (!errflag && ((epc->max_plantlifetime[0] == DATA_GAP && epc->max_plantlifetime[phenphase] != DATA_GAP) ||
+			(epc->max_plantlifetime[0] != DATA_GAP && epc->max_plantlifetime[phenphase] == DATA_GAP)))
+		{
+			printf("ERROR in max_plantlifetime data: All or none maximal lifetime of plant tissue variables should be set at same time. Check EPC file and try again. \n");
+			errflag=2099101;
+		}
+	}
+
+	
+
+	
+
+	/* -------------------------------------------*/
+	if (dofilecloseEPC) fclose(epc_file.ptr);
+
+		
+	return (errflag);
+
 }

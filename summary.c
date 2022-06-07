@@ -3,11 +3,12 @@ summary.c
 summary variables for potential output
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Original code: Copyright 2000, Peter E. Thornton
+Numerical Terradynamic Simulation Group, The University of Montana, USA
+Modified code: Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -16,67 +17,174 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, wflux_struct* wf, epvar_struct* epv,
+int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const metvar_struct* metv, 
+	            const cstate_struct* cs, const cflux_struct* cf, const nstate_struct* ns, const nflux_struct* nf, const wflux_struct* wf, const epvar_struct* epv, 
 				summary_struct* summary)
 {
-	int ok=1;
+	int errflag=0;
 	int layer;
 	double gpp,mr,gr,hr,tr, fire;
-	double sr; /* Hidy 2012 - calculating soil respiration */
-	double npp,nep,nee, nbp, disturb_loss, disturb_gain;
-	double Closs_THN, Closs_MOW, Closs_HRV, Closs_PLG, Closs_GRZ, Cplus_PLT, Cplus_FRZ, Cplus_GRZ, daily_STDB_to_litr, daily_CTDB_to_litr;
+	double sr; /* calculating soil respiration */
+	double npp,nep,nee, nbp, disturb_loss, disturb_gain, BD_top30, BD_30to60, BD_60to90, g_per_cm3_to_kg_per_m3, prop_to_percent, kg_to_mg;
+	double Closs_THN_w, Closs_THN_nw, Closs_MOW, Closs_HRV, yieldC_HRV, Closs_PLG, Closs_GRZ, Cplus_PLT, Cplus_FRZ, Cplus_GRZ, Nplus_GRZ, Nplus_FRZ;
+	double Closs_SNSC, daily_STDB_to_litr, daily_CTDB_to_litr;
 
-	/* annual summaruzed cumNPP - Hidy 2015 */
-	if (yday == 0) summary->cum_npp_ann = 0;
 
 	/*******************************************************************************/
-	/* 1. summarize carbon stocks */
-	summary->abgc = cs->leafc+cs->fruitc+cs->softstemc;;
+	/* 0. cumulative SUMS: zero at yday 0 */
+
+	if (yday == 0) 
+	{
+	
+		summary->annprcp     = 0;
+		summary->anntavg     = 0;
+		summary->annrunoff   = 0;
+		summary->annoutflow  = 0;
+		summary->cum_npp  = 0;
+		summary->cum_nep  = 0;
+		summary->cum_nee  = 0;
+		summary->cum_gpp  = 0;
+		summary->cum_mr  = 0;
+		summary->cum_gr  = 0;
+		summary->cum_hr  = 0;
+		summary->cum_tr  = 0;
+		summary->cum_n2o  = 0;
+		summary->cum_Closs_MGM  = 0;
+		summary->cum_Cplus_MGM  = 0;
+		summary->cum_Closs_THN_w = 0;
+		summary->cum_Closs_THN_nw = 0;
+		summary->cum_Closs_MOW  = 0;
+		summary->cum_Closs_HRV  = 0;
+		summary->cum_yieldC_HRV = 0;
+		summary->cum_Closs_PLG  = 0;
+		summary->cum_Closs_GRZ  = 0;
+		summary->cum_Cplus_GRZ  = 0;
+		summary->cum_Cplus_FRZ  = 0;
+		summary->cum_Cplus_PLT  = 0;
+		summary->cum_Nplus_GRZ  = 0;
+		summary->cum_Nplus_FRZ  = 0;
+		summary->cum_Closs_SNSC  = 0;
+		summary->cum_Cplus_STDB  = 0;
+		summary->cum_Cplus_CTDB  = 0;
+		summary->cum_evap  = 0;
+		summary->cum_transp  = 0;
+		summary->cum_ET  = 0;					
+
+	}
+	
+	/*******************************************************************************/
+	/* 1. summarize meteorological and water variables */
+
+
+	summary->annprcp += metv->prcp;
+	summary->anntavg += metv->tavg / NDAYS_OF_YEAR;
+
+		
+	summary->annrunoff += wf->prcp_to_runoff;
+	summary->annoutflow += wf->soilw_percolated[epv->n_maxrootlayers-1];	
+
+	/*******************************************************************************/
+	/* 2. summarize carbon and nitrogen stocks */
+
+
+	
+	summary->abgc = cs->leafc+cs->fruitc+cs->softstemc + cs->STDBc_above + cs->livestemc + cs->deadstemc;
 	
 
 	summary->vegc = cs->leafc + cs->leafc_storage + cs->leafc_transfer + 
-		cs->frootc + cs->frootc_storage + cs->frootc_transfer +
-		cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer +
-		cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer +
-		cs->livecrootc + cs->livecrootc_storage + cs->livecrootc_transfer +
-		cs->deadcrootc + cs->deadcrootc_storage + cs->deadcrootc_transfer +
-		cs->gresp_storage + cs->gresp_transfer + 
-		cs->fruitc + cs->fruitc_storage + cs->fruitc_transfer +
-		cs->softstemc + cs->softstemc_storage + cs->softstemc_transfer;
+		            cs->frootc + cs->frootc_storage + cs->frootc_transfer +
+					cs->fruitc + cs->fruitc_storage + cs->fruitc_transfer +
+		            cs->softstemc + cs->softstemc_storage + cs->softstemc_transfer +
+		            cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer +
+		            cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer +
+		            cs->livecrootc + cs->livecrootc_storage + cs->livecrootc_transfer +
+		            cs->deadcrootc + cs->deadcrootc_storage + cs->deadcrootc_transfer +
+		            cs->gresp_storage + cs->gresp_transfer + cs->STDBc_above + cs->STDBc_below;
+
+			
+
+	summary->leafc_LandD     = cs->leafc     + cs->STDBc_leaf;
+	summary->frootc_LandD    = cs->frootc    + cs->STDBc_froot;
+	summary->fruitc_LandD    = cs->fruitc    + cs->STDBc_fruit;
+	summary->softstemc_LandD = cs->softstemc + cs->STDBc_softstem;
+
+	summary->leaf_DM     =  summary->leafc_LandD / epc->leafC_DM;
+    summary->froot_DM    =  summary->frootc_LandD / epc->frootC_DM;
+	summary->fruit_DM    =  summary->fruitc_LandD / epc->fruitC_DM;
+    summary->softstem_DM =  summary->softstemc_LandD / epc->softstemC_DM;
+
+	summary->leaflitr_DM = (cs->litr1c_total + cs->litr2c_total + cs->litr3c_total + cs->litr4c_total) / epc->leaflitrC_DM;
+    summary->livewood_DM = (cs->livestemc + cs->livecrootc) / epc->livewoodC_DM;
+	summary->deadwood_DM = (cs->deadstemc + cs->deadcrootc) / epc->deadwoodC_DM;
+
+
 
 	summary->litrc = cs->cwdc_total + cs->litr1c_total + cs->litr2c_total + cs->litr3c_total + cs->litr4c_total;
 	summary->soilc = cs->soil1c_total + cs->soil2c_total + cs->soil3c_total + cs->soil4c_total;
 	summary->totalc = summary->vegc + summary->litrc + summary->soilc;
 
 	summary->soiln = ns->soil1n_total + ns->soil2n_total + ns->soil3n_total + ns->soil4n_total;
-	summary->sminn = ns->sminn_total;
+	summary->sminn = ns->sminNH4_total + ns->sminNO3_total;
 
-	summary->soilc_top10 = cs->soil1c[0] + cs->soil1c[1] + cs->soil1c[2] +
-						   cs->soil2c[0] + cs->soil2c[1] + cs->soil2c[2] +
-						   cs->soil3c[0] + cs->soil3c[1] + cs->soil3c[2] +
-						   cs->soil4c[0] + cs->soil4c[1] + cs->soil4c[2];
 
-	summary->soiln_top10 = ns->soil1n[0] + ns->soil1n[1] + ns->soil1n[2] +
-						   ns->soil2n[0] + ns->soil2n[1] + ns->soil2n[2] +
-						   ns->soil3n[0] + ns->soil3n[1] + ns->soil3n[2] +
-						   ns->soil4n[0] + ns->soil4n[1] + ns->soil4n[2];
+	/* carbon and nitrogen content of top soil layer (10 cm layer depth):
+	   kg (C or N)/m2 -> g (C or N) / kg soil: kgC/m2 = kgCN/0.1m3 = 10 * kgCN/m3 */
 
-	summary->sminn_top10 = ns->sminn[0] + ns->sminn[1] + ns->sminn[2];
+	g_per_cm3_to_kg_per_m3 = 1000;
+	prop_to_percent = 100;
+	kg_to_mg = 1000000;
+	
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		/* sminNH4: kgN/m2; BD: g/cm3 -> kg/m3: *10-3 */
+		summary->sminNH4_ppm[layer] = ns->sminNH4[layer] / (sprop->BD[layer] / g_per_cm3_to_kg_per_m3);
+		summary->sminNO3_ppm[layer] = ns->sminNO3[layer] / (sprop->BD[layer] / g_per_cm3_to_kg_per_m3);
+	}
+
+	/* g/cm3 to kg/m2 */
+	BD_top30 = ((sitec->soillayer_thickness[0] * sprop->BD[0] + sitec->soillayer_thickness[1] * sprop->BD[1] +  + sitec->soillayer_thickness[2] * sprop->BD[2])/
+		        sitec->soillayer_depth[2]) * g_per_cm3_to_kg_per_m3 * sitec->soillayer_depth[2];
+
+	BD_30to60 = sprop->BD[3] * g_per_cm3_to_kg_per_m3 * sitec->soillayer_thickness[3];
+	BD_60to90 = sprop->BD[4] * g_per_cm3_to_kg_per_m3 * sitec->soillayer_thickness[4];
+	
+	summary->humusC_top30 = (cs->soil4c[0] + cs->soil4c[1] +  + cs->soil4c[2]) / BD_top30 * prop_to_percent;
+
+	summary->SOM_C_top30 = (cs->soil1c[0] + cs->soil1c[1] + cs->soil1c[2] +
+						    cs->soil2c[0] + cs->soil2c[1] + cs->soil2c[2] +
+						    cs->soil3c[0] + cs->soil3c[1] + cs->soil3c[2] +
+						    cs->soil4c[0] + cs->soil4c[1] + cs->soil4c[2]) / BD_top30 * prop_to_percent;
+
+	summary->SOM_C_30to60 = (cs->soil1c[3] + cs->soil2c[3] + cs->soil3c[3] + cs->soil4c[3]) / BD_30to60 * prop_to_percent;
+
+	summary->SOM_C_60to90 = (cs->soil1c[4] + cs->soil2c[4] + cs->soil3c[4] + cs->soil4c[4]) / BD_60to90 * prop_to_percent;
+
+	summary->SOM_N_top30 = (ns->soil1n[0] + ns->soil1n[1] + ns->soil1n[2] +
+						    ns->soil2n[0] + ns->soil2n[1] + ns->soil2n[2] +
+						    ns->soil3n[0] + ns->soil3n[1] + ns->soil3n[2] +
+						    ns->soil4n[0] + ns->soil4n[1] + ns->soil4n[2]) / BD_top30 * prop_to_percent;
+
+	summary->NH4_top30 = (ns->sminNH4[0] + ns->sminNH4[1] + ns->sminNH4[2]) / BD_top30 * kg_to_mg * sprop->NH4_mobilen_prop;
+
+	summary->NO3_top30 = (ns->sminNO3[0] + ns->sminNO3[1] + ns->sminNO3[2]) / BD_top30 * kg_to_mg * sprop->NO3_mobilen_prop;
+
+	summary->daily_n2o = nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
 
 	/*******************************************************************************/
-	/* 2. calculate daily fluxes (GPP, NPP, NEP, MR, GR, HR) positive for net growth: NPP = Gross PSN - Maintenance Resp - Growth Resp */
+	/* 3. calculate daily fluxes (GPP, NPP, NEP, MR, GR, HR) positive for net growth: NPP = Gross PSN - Maintenance Resp - Growth Resp */
 
 	gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
 	
 	mr = cf->leaf_day_mr + cf->leaf_night_mr + 
 		 cf->froot_mr + cf->livestem_mr + cf->livecroot_mr +
-		 /* fruit simulation - Hidy 2013. */
+		 /* fruit simulation */
 		 cf->fruit_mr +
-		 /* softstem simulation - Hidy 2013. */
+		 /* softstem simulation */
 		 cf->softstem_mr;
 
 	gr = cf->cpool_leaf_gr + cf->cpool_leaf_storage_gr + cf->transfer_leaf_gr +
@@ -85,14 +193,14 @@ int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns
 		cf->cpool_deadstem_gr + cf->cpool_deadstem_storage_gr + cf->transfer_deadstem_gr + 
 		cf->cpool_livecroot_gr + cf->cpool_livecroot_storage_gr + cf->transfer_livecroot_gr + 
 		cf->cpool_deadcroot_gr + cf->cpool_deadcroot_storage_gr + cf->transfer_deadcroot_gr +
-		/* fruit simulation - Hidy 2013. */
+		/* fruit simulation */
 		cf->cpool_fruit_gr + cf->cpool_fruit_storage_gr + cf->transfer_fruit_gr +
-		/* softstem simulation - Hidy 2013. */
+		/* softstem simulation */
 		cf->cpool_softstem_gr + cf->cpool_softstem_storage_gr + cf->transfer_softstem_gr;
 
 	npp = gpp - mr - gr;
 
-	/* heterotrophic respiration (Hidy 2016 - multilayer soil) */
+	/* heterotrophic respiration  */
 	hr=0;
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -104,7 +212,7 @@ int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns
 	
 	nep = npp - hr;
 	
-	/* soil respiration (Hidy 2012)*/
+	/* soil respiration */
 	sr = cf->froot_mr + cf->livecroot_mr +
 		 cf->cpool_froot_gr + cf->cpool_froot_storage_gr + cf->transfer_froot_gr + 
 		 cf->cpool_livecroot_gr + cf->cpool_livecroot_storage_gr + cf->transfer_livecroot_gr + 
@@ -122,15 +230,17 @@ int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns
 			cf->m_gresp_storage_to_fire + cf->m_gresp_transfer_to_fire + 
 			cf->m_litr1c_to_fire + cf->m_litr2c_to_fire + cf->m_litr3c_to_fire + cf->m_litr4c_to_fire +
 			cf->m_cwdc_to_fire +
-			/* fruit simulation - Hidy 2013. */
+			/* fruit simulation */
 			cf->m_fruitc_to_fire +  cf->m_fruitc_storage_to_fire + cf->m_fruitc_transfer_to_fire +
-			/* softstem simulation - Hidy 2013. */
+			/* softstem simulation */
 			cf->m_softstemc_to_fire +  cf->m_softstemc_storage_to_fire + cf->m_softstemc_transfer_to_fire;
-	nee = nep - fire;
+	/* NEE is positive if ecosystem is net source and negative if it is net sink */
+	nee = -1* (nep - fire);
 	
+
 	summary->daily_nep = nep;
 	summary->daily_npp = npp;
-	summary->daily_nee = -1 * nee;	// Hidy: NEE is positive if ecosystem is net source and negative if it is net sink
+	summary->daily_nee = nee;	
 	summary->daily_gpp = gpp;
 	summary->daily_mr = mr;
 	summary->daily_gr = gr;
@@ -138,26 +248,26 @@ int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns
 	summary->daily_sr = sr;
 	summary->daily_tr = tr;
 	summary->daily_fire = fire;
-	summary->cum_npp_ann += npp;
 	summary->cum_npp += npp;
 	summary->cum_nep += nep;
-	summary->cum_nee += -1*nee;
+	summary->cum_nee += nee;
 	summary->cum_gpp += gpp;
 	summary->cum_mr += mr;
 	summary->cum_gr += gr;
 	summary->cum_hr += hr;
-	summary->cum_fire += fire;
+	summary->cum_tr += (mr+gr+hr);
 
-	summary->cum_n2o += nf->N2O_flux_soil + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
+	summary->cum_n2o += nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
+
+	summary->cum_evap   += (wf->canopyw_evap + wf->soilw_evap);
+	summary->cum_transp += wf->soilw_trans_SUM;
 	summary->cum_ET += wf->evapotransp;
-	summary->vwc_annavg += epv->vwc_avg;
 	
 	/*******************************************************************************/
-	/* 3. calculation litter fluxes and pools- Hidy 2015 */
+	/* 4. calculation litter fluxes and pools */
 
 	summary->daily_litter = cs->litr1c_total + cs->litr2c_total + cs->litr3c_total + cs->litr4c_total;
 	
-	/* Hidy 2016 - multilayer soil */
 	summary->daily_litdecomp = 0;
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -194,25 +304,27 @@ int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns
 	summary->daily_litfallc = summary->daily_litfallc_above + summary->daily_litfallc_below;
 
 	/*******************************************************************************/
-	/* 3. calculation of disturbance and senescence effect - Hidy 2016 */
+	/* 5. calculation of disturbance and senescence effect  */
 
-	/* 3.1 SOURCES: cut-down biomass and standing dead biome */
-	daily_STDB_to_litr =
-	                        cf->STDB_to_litr1cA + cf->STDB_to_litr2cA + cf->STDB_to_litr3cA + cf->STDB_to_litr4cA +
-	                        cf->STDB_to_litr1cB + cf->STDB_to_litr2cB + cf->STDB_to_litr3cB + cf->STDB_to_litr4cB;
-	daily_CTDB_to_litr =
-	                        cf->CTDB_to_litr1cA + cf->CTDB_to_litr2cA + cf->CTDB_to_litr3cA + cf->CTDB_to_litr4cA +
-	                       cf->CTDB_to_litr1cB + cf->CTDB_to_litr2cB + cf->CTDB_to_litr3cB + cf->CTDB_to_litr4cB;
-	
-	/* 3.2 SINKS: management, senescence */
-	Closs_THN = cf->leafc_storage_to_THN + cf->leafc_transfer_to_THN + cf->leafc_to_THN +
-				cf->fruitc_storage_to_THN + cf->fruitc_transfer_to_THN + cf->fruitc_to_THN +
-				cf->frootc_storage_to_THN + cf->frootc_transfer_to_THN + cf->frootc_to_THN +
-				cf->livecrootc_storage_to_THN + cf->livecrootc_transfer_to_THN + cf->livecrootc_to_THN +
-				cf->deadcrootc_storage_to_THN + cf->deadcrootc_transfer_to_THN + cf->deadcrootc_to_THN +
-				cf->livestemc_storage_to_THN + cf->livestemc_transfer_to_THN + cf->livestemc_to_THN +
-				cf->deadstemc_storage_to_THN + cf->deadstemc_transfer_to_THN + cf->deadstemc_to_THN +
-				cf->gresp_transfer_to_THN + cf->gresp_storage_to_THN;
+	/* 5.1 cut-down biomass and standing dead biome */
+	daily_STDB_to_litr = cf->STDBc_to_litr;
+	daily_CTDB_to_litr = cf->CTDBc_to_litr;
+
+	summary->cum_Cplus_STDB += daily_STDB_to_litr;
+	summary->cum_Cplus_CTDB += daily_CTDB_to_litr;
+
+	/* 5.2 management */
+	Closs_THN_w = cf->leafc_storage_to_THN + cf->leafc_transfer_to_THN + cf->leafc_to_THN +
+				  cf->fruitc_storage_to_THN + cf->fruitc_transfer_to_THN + cf->fruitc_to_THN +
+				  cf->livestemc_storage_to_THN + cf->livestemc_transfer_to_THN + cf->livestemc_to_THN +
+				  cf->deadstemc_storage_to_THN + cf->deadstemc_transfer_to_THN + cf->deadstemc_to_THN +
+				  cf->gresp_transfer_to_THN + cf->gresp_storage_to_THN;
+
+	Closs_THN_nw = cf->leafc_storage_to_THN + cf->leafc_transfer_to_THN + cf->leafc_to_THN +
+				   cf->fruitc_storage_to_THN + cf->fruitc_transfer_to_THN + cf->fruitc_to_THN +
+				   cf->livestemc_storage_to_THN + cf->livestemc_transfer_to_THN + cf->livestemc_to_THN +
+				   cf->deadstemc_storage_to_THN + cf->deadstemc_transfer_to_THN + cf->deadstemc_to_THN +
+				   cf->gresp_transfer_to_THN + cf->gresp_storage_to_THN;
 
 
 	Closs_MOW = cf->leafc_storage_to_MOW + cf->leafc_transfer_to_MOW + cf->leafc_to_MOW +
@@ -225,6 +337,8 @@ int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns
 				cf->fruitc_storage_to_HRV + cf->fruitc_transfer_to_HRV + cf->fruitc_to_HRV +
 				cf->softstemc_storage_to_HRV + cf->softstemc_transfer_to_HRV + cf->softstemc_to_HRV +
 		        cf->gresp_transfer_to_HRV + cf->gresp_storage_to_HRV;
+
+	yieldC_HRV = cf->fruitc_to_HRV;
 
 
 	Closs_PLG = cf->leafc_storage_to_PLG - cf->leafc_transfer_to_PLG +  cf->leafc_to_PLG +
@@ -247,45 +361,59 @@ int cnw_summary(int yday, cstate_struct* cs, cflux_struct* cf, nstate_struct* ns
 							cf->fruitc_transfer_from_PLT +
 							cf->softstemc_transfer_from_PLT;
 
-	summary->Closs_THN = Closs_THN;
-	summary->Closs_MOW = Closs_MOW;
-	summary->Closs_HRV = Closs_HRV;
-	summary->Closs_PLG = Closs_PLG;
-	summary->Closs_GRZ = Closs_GRZ;
-	summary->Cplus_GRZ = Cplus_GRZ;
-	summary->Cplus_PLT = Cplus_PLT;
-	summary->Cplus_FRZ = Cplus_FRZ;
-	summary->Cplus_PLT = Cplus_PLT;
+	Nplus_GRZ = (nf->GRZ_to_litr1n  + nf->GRZ_to_litr2n  + nf->GRZ_to_litr3n  + nf->GRZ_to_litr4n);  
+	Nplus_FRZ = (nf->FRZ_to_sminNH4 + nf->FRZ_to_sminNO3) +
+		         nf->FRZ_to_litr1n + nf->FRZ_to_litr2n + nf->FRZ_to_litr3n + nf->FRZ_to_litr4n;
 
-	summary->daily_STDB_to_litr = daily_STDB_to_litr;
-    summary->daily_CTDB_to_litr = daily_CTDB_to_litr;
 
-	/* summerize senescence effect - Hidy 2008 */
-	summary->Closs_SNSC = cf->m_leafc_storage_to_SNSC + cf->m_leafc_transfer_to_SNSC + cf->m_leafc_to_SNSC +
-						  cf->m_fruitc_storage_to_SNSC + cf->m_fruitc_transfer_to_SNSC + cf->m_fruitc_to_SNSC +
-						  cf->m_softstemc_storage_to_SNSC + cf->m_softstemc_transfer_to_SNSC + cf->m_softstemc_to_SNSC +
-						  cf->m_frootc_storage_to_SNSC + cf->m_frootc_transfer_to_SNSC + cf->m_frootc_to_SNSC +
-						  cf->m_gresp_transfer_to_SNSC + cf->m_gresp_storage_to_SNSC;
 
-	disturb_loss = Closs_THN + Closs_MOW + Closs_HRV + Closs_PLG;
+	summary->cum_Closs_THN_w  += Closs_THN_w;
+	summary->cum_Closs_THN_nw += Closs_THN_nw;
+	summary->cum_Closs_MOW    += Closs_MOW;
+	summary->cum_Closs_HRV    += Closs_HRV;
+	summary->cum_yieldC_HRV   += yieldC_HRV;
+	summary->cum_Closs_PLG    += Closs_PLG;
+	summary->cum_Closs_GRZ    += Closs_GRZ;
+	summary->cum_Cplus_GRZ    += Cplus_GRZ;
+	summary->cum_Cplus_PLT    += Cplus_PLT;
+	summary->cum_Cplus_FRZ    += Cplus_FRZ;	
+	summary->cum_Nplus_GRZ    += Nplus_GRZ;  
+	summary->cum_Nplus_FRZ    += Nplus_FRZ;  
+
+	summary->cum_Closs_MGM += Closs_THN_w + Closs_THN_nw + Closs_MOW + Closs_HRV + Closs_PLG + Closs_GRZ;
+	summary->cum_Cplus_MGM += Cplus_GRZ + Cplus_PLT + Cplus_FRZ;
+
+
+	/* senescence effect  */
+	Closs_SNSC = cf->m_leafc_storage_to_SNSC + cf->m_leafc_transfer_to_SNSC + cf->m_leafc_to_SNSC +
+				 cf->m_fruitc_storage_to_SNSC + cf->m_fruitc_transfer_to_SNSC + cf->m_fruitc_to_SNSC +
+				 cf->m_softstemc_storage_to_SNSC + cf->m_softstemc_transfer_to_SNSC + cf->m_softstemc_to_SNSC +
+				 cf->m_frootc_storage_to_SNSC + cf->m_frootc_transfer_to_SNSC + cf->m_frootc_to_SNSC +
+				 cf->m_gresp_transfer_to_SNSC + cf->m_gresp_storage_to_SNSC +
+				 cf->HRV_frootc_to_SNSC + cf->HRV_softstemc_to_SNSC + cf->HRV_frootc_storage_to_SNSC +cf->HRV_frootc_transfer_to_SNSC +
+				 cf->HRV_softstemc_storage_to_SNSC + cf->HRV_softstemc_transfer_to_SNSC + cf->HRV_gresp_storage_to_SNSC + cf->HRV_gresp_transfer_to_SNSC;
+
+	summary->cum_Closs_SNSC += Closs_SNSC ;
+
+	/* NBP calculation: positive - mean net carbon gain to the system and negative - mean net carbon loss */
+
+	disturb_loss = Closs_THN_w + Closs_THN_nw + Closs_MOW + Closs_HRV + Closs_PLG;
 				
 	disturb_gain = Cplus_FRZ + Cplus_GRZ + Cplus_PLT + daily_CTDB_to_litr + daily_STDB_to_litr;
 	
-	/* nbp is positive is it mean net carbon gain to the system and it is negative is net carbon loss */
+
 	nbp = nep + disturb_gain - disturb_loss;
 	summary->daily_nbp = nbp;
 
-	/* main nitrogen information */
-	summary->Nplus_GRZ = (nf->GRZ_to_litr1n + nf->GRZ_to_litr2n + nf->GRZ_to_litr3n  + nf->GRZ_to_litr4n);  
-	summary->Nplus_FRZ = (nf->FRZ_to_sminn+nf->FRZ_to_litr1n + nf->FRZ_to_litr2n + nf->FRZ_to_litr3n  + nf->FRZ_to_litr4n);  
+
 	
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		summary->daily_gross_nmin   += epv->daily_gross_nmin[layer];
-		summary->daily_gross_nimmob += epv->daily_gross_nimmob[layer];
-		summary->daily_net_nmin     += epv->daily_net_nmin[layer];
+		summary->daily_gross_nmin_total   += epv->daily_gross_nmin[layer];
+		summary->daily_gross_nimmob_total += epv->daily_gross_nimmob[layer];
+		summary->daily_net_nmin_total     += epv->daily_net_nmin[layer];
 	}
 
 	
-	return(!ok);
+	return(errflag);
 }

@@ -3,9 +3,10 @@ grazing_init.c
 read grazinz information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -22,21 +23,45 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 
 
-int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
+int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 {
-
-	char key1[] = "GRAZING";
-	char keyword[80];
-	char bin[100];
-
-	char GRZ_filename[100];
+	char header[STRINGSIZE];
+	char GRZ_filename[STRINGSIZE];
 	file GRZ_file;
 
-	int i;
-	int ok = 1;
-	int ny=1;
+	int errflag=0;
+	int okFILE = 1;
 
+	int mgmread;
+	int nmgm = 0;
 
+	int p1,p2,p3, p4,p5,p6;
+	double p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19;
+	char tempvar;
+
+	int n_GRZparam, maxGRZ_num;
+
+	int* GRZstart_year_array;				
+	int* GRZstart_month_array;					
+	int* GRZstart_day_array;					
+	int* GRZend_year_array;						
+	int* GRZend_month_array;					
+	int* GRZend_day_array;				
+	double* trampling_effect;					
+	double* weight_LSU;							
+	double* stocking_rate_array;				
+	double* DMintake_array;						
+	double* prop_DMintake2excr_array;			
+	double* prop_excr2litter_array;			
+	double* DM_Ccontent_array;				
+	double* EXCR_Ncontent_array;				
+	double* EXCR_Ccontent_array;				
+	double* Nexrate;                          
+	double* EFman_N2O;					
+	double* EFman_CH4;						
+	double* EFfer_CH4;			
+
+	maxGRZ_num=1000;
 
 	/********************************************************************
 	**                                                                 **
@@ -45,154 +70,199 @@ int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 	**                                                                 **
 	********************************************************************/
 	
-	/* scan for the GRAZING file keyword, exit if not next */
-	if (ok && scan_value(init, keyword, 's'))
+	/* header reading */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		printf("Error reading keyword for control data\n");
-		ok=0;
-	}
-	if (ok && strcmp(keyword, key1))
-	{
-		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		ok=0;
-	}
-	
-	if (ok && scan_value(init, &GRZ->GRZ_flag, 'i'))
-	{
-		if (ok && scan_value(init, GRZ_filename, 's'))
-		{
-			printf("Error reading grazing calculating file\n");
-			ok=0;
-		}
-		else
-		{
-			
-			ok=1;
-			if (ctrl->onscreen) printf("INFORMATION: grazing information from file\n");
-			GRZ->GRZ_flag = 2;
-			strcpy(GRZ_file.name, GRZ_filename);
-		}
+		printf("ERROR reading keyword, grazing_init()\n");
+		errflag=1;
 	}
 
-	/* yeary varied garzing parameters (GRZ_flag=2); else: constant garzing parameters (GRZ_flag=1) */
-	if (GRZ->GRZ_flag == 2)
+	/* keyword control */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		ny = ctrl->simyears; 
+		printf("ERROR reading keyword, grazing_init()\n");
+		errflag=1;
+	}
 	
+	/* number of management action */
+	if (!errflag && scan_value(init, &GRZ->GRZ_num, 'i'))
+	{
+		printf("ERROR reading number of grazing in GRAZING section\n");
+		errflag=1;
+	}
+
+
+	/* if GRZ_num > 0 -> grazing */
+	if (!errflag && GRZ->GRZ_num)
+	{
+		/* allocate space for the temporary MGM array */ 
+		GRZstart_year_array       = (int*) malloc(maxGRZ_num*sizeof(double));  
+		GRZstart_month_array      = (int*) malloc(maxGRZ_num*sizeof(double)); 
+		GRZstart_day_array        = (int*) malloc(maxGRZ_num*sizeof(double)); 
+		GRZend_year_array         = (int*) malloc(maxGRZ_num*sizeof(double));  
+		GRZend_month_array        = (int*) malloc(maxGRZ_num*sizeof(double)); 
+		GRZend_day_array          = (int*) malloc(maxGRZ_num*sizeof(double)); 
+		trampling_effect          = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		weight_LSU                = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		stocking_rate_array       = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		DMintake_array            = (double*) malloc(maxGRZ_num*sizeof(double));
+		prop_DMintake2excr_array  = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		prop_excr2litter_array    = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		DM_Ccontent_array         = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		EXCR_Ncontent_array       = (double*) malloc(maxGRZ_num*sizeof(double));
+		EXCR_Ccontent_array       = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		Nexrate                   = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		EFman_N2O                 = (double*) malloc(maxGRZ_num*sizeof(double)); 
+		EFman_CH4                 = (double*) malloc(maxGRZ_num*sizeof(double));
+		EFfer_CH4                 = (double*) malloc(maxGRZ_num*sizeof(double));
+		
+		if (!errflag && scan_value(init, GRZ_filename, 's'))
+		{
+			printf("ERROR reading grazing calculating file\n");
+			errflag=1;
+		}
+		
+		strcpy(GRZ_file.name, GRZ_filename);
+		
 		/* open the main init file for ascii read and check for errors */
-		if (file_open(&GRZ_file,'i'))
+		if (file_open(&GRZ_file,'i',1))
 		{
-			printf("Error opening GRZ_file, grazing_int.c\n");
-			exit(1);
+			printf("ERROR opening GRZ_file, grazing_int.c\n");
+			errflag=1;
+			okFILE=0;
 		}
 
-		/* step forward in init file */
-		for (i=0; i < n_GRZparam; i++) scan_value(init, bin, 'd');
-
-	}
-	else GRZ_file=init;
+		if (!errflag && scan_value(GRZ_file, header, 's'))
+		{
+			printf("ERROR reading header for GRAZING section in MANAGMENET file\n");
+			errflag=1;
+		}
 
 	
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->GRZ_start_array)))
-	{
-		printf("Error reading first day of grazing\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->GRZ_end_array)))
-	{
-		printf("Error reading first day of grazing\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->weight_LSU)))
-	{
-		printf("Error reading livestock unit\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->stocking_rate_array)))
-	{
-		printf("Error reading animal stocking rate\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->DMintake_array)))
-	{
-		printf("Error reading last day of grazing\n");
-		ok=0;
-	}
-
-
-	/* trampling effect */
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->trampling_effect)))
-	{
-		printf("Error reading trampling_effect\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->prop_DMintake2excr_array)))
-	{
-		printf("Error reading prop. of the dry matter intake formed excrement\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->prop_excr2litter_array)))
-	{
-		printf("Error reading prop. of excrement return to litter\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->DM_Ccontent_array)))
-	{
-		printf("Error reading carbon content of dry matter\n");
-		ok=0;
-	}
-		
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EXCR_Ncontent_array)))
-	{
-		printf("Error reading EXCR_Ncontent_array\n");
-		ok=0;
-	}
+		while (!errflag && !(mgmread = scan_array (GRZ_file, &p1, 'i', 0, 0)))
+		{
+			n_GRZparam = 22;
+			mgmread = fscanf(GRZ_file.ptr, "%c%d%c%d%d%c%d%c%d%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&tempvar,&p5,&tempvar,&p6, 
+				                                                      &p7,&p8,&p9,&p10,&p11,&p12,&p13,&p14,&p15,&p16,&p17,&p18,&p19);
+			if (mgmread != n_GRZparam)
+			{
+				printf("ERROR reading GRAZING parameters from GRAZING file  file\n");
+				errflag=1;
+			}
 			
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EXCR_Ccontent_array)))
-	{
-		printf("Error reading EXCR_Ccontent_array\n");
-		ok=0;
-	}
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
+			{
+				GRZstart_year_array[nmgm]       = p1;  
+				GRZstart_month_array[nmgm]      = p2; 
+				GRZstart_day_array[nmgm]        = p3; 
+				GRZend_year_array[nmgm]         = p4;  
+				GRZend_month_array[nmgm]        = p5; 
+				GRZend_day_array[nmgm]          = p6; 
+				trampling_effect[nmgm]          = p7; 
+				weight_LSU[nmgm]                = p8; 
+				stocking_rate_array[nmgm]       = p9; 
+				DMintake_array[nmgm]            = p10;
+				prop_DMintake2excr_array[nmgm]  = p11; 
+				prop_excr2litter_array[nmgm]    = p12; 
+				DM_Ccontent_array[nmgm]         = p13; 
+				EXCR_Ncontent_array[nmgm]       = p14; 
+				EXCR_Ccontent_array[nmgm]       = p15; 
+				Nexrate[nmgm]                   = p16; 
+				EFman_N2O[nmgm]                 = p17; 
+				EFman_CH4[nmgm]                 = p18; 
+				EFfer_CH4[nmgm]                 = p19; 
+	
+				nmgm += 1;
+			}
 
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EFman_N2O)))
-	{
-		printf("Error reading manure emission factor of N2O\n");
-		ok=0;
-	}
+		}
+			
+		GRZ->GRZ_num = nmgm;
+		nmgm = 0;
 
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->Nexrate)))
-	{
-		printf("Error reading manure emission factor of N2O\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EFman_CH4)))
-	{
-		printf("Error reading manure emission factor of CH4\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EFfer_CH4)))
-	{
-		printf("Error reading fermentation emission factor of CH4\n");
-		ok=0;
-	}
-
-
-	if (GRZ->GRZ_flag == 2)
-	{
-		fclose (GRZ_file.ptr);
-	}
 		
-	GRZ->mgmd = -1;
+		GRZ->GRZstart_year_array       = (int*) malloc(GRZ->GRZ_num*sizeof(double));  
+		GRZ->GRZstart_month_array      = (int*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->GRZstart_day_array        = (int*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->GRZend_year_array         = (int*) malloc(GRZ->GRZ_num*sizeof(double));  
+		GRZ->GRZend_month_array        = (int*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->GRZend_day_array          = (int*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->trampling_effect          = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->weight_LSU                = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->stocking_rate_array       = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->DMintake_array            = (double*) malloc(GRZ->GRZ_num*sizeof(double));
+		GRZ->prop_DMintake2excr_array  = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->prop_excr2litter_array    = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->DM_Ccontent_array         = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->EXCR_Ncontent_array       = (double*) malloc(GRZ->GRZ_num*sizeof(double));
+		GRZ->EXCR_Ccontent_array       = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->Nexrate                   = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->EFman_N2O                 = (double*) malloc(GRZ->GRZ_num*sizeof(double)); 
+		GRZ->EFman_CH4                 = (double*) malloc(GRZ->GRZ_num*sizeof(double));
+		GRZ->EFfer_CH4                 = (double*) malloc(GRZ->GRZ_num*sizeof(double));
 
-	return (!ok);	
+		for (nmgm = 0; nmgm < GRZ->GRZ_num; nmgm++)
+		{
+			GRZ->GRZstart_year_array[nmgm]       = GRZstart_year_array[nmgm];  
+			GRZ->GRZstart_month_array[nmgm]      = GRZstart_month_array[nmgm]; 
+			GRZ->GRZstart_day_array[nmgm]        = GRZstart_day_array[nmgm]; 
+			GRZ->GRZend_year_array[nmgm]         = GRZend_year_array[nmgm] ;  
+			GRZ->GRZend_month_array[nmgm]        = GRZend_month_array[nmgm] ; 
+			GRZ->GRZend_day_array[nmgm]          = GRZend_day_array[nmgm]; 
+			GRZ->trampling_effect[nmgm]          = trampling_effect[nmgm]; 
+			GRZ->weight_LSU[nmgm]                = weight_LSU[nmgm]  ; 
+			GRZ->stocking_rate_array[nmgm]       = stocking_rate_array[nmgm] ; 
+			GRZ->DMintake_array[nmgm]            = DMintake_array[nmgm] ;
+			GRZ->prop_DMintake2excr_array[nmgm]  = prop_DMintake2excr_array[nmgm] ; 
+			GRZ->prop_excr2litter_array[nmgm]    = prop_excr2litter_array[nmgm]; 
+			GRZ->DM_Ccontent_array[nmgm]         = DM_Ccontent_array[nmgm]  ; 
+			GRZ->EXCR_Ncontent_array[nmgm]       = EXCR_Ncontent_array[nmgm] ; 
+			GRZ->EXCR_Ccontent_array[nmgm]       = EXCR_Ccontent_array[nmgm] ; 
+			GRZ->Nexrate[nmgm]                   = Nexrate[nmgm]; 
+			GRZ->EFman_N2O[nmgm]                 = EFman_N2O[nmgm]  ; 
+			GRZ->EFman_CH4[nmgm]                 = EFman_CH4[nmgm] ; 
+			GRZ->EFfer_CH4[nmgm]                 = EFfer_CH4[nmgm] ; 
+		}
+
+		/* close GRAZING file and free temporary memory */
+		if (okFILE) fclose (GRZ_file.ptr);
+
+		free(GRZstart_year_array);				
+		free(GRZstart_month_array);					
+		free(GRZstart_day_array);					
+		free(GRZend_year_array);						
+		free(GRZend_month_array);					
+		free(GRZend_day_array);				
+		free(trampling_effect);					
+		free(weight_LSU);							
+		free(stocking_rate_array);				
+		free(DMintake_array);						
+		free(prop_DMintake2excr_array);			
+		free(prop_excr2litter_array);			
+		free(DM_Ccontent_array);				
+		free(EXCR_Ncontent_array);				
+		free(EXCR_Ccontent_array);				
+		free(Nexrate);                          
+		free(EFman_N2O);					
+		free(EFman_CH4);						
+		free(EFfer_CH4);			
+
+	}
+	else
+	{
+		/* reading the line of management file into a temporary variable */
+		if (!errflag && scan_value(init, header, 's'))
+		{
+			printf("ERROR reading line of management file (in case of no management)\n");
+			errflag=1;
+		}
+	}
+
+	
+	
+	GRZ->mgmdGRZ = 0;
+
+	
+	return (errflag);	
 
 }

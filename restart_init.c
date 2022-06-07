@@ -3,11 +3,11 @@ restart_init.c
 Initialize the simulation restart parameters
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
+Biome-BGCMuSo v6.0.
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Numerical Terradynamic Simulation Group (NTSG)
+School of Forestry, University of Montana
+Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -23,10 +23,10 @@ Hungarian Academy of Sciences
 
 int restart_init(file init, restart_ctrl_struct* restart)
 {
-	int ok = 1;
+	int errflag=0;
 	char key1[] = "RESTART";
-	char keyword[80];
-	char junk[80];
+	char keyword[STRINGSIZE];
+	char junk[STRINGSIZE];
 
 	/********************************************************************
 	**                                                                 **
@@ -36,71 +36,66 @@ int restart_init(file init, restart_ctrl_struct* restart)
 	********************************************************************/
 	
 	/* scan for the restart block keyword, exit if not next */
-	if (ok && scan_value(init, keyword, 's'))
+	if (!errflag && scan_value(init, keyword, 's'))
 	{
-		printf("Error reading keyword for restart data\n");
-		ok=0;
+		printf("ERROR reading keyword for restart data\n");
+		errflag=203;
 	}
-	if (ok && strcmp(keyword, key1))
+	if (!errflag && strcmp(keyword, key1))
 	{
 		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		ok=0;
+		errflag=203;
 	}
 	
 	/* check for input restart file */
-	if (ok && scan_value(init, &restart->read_restart, 'i'))
+	if (!errflag && scan_value(init, &restart->read_restart, 'i'))
 	{
-		printf("Error reading input restart flag\n");
-		ok=0;
+		printf("ERROR reading input restart flag\n");
+		errflag=20301;
 	}
 	/* check for output restart file */
-	if (ok && scan_value(init, &restart->write_restart, 'i'))
+	if (!errflag && scan_value(init, &restart->write_restart, 'i'))
 	{
-		printf("Error reading output restart flag\n");
-		ok=0;
+		printf("ERROR reading output restart flag\n");
+		errflag=20302;
 	}
-	/* flag for metyear handling */
-	if (ok && scan_value(init, &restart->keep_metyr, 'i'))
-	{
-		printf("Error reading keep_metyr flag\n");
-		ok=0;
-	}
+	
 	/* if using an input restart file, open it, otherwise
 	discard the next line of the ini file */
-	if (ok && restart->read_restart)
+	if (!errflag && restart->read_restart)
 	{
-    	if (scan_open(init,&(restart->in_restart),'r')) 
+    	if (scan_open(init,&(restart->in_restart),'r',1)) 
 		{
-			printf("Error opening input restart file\n");
-			ok=0;
+			printf("ERROR opening input restart file\n");
+			errflag=20303;
 		}
 	}
 	else
 	{
 		if (scan_value(init, junk, 's'))
 		{
-			printf("Error scanning input restart filename\n");
-			ok=0;
+			printf("ERROR scanning input restart filename\n");
+			errflag=20304;
 		}
 	}
 	/* if using an output restart file, open it, otherwise
 	discard the next line of the ini file */
-	if (ok && restart->write_restart)
+	if (!errflag && restart->write_restart)
 	{
-    	if (scan_open(init,&(restart->out_restart),'w')) 
+    	if (scan_open(init,&(restart->out_restart),'w',1)) 
 		{
-			printf("Error opening output restart file\n");
-			ok=0;
+			printf("ERROR opening output restart file\n");
+			errflag=20305;
 		}
 	}
 	else
 	{
 		if (scan_value(init, junk, 's'))
 		{
-			printf("Error scanning output restart filename\n");
-			ok=0;
+			printf("ERROR scanning output restart filename\n");
+			errflag=20306;
 		}
 	}
 	
-	return (!ok);
+	return (errflag);
 }

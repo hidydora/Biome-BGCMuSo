@@ -3,9 +3,10 @@ multilayer_transpiration.c
 Hidy 2011 - part-transpiration (regarding to the different layers of the soil) calculation based on the layer's soil water content
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -14,11 +15,12 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_constants.h"
 #include "bgc_func.h"    
 
-int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct* sitec, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf)
+int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec, epvar_struct* epv, const wstate_struct* ws, wflux_struct* wf)
 {
 	/* given a list of site constants and the soil water mass (kg/m2),
 	this function returns the soil water potential (MPa)
@@ -37,25 +39,25 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 
 	/* internal variables */
 	int layer;
-	double soilw_hw, ratio,soilw_trans_ctrl1, soilw_trans_ctrl2, transp_diff_SUM;
+	double ratio, soilw_trans_ctrl, transp_diff_SUM;
 	double transp_diff = 0;
-	int ok=1;
+	
+	int errflag=0;
 
-	soilw_hw=ratio=soilw_trans_ctrl1=soilw_trans_ctrl2=transp_diff=transp_diff_SUM=0;
+	ratio=soilw_trans_ctrl=transp_diff=transp_diff_SUM=0;
 
 	/* *****************************************************************************************************************/
 	/* 1. PART-TRANSPIRATION: first approximation tanspiration from every soil layer equally */
 
-	for (layer = 0; layer < epv->n_rootlayers; layer++)
+	for (layer = epv->germ_layer; layer < epv->n_rootlayers; layer++)
 	{
-		/* actual soil water content at theoretical lower limit of water content: hygroscopic water point */
-		soilw_hw = sitec->vwc_hw[layer] * sitec->soillayer_thickness[layer] * water_density;
-
 		/* root water uptake is be possible from the layers where root is located  */ 
 		if (epv->n_rootlayers > 1)
 		{
 			if (epv->m_soilstress > 0)
+			{
 				ratio=(epv->m_soilstress_layer[layer] * epv->rootlength_prop[layer]) / epv->m_soilstress;
+			}
 			else
 				ratio=0;
 		}
@@ -64,52 +66,32 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 			ratio = 1;
 
 		wf->soilw_trans[layer] = wf->soilw_trans_SUM * ratio;
-		soilw_trans_ctrl1 += wf->soilw_trans[layer];
+		
+		
+		soilw_trans_ctrl += wf->soilw_trans[layer];
+		
+	}
+
+	/* extreme dry soil - no transpiration occurs */
+	if (soilw_trans_ctrl == 0 && wf->soilw_trans_SUM != 0)
+	{
+		wf->soilw_trans_SUM = 0;
+		/* notransp_flag: flag of WARNING writing in log file (only at first time) */
+		if (!ctrl->notransp_flag) ctrl->notransp_flag = 1;
 	}
 
 	/* control */
-	if (fabs(soilw_trans_ctrl1 - wf->soilw_trans_SUM) > CRIT_PREC)
+	if (fabs(soilw_trans_ctrl - wf->soilw_trans_SUM) > CRIT_PREC)
 	{
+		printf("\n");
 		printf("FATAL ERRROR: transpiration calculation error in multilayer_transpiration.c:\n");
-		ok=0;
-	}
-
-
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
-	{
-
-		/* actual soil water content at theoretical lower limit of water content: hygroscopic water point */
-		soilw_hw = sitec->vwc_hw[layer] * sitec->soillayer_thickness[layer] * water_density;
-
-		/* transp_diff: control parameter to avoid negative soil water content (due to overestimated transpiration + dry soil) */
-		transp_diff = ws->soilw[layer] - wf->soilw_trans[layer] - soilw_hw;
-
-		/* theoretical lower limit of water content: hygroscopic water point (if transp_diff less than 0, limited transpiration flux)  */
-		if (transp_diff < 0)
-		{
-			wf->soilw_trans[layer] += transp_diff;
-			transp_diff_SUM += transp_diff;
-			if (ctrl->onscreen && fabs(transp_diff) > CRIT_PREC) printf("Limited transpiration due to dry soil (multilayer_transpiration.c)\n");
-		}
-
-		ws->soilw[layer] -= wf->soilw_trans[layer];
-		soilw_trans_ctrl2 += wf->soilw_trans[layer];
-		epv->vwc[layer]  = ws->soilw[layer] / sitec->soillayer_thickness[layer] / water_density;
-	}
-
-	wf->soilw_trans_SUM += transp_diff_SUM;
-
-	/* control */
-	if (fabs(soilw_trans_ctrl2 - wf->soilw_trans_SUM) > CRIT_PREC)
-	{
-		printf("FATAL ERRROR: transpiration calculation error in multilayer_transpiration.c:\n");
-		ok=0;
+		errflag=1;
+		wf->soilw_trans_SUM = soilw_trans_ctrl;
 	}
 
 
 
-
-	return (!ok);
+	return (errflag);
 }
 
 

@@ -5,9 +5,10 @@ based on literure (Jolly et al, 2005) and own method. The goal is to replace pre
 of the model-defined onset and offset day does not work correctly
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -24,11 +25,11 @@ Hungarian Academy of Sciences
 #include "misc_func.h"
 
 
-int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,const siteconst_struct* sitec, const epconst_struct* epc, 
-					GSI_struct* GSI, phenarray_struct* phenarr)
+int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, epconst_struct* epc, 
+					phenarray_struct* phenarr, control_struct* ctrl)
 
 {
-	int ok=1;
+	int errflag=0;
 	int ny, yday, back;
 
 	int firstdayLP = 240;		/* theoretically first day of litterfall */
@@ -38,8 +39,8 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 	int offday_flag = 0;
 	int onday = 0;
 	int offday = 0;
-	int nyears = ctrl->metyears;
-	int n_yday = NDAY_OF_YEAR;
+	int nyears = ctrl->simyears;
+	int n_yday = NDAYS_OF_YEAR;
 	
 	/*  enviromental conditions taken account to calculate onset and offset days */
 	double tmax_act, tmin_act, tavg_act, vpd_act, dayl_act, heatsum_act;	
@@ -47,18 +48,18 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 	
 	/* threshold limits for each variable, between assuming that phenological activity varied linearly from inactive to unconstrained */
 	double base_temp = epc->base_temp;
-	double heatsum_limit1 = GSI->heatsum_limit1;
-	double heatsum_limit2 = GSI->heatsum_limit2;
-	double tmin_limit1 = GSI->tmin_limit1;
-	double tmin_limit2 = GSI->tmin_limit2;
-	double vpd_limit1 = GSI->vpd_limit1;
-	double vpd_limit2 = GSI->vpd_limit2;
-	double dayl_limit1 = GSI->dayl_limit1;
-	double dayl_limit2 = GSI->dayl_limit2;
-	int    n_moving_avg = GSI->n_moving_avg-1;	/* moving averages are calculated from indicatiors 
+	double heatsum_limit1 = epc->heatsum_limit1;
+	double heatsum_limit2 = epc->heatsum_limit2;
+	double tmin_limit1 = epc->tmin_limit1;
+	double tmin_limit2 = epc->tmin_limit2;
+	double vpd_limit1 = epc->vpd_limit1;
+	double vpd_limit2 = epc->vpd_limit2;
+	double dayl_limit1 = epc->dayl_limit1;
+	double dayl_limit2 = epc->dayl_limit2;
+	int    n_moving_avg = epc->n_moving_avg-1;	/* moving averages are calculated from indicatiors 
 											       to avoid the effects of single extreme events; -1: number to index */
-	double GSI_limit_SGS = GSI->GSI_limit_SGS;	/* when GSI index fisrt time greater that limit -> start of the growing season */
-	double GSI_limit_EGS = GSI->GSI_limit_EGS;	/* when GSI index fisrt time less that limit -> end of the growing season */
+	double epc_limit_SGS = epc->GSI_limit_SGS;	/* when GSI index fisrt time greater that limit -> start of the growing season */
+	double epc_limit_EGS = epc->GSI_limit_EGS;	/* when GSI index fisrt time less that limit -> end of the growing season */
 
 
 	/* indexes for the different variables and total index (multiplication of  partial indexes)*/
@@ -66,7 +67,7 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 	double vpd_index = 0; 
 	double dayl_index = 0; 
 	double heatsum_index = 0; 
-	double GSI_index = 0; 
+	double epc_index = 0; 
 
 	/* at the presence of snow cover no vegetation period (calculating snow cover from precipitation, Tavg and srad) */
 	double snowcover, snowcover_limit, prcp_act, srad_act;
@@ -74,64 +75,58 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 	double albedo_sw = sitec->sw_alb;
 	
 	/* to calculate moving average from total index values */
-	double GSI_index_SUM = 0;
-	double GSI_index_avg = 0;
-	double GSI_index_total = 0;
+	double epc_index_SUM = 0;
+	double epc_index_avg = 0;
+	double epc_index_total = 0;
 	
-	int *onday_arr = 0;
-	int *offday_arr = 0;
-
 	onday_flag = 0;
 	offday_flag = 1;
 
 	/* limitation of snow cover */
 	snowcover = 0;
 
-	snowcover_limit = GSI->snowcover_limit;
+	snowcover_limit = epc->snowcover_limit;
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////allocate memory for arrays containing ondays and offdays /////////////////////////////////////
-	if (ok) 
+	if (!errflag) 
 	{
-		onday_arr = (int*) malloc((nyears+1) * sizeof(int));
-		if (!onday_arr)
-		{
-			printf("Error allocating for onday_arr, prephenology()\n");
-			ok=0;
-		}
-	}
-	if (ok) 
-	{
-		offday_arr = (int*) malloc((nyears+1) * sizeof(int));
-		if (!offday_arr)
-		{
-			printf("Error allocating for offday_arr, prephenology()\n");
-			ok=0;
-		}
-	}
+		/* allocate space for the onday_arr and offday_arr: first column - year, second column: day*/
+		phenarr->onday_arr  = (int**) malloc(nyears*sizeof(int*));  
+        phenarr->offday_arr = (int**) malloc(nyears*sizeof(int*));  
 
+		for (ny = 0; ny<nyears; ny++)
+		{
+			phenarr->onday_arr[ny]  = (int*) malloc(2*sizeof(int));  
+			phenarr->offday_arr[ny] = (int*) malloc(2*sizeof(int));  
+			phenarr->onday_arr[ny]  = (int*) malloc(2*sizeof(int));  
+			phenarr->offday_arr[ny] = (int*) malloc(2*sizeof(int));  
+		}
+	
+		if (!phenarr->onday_arr)
+		{
+			printf("\n");
+			printf("ERROR allocating for onday_arr, prephenology()\n");
+			errflag=1;
+		}
 
-		
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////
-	if (ctrl->onscreen)
-	{
-		fprintf(GSI->GSI_file.ptr, "year yday snowcover heatsum_act tmin_index vpd_index dayl_index heatsum_index GSI_index_avg GSI_index_total\n");
-		
-		if (ctrl->spinup == 0)
-		{	
-			printf("-----------------\n");
-			printf("ONDAYS AND OFFDAYS\n");
+		if (!phenarr->offday_arr)
+		{
+			printf("\n");
+			printf("ERROR allocating for offday_arr, prephenology()\n");
+			errflag=1;
 		}
 	}
-	////////////////////////////////////////////////////////////////////
+	
 
 	for (ny=0; ny<nyears; ny++)
 	{
 		onday  = 0;
 		offday = 0;
 
-		for (yday=0; yday<NDAY_OF_YEAR; yday++)	
+
+
+		for (yday=0; yday<NDAYS_OF_YEAR; yday++)	
 		{
 		/* ******************************************************************* */
 		/* 1. calculation of snow loss and plus*/
@@ -182,12 +177,12 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 				heatsum_act     = 0;
 				tmin_index      = 0;
 				heatsum_index   = 0;
-				GSI_index_avg   = 0;
-				GSI_index_total = 0;
+				epc_index_avg   = 0;
+				epc_index_total = 0;
 			}
 			else
 			{
-				GSI_index_SUM = 0;
+				epc_index_SUM = 0;
 				heatsum_act = 0;
 				for (back=0; back<=n_moving_avg; back++)
 				{
@@ -261,8 +256,8 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 					}
 						
 					
-					GSI_index = tmin_index * vpd_index * dayl_index;
-					GSI_index_SUM += GSI_index;
+					epc_index = tmin_index * vpd_index * dayl_index;
+					epc_index_SUM += epc_index;
 
 				} /* endfor - calculating indexes for the n_moving_average long period  */
 
@@ -284,74 +279,61 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl,cons
 
 				}
 
-				GSI_index_avg = GSI_index_SUM / (n_moving_avg+1);
-				GSI_index_total = GSI_index_avg * heatsum_index;
+				epc_index_avg = epc_index_SUM / (n_moving_avg+1);
+				epc_index_total = epc_index_avg * heatsum_index;
 				
 			} /* endelse - calculating indexes */
 
-			if (onday_flag == 0 && offday_flag == 1 && GSI_index_total > GSI_limit_SGS && yday < firstdayLP && snowcover <= snowcover_limit) 
+			if (onday_flag == 0 && offday_flag == 1 && epc_index_total > epc_limit_SGS && yday < firstdayLP && snowcover <= snowcover_limit) 
 			{
 				onday_flag    = 1;
 				offday_flag   = 0;
 				onday         = yday;
-				onday_arr[ny] = onday;
+
 				if (ctrl->onscreen && ctrl->spinup == 0) printf("Year: %i\n", ctrl->simstartyear+ny);
 				if (ctrl->onscreen && ctrl->spinup == 0) printf("onday  - %i\n", onday);
 			}
 
-			if (onday_flag == 1 && offday_flag == 0 && GSI_index_total < GSI_limit_EGS && yday > firstdayLP) 
+			if (onday_flag == 1 && offday_flag == 0 && epc_index_total < epc_limit_EGS && yday > firstdayLP) 
 			{
  				onday_flag     = 0;
 				offday_flag    = 1;
 				offday         = yday;
-				offday_arr[ny] = offday;
+
 				if (ctrl->onscreen && ctrl->spinup == 0) printf("offday - %i\n", offday);
 			}
 		
 		
 			/* if vegetation period has not ended until the last day of year, the offday is equal to the last day of year */
-			if (yday == NDAY_OF_YEAR-1 && offday == 0)
+			if (yday == NDAYS_OF_YEAR-1 && offday == 0)
 			{	/* if vegetation period has not began */
 				if (onday_flag == 0) 
 				{	
-					onday_arr[ny] = yday-2;
-					if (ctrl->onscreen) printf("WARNING: no real vegetation period - check meteorological data");
+					onday = yday-2;
+					ctrl->vegper_flag = 1;
 				}
 				onday_flag     = 0;
 				offday_flag    = 1;
 				offday         = yday;
-				offday_arr[ny] = offday;
+
 			
-			}
-			/* ******************************************************************* */
-			/* 4. writing out the enviromental parameters and GSI indexes */
-			if (ctrl->onscreen)
-			{
-				fprintf(GSI->GSI_file.ptr, "%i %i %5.2f %5.1f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f\n", 
-						ctrl->simstartyear+ny, yday, 
-						snowcover, heatsum_act, tmin_index, vpd_index, dayl_index, heatsum_index, GSI_index_avg, GSI_index_total);
 			}
 
 		}/* endfor - simdays */
+		
+		phenarr->onday_arr[ny][0] = ny + ctrl->simstartyear;
+		phenarr->onday_arr[ny][1] = onday;
 
-	
+		phenarr->offday_arr[ny][0] = ny + ctrl->simstartyear;
+		phenarr->offday_arr[ny][1] = offday;
+
 	} /* endfor - simyears */
 
-	/* writing out the date of onday and offday for every simulation year */
-	if (ctrl->onscreen)
-	{
-		for (ny=0 ; ny<nyears ; ny++)
-		{
-			fprintf(GSI->GSI_file.ptr, "%i\n", ctrl->simstartyear+ny);
-			fprintf(GSI->GSI_file.ptr, "%i\n", onday_arr[ny]);
-			fprintf(GSI->GSI_file.ptr, "%i\n", offday_arr[ny]);
-		}
-	}
 
-	phenarr->onday_arr = onday_arr;
-	phenarr->offday_arr= offday_arr;
 
-	return (!ok);
+
+
+	return (errflag);
 
 } /* end - subroutine */
 

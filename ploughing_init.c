@@ -3,9 +3,10 @@ ploughing_init.c
 read ploughing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -22,112 +23,155 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 
 
-int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
+int ploughing_init(file init, const control_struct* ctrl, ploughing_struct* PLG)
 {
-	char key1[] = "PLOUGHING";
-	char keyword[80];
-	char bin[100];
-
-	char PLG_filename[100];
+	char header[STRINGSIZE];
+	char PLG_filename[STRINGSIZE];
 	file PLG_file;
 
-	int i;
-	int ok = 1;
-	int ny=1;
+	int errflag=0;
+	int okFILE = 1;
+
+	int mgmread;
+	int nmgm = 0;
+
+	int p1,p2,p3;
+	double p4;
+	char tempvar;
+
+	int n_PLGparam, maxPLG_num;
+
+	int* PLGyear_array;			
+	int* PLGmonth_array;						
+	int* PLGday_array;							
+	double* PLGdepths_array;				
+
+	maxPLG_num=1000;
+
 
 	/********************************************************************
 	**                                                                 **
 	** Begin reading initialization file block starting with keyword:  **
-	** ploughing                                                       ** 
+	** PLOUGHING                                                       ** 
 	**                                                                 **
 	********************************************************************/
 	
-	/* scan for the ploughing file keyword, exit if not next */
-	if (ok && scan_value(init, keyword, 's'))
+	/* header reading */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		printf("Error reading keyword for control data\n");
-		ok=0;
-	}
-	if (ok && strcmp(keyword, key1))
-	{
-		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		ok=0;
+		printf("ERROR reading keyword, ploughing_init()\n");
+		errflag=1;
 	}
 
-
-	if (ok && scan_value(init, &PLG->PLG_flag, 'i'))
+	/* header control */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		if (ok && scan_value(init, PLG_filename, 's'))
-		{
-			printf("Error reading ploughing calculating file\n");
-			ok=0;
-		}
-		else
-		{
-			
-			ok=1;
-			if (ctrl->onscreen) printf("INFORMATION: ploughing information from file\n");
-			PLG->PLG_flag = 2;
-			strcpy(PLG_file.name, PLG_filename);
-		}
+		printf("ERROR reading keyword, ploughing_init()\n");
+		errflag=1;
 	}
 
-	/* yeary varied garzing parameters (PLG_flag=2); else: constant garzing parameters (PLG_flag=1) */
-	if (PLG->PLG_flag == 2)
-	{
-		ny = ctrl->simyears; 
 	
+	/* number of management action */
+	if (!errflag && scan_value(init, &PLG->PLG_num, 'i'))
+	{
+		printf("ERROR reading number of ploughing in PLOUGHING section\n");
+		errflag=1;
+	}
+
+
+	/* if PLG_num > 0 -> ploughing */
+	if (!errflag && PLG->PLG_num)
+	{
+		/* allocate space for the temporary MGM array */
+		PLGyear_array         = (int*) malloc(maxPLG_num*sizeof(double));  
+		PLGmonth_array        = (int*) malloc(maxPLG_num*sizeof(double)); 
+		PLGday_array          = (int*) malloc(maxPLG_num*sizeof(double)); 
+		PLGdepths_array       = (double*) malloc(maxPLG_num*sizeof(double)); 
+		
+		if (!errflag && scan_value(init, PLG_filename, 's'))
+		{
+			printf("ERROR reading ploughing calculating file\n");
+			errflag=1;
+		}
+		
+		strcpy(PLG_file.name, PLG_filename);
+		
 		/* open the main init file for ascii read and check for errors */
-		if (file_open(&PLG_file,'i'))
+		if (file_open(&PLG_file,'i',1))
 		{
-			printf("Error opening PLG_file, ploughing_int.c\n");
-			exit(1);
+			printf("ERROR opening PLG_file, ploughing_int.c\n");
+			errflag=1;
+			okFILE=0;
 		}
 
-		/* step forward in init file */
-		for (i=0; i < n_PLGparam; i++) scan_value(init, bin, 'd');
-
-	}
-	else PLG_file=init;
-	
-
-	if (ok && read_mgmarray(ny, PLG->PLG_flag, PLG_file, &(PLG->PLGdays_array)))
-	{
-		printf("Error reading first day of ploughing\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, PLG->PLG_flag, PLG_file, &(PLG->PLGdepths_array)))
-	{
-		printf("Error reading depth of ploughing\n");
-		ok=0;
-	}
-	
-	/* scan for the ploughing file keyword, exit if not next */
-	if (ok && read_mgmarray(ny, PLG->PLG_flag, PLG_file, &(PLG->dissolv_coeff_array)))
-	{
-		printf("Error reading dissolv_coeff_array\n");
-		ok=0;
-	}
-
-
-	if (PLG->PLG_flag == 2)
-	{
-		fclose (PLG_file.ptr);
-	}
+		if (!errflag && scan_value(PLG_file, header, 's'))
+		{
+			printf("ERROR reading header for PLOUGHING section in MANAGMENET file\n");
+			errflag=1;
+		}
 
 	
-	PLG->PLG_pool_litr1c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr2c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr3c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr4c = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr1n = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr2n = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr3n = 0;				    /* local pool - Hidy 2014.*/
-	PLG->PLG_pool_litr4n = 0;				    /* local pool - Hidy 2014.*/
-	PLG->DC_act = 0.0;
-	PLG->mgmd = -1;
+		while (!errflag && !(mgmread = scan_array (PLG_file, &p1, 'i', 0, 0)))
+		{
+			n_PLGparam = 5;
+
+			mgmread = fscanf(PLG_file.ptr, "%c%d%c%d%lf%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4);
+			if (mgmread != n_PLGparam)
+			{
+				printf("ERROR reading PLOUGHING parameters from PLOUGHING file  file\n");
+				errflag=1;
+			}
+
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
+			{
+				PLGyear_array[nmgm]         = p1;
+				PLGmonth_array[nmgm]        = p2;
+				PLGday_array[nmgm]          = p3;
+				PLGdepths_array[nmgm]       = p4;
+
+				nmgm += 1;
+			}
+		}
+			
+		PLG->PLG_num = nmgm;
+		nmgm = 0;
+
+		
+		PLG->PLGyear_array         = (int*) malloc(PLG->PLG_num*sizeof(double));  
+		PLG->PLGmonth_array        = (int*) malloc(PLG->PLG_num*sizeof(double)); 
+		PLG->PLGday_array          = (int*) malloc(PLG->PLG_num*sizeof(double)); 
+		PLG->PLGdepths_array       = (double*) malloc(PLG->PLG_num*sizeof(double)); 
+			
+		for (nmgm = 0; nmgm < PLG->PLG_num; nmgm++)
+		{
+			PLG->PLGyear_array[nmgm]         = PLGyear_array[nmgm];
+			PLG->PLGmonth_array[nmgm]        = PLGmonth_array[nmgm] ;
+			PLG->PLGday_array[nmgm]          = PLGday_array[nmgm]  ;
+			PLG->PLGdepths_array[nmgm]       = PLGdepths_array[nmgm] ;
+		}
+
+		/* close PLOUGHING file and free temporary memory*/
+		if (okFILE) fclose (PLG_file.ptr);
+
+		free(PLGyear_array);			
+		free(PLGmonth_array);						
+		free(PLGday_array);							
+		free(PLGdepths_array);	
+	}
+	else
+	{
+		/* reading the line of management file into a temporary variable */
+		if (!errflag && scan_value(init, header, 's'))
+		{
+			printf("ERROR reading line of management file (in case of no management)\n");
+			errflag=1;
+		}
+	}
 
 	
-	return (!ok);
+	PLG->mgmdPLG = 0;
+
+	
+	
+	return (errflag);
 }

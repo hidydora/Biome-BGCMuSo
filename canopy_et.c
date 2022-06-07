@@ -4,11 +4,11 @@ A single-function treatment of canopy evaporation and transpiration
 fluxes.  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
+Biome-BGCMuSo v6.0.
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Numerical Terradynamic Simulation Group (NTSG)
+School of Forestry, University of Montana
+Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -17,26 +17,29 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
+int canopy_et(const epconst_struct* epc, const metvar_struct* metv, const soilprop_struct* sprop, epvar_struct* epv, wflux_struct* wf)
 {
-	int ok=1;
+	int errflag=0;
+	double m_soilstress_avg, transp_lack;
 
-
+	int layer;
 	double e, cwe, t, trans, trans_sun, trans_shade, e_dayl,t_dayl;
 	
-
 	pmet_struct pmet_in;
+    
+	e=cwe=t=trans=trans_sun=trans_shade=e_dayl=t_dayl=m_soilstress_avg=transp_lack=0;
 
-	
-        cwe = trans = 0.0;
+
 	/* Assign values in pmet_in that don't change */
 	pmet_in.ta = metv->tday;
 	pmet_in.pa = metv->pa;
 	pmet_in.vpd = metv->vpd;
+
 	
 	/* Canopy evaporation, if any water was intercepted */
 	/* Calculate Penman-Monteith evaporation, given the canopy conductances to
@@ -49,13 +52,18 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* assign appropriate resistance and radiation for pmet_in */
 		pmet_in.rv = 1.0/epv->gc_e_wv;
 		pmet_in.rh = 1.0/epv->gc_sh;
-		pmet_in.irad = metv->swabs;
+
+		/* choose radiation calculation method */
+		if (epc->radiation_flag == 0)
+			pmet_in.irad = metv->swabs;
+		else
+			pmet_in.irad = metv->RADnet;
 		
 		/* call penman-monteith function, returns e in kg/m2/s */
 		if (penmon(&pmet_in, 0, &e))
 		{
 			printf("ERROR: penmon() for canopy evap... \n");
-			ok=0;
+			errflag=1;
 		}
 		
 		/* calculate the time required to evaporate all the canopy water */
@@ -79,22 +87,36 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			/* first for sunlit canopy fraction */
 			pmet_in.rv = 1.0/epv->gl_t_wv_sun;
 			pmet_in.rh = 1.0/epv->gl_sh;
-			pmet_in.irad = metv->swabs_per_plaisun;
+
+			/* choose radiation calculation method */
+			if (epc->radiation_flag == 0)
+				pmet_in.irad = metv->swabs_per_plaisun;
+			else
+				pmet_in.irad = metv->RADnet_per_plaisun;
+
+			/* call Penman-Monthieth function */
 			if (penmon(&pmet_in, 0, &t))
 			{
 				printf("ERROR: penmon() for adjusted transpiration... \n");
-				ok=0;
+				errflag=1;
 			}
 			trans_sun = t * t_dayl * epv->plaisun;
 			
 			/* next for shaded canopy fraction */
 			pmet_in.rv = 1.0/epv->gl_t_wv_shade;
 			pmet_in.rh = 1.0/epv->gl_sh;
-			pmet_in.irad = metv->swabs_per_plaishade;
+			
+			/* choose radiation calculation method */
+			if (epc->radiation_flag == 0)
+				pmet_in.irad = metv->swabs_per_plaishade;
+			else
+				pmet_in.irad = metv->RADnet_per_plaishade;
+		
+			/* call Penman-Monthieth function */
 			if (penmon(&pmet_in, 0, &t))
 			{
 				printf("ERROR: penmon() for adjusted transpiration... \n");
-				ok=0;
+				errflag=1;
 			}
 			trans_shade = t * t_dayl * epv->plaishade;
 			trans = trans_sun + trans_shade;
@@ -106,22 +128,36 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* first for sunlit canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_sun;
 		pmet_in.rh = 1.0/epv->gl_sh;
-		pmet_in.irad = metv->swabs_per_plaisun;
+	
+		/* choose radiation calculation method */
+		if (epc->radiation_flag == 0)
+			pmet_in.irad = metv->swabs_per_plaisun;
+		else
+			pmet_in.irad = metv->RADnet_per_plaisun;
+
+		/* call Penman-Monthieth function */
 		if (penmon(&pmet_in, 0, &t))
 		{
 			printf("ERROR: penmon() for adjusted transpiration... \n");
-			ok=0;
+			errflag=1;
 		}
 		trans_sun = t * metv->dayl * epv->plaisun;
 		
 		/* next for shaded canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_shade;
 		pmet_in.rh = 1.0/epv->gl_sh;
-		pmet_in.irad = metv->swabs_per_plaishade;
+		
+		/* choose radiation calculation method */
+		if (epc->radiation_flag == 0)
+			pmet_in.irad = metv->swabs_per_plaishade;
+		else
+			pmet_in.irad = metv->RADnet_per_plaishade;
+		
+		/* call Penman-Monthieth function */
 		if (penmon(&pmet_in, 0, &t))
 		{
 			printf("ERROR: penmon() for adjusted transpiration... \n");
-			ok=0;
+			errflag=1;
 		}
 		trans_shade = t * metv->dayl * epv->plaishade;
 		trans = trans_sun + trans_shade;
@@ -129,27 +165,49 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 
 		
 	}
-	/* Hidy 2011 - multilayer soil model: transpiration is calculated in multilayer_transpiration.c 
-	original: wf->soilw_trans = trans; */	
-	if (epv->m_soilstress > epc->m_soilstress_crit)
-	{
-		wf->soilw_trans_SUM = trans;
-	}
-	else
-	{
-		wf->soilw_trans_SUM = (epv->m_soilstress / epc->m_soilstress_crit) * trans;
-	//	if (ctrl->onscreen && ctrl->spinup == 0) printf("WARNING: Limited transpiration due to dry soil (canopy_et.c)\n");
-	}
-
-	wf->soilw_trans_SUM = epv->m_soilstress * trans;
+	/* multilayer soil model: multilayer transpiration is calculated in multilayer_transpiration.c */
+	wf->soilw_trans_SUM = trans;
 	
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
 	wf->canopyw_evap = cwe;
     wf->canopyw_to_soilw = wf->prcp_to_canopyw - cwe;
 
 
+	
+	/* m_soistress calculation based on VWC or transpiration demand-possibitiy  */
+	if (epc->soilstress_flag == 1)
+	{
+		m_soilstress_avg = 0;
+		for (layer = 0; layer < N_SOILLAYERS; layer++)
+		{
+			if (epv->vwc[layer] > sprop->vwc_wp[layer])
+			{
+				transp_lack = (epv->vwc[layer] - sprop->vwc_wp[layer]) - wf->soilw_trans_SUM * epv->rootlength_prop[layer];
+				if (transp_lack > 0)
+					epv->m_soilstress_layer[layer] = 1;
+				else
+					epv->m_soilstress_layer[layer] = 1 - fabs(transp_lack)/(wf->soilw_trans_SUM * epv->rootlength_prop[layer]);
+			}
+			else
+				epv->m_soilstress_layer[layer] = 0;
 
-	return (!ok);
+			m_soilstress_avg	 += epv->m_soilstress_layer[layer] * epv->rootlength_prop[layer];
+		}
+		epv->m_soilstress  = m_soilstress_avg;
+		epv->m_final_sun   = epv->m_ppfd_sun * epv->m_soilstress *  epv->m_tmin * epv->m_vpd;
+		epv->m_final_shade = epv->m_ppfd_shade * epv->m_soilstress * epv->m_tmin * epv->m_vpd;
+		epv->gl_s_sun      = epv->max_conduct * epv->m_final_sun * epv->gcorr;
+		epv->gl_s_shade    = epv->max_conduct * epv->m_final_shade * epv->gcorr;
+		epv->gl_t_wv_sun   = (epv->gl_bl * (epv->gl_s_sun + epv->gl_c)) / (epv->gl_bl + epv->gl_s_sun + epv->gl_c);
+		epv->gl_t_wv_shade = (epv->gl_bl * (epv->gl_s_shade + epv->gl_c)) / (epv->gl_bl + epv->gl_s_shade + epv->gl_c);
+	}
+
+
+	
+
+
+
+	return (errflag);
 }
 
 int penmon(const pmet_struct* in, int out_flag,	double* et)
@@ -179,7 +237,7 @@ int penmon(const pmet_struct* in, int out_flag,	double* et)
     et     (W/m2)        latent heat flux density       (flag=1)
     */
 
-    int ok=1;
+    int errflag=0;
     double ta;
     double rho,lhvap,s;
     double t1,t2,pvs1,pvs2,e,tk;
@@ -231,5 +289,5 @@ int penmon(const pmet_struct* in, int out_flag,	double* et)
     if (!out_flag)
     	*et = e / lhvap;
     
-    return (!ok);
+    return (errflag);
 }

@@ -3,9 +3,10 @@ mowing_init.c
 read mowing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -22,19 +23,32 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 
 
-int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
+int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW)
 {
 
-	char key1[] = "MOWING";
-	char keyword[80];
-	char bin[100];
-
-	char MOW_filename[100];
+	char header[STRINGSIZE];
+	char MOW_filename[STRINGSIZE];
 	file MOW_file;
 
-	int i;
-	int ok = 1;
-	int ny=1;
+	int errflag=0;
+	int okFILE = 1;
+
+	int mgmread;
+	int nmgm = 0;
+
+	int p1,p2,p3;
+	double p4,p5;
+	char tempvar;
+
+	int n_MOWparam, maxMOW_num;
+
+	int* MOWyear_array;							
+	int* MOWmonth_array;					
+	int* MOWday_array;						
+	double* LAI_limit_array;					
+	double* transportMOW_array;					
+
+	maxMOW_num=1000;
 
 	/********************************************************************
 	**                                                                 **
@@ -43,99 +57,126 @@ int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
 	**                                                                 **
 	********************************************************************/
 	
-	/* scan for the MOWING file keyword, exit if not next */
-	if (ok && scan_value(init, keyword, 's'))
+	/* header reading */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		printf("Error reading keyword for control data\n");
-		ok=0;
+		printf("ERROR reading keyword, mowing_init()\n");
+		errflag=1;
 	}
-	if (ok && strcmp(keyword, key1))
+
+	/* keyword control */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		ok=0;
+		printf("ERROR reading keyword for MOWING section\n");
+		errflag=1;
 	}
 	
-	if (ok && scan_value(init, &MOW->MOW_flag, 'i'))
+	/* number of management action */
+	if (!errflag && scan_value(init, &MOW->MOW_num, 'i'))
 	{
-		if (ok && scan_value(init, MOW_filename, 's'))
-		{
-			printf("Error reading mowing calculating file\n");
-			ok=0;
-		}
-		else
-		{
-			
-			ok=1;
-			if (ctrl->onscreen) printf("INFORMATION: mowing information from file\n");
-			MOW->MOW_flag = 2;
-			strcpy(MOW_file.name, MOW_filename);
-		}
-	}
-
-	/* the first three mowing parameters are contant (can not be varied year to year */	
-	if (ok && scan_value(init, &MOW->fixday_or_fixLAI_flag, 'i'))
-	{
-		printf("Error reading fixday_or_fixLAI_flag\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(init, &MOW->fixLAI_befMOW, 'd'))
-	{
-		printf("Error reading fixLAI_befMOW\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(init, &MOW->fixLAI_aftMOW, 'd'))
-	{
-		printf("Error reading fixLAI_aftMOW\n");
-		ok=0;
-	}
-
-	/* the other mowing parameters are can be varied year to year */	
-	/* yeary varied mowing parameters (MOW_flag=2); else: constant mowing parameters (MOW_flag=1) */
-	if (MOW->MOW_flag == 2)
-	{
-		ny = ctrl->simyears; 
-	
-		/* open the main init file for ascii read and check for errors */
-		if (file_open(&MOW_file,'i'))
-		{
-			printf("Error opening MOW_file, mowing_int.c\n");
-			exit(1);
-		}
-
-		/* step forward in init file */
-		for (i=0; i < n_MOWparam; i++) scan_value(init, bin, 'd');
-
-	}
-	else MOW_file=init;
-
-	
-	if (ok && read_mgmarray(ny, MOW->MOW_flag, MOW_file, &(MOW->MOWdays_array)))
-	{
-		printf("Error reading MOWdays_array\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, MOW->MOW_flag, MOW_file, &(MOW->LAI_limit_array)))
-	{
-		printf("Error reading LAI_limit_array\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, MOW->MOW_flag, MOW_file, &(MOW->transport_coeff_array)))
-	{
-		printf("Error reading transport_coeff_array\n");
-		ok=0;
+		printf("ERROR reading number of mowing in MOWING section\n");
+		errflag=1;
 	}
 
 
-	if (MOW->MOW_flag == 2)
+	/* if MOW_num > 0 -> mowing */
+	if (!errflag && MOW->MOW_num)
 	{
-		fclose (MOW_file.ptr);
-	}
+		/* allocate space for the temporary MGM array */
+		MOWyear_array         = (int*) malloc(maxMOW_num*sizeof(double));  
+		MOWmonth_array        = (int*) malloc(maxMOW_num*sizeof(double)); 
+		MOWday_array          = (int*) malloc(maxMOW_num*sizeof(double)); 
+		LAI_limit_array	      = (double*) malloc(maxMOW_num*sizeof(double)); 
+		transportMOW_array    = (double*) malloc(maxMOW_num*sizeof(double)); 
+
 		
-	MOW->mgmd = -1;	
+		if (!errflag && scan_value(init, MOW_filename, 's'))
+		{
+			printf("ERROR reading mowing calculating file\n");
+			errflag=1;
+		}
+		
+		strcpy(MOW_file.name, MOW_filename);
+		
+		/* open the main init file for ascii read and check for errors */
+		if (file_open(&MOW_file,'i',1))
+		{
+			printf("ERROR opening MOW_file, mowing_int.c\n");
+			errflag=1;
+			okFILE=0;
+		}
 
-	return (!ok);
+		if (!errflag && scan_value(MOW_file, header, 's'))
+		{
+			printf("ERROR reading header for MOWING section in MANAGMENET file\n");
+			errflag=1;
+		}
+
+	
+		while (!errflag && !(mgmread = scan_array (MOW_file, &p1, 'i', 0, 0)))
+		{
+			n_MOWparam = 6;
+			mgmread = fscanf(MOW_file.ptr, "%c%d%c%d%lf%lf%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&p5);
+			if (mgmread != n_MOWparam)
+			{
+				printf("ERROR reading MOWING parameters from MOWING file\n");
+				errflag=1;
+			}
+			
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
+			{
+				MOWyear_array[nmgm]         = p1;
+				MOWmonth_array[nmgm]        = p2;
+				MOWday_array[nmgm]          = p3;
+				LAI_limit_array[nmgm] 	     = p4; 
+				transportMOW_array[nmgm]    = p5; 
+
+				nmgm += 1;
+			}
+		}
+			
+		MOW->MOW_num = nmgm;
+		nmgm = 0;
+		
+		MOW->MOWyear_array         = (int*) malloc(MOW->MOW_num*sizeof(double));  
+		MOW->MOWmonth_array        = (int*) malloc(MOW->MOW_num*sizeof(double)); 
+		MOW->MOWday_array          = (int*) malloc(MOW->MOW_num*sizeof(double)); 
+		MOW->LAI_limit_array	   = (double*) malloc(MOW->MOW_num*sizeof(double)); 
+		MOW->transportMOW_array    = (double*) malloc(MOW->MOW_num*sizeof(double)); 
+			
+		for (nmgm = 0; nmgm < MOW->MOW_num; nmgm++)
+		{
+			MOW->MOWyear_array[nmgm]         = MOWyear_array[nmgm];
+			MOW->MOWmonth_array[nmgm]        = MOWmonth_array[nmgm];
+			MOW->MOWday_array[nmgm]          = MOWday_array[nmgm];
+			MOW->LAI_limit_array[nmgm] 	     = LAI_limit_array[nmgm]; 
+			MOW->transportMOW_array[nmgm]    = transportMOW_array[nmgm]; 
+		}
+		
+		/* close MOWING file and free temporary memory*/
+		if (okFILE) fclose (MOW_file.ptr);
+
+		free(MOWyear_array);							
+		free(MOWmonth_array);					
+		free(MOWday_array);						
+		free(LAI_limit_array);					
+		free(transportMOW_array);		
+	}
+	else
+	{
+		/* reading the line of management file into a temporary variable */
+		if (!errflag && scan_value(init, header, 's'))
+		{
+			printf("ERROR reading line of management file (in case of no management)\n");
+			errflag=1;
+		}
+	}
+
+	
+	
+	MOW->mgmdMOW = 0;
+
+	
+	
+	return (errflag);
 }

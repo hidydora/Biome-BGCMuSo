@@ -3,9 +3,10 @@ fertilizing_init.c
 read fertilizing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -22,173 +23,236 @@ Hungarian Academy of Sciences
 #include "bgc_constants.h"
 
 
-int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
+int fertilizing_init(file init, const control_struct* ctrl, fertilizing_struct* FRZ)
 {
-	char key1[] = "FERTILIZING";
-	char keyword[80];
-	char bin[100];
-
-	char FRZ_filename[100];
+	char header[STRINGSIZE];
+	char FRZ_filename[STRINGSIZE];
 	file FRZ_file;
 
-	int i;
-	int ok = 1;
-	int ny=1;
+	int maxlen=STRINGSIZE;
 
+	int errflag=0;
+	int okFILE = 1;
+
+	int mgmread;
+	int nmgm = 0;
+
+	int p1,p2,p3;
+	double p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14;
+	char tempvar;
+	char ferttype[STRINGSIZE];
+
+	int n_FRZparam, maxFRZ_num;
+
+	int* FRZyear_array;			
+	int* FRZmonth_array;						
+	int* FRZday_array;							
+	double* FRZdepth_array;					
+	double* fertilizer_array;				
+	double* DM_array;				          
+	double* NO3content_array;					
+ 	double* NH4content_array;					
+	double* UREAcontent_array;					
+	double* orgCcontent_array;					
+	double* orgNcontent_array;					
+	double* litr_flab_array;					
+	double* litr_fcel_array;								
+	double* EFfert_N2O;							
+	char** ferttype_array;						
+
+	maxFRZ_num=1000;
 
 	/********************************************************************
 	**                                                                 **
-	** Begin reading initialization file block starting with keyword:  **
+	** Begin reading initialization file block starting with header:  **
 	** FERTILIZING                                                       ** 
 	**                                                                 **
 	********************************************************************/
 	
-	/* scan for the FERTILIZING file keyword, exit if not next */
-	if (ok && scan_value(init, keyword, 's'))
+	/* header reading */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		printf("Error reading keyword for control data\n");
-		ok=0;
-	}
-	if (ok && strcmp(keyword, key1))
-	{
-		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		ok=0;
+		printf("ERROR reading header, fertilizing_init()\n");
+		errflag=1;
 	}
 
-	if (ok && scan_value(init, &FRZ->FRZ_flag, 'i'))
+	/* header control */
+	if (!errflag && scan_value(init, header, 's'))
 	{
-		if (ok && scan_value(init, FRZ_filename, 's'))
-		{
-			printf("Error reading fertilizing calculating file\n");
-			ok=0;
-		}
-		else
-		{
-			
-			ok=1;
-			if (ctrl->onscreen) printf("INFORMATION: fertilizing information from file\n");
-			FRZ->FRZ_flag = 2;
-			strcpy(FRZ_file.name, FRZ_filename);
-		}
+		printf("ERROR reading header, fertilizing_init()\n");
+		errflag=1;
 	}
-
-	/* yeary varied garzing parameters (FRZ_flag=2); else: constant garzing parameters (FRZ_flag=1) */
-	if (FRZ->FRZ_flag == 2)
-	{
-		ny = ctrl->simyears; 
 	
-		/* open the main init file for ascii read and check for errors */
-		if (file_open(&FRZ_file,'i'))
-		{
-			printf("Error opening FRZ_file, fertilizing_int.c\n");
-			exit(1);
-		}
-
-		/* step forward in init file */
-		for (i=0; i < n_FRZparam; i++) scan_value(init, bin, 'd');
-
-	}
-	else FRZ_file=init;
 	
-
-
-
-
-
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->FRZdays_array)))
+	/* number of management action */
+	if (!errflag && scan_value(init, &FRZ->FRZ_num, 'i'))
 	{
-		printf("Error reading FRZdays\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->fertilizer_array)))
-	{
-		printf("Error reading fertilizer\n");
-		ok=0;
+		printf("ERROR reading number of fertilizing in FERTILIZING section\n");
+		errflag=1;
 	}
 
 
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->Ncontent_array)))
+	/* if FRZ_num > 0 -> fertilizing */
+	if (!errflag && FRZ->FRZ_num)
 	{
-		printf("Error reading prop. of the nitrate_content\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->NH3content_array)))
-	{
-		printf("Error reading ammonium_content\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->Ccontent_array)))
-	{
-		printf("Error reading carbon_content\n");
-		ok=0;
-	}
+		/* allocate space for the temporary MGM array */
+		FRZyear_array         = (int*) malloc(maxFRZ_num*sizeof(int));  
+		FRZmonth_array        = (int*) malloc(maxFRZ_num*sizeof(int)); 
+		FRZday_array          = (int*) malloc(maxFRZ_num*sizeof(int)); 
+		FRZdepth_array        = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		fertilizer_array      = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		DM_array              = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		NO3content_array      = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		NH4content_array      = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		UREAcontent_array     = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		orgCcontent_array     = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		orgNcontent_array     = (double*) malloc(maxFRZ_num*sizeof(double));
+		litr_flab_array       = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		litr_fcel_array       = (double*) malloc(maxFRZ_num*sizeof(double)); 
+		EFfert_N2O            = (double*) malloc(maxFRZ_num*sizeof(double));
 		
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_flab_array)))
-	{
-		printf("Error reading litr_flab\n");
-		ok=0;
-	}
+		ferttype_array        = (char**) malloc(maxFRZ_num * sizeof(char*));
+		
+		if (!errflag && scan_value(init, FRZ_filename, 's'))
+		{
+			printf("ERROR reading fertilizing calculating file\n");
+			errflag=1;
+		}
+		
+		strcpy(FRZ_file.name, FRZ_filename);
+		
+		/* open the main init file for ascii read and check for errors */
+		if (file_open(&FRZ_file,'i',1))
+		{
+			printf("ERROR opening FRZ_file, fertilizing_int.c\n");
+			errflag=1;
+			okFILE=0;
+		}
+
+		if (!errflag && scan_value(FRZ_file, header, 's'))
+		{
+			printf("ERROR reading header for FERTILIZING section in MANAGMENET file\n");
+			errflag=1;
+		}
+
+	
+		while (!errflag && !(mgmread = scan_array (FRZ_file, &p1, 'i', 0, 0)))
+		{
+			ferttype_array[nmgm] = (char*) malloc(STRINGSIZE * sizeof(char));
+
+			n_FRZparam = 16;
+
+			mgmread = fscanf(FRZ_file.ptr, "%c%d%c%d%s%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%*[^\n]",
+				             &tempvar,&p2,&tempvar,&p3,&ferttype,&p4,&p5,&p6,&p7,&p8,&p9,&p10,&p11,&p12,&p13,&p14);
 			
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_fucel_array)))
+			if (mgmread != n_FRZparam)
+			{
+				printf("ERROR reading FERTILIZING parameters from FERTILIZING file  file\n");
+				errflag=1;
+			}
+
+			if (sizeof(ferttype) > maxlen)
+			{
+				printf("ERROR reading ferttype in fertilizing file (lenght must be in the range 1-200)\n");
+				errflag=1;
+			}
+			
+			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
+			{
+				FRZyear_array[nmgm]     = p1;
+				FRZmonth_array[nmgm]    = p2;
+				FRZday_array[nmgm]      = p3;
+				fertilizer_array[nmgm]  = p4;
+				FRZdepth_array[nmgm]    = p5;
+				DM_array[nmgm]          = p6;
+				NO3content_array[nmgm]  = p7;
+				NH4content_array[nmgm]  = p8;
+				UREAcontent_array[nmgm] = p9;
+				orgCcontent_array[nmgm] = p10;
+				orgNcontent_array[nmgm] = p11;
+				litr_flab_array[nmgm]   = p12;
+				litr_fcel_array[nmgm]   = p13;
+				EFfert_N2O[nmgm]        = p14;
+
+				strcpy(ferttype_array[nmgm],  ferttype);
+
+				nmgm += 1;
+			}
+		}
+		
+			
+		FRZ->FRZ_num = nmgm;
+		nmgm = 0;
+
+		
+		FRZ->FRZyear_array         = (int*) malloc(FRZ->FRZ_num*sizeof(int));  
+		FRZ->FRZmonth_array        = (int*) malloc(FRZ->FRZ_num*sizeof(int)); 
+		FRZ->FRZday_array          = (int*) malloc(FRZ->FRZ_num*sizeof(int)); 
+		FRZ->FRZdepth_array        = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->fertilizer_array      = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->DM_array              = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->NO3content_array      = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->NH4content_array      = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->UREAcontent_array     = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->orgCcontent_array     = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->orgNcontent_array     = (double*) malloc(FRZ->FRZ_num*sizeof(double));
+		FRZ->litr_flab_array       = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->litr_fcel_array       = (double*) malloc(FRZ->FRZ_num*sizeof(double)); 
+		FRZ->EFfert_N2O            = (double*) malloc(FRZ->FRZ_num*sizeof(double));
+		
+		FRZ->ferttype_array        = (char**) malloc(FRZ->FRZ_num * sizeof(char*));
+
+		for (nmgm = 0; nmgm < FRZ->FRZ_num; nmgm++)
+		{
+			FRZ->FRZyear_array[nmgm]     = FRZyear_array[nmgm];
+			FRZ->FRZmonth_array[nmgm]    = FRZmonth_array[nmgm] ;
+			FRZ->FRZday_array[nmgm]      = FRZday_array[nmgm] ;
+			FRZ->fertilizer_array[nmgm]  = fertilizer_array[nmgm];
+			FRZ->FRZdepth_array[nmgm]    = FRZdepth_array[nmgm] ;
+			FRZ->DM_array[nmgm]          = DM_array[nmgm] ;
+			FRZ->NO3content_array[nmgm]  = NO3content_array[nmgm] ;
+			FRZ->NH4content_array[nmgm]  = NH4content_array[nmgm];
+			FRZ->UREAcontent_array[nmgm] = UREAcontent_array[nmgm];
+			FRZ->orgCcontent_array[nmgm] = orgCcontent_array[nmgm];
+			FRZ->orgNcontent_array[nmgm] = orgNcontent_array[nmgm];
+			FRZ->litr_flab_array[nmgm]   = litr_flab_array[nmgm] ;
+			FRZ->litr_fcel_array[nmgm]   = litr_fcel_array[nmgm] ;
+			FRZ->EFfert_N2O[nmgm]        = EFfert_N2O[nmgm];
+
+			FRZ->ferttype_array[nmgm] = (char*) malloc(STRINGSIZE * sizeof(char));
+			strcpy(FRZ->ferttype_array[nmgm], ferttype_array[nmgm]);
+		}
+
+		/* close FERTILIZING file  and free temporary memory */
+		if (okFILE) fclose (FRZ_file.ptr);
+
+		free(FRZdepth_array);					
+		free(fertilizer_array);				
+		free(DM_array);				          
+		free(NO3content_array);					
+ 		free(NH4content_array);					
+		free(UREAcontent_array);					
+		free(orgCcontent_array);					
+		free(orgNcontent_array);					
+		free(litr_flab_array);					
+		free(litr_fcel_array);							
+		free(EFfert_N2O);							
+		free(ferttype_array);	
+	}
+	else
 	{
-		printf("Error reading litr_fucel\n");
-		ok=0;
+		/* reading the line of management file into a temporary variable */
+		if (!errflag && scan_value(init, header, 's'))
+		{
+			printf("ERROR reading line of management file (in case of no management)\n");
+			errflag=1;
+		}
 	}
 
 
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_fscel_array)))
-	{
-		printf("Error reading litr_fscel\n");
-		ok=0;
-	}
+	
+	FRZ->mgmdFRZ = 0;
 
 
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_flig_array)))
-	{
-		printf("Error reading litr_flig\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->dissolv_coeff_array)))
-	{
-		printf("Error reading dissolv_coeff\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->utiliz_coeff_array)))
-	{
-		printf("Error reading utilization_coeff\n");
-		ok=0;
-	}
-
-	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->EFfert_N2O)))
-	{
-		printf("Error reading fertilization emission factor of N2O\n");
-		ok=0;
-	}
-
-
-	if (FRZ->FRZ_flag == 2)
-	{
-		fclose (FRZ_file.ptr);
-	}
-
-	/* local variables - Hidy 2015.*/
-	FRZ->FRZ_pool_act   = 0;
-	FRZ->DC_act         = 0;        
-	FRZ->UC_act         = 0;
-	FRZ->Ccontent_act   = 0;
-	FRZ->Ncontent_act   = 0;	
-	FRZ->NH3content_act = 0;
-	FRZ->flab_act       = 0;
-	FRZ->fucel_act      = 0;
-	FRZ->fscel_act		= 0;
-	FRZ->flig_act		= 0;
-	FRZ->EFf_N2O_act	= 0;
-	FRZ->mgmd           = -1;
-
-	return (!ok);
+	return (errflag);
 }

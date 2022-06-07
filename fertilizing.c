@@ -3,9 +3,10 @@ fertilizing.c
 do fertilization  - increase the mineral soil nitrogen (sminn)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -21,148 +22,181 @@ Hungarian Academy of Sciences
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int fertilizing(const control_struct* ctrl, fertilizing_struct* FRZ, 
-				cstate_struct* cs, nstate_struct*ns, cflux_struct* cf, nflux_struct* nf)
+int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, fertilizing_struct* FRZ, epvar_struct* epv, 
+				cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf)
 {
 
+
 	/* fertilizing parameters .*/
-	int ok=1;
-	int ny, mgmd;
+	int errflag=0;
 
-	double FRZ_to_sminn_act,FRZ_to_litrn_act,FRZ_to_litrc_act, N2Oflux_fertil;
+	int layer;
+
+	double FRZdepth;					    /* (m) actual  depth of fertilization */
+	double fertilizer_DM;                   /* (kg/m2) dry matter content of fertilizer  */
+	double fertilizer_WC;                   /* (kg/m2) water content of fertilizer  */
+	double flab;                            /* (%) labile fraction of fertilizer */
+	double fcel;                            /* (%) cellulose fraction of fertilizer */
+	double fucel;                           /* (%) unshielded cellulose fraction of fertilizer */
+	double fscel;                           /* (%) shielded cellulose fraction of fertilizer */
+	double flig;                            /* (%) lignin fraction of fertilizer */
+	double EFf_N2O;                         /* (kgN2O-N:kgN) fertilization emission factor for direct N2O emissions from synthetic fertililers */
+	double FRZ_to_litrc, FRZ_to_litrn;		/* fertilizing carbon and nitrogen fluxes */
+	int FRZlayer;                               /* (DIM) number of fertilization layer */
 	
-	N2Oflux_fertil=FRZ_to_sminn_act=FRZ_to_litrn_act=FRZ_to_litrc_act=0;
-
-	/* yearly varied or constant management parameters */
-	if(FRZ->FRZ_flag == 2)
-	{
-		ny = ctrl->simyr;
-	}
-	else ny=0;
-
-	
-	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                                    CALCULATING FLUXES 
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-	
-	/* on management days fertilizer is put on the field */
-
-	mgmd=FRZ->mgmd;
-
-	if (mgmd >=0) 
-	{
-	
-
-		FRZ->FRZ_pool_act += FRZ->fertilizer_array[mgmd][ny]  / 10000.;		/* kgN/ha -> kgN/m2 */
-
-		FRZ->DC_act = FRZ->dissolv_coeff_array[mgmd][ny]; 
-		FRZ->UC_act         = FRZ->utiliz_coeff_array[mgmd][ny] /100;		/* from % to number */
-		FRZ->NH3content_act = FRZ->NH3content_array[mgmd][ny] / 100.;		/* from % to number */
-		FRZ->Ccontent_act   = FRZ->Ccontent_array[mgmd][ny] / 100.;			/* from % to number */
-		FRZ->Ncontent_act   = FRZ->Ncontent_array[mgmd][ny] / 100.;			/* from % to number */
-
-		FRZ->flab_act    = FRZ->litr_flab_array[mgmd][ny] / 100.;			/* from % to number */
-		FRZ->fucel_act   = FRZ->litr_fucel_array[mgmd][ny] / 100.;		/* from % to number */
-		FRZ->fscel_act   = FRZ->litr_fscel_array[mgmd][ny] / 100.;		/* from % to number */
-		FRZ->flig_act    = FRZ->litr_flig_array[mgmd][ny] / 100.;			/* from % to number */
-		FRZ->EFf_N2O_act = FRZ->EFfert_N2O[mgmd][ny] /NDAY_OF_YEAR;
 		
-	}
+	double ratio, ratioSUM,ha_to_m2;
 
-	/* on and after fertilizing day, ammonium and nitrate enters into the soil */			
-	if (FRZ->FRZ_pool_act> 0.0)
+	int md, year;
+
+	year = ctrl->simstartyear + ctrl->simyr;
+	md = FRZ->mgmdFRZ-1;
+
+	FRZ_to_litrc=FRZ_to_litrn=ratio=ratioSUM=0;
+	ha_to_m2 = 1./10000;
+
+	
+	/* On management days fertilizer is put on the field */
+	if (FRZ->FRZ_num && md >= 0)
 	{
-		/* not all the amount of the nitrogen from fertilization is available on the given fertilization day to plants ->
-		dissolv_coeff define the ratio */
+		if (year == FRZ->FRZyear_array[md] && ctrl->month == FRZ->FRZmonth_array[md] && ctrl->day == FRZ->FRZday_array[md]) 
+		{
 
-		/* nitrate content of fertilizer can be uptaken by plant directly -> get to the sminn pool */
-		FRZ_to_sminn_act = FRZ->DC_act * FRZ->FRZ_pool_act * FRZ->Ncontent_act;
-		/* ammonium content of fertilizer have to be nitrificatied before be uptaken by plant  -> get to the litrn pool */
-		FRZ_to_litrn_act = FRZ->DC_act * FRZ->FRZ_pool_act * FRZ->NH3content_act;
-		/* carbon content of fertilizer turn to the litter pool */
-		FRZ_to_litrc_act = FRZ->DC_act * FRZ->FRZ_pool_act * FRZ->Ccontent_act;
+			/* 2. input parameters in actual year from array */
+			FRZdepth   = FRZ->FRZdepth_array[md]; 
+
+			flab		= FRZ->litr_flab_array[md] / 100.;		/* from % to number */
+			fcel		= FRZ->litr_fcel_array[md] / 100.;		/* from % to number */
+			flig        = 1 - flab - fcel;
+
+			/* calculate shielded and unshielded cellulose fraction */
+			fscel = 0;
+			fucel = 0;
+			if (fcel)
+			{
+				ratio = flig/fcel;
+				if (ratio <= 0.45)
+				{
+					fscel = 0.0;
+					fucel = fcel;
+				}
+				else if (ratio > 0.45 && ratio < 0.7)
+				{
+					fscel = (ratio - 0.45)*3.2*fcel;
+					fucel = fcel - fscel;
+				}
+				else
+				{
+					fscel = 0.8*fcel;
+					fucel = 0.2*fcel;
+				}
+			}
 		
-		FRZ->FRZ_pool_act = FRZ->FRZ_pool_act - FRZ->FRZ_pool_act * FRZ->DC_act;
+	
+			EFf_N2O	    = FRZ->EFfert_N2O[md] /NDAYS_OF_YEAR;
+
+			if ((flab + fucel + fscel + flig) > 0 && fabs(flab + fucel + fscel + flig - 1) > CRIT_PREC)
+			{
+				printf("ERROR in fertilizing parameters in management file: sum of labile/cellulose/ligning fraction parameters must equal to 1 (fertilizing.c)\n");
+				errflag=1;
+			}
+
+			/* DM and WC content of fertilizer: kg/m2 = kg fertilizer/ha * ha/m2 * (% to prop.) */
+			fertilizer_DM = FRZ->fertilizer_array[md]  * ha_to_m2 * (FRZ->DM_array[md] / 100.);
+			fertilizer_WC = FRZ->fertilizer_array[md]  * ha_to_m2 * (1 - FRZ->DM_array[md] / 100.);
+
+			/* kgN/m2 = kg fertilizerDM/m2 * kgN/kg fertilizerDM */
+			nf->FRZ_to_sminNH4 = fertilizer_DM * (FRZ->NH4content_array[md] / 100.);
+			nf->FRZ_to_sminNO3 = fertilizer_DM * (FRZ->NO3content_array[md] / 100.);
+		
+			/* on fertilizing day a fixed amount of ammonium/nitrate/organic nitrogen/organic carbon/water enters into the soil */
+			FRZ_to_litrn = fertilizer_DM * (FRZ->orgNcontent_array[md] / 100.);
+			nf->FRZ_to_litr1n  = FRZ_to_litrn * flab;
+			nf->FRZ_to_litr2n  = FRZ_to_litrn * fucel;
+			nf->FRZ_to_litr3n  = FRZ_to_litrn * fscel;
+			nf->FRZ_to_litr4n  = FRZ_to_litrn * flig;	
+	
+			FRZ_to_litrc = fertilizer_DM * (FRZ->orgCcontent_array[md] / 100.);
+			cf->FRZ_to_litr1c  = FRZ_to_litrc * flab;
+			cf->FRZ_to_litr2c  = FRZ_to_litrc * fucel;
+			cf->FRZ_to_litr3c  = FRZ_to_litrc * fscel;
+			cf->FRZ_to_litr4c  = FRZ_to_litrc * flig;	
+
+			wf->FRZ_to_soilw   = fertilizer_WC;
+		
+	
+			/* 4. fertilizing layer from depth */
+			layer = 1;
+			FRZlayer = 0;
+			if (FRZdepth > sitec->soillayer_depth[0])
+			{
+				while (FRZlayer == 0 && layer < N_SOILLAYERS)
+				{
+					if ((FRZdepth > sitec->soillayer_depth[layer-1]) && (FRZdepth <= sitec->soillayer_depth[layer])) FRZlayer = layer;
+					layer += 1;
+				}
+				if (FRZlayer == 0)
+				{
+					printf("ERROR in fertilizing depth calculation (fertilizing.c)\n");
+					errflag=1;
+				}
+			}
+
+
 	
 
-		/* if N from fertilization is available (in FRZ_pool_act) a given ratio of its N content (defined by useful part)
-			get into the soil mineral nitrogen pool, the rest disappers from the system (slipping away...) */
-		if (FRZ_to_sminn_act > CRIT_PREC)
-		{
-			nf->FRZ_to_sminn = FRZ_to_sminn_act * FRZ->UC_act;
-			
-			nf->FRZ_to_litr1n = FRZ_to_litrn_act * FRZ->flab_act  * FRZ->UC_act;
-			nf->FRZ_to_litr2n = FRZ_to_litrn_act * FRZ->fucel_act * FRZ->UC_act;
-			nf->FRZ_to_litr3n = FRZ_to_litrn_act * FRZ->fscel_act * FRZ->UC_act;
-			nf->FRZ_to_litr4n = FRZ_to_litrn_act * FRZ->flig_act  * FRZ->UC_act;
+			/* 5. N2O emissions (kgN2O-N:kgN) */ 
+			nf->N2O_flux_FRZ   = (nf->FRZ_to_sminNH4 + nf->FRZ_to_sminNO3 + FRZ_to_litrn) * EFf_N2O;
 
-			cf->FRZ_to_litr1c = FRZ_to_litrc_act * FRZ->flab_act  * FRZ->UC_act;
-			cf->FRZ_to_litr2c = FRZ_to_litrc_act * FRZ->fucel_act * FRZ->UC_act;
-			cf->FRZ_to_litr3c = FRZ_to_litrc_act * FRZ->fscel_act * FRZ->UC_act;
-			cf->FRZ_to_litr4c = FRZ_to_litrc_act * FRZ->flig_act  * FRZ->UC_act;	
-			
-		}
+	
 
-		/* if the nitrogen from fertilization has been consumed already, the fertilization has no more effect .*/ 
-		else
-		{
-			nf->FRZ_to_sminn = 0;
-			
-			nf->FRZ_to_litr1n = 0;
-			nf->FRZ_to_litr2n = 0;
-			nf->FRZ_to_litr3n = 0;
-			nf->FRZ_to_litr4n = 0;
+			/* 6. STATE UPDATE */
+			ratio=0;
+			for (layer = 0; layer <= FRZlayer; layer++)
+			{
+				if (FRZlayer == 0)
+					ratio = 1;
+				else	
+				{
+					if (sitec->soillayer_depth[layer] < FRZdepth)
+						ratio = sitec->soillayer_thickness[layer] / FRZdepth;
+					else
+						ratio = (FRZdepth - sitec->soillayer_depth[layer-1]) / FRZdepth;
+				}
 
-			cf->FRZ_to_litr1c = 0;
-			cf->FRZ_to_litr2c = 0;
-			cf->FRZ_to_litr3c = 0;
-			cf->FRZ_to_litr4c = 0;	
-			
-		}
+				ratioSUM += ratio;
+
+				cs->litr1c[layer] += cf->FRZ_to_litr1c * ratio;
+				cs->litr2c[layer] += cf->FRZ_to_litr2c * ratio;
+				cs->litr3c[layer] += cf->FRZ_to_litr3c * ratio;
+				cs->litr4c[layer] += cf->FRZ_to_litr4c * ratio;
+
+				ns->litr1n[layer] += nf->FRZ_to_litr1n * ratio;
+				ns->litr2n[layer] += nf->FRZ_to_litr2n * ratio;
+				ns->litr3n[layer] += nf->FRZ_to_litr3n * ratio;
+				ns->litr4n[layer] += nf->FRZ_to_litr4n * ratio;
+
+				ns->sminNH4[layer]  += nf->FRZ_to_sminNH4 * ratio;
+				ns->sminNO3[layer]  += nf->FRZ_to_sminNO3 * ratio;
+
+				ws->soilw[layer]  += wf->FRZ_to_soilw * ratio;
+				epv->vwc[layer]   = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
+			}
+
+			/* control */
+			if (fabs(ratioSUM - 1) > CRIT_PREC)
+			{
+				printf("ERROR in fertilizing ratio calculation (fertilizing.c)\n");
+				errflag=1;
+			}
+			cs->FRZsrc_C += FRZ_to_litrc;
+			ns->FRZsrc_N += nf->FRZ_to_sminNH4 + nf->FRZ_to_sminNO3 + FRZ_to_litrn;
+			ws->FRZsrc_W += wf->FRZ_to_soilw;
+		
+
+		} /* endif  */
+
 	}
-	else
-	{
-		nf->FRZ_to_sminn = 0;
-			
-		nf->FRZ_to_litr1n = 0;
-		nf->FRZ_to_litr2n = 0;
-		nf->FRZ_to_litr3n = 0;
-		nf->FRZ_to_litr4n = 0;
-
-		cf->FRZ_to_litr1c = 0;
-		cf->FRZ_to_litr2c = 0;
-		cf->FRZ_to_litr3c = 0;
-		cf->FRZ_to_litr4c = 0;		
-	}
-
-	/* !!!!!!!! N2O emissions (kgN to mgN)!!!!!!!!!!*/ 
-	N2Oflux_fertil   = FRZ->FRZ_pool_act * 1e+6 * FRZ->EFf_N2O_act;
-	nf->N2O_flux_FRZ = N2Oflux_fertil;
-	
-
-	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                                    STATE UPDATE 
-	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/ 
-
-	/* 1. carbon */	
-	cs->litr1c[0] += cf->FRZ_to_litr1c;
-	cs->litr2c[0] += cf->FRZ_to_litr2c;
-	cs->litr3c[0] += cf->FRZ_to_litr3c;
-	cs->litr4c[0] += cf->FRZ_to_litr4c;
-	
-	cs->FRZsrc += cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
-
-	/* 2. nitrogen */
-	ns->litr1n[0] += nf->FRZ_to_litr1n;
-	ns->litr2n[0] += nf->FRZ_to_litr2n;
-	ns->litr3n[0] += nf->FRZ_to_litr3n;
-	ns->litr4n[0] += nf->FRZ_to_litr4n;
-
-	ns->sminn[0]  += nf->FRZ_to_sminn;
-	
-	ns->FRZsrc += nf->FRZ_to_sminn + nf->FRZ_to_litr1n + nf->FRZ_to_litr2n + nf->FRZ_to_litr3n + nf->FRZ_to_litr4n;
-
-
-   return (!ok);
+   return (errflag);
 }
 	

@@ -1,10 +1,11 @@
 /* 
 multilayer_rootdepth.c
-Hidy 2011 - calculation of changing rooting depth based on empirical function and state update of sminn content
+calculation of changing rooting depth based on empirical function 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
-Copyright 2014, D. Hidy (dori.hidy@gmail.com)
-Hungarian Academy of Sciences
+Biome-BGCMuSo v6.0.
+Copyright 2019, D. Hidy [dori.hidy@gmail.com]
+Hungarian Academy of Sciences, Hungary
+See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -13,105 +14,147 @@ Hungarian Academy of Sciences
 #include <string.h>
 #include <math.h>
 #include <malloc.h>
+#include "ini.h"
 #include "bgc_struct.h"
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, 
-						 phenology_struct* phen, planting_struct* PLT, harvesting_struct* HRV, 
-						 epvar_struct* epv, metvar_struct* metv)
+int multilayer_rootdepth(const control_struct* ctrl, const phenology_struct* phen, const epconst_struct* epc, const siteconst_struct* sitec, 
+	                    const soilprop_struct* sprop, const cstate_struct* cs, const planting_struct* PLT, epvar_struct* epv)
 {
 
+	int errflag=0;
+	int layer;
 
-	int ok=1;
-	int layer, yday, ny;
-
-	double onday, offday, plant_day, matur_day, rootdepthmin, RLprop_sum1, RLprop_sum2,  maturity_coeff;
-	double vwc_avg, psi_avg, tsoil_avg;
+	double RLprop_sum1, RLprop_sum2, frootc;
+	double vwcSAT_RZ, vwcFC_RZ, vwcWP_RZ, vwcHW_RZ, maxRD;
 
 
 	/* initalizing internal variables */
-	vwc_avg=psi_avg=tsoil_avg=0;
-	onday=offday=plant_day=matur_day=rootdepthmin=RLprop_sum1=RLprop_sum2=maturity_coeff=0;
 
-	maturity_coeff = epc->maturity_coeff;
-	yday           = ctrl->yday;
-	onday          = phen->onday;
-	offday         = phen->offday;
-	rootdepthmin   = CRIT_PREC;
+	RLprop_sum1=RLprop_sum2=vwcSAT_RZ=vwcFC_RZ=vwcWP_RZ=vwcHW_RZ=0.0;
 
-	if(PLT->PLT_flag == 2)
-	{
-		ny = ctrl->simyr;
-	}
-	else ny=0;
-	
-	
+	if (sprop->soildepth < epc->max_rootzone_depth)
+		maxRD = sprop->soildepth;
+	else
+		maxRD = epc->max_rootzone_depth;
+
 	
 	/* ***************************************************************************************************** */	
-	/* 1. Calculating planting date and maturity date (Campbell and Diaz) based on empirical function 
-	      and taking into consideration the day of planting and ploughing */
-
-	/* after harvest - effect of harvest, no effect of planting */
-
-	if (HRV->HRV_flag)
-	{
-		if (HRV->mgmd >= 0)
-		{
-			HRV->afterHRV = 1;
-			PLT->afterPLT = 0;
-		}
-	}
-
+	/* 1. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (only on first day) */
 	
-	/* after planting - effect of planting, no effect of harvest */
-	if (PLT->mgmd >= 0) 
+	if (ctrl->simyr == 0 && ctrl->yday == 0)
 	{
-		PLT->afterPLT = 1;
-		HRV->afterHRV = 0;
-	}		
+		if (maxRD > 0)
+		{
+			if (maxRD > sitec->soillayer_depth[0])
+			{
+				if (maxRD > sitec->soillayer_depth[1])
+				{	
+					if (maxRD > sitec->soillayer_depth[2])
+					{
+						if (maxRD > sitec->soillayer_depth[3])
+						{
+							if (maxRD > sitec->soillayer_depth[4])
+							{
+								if (maxRD > sitec->soillayer_depth[5])
+								{
+									if (maxRD > sitec->soillayer_depth[6])
+									{
+										if (maxRD > sitec->soillayer_depth[7])
+										{
+											if (maxRD > sitec->soillayer_depth[8])
+											{
+													epv->n_maxrootlayers = 10;
+											}
+											else 
+											{
+												epv->n_maxrootlayers = 9;
+											}
+										}
+										else 
+										{
+											epv->n_maxrootlayers = 8;
+										}
+									}
+									else 
+									{
+										epv->n_maxrootlayers = 7;
+									}
+								}
+								else 
+								{
+									epv->n_maxrootlayers = 6;
+								}
+							}
+							else 
+							{
+								epv->n_maxrootlayers = 5;
+							}
+						}
+						else
+						{
+							epv->n_maxrootlayers = 4;
+						}
+					}
+					else 
+					{
+						epv->n_maxrootlayers = 3;
+					}	
+				}
+				else 
+				{
+					epv->n_maxrootlayers = 2;
+				}
+			}
+			else
+			{
+				epv->n_maxrootlayers = 1;
+			}
+		}
+		else 
+		{
+			epv->n_maxrootlayers = 0;
+			printf("\n");
+			printf("ERROR in multilayer_rootdepth: maximum of rooting depth is 0\n");
+			errflag=1;
+		}
+	
+		/*calculation of critical VWC values for rootzone */
 
-	/* no management in spinup - management setting in spinup INI files refers to transient run */
-	if (ctrl->spinup || (ctrl->simyears == 0 && ctrl->yday == 0))
-	{
-		HRV->afterHRV = 0;
-		PLT->afterPLT = 0;
+		for (layer = 0; layer < epv->n_maxrootlayers; layer++)
+		{
+			vwcSAT_RZ += sprop->vwc_sat[layer]* (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
+			vwcFC_RZ  += sprop->vwc_fc[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
+			vwcWP_RZ  += sprop->vwc_wp[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
+			vwcHW_RZ  += sprop->vwc_hw[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[epv->n_maxrootlayers-1]);
+		}
+		epv->vwcSAT_RZ = vwcSAT_RZ;
+		epv->vwcFC_RZ  = vwcFC_RZ;
+		epv->vwcWP_RZ  = vwcWP_RZ;
+		epv->vwcHW_RZ  = vwcHW_RZ;
 	}
-
-	/* after planting, but before ploughing the onday is the day of the last planting day */
-	if (PLT->PLT_flag)
-		plant_day = PLT->PLTdays_array[0][ny];
-	else
-		plant_day = onday;
-			
-	matur_day = onday + maturity_coeff * (offday - onday);
-
 
 	/* ***************************************************************************************************** */	
 	/* 2. Calculating rooting depth in case of non-wwody ecosystems (based on Campbell and Diaz, 1988) 
 	      actual rooting depth determines the rootzone depth (epv->n_rootlayers) */
 	
-	if (!epc->woody)
+	
+	if (cs->frootc) 
 	{
-		if (yday < offday) 
+		frootc = cs->frootc + cs->STDBc_froot;
+		if (frootc < epc->rootlenght_par1)
 		{
-			if (yday < plant_day || HRV->afterHRV == 1)
-				epv->rooting_depth = rootdepthmin;
-			
-			else
-				epv->rooting_depth = epc->max_rootzone_depth * (1./(1 + 44.2 * exp(-8.5*((yday - plant_day)/(matur_day - plant_day)))));
+			/* par1: root weight corresponding to max root depth, par2: root depth function shape parameter */
+			epv->rooting_depth = epv->germ_depth + maxRD * pow(frootc / epc->rootlenght_par1, epc->rootlenght_par2);
 		}
-		else 
-		{
-			if (HRV->afterHRV == 1)
-				epv->rooting_depth = rootdepthmin;
-			
-			else
-				epv->rooting_depth = epc->max_rootzone_depth - (yday - offday)/(NDAY_OF_YEAR - offday) * epc->max_rootzone_depth;
-			
-		}
+		else
+			epv->rooting_depth = epv->germ_depth + maxRD;
 	}
-	else epv->rooting_depth = epc->max_rootzone_depth;
+	else
+		epv->rooting_depth = 0;
+
+	if (epc->woody) epv->rooting_depth = maxRD;
 
 	/* ***************************************************************************************************** */	
 	/* 3. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
@@ -130,7 +173,28 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 						{
 							if (epv->rooting_depth > sitec->soillayer_depth[5])
 							{
-								epv->n_rootlayers = 7;
+								if (epv->rooting_depth > sitec->soillayer_depth[6])
+								{
+									if (epv->rooting_depth > sitec->soillayer_depth[7])
+									{
+										if (epv->rooting_depth > sitec->soillayer_depth[8])
+										{	
+											epv->n_rootlayers = 10;		
+										}
+										else 
+										{
+											epv->n_rootlayers = 9;
+										}
+									}
+									else 
+									{
+										epv->n_rootlayers = 8;
+									}
+								}
+								else 
+								{
+									epv->n_rootlayers = 7;
+								}
 							}
 							else 
 							{
@@ -165,115 +229,82 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	else 
 	{
 		epv->n_rootlayers = 0;
-		printf("Error in multilayer_rootdepth: maximum of rooting depth is 0\n");
-		ok=0;
+		if (cs->frootc)
+		{
+			printf("\n");
+			printf("ERROR in multilayer_rootdepth: root is available but rooting depth is 0\n");
+			errflag=1;
+		}
 	}
-	/* ***************************************************************************************************** */	
-	/* 3. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
 	
-	if (epc->max_rootzone_depth > 0)
-	{
-		if (epc->max_rootzone_depth > sitec->soillayer_depth[0])
-		{
-			if (epc->max_rootzone_depth > sitec->soillayer_depth[1])
-			{	
-				if (epc->max_rootzone_depth > sitec->soillayer_depth[2])
-				{
-					if (epc->max_rootzone_depth > sitec->soillayer_depth[3])
-					{
-						if (epc->max_rootzone_depth > sitec->soillayer_depth[4])
-						{
-							if (epv->rooting_depth > sitec->soillayer_depth[5])
-							{
-								epv->n_maxrootlayers = 7;
-							}
-							else 
-							{
-								epv->n_maxrootlayers = 6;
-							}
-						}
-						else 
-						{
-							epv->n_maxrootlayers = 5;
-						}
-					}
-					else
-					{
-						epv->n_maxrootlayers = 4;
-					}
-				}
-				else 
-				{
-					epv->n_maxrootlayers = 3;
-				}	
-			}
-			else 
-			{
-				epv->n_maxrootlayers = 2;
-			}
-		}
-		else
-		{
-			epv->n_maxrootlayers = 1;
-		}
-	}
-	else 
-	{
-		epv->n_maxrootlayers = 0;
-		printf("Error in multilayer_rootdepth: maximum of rooting depth is 0\n");
-		ok=0;
-	}
 	/* ***************************************************************************************************** */	
 	/* 4. Calculating the distribution of the root in the soil layers based on empirical function (Jarvis, 1989)*/
 	
-	/* initalization */
-	for (layer =0; layer < N_SOILLAYERS; layer++) epv->rootlength_prop[layer]     = 0;   
-	
 	/* calculation in active soil layer from 2 active soil layers */
-	for (layer =0; layer < epv->n_rootlayers; layer++)
+	
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		epv->rootlength_prop[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rooting_depth) * 
- 											  exp(-epc->rootdistrib_param * (sitec->soillayer_midpoint[layer] / epv->rooting_depth));
-		RLprop_sum1 += epv->rootlength_prop[layer];
+		if (layer < epv->n_rootlayers && layer >= epv->germ_layer)
+		{
+			epv->rootlength_prop[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rooting_depth) * 
+ 												  exp(-epc->rootdistrib_param * (sitec->soillayer_midpoint[layer] / epv->rooting_depth));
+			RLprop_sum1 += epv->rootlength_prop[layer];
+		}
+		else
+			epv->rootlength_prop[layer]   = 0;
+	}
+
+	if (RLprop_sum1 == 0) 
+	{
+		epv->rootlength_prop[epv->germ_layer] = 1;
 	}
 
 	/* correction */
-	for (layer =0; layer < N_SOILLAYERS; layer++)
+	if (RLprop_sum1)
 	{
-		if (RLprop_sum1 > 0)
+		for (layer =0; layer < N_SOILLAYERS; layer++)
+		{	
 			epv->rootlength_prop[layer] = epv->rootlength_prop[layer] / RLprop_sum1;
-		else 
-            epv->rootlength_prop[0] = 1;
+			RLprop_sum2                 += epv->rootlength_prop[layer];
+		}
 
-		RLprop_sum2                 += epv->rootlength_prop[layer];
-
+		if (fabs(1. - RLprop_sum2) > 1e-8)
+		{
+			printf("\n");
+			printf("ERROR in multilayer_rootdepth: sum of soillayer_RZportion is not equal to 1.0\n");
+			errflag=1;
+		}
 	}
 	
-	/* control */
-	if ((1. - RLprop_sum2 > 1e-8))
-	{
-		printf("Error in multilayer_rootdepth: sum of soillayer_RZportion is not equal to 1.0\n");
-	    ok=0;
-	}
 
 	
+
+
+
 	/* ***************************************************************************************************** */	
-	/* 6. Calculating averages */
+	/* 5. calculation of plant height (based on 4M)*/
 
-	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
+	/* par1: stem weight corresponding to max plant height, par2: plant height function shape parameter */
+	if (epc->woody)
 	{
-		tsoil_avg += metv->tsoil[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
-		vwc_avg	  += epv->vwc[layer]    * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
-		psi_avg	  += epv->psi[layer]    * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
+		epv->plant_height = epc->max_plant_height*(1-exp((-5/epc->plantheight_par1)*(cs->livestemc+cs->deadstemc)));
 	}
+	else
+	{
+		if (PLT->PLT_num)
+		{
+			epv->plant_height = pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantheight_par1),epc->plantheight_par2);
+		}
+		else
+		{
+			epv->plant_height = 0.12*epv->proj_lai + 0.15;	
+		}
+	}
+	if (epv->plant_height > epc->max_plant_height) epv->plant_height = epc->max_plant_height;
+
+	
 
 
-	epv->vwc_avg	= vwc_avg;
-	epv->psi_avg	= psi_avg;
-	metv->tsoil_avg = tsoil_avg;
-
-
-
-	return(!ok);
+	return(errflag);
 }
 

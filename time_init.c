@@ -3,9 +3,11 @@ time_init.c
 Initialize the simulation timing control parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo v4
+Biome-BGCMuSo v6.0.
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group
+Numerical Terradynamic Simulation Group (NTSG)
+School of Forestry, University of Montana
+Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -21,9 +23,9 @@ Numerical Terradynamics Simulation Group
 
 int time_init(file init, control_struct *ctrl)
 {
-	int ok = 1;
+	int errflag=0;
 	char key1[] = "TIME_DEFINE";
-	char keyword[80];
+	char keyword[STRINGSIZE];
 
 	/********************************************************************
 	**                                                                 **
@@ -33,52 +35,47 @@ int time_init(file init, control_struct *ctrl)
 	********************************************************************/
 
 	/* scan for the control block keyword, exit if not next */
-	if (ok && scan_value(init, keyword, 's'))
+	if (!errflag && scan_value(init, keyword, 's'))
 	{
-		printf("Error reading keyword for control data\n");
-		ok=0;
+		printf("ERROR reading keyword for control data\n");
+		errflag=204;
 	}
-	if (ok && strcmp(keyword, key1))
+	if (!errflag && strcmp(keyword, key1))
 	{
 		printf("Expecting keyword --> %s in file %s\n",key1,init.name);
-		ok=0;
+		errflag=204;
 	}
 
-	/* read the number of years of data in met files */
-	if (ok && scan_value(init, &ctrl->metyears, 'i'))
-	{
-		printf("Error reading number of met years: time_init()\n");
-		ok=0;
-	}
 	
 	/* read the number of simulation years */
-	if (ok && scan_value(init, &ctrl->simyears, 'i'))
+	if (!errflag && scan_value(init, &ctrl->simyears, 'i'))
 	{
-		printf("Error reading simyears: time_init(), time_init.c\n");
-		ok=0;
+		printf("ERROR reading simyears: time_init.c\n");
+		errflag=20402;
 	}
+
 	
 	/* read integer value for the first year of the simulation */
-	if (ok && scan_value(init, &ctrl->simstartyear, 'i'))
+	if (!errflag && scan_value(init, &ctrl->simstartyear, 'i'))
 	{
-		printf("Error reading simstartyear: time_init(), time_init.c\n");
-		ok=0;
+		printf("ERROR reading simstartyear: time_init.c\n");
+		errflag=20403;
 	}
 	
 	/* read flag controling whether or not this is a spinup simulation */
-	if (ok && scan_value(init, &ctrl->spinup, 'i'))
+	if (!errflag && scan_value(init, &ctrl->spinup, 'i'))
 	{
-		printf("Error reading spinup flag: time_init(), time_init.c\n");
-		ok=0;
+		printf("ERROR reading spinup flag: time_init.c\n");
+		errflag=20404;
 	}
 	
 	/* read maximum allowable simulation years for spinup simulation */
-	if (ok && scan_value(init, &ctrl->maxspinyears, 'i'))
+	if (!errflag && scan_value(init, &ctrl->maxspinyears, 'i'))
 	{
-		printf("Error reading max spinup years: time_init(), time_init.c\n");
-		ok=0;
+		printf("ERROR reading max spinup years: time_init.c\n");
+		errflag=20405;
 	}
 
 	
-	return (!ok);
+	return (errflag);
 }

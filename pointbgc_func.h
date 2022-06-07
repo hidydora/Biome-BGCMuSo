@@ -47,7 +47,7 @@ int planting_init(file init, int max_PLTdays, planting_struct* PLT);
 int GSI_init(file init, GSI_struct* GSI);
 
 /* model corrections - Hidy 2009. */
-int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, 
+int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, const siteconst_struct* sitec, 
 	GSI_struct* GSI, phenarray_struct* phenarr);
 
 

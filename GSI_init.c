@@ -103,17 +103,17 @@ int GSI_init(file init, GSI_struct* GSI)
 		ok=0;
 	}
 
-	/* photoperiod_limit1 for calculation photoperiod index */
-	if (ok && scan_value(init, &GSI->photoperiod_limit1, 'd'))
+	/* dayl_limit1 for calculation dayl index */
+	if (ok && scan_value(init, &GSI->dayl_limit1, 'd'))
 	{
-		printf("Error reading photoperiod_limit parameter: GSI_init()\n");
+		printf("Error reading dayl_limit parameter: GSI_init()\n");
 		ok=0;
 	}
 
-	/* photoperiod_limit2 for calculation photoperiod index */
-	if (ok && scan_value(init, &GSI->photoperiod_limit2, 'd'))
+	/* dayl_limit2 for calculation dayl index */
+	if (ok && scan_value(init, &GSI->dayl_limit2, 'd'))
 	{
-		printf("Error reading photoperiod_limit parameter: GSI_init()\n");
+		printf("Error reading dayl_limit parameter: GSI_init()\n");
 		ok=0;
 	}
 

@@ -21,10 +21,14 @@ Copyright 2009, Hidy
 #include "misc_func.h"
 
 
-int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, GSI_struct* GSI, phenarray_struct* phenarr)
+int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, const siteconst_struct* sitec, 
+					GSI_struct* GSI, phenarray_struct* phenarr)
 
 {
 	int ok=1;
+	int ny, yday, back;
+
+	int firstdayLP = 180;		/* theoretically first day of litterfall */
 
 	/* flags and counters */
 	int onday_flag = 0;
@@ -32,12 +36,12 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, GSI
 	int onday = 0;
 	int offday = 0;
 	int nyears = ctrl->metyears;
-	int ndays = 365 * nyears;
-	int n_yday = 365;
-	int ny, yday, back;
+	int n_yday = NDAY_OF_YEAR;
+	int ndays = NDAY_OF_YEAR * nyears;
+
 	
 	/*  enviromental conditions taken account to calculate onset and offset days */
-	double tmax_act, tmin_act, tavg_act, vpd_act, photoperiod_act, heatsum_act;	
+	double tmax_act, tmin_act, tavg_act, vpd_act, dayl_act, heatsum_act;	
 
 	
 	/* threshold limits for each variable, between assuming that phenological activity varied linearly from inactive to unconstrained */
@@ -50,16 +54,21 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, GSI
 	double tmin_limit2 = GSI->tmin_limit2;
 	double vpd_limit1 = GSI->vpd_limit1;
 	double vpd_limit2 = GSI->vpd_limit2;
-	double photoperiod_limit1 = GSI->photoperiod_limit1;
-	double photoperiod_limit2 = GSI->photoperiod_limit2;
-	int n_moving_avg = GSI->n_moving_avg-1;	/* moving averages are calculated from indicatiors 
-											to avoid the effects of single extreme events; -1: number to index */
+	double dayl_limit1 = GSI->dayl_limit1;
+	double dayl_limit2 = GSI->dayl_limit2;
+	int    n_moving_avg = GSI->n_moving_avg-1;	/* moving averages are calculated from indicatiors 
+											       to avoid the effects of single extreme events; -1: number to index */
 	double GSI_limit_SGS = GSI->GSI_limit_SGS;	/* when GSI index fisrt time greater that limit -> start of the growing season */
 	double GSI_limit_EGS = GSI->GSI_limit_EGS;	/* when GSI index fisrt time less that limit -> end of the growing season */
 
 
 	/* indexes for the different variables and total index (multiplication of  partial indexes)*/
-	double tmin_index, vpd_index, photoperiod_index, heatsum_index, GSI_index;
+	double tmin_index, vpd_index, dayl_index, heatsum_index, GSI_index;
+
+	/* at the presence of snow cover no vegetation period (calculating snow cover from precipitation, Tavg and srad) */
+	double snow_cover, prcp_act, srad_act;
+	double rn, tmelt, rmelt, melt, snow_loss, snow_plus, rms, rsub;
+	double albedo_sw = sitec->sw_alb;
 	
 	/* to calculate moving average from total index values */
 	double GSI_index_SUM = 0;
@@ -67,6 +76,13 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, GSI
 	double GSI_index_total = 0;
 	
 	int *onday_arr, *offday_arr;
+
+	/* Hidy 2013 - ratio of melting snow */
+	rms=0.95;
+	snow_cover = 0;
+	onday_flag = 0;
+	offday_flag = 1;
+
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////allocate memory for arrays containing ondays and offdays /////////////////////////////////////
@@ -83,327 +99,234 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, GSI
 		
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (ctrl->onscreen)
-		{
-			fprintf(GSI->GSI_file.ptr, "year yday tmin tday VPD photoperiod heatsum tmin_index vpd_index photoperiod_index heatsum_index GSI_index_avg GSI_index_total\n");
-		}
-		////////////////////////////////////////////////////////////////////
+	if (ctrl->onscreen)
+	{
+		fprintf(GSI->GSI_file.ptr, "year yday tavg prcp tmin heatsum tmin_index heatsum_index snow_cover GSI_index_avg GSI_index_total\n");
+	}
+	////////////////////////////////////////////////////////////////////
 
-		for (ny=0 ; ny<nyears ; ny++)
+	for (ny=0; ny<nyears; ny++)
+	{
+		onday  = 0;
+		offday = 0;
+
+		for (yday=0; yday<NDAY_OF_YEAR; yday++)	
 		{
-					
-			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-			/* !!!!!!!!!!!!!!!!!!!!!!!!! calculating onday !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-			yday = 0;
-			onday_flag = 0;
-			while ((yday < n_yday) && (onday_flag==0))
+		/* ******************************************************************* */
+		/* 1. calculation of snow loss and plus*/
+		
+			tmax_act     = metarr->tmax[ny*n_yday+yday];
+			tmin_act     = metarr->tmin[ny*n_yday+yday];
+			tavg_act     = (tmax_act+tmin_act)/2.;
+			prcp_act     = metarr->prcp[ny*n_yday+yday];	
+			srad_act     = metarr->swavgfd[ny*n_yday+yday];
+			dayl_act     = metarr->dayl[ny*n_yday+yday];
+
+			/* canopy transmitted radiaiton: convert from W/m2 --> KJ/m2/d */	
+			rn = srad_act * (1.0 - albedo_sw) * dayl_act * sn_abs * 0.001;
+		
+			/* 1.a. snow loss: melting and sublim. */
+			if (tavg_act > 0.0)  
+			{	/* temperature melt from snowpack */
+				tmelt = tcoef * tavg_act;
+				/* radiaiton melt from snowpack */
+				rmelt = rn / lh_fus;
+				melt = tmelt+rmelt;
+				/* snowmelt decreases actual snow pool */
+				snow_loss = melt;
+			}
+			else  
+			{	/* sublimation from snowpack */
+				rsub = rn / lh_sub;
+				/* sublimation decreases actual snow pool */
+				snow_loss = rsub;
+			}
+			if (snow_loss > snow_cover) snow_loss = snow_cover;	
+		
+			/* 1.b. snow plus: melting and sublim. */
+			if (tavg_act < 0.0)  
 			{
+				snow_plus = prcp_act*10;
+			}
+			else  snow_plus = 0;
 
-				tmin_index = 0;
-				vpd_index = 0;
-				photoperiod_index = 0;
-				heatsum_index=0;
-				GSI_index_avg = 0;
-				GSI_index_total = 0;
-				
-				/* writing out the enviromental parameters and GSI indexes */
-				if (ctrl->onscreen && yday!=n_moving_avg)
+			snow_cover -= snow_loss;
+			snow_cover += snow_plus;
+
+			/* ******************************************************************* */
+			/* 2. calculation of indexes (based on moving averages of evironmental parameters) */
+
+			if (yday < n_moving_avg)
+			{
+				heatsum_act     = DATA_GAP;
+				tmin_index      = DATA_GAP;
+				heatsum_index   = DATA_GAP;
+				GSI_index_avg   = DATA_GAP;
+				GSI_index_total = DATA_GAP;
+			}
+			else
+			{
+				GSI_index_SUM = 0;
+				heatsum_act = 0;
+				for (back=0; back<=n_moving_avg; back++)
 				{
 					/* search actual values of variables */
-					tmax_act = metarr->tmax[ny*365+yday];
-					tmin_act = metarr->tmin[ny*365+yday];
+					tmax_act = metarr->tmax[ny*n_yday+yday-(n_moving_avg-back)];
+					tmin_act = metarr->tmin[ny*n_yday+yday-(n_moving_avg-back)];
 					tavg_act = (tmax_act+tmin_act)/2.;
-					vpd_act = metarr->vpd[ny*365+yday];
-					photoperiod_act = metarr->dayl[ny*365+yday];
-					heatsum_act = 0;
-				
-					fprintf(GSI->GSI_file.ptr, "%i %i %f %f %f %f %f %f %f %f %f %f %f\n", ctrl->simstartyear+ny, yday, 
-										tmin_act, tavg_act, vpd_act, photoperiod_act, heatsum_act, 
-										tmin_index, vpd_index, photoperiod_index, heatsum_index, GSI_index_avg, GSI_index_total);
-				}
-				
-				while ((yday>=n_moving_avg) && (yday<n_yday) && (onday_flag==0))
-				{
-					GSI_index_SUM = 0;
-					heatsum_act = 0;
-					for (back=0; back<=n_moving_avg; back++)
-					{
-						/* search actual values of variables */
-						tmax_act = metarr->tmax[ny*365+yday-(n_moving_avg-back)];
-						tmin_act = metarr->tmin[ny*365+yday-(n_moving_avg-back)];
-						tavg_act = (tmax_act+tmin_act)/2.;
-						vpd_act = metarr->vpd[ny*365+yday-(n_moving_avg-back)];
-						photoperiod_act = metarr->dayl[ny*365+yday-(n_moving_avg-back)];
-
-						/* calculation of heatsum regarding to the basic temperature and n_moving_avg long period */
-						if (tavg_act > basic_temperature) 
-						{
-							heatsum_act += (tavg_act-basic_temperature);
-						}
-
-						/* calculation of indexes regarding to the different variables */
-						/* !!!!!!!!!!!!!!!!!!!!!!!!!!  1: tmin !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-						if (tmin_act < tmin_limit1)
-						{
-							tmin_index=0;
-						}
-						else
-						{
-							if (tmin_act < tmin_limit2)
-							{
-								tmin_index = (tmin_act-tmin_limit1)/(tmin_limit2-tmin_limit1);
-							}
-							else
-							{
-								tmin_index = 1;
-							}
-
-						}
-						/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!  2: vpd !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-						if (vpd_act > vpd_limit1)
-						{
-							vpd_index=0;
-						}
-						else
-						{
-							if (vpd_act > vpd_limit2)
-							{
-								vpd_index = (vpd_act-vpd_limit1)/(vpd_limit2-vpd_limit1);
-							}
-							else
-							{
-								vpd_index = 1;
-							}
-
-						}
-						/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  3: photoperiod !!!!!!!!!!!!!!!!!!!!!!!!!!! */
-						if (photoperiod_act < photoperiod_limit1)
-						{
-							photoperiod_index=0;
-						}
-						else
-						{
-							if (photoperiod_act < photoperiod_limit2)
-							{
-								photoperiod_index = (photoperiod_act-photoperiod_limit1)/(photoperiod_limit2-photoperiod_limit1);
-							}
-							else
-							{
-								photoperiod_index = 1;
-							}
-
-						}
-							
-						
-						GSI_index = tmin_index * vpd_index * photoperiod_index;
-						GSI_index_SUM += GSI_index;
-
-					} /* endfor - calculating indexes for the n_moving_average long period  */
-
-					/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  4: heatsum !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-					if (heatsum_act < heatsum_limit1)
-					{
-						heatsum_index=0;
-					}
-					else
-					{
-						if (heatsum_act < heatsum_limit2)
-						{
-							heatsum_index = (heatsum_act-heatsum_limit1)/(heatsum_limit2-heatsum_limit1);
-						}
-						else
-						{
-							heatsum_index = 1;
-						}
-
-					}
-
-					GSI_index_avg = GSI_index_SUM / (n_moving_avg+1);
-					GSI_index_total = GSI_index_avg * heatsum_index;
-
-					/* writing out the enviromental parameters and GSI indexes */
-					if (ctrl->onscreen)
-					{
-						fprintf(GSI->GSI_file.ptr, "%i %i %f %f %f %f %f %f %f %f %f %f %f\n", ctrl->simstartyear+ny, yday, 
-											tmin_act, tavg_act, vpd_act, photoperiod_act, heatsum_act, 
-											tmin_index, vpd_index, photoperiod_index, heatsum_index, GSI_index_avg, GSI_index_total);
-					}
-					
-					if (GSI_index_total > GSI_limit_SGS) 
-					{
-						onday_flag = 1;
-						onday = yday;
-						onday_arr[ny] = onday;
-						if (ctrl->onscreen) printf("year:%i onday:%i\n", ctrl->simstartyear+ny, onday);
-					}
-					else
-					{
-						yday = yday+1;
-					}
-				
-					
-				} /* endwhile - determine the onday; calculating n_moving_average long period */
-
-				yday = yday+1;
-				
-			} /* endwhile - determine the onday */
-
-		
-			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-			/* !!!!!!!!!!!!!!!!!!!!!!!!! calculating offday !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-			offday_flag = 0;
-			while ((yday > onday)  && (yday < 365) && (offday_flag==0))
-			{
-				vpd_index = 1;
-				photoperiod_index = 1;
-				GSI_index_avg = 1;
-				GSI_index_total = 1;
-				
+					vpd_act  = metarr->vpd[ny*n_yday+yday-(n_moving_avg-back)];
+					dayl_act = metarr->dayl[ny*n_yday+yday-(n_moving_avg-back)];
+					 
 			
-				
-				while (yday < 365)
-				{
-					GSI_index_SUM = 0;
-					heatsum_act = 0;
-					for (back=0; back<=n_moving_avg; back++)
+					/* ******************************************************************* */
+					/* 1.1 calculation of heatsum regarding to the basic temperature and n_moving_avg long period */
+					if (tavg_act > basic_temperature) 
 					{
-						/* search actual values of variables */
-						tmax_act = metarr->tmax[ny*365+yday-(n_moving_avg-back)];
-						tmin_act = metarr->tmin[ny*365+yday-(n_moving_avg-back)];
-						tavg_act = (tmax_act+tmin_act)/2.;
-						vpd_act = metarr->vpd[ny*365+yday-(n_moving_avg-back)];
-						photoperiod_act = metarr->dayl[ny*365+yday-(n_moving_avg-back)];
+						heatsum_act += (tavg_act-basic_temperature);
+					}
 
-						/* calculation of heatsum regarding to the basic temperature and n_moving_avg long period */
-						if (tavg_act > basic_temperature) 
-						{
-							heatsum_act += (tavg_act-basic_temperature);
-						}
-
-						/* calculation of indexes regarding to the different variables */
-						/* !!!!!!!!!!!!!!!!!!!!!!!!!!  1: tmin !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-						if (tmin_act < tmin_limit1)
-						{
-							tmin_index=0;
-						}
-						else
-						{
-							if (tmin_act < tmin_limit2)
-							{
-								tmin_index = (tmin_act-tmin_limit1)/(tmin_limit2-tmin_limit1);
-							}
-							else
-							{
-								tmin_index = 1;
-							}
-
-						}
-						/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!  2: vpd !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-						if (vpd_act	> vpd_limit1)
-						{
-							vpd_index=0;
-						}
-						else
-						{
-							if (vpd_act > vpd_limit1)
-							{
-								vpd_index = (vpd_act-vpd_limit1)/(vpd_limit2-vpd_limit1);
-							}
-							else
-							{
-								vpd_index = 1;
-							}
-
-						}
-						/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  3: photoperiod !!!!!!!!!!!!!!!!!!!!!!!!!!! */
-						if (photoperiod_act < photoperiod_limit1)
-						{
-							photoperiod_index=0;
-						}
-						else
-						{
-							if (photoperiod_act < photoperiod_limit2)
-							{
-								photoperiod_index = (photoperiod_act-photoperiod_limit1)/(photoperiod_limit2-photoperiod_limit1);
-							}
-							else
-							{
-								photoperiod_index = 1;
-							}
-
-						}
-							
-						
-						GSI_index = tmin_index * vpd_index * photoperiod_index; // * heatsum_index;
-						GSI_index_SUM += GSI_index;
-
-					} /* endfor - calculating indexes for the n_moving_average long period  */
-
-					/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  4: heatsum !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-					if (heatsum_act < heatsum_limit1)
+					/* ******************************************************************* */
+					/* 1.2. calculation of indexes regarding to the different variables */
+					/* !!!!!!!!!!!!!!!!!!!!!!!!!!  A: tmin !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+					if (tmin_act < tmin_limit1)
 					{
-						heatsum_index=0;
+						tmin_index=0;
 					}
 					else
 					{
-						if (heatsum_act < heatsum_limit2)
+						if (tmin_act < tmin_limit2)
 						{
-							heatsum_index = (heatsum_act-heatsum_limit1)/(heatsum_limit2-heatsum_limit1);
+							tmin_index = (tmin_act-tmin_limit1)/(tmin_limit2-tmin_limit1);
 						}
 						else
 						{
-							heatsum_index = 1;
+							tmin_index = 1;
 						}
 
 					}
-
-					GSI_index_avg = GSI_index_SUM / (n_moving_avg+1);
-					GSI_index_total = GSI_index_avg * heatsum_index;
-					
-					/* writing out the enviromental parameters and GSI indexes */
-					if (ctrl->onscreen)
+					/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!  B: vpd !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+					if (vpd_act > vpd_limit1)
 					{
-						fprintf(GSI->GSI_file.ptr, "%i %i %f %f %f %f %f %f %f %f %f %f %f\n", ctrl->simstartyear+ny, yday, 
-											tmin_act, tavg_act, vpd_act, photoperiod_act, heatsum_act, 
-											tmin_index, vpd_index, photoperiod_index, heatsum_index, GSI_index_avg, GSI_index_total);
+						vpd_index=0;
 					}
-					
-					if (GSI_index_total < GSI_limit_EGS && yday > 280 && offday_flag == 0) 
+					else
 					{
-						offday_flag = 1;
-						offday = yday;
-						offday_arr[ny] = offday;
-					
-						if (ctrl->onscreen) printf("year:%i offday:%i\n", ctrl->simstartyear+ny, offday);
+						if (vpd_act > vpd_limit2)
+						{
+							vpd_index = (vpd_act-vpd_limit1)/(vpd_limit2-vpd_limit1);
+						}
+						else
+						{
+							vpd_index = 1;
+						}
+
 					}
-					yday = yday+1;
-				
-				
-				} /* endwhile - determine the offday; calculating n_moving_average long period */
+					/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  C: dayl !!!!!!!!!!!!!!!!!!!!!!!!!!! */
+					if (dayl_act < dayl_limit1)
+					{
+						dayl_index=0;
+					}
+					else
+					{
+						if (dayl_act < dayl_limit2)
+						{
+							dayl_index = (dayl_act-dayl_limit1)/(dayl_limit2-dayl_limit1);
+						}
+						else
+						{
+							dayl_index = 1;
+						}
 
-				yday = yday+1;
+					}
+						
+					
+					GSI_index = tmin_index * vpd_index * dayl_index;
+					GSI_index_SUM += GSI_index;
+
+				} /* endfor - calculating indexes for the n_moving_average long period  */
+
+				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  D: heatsum !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+				if (heatsum_act < heatsum_limit1)
+				{
+					heatsum_index=0;
+				}
+				else
+				{
+					if (heatsum_act < heatsum_limit2)
+					{
+						heatsum_index = (heatsum_act-heatsum_limit1)/(heatsum_limit2-heatsum_limit1);
+					}
+					else
+					{
+						heatsum_index = 1;
+					}
+
+				}
+
+				GSI_index_avg = GSI_index_SUM / (n_moving_avg+1);
+				GSI_index_total = GSI_index_avg * heatsum_index;
 				
-			} /* endwhile - determine the offday */
-		
+			} /* endelse - calculating indexes */
 
-		} /* endfor - simyears */
-
-		/* writing out the date of onday and offday for every simulation year */
-		if (ctrl->onscreen)
-		{
-			for (ny=0 ; ny<nyears ; ny++)
+			if (onday_flag == 0 && offday_flag == 1 && GSI_index_total > GSI_limit_SGS && yday < firstdayLP && snow_cover == 0) 
 			{
-				fprintf(GSI->GSI_file.ptr, "%i\n", ctrl->simstartyear+ny);
-				fprintf(GSI->GSI_file.ptr, "%i\n", onday_arr[ny]);
-				fprintf(GSI->GSI_file.ptr, "%i\n", offday_arr[ny]);
+				onday_flag    = 1;
+				offday_flag   = 0;
+				onday         = yday;
+				onday_arr[ny] = onday;
+				if (ctrl->onscreen) printf("year:%i onday:%i\n", ctrl->simstartyear+ny, onday);
 			}
-		}
+
+			if (onday_flag == 1 && offday_flag == 0 && GSI_index_total < GSI_limit_EGS && yday > firstdayLP) 
+			{
+ 				onday_flag     = 0;
+				offday_flag    = 1;
+				offday         = yday;
+				offday_arr[ny] = offday;
+				if (ctrl->onscreen) printf("year:%i offday:%i\n", ctrl->simstartyear+ny, offday);
+			}
+		
+		
+			/* if vegetation period does not end until the last day of year, the offday is equal to the last day of year */
+			if (yday == NDAY_OF_YEAR-1 && offday == 0)
+			{
+				onday_flag     = 0;
+				offday_flag    = 1;
+				offday         = yday;
+				offday_arr[ny] = offday;
+				if (ctrl->onscreen) printf("year:%i offday:%i\n", ctrl->simstartyear+ny, offday);
+			}
+			/* ******************************************************************* */
+			/* 4. writing out the enviromental parameters and GSI indexes */
+			if (ctrl->onscreen)
+			{
+				fprintf(GSI->GSI_file.ptr, "%i %i %f %f %f %f %f %f %f %f %f\n", ctrl->simstartyear+ny, yday, 
+									tavg_act, prcp_act, tmin_act, heatsum_act, tmin_index, heatsum_index, snow_cover,
+									 GSI_index_avg, GSI_index_total);
+			}
+
+		}/* endfor - simdays */
 
 	
+	} /* endfor - simyears */
+
+	/* writing out the date of onday and offday for every simulation year */
+	if (ctrl->onscreen)
+	{
+		for (ny=0 ; ny<nyears ; ny++)
+		{
+			fprintf(GSI->GSI_file.ptr, "%i\n", ctrl->simstartyear+ny);
+			fprintf(GSI->GSI_file.ptr, "%i\n", onday_arr[ny]);
+			fprintf(GSI->GSI_file.ptr, "%i\n", offday_arr[ny]);
+		}
+	}
+
+
 
 
 	phenarr->onday_arr = onday_arr;
 	phenarr->offday_arr= offday_arr;
+
 
 	return (!ok);
 

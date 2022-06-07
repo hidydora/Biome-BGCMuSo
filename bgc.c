@@ -126,7 +126,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	int outv;
 	int dayout;
 	double daily_ndep; 
-	double tair_annavg = 0;
+	double tair_annavg;
 	double nmetdays;
 	int i;
 
@@ -136,8 +136,9 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	int endday[12] = {30,58,89,119,150,180,211,242,272,303,333,364};
 	
 	/* simple annual variables for text output  - Hidy 2008. */
-	double annmaxlai,annet,anndeeppercol,annnpp, annnee, annnbp, annprcp,anntavg, ann_carbonchange_THN,  ann_carbonchange_MOW,  ann_carbonchange_HRV,
-		ann_carbonchange_PLG, ann_carbonchange_GRZ, ann_carbonchange_FRZ, ann_carbonchange_PLT, ann_nitrogen_GRZplus, ann_nitrogen_FRZplus;
+	double annmaxlai,annet,anndeeppercol,annnpp, annnee, annnbp, annprcp,anntavg, 
+		ann_carbonchange_THN,  ann_carbonchange_MOW,  ann_carbonchange_HRV,ann_carbonchange_PLG, ann_carbonchange_GRZ, 
+		ann_carbonchange_FRZ, ann_carbonchange_PLT, ann_nitrogen_GRZplus, ann_nitrogen_FRZplus;
 	
 
 	/* copy the input structures into local structures */
@@ -181,7 +182,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
-		fprintf(bgcout->control_file.ptr, "yday VWC1 VWC3 w_scalar cum_NPP SNSC_src litr1c soil4c(kg) soil4n(kg) GPP AR HR EVAP \n");
+		fprintf(bgcout->control_file.ptr, "yday prcp tavg soilw snoww snoww_to_soilw snoww_subl GPP\n");
 
 	}
 
@@ -288,7 +289,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (ctrl.GSI_flag)
 	{
 		/* Hidy 2009. - calculate GSI to deterime onday and offday 	*/	
-		if (ok && GSI_calculation(&metarr, &ctrl, &GSI, &phenarr))
+		if (ok && GSI_calculation(&metarr, &ctrl, &sitec, &GSI, &phenarr))
 		{
 			printf("Error in call to GSI_calculation(), from bgc()\n");
 			ok=0;
@@ -316,7 +317,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	temperature corrections. This code added 9 February 1999, in
 	conjunction with soil temperature testing done with Mike White. 
 	tair_annavg = 0.0; */
-	nmetdays = ctrl.metyears * 365;
+	nmetdays = ctrl.metyears * NDAY_OF_YEAR;
 	for (i=0 ; i<nmetdays ; i++)
 	{
 		tair_annavg += metarr.tavg[i];
@@ -396,8 +397,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		ann_nitrogen_GRZplus = 0.0;     /* by Hidy 2008. */
 		ann_nitrogen_FRZplus = 0.0;  /* by Hidy 2008. */
 
-		/* set vegetation period flag to 0 - Hidy 2013 */
-		ctrl.vegper_flag = 0;
 
 	
 		/* set current month to 0 (january) at the beginning of each year */
@@ -437,12 +436,12 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		else
 		{	
 			/* Ndep from file */
-			daily_ndep = ramp_ndep.ndep_array[simyr]/365;
+			daily_ndep = ramp_ndep.ndep_array[simyr]/NDAY_OF_YEAR;
 		}
 		
 
 		/* begin the daily model loop */
-		for (yday=0 ; ok && yday<365 ; yday++)
+		for (yday=0 ; ok && yday<NDAY_OF_YEAR ; yday++)
 		{
 #ifdef DEBUG
 			printf("year %d\tyday %d\n",simyr,yday);
@@ -452,13 +451,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			ctrl.yday = yday;
 			ctrl.spinyears = 0;
 			
-			/* Hidy 2013. - determine vegetation period */ 
-			if (ok && vegetation_period_determ(&ctrl, &phen))
-			{
-				printf("Error in call to vegetation_period_determ() from bgc()\n");
-				ok=0;
-			} 
-			
+					
 			/* Test for very low state variable values and force them
 			to 0.0 to avoid rounding and floating point overflow errors */
 			if (ok && precision_control(&sitec, &ws, &cs, &ns))
@@ -468,7 +461,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			} 
 			
 			/* set the day index for meteorological and phenological arrays */
-			metday = metyr*365 + yday;
+			metday = metyr*NDAY_OF_YEAR + yday;
 			
 			/* zero all the daily flux variables */
 			wf = zero_wf;
@@ -658,6 +651,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl && ws.snoww == 0)
 			{
+		
 				/* SUNLIT canopy fraction photosynthesis */
 				/* set the input variables */
 				psn_sun.c3 = epc.c3_flag;
@@ -1044,13 +1038,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */
 			if (ctrl.onscreen && ctrl.simyr < 10)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f %f %f %f\n", 
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f\n", 
 				yday, 
-				epv.vwc[0], epv.vwc[3], epv.w_scalar, 
-				summary.cum_npp*1000, cs.SNSC_src*1000, cs.litr1c, cs.soil4c, ns.soil4n,
-				summary.daily_gpp*1000, (summary.daily_mr+summary.daily_gr)*1000, summary.daily_hr*1000,
-				wf.canopyw_evap+wf.soilw_evap+wf.soilw_trans_SUM+wf.snoww_subl); 
-
+				metv.prcp, metv.tavg, ws.soilw_SUM, ws.snoww, wf.snoww_to_soilw, wf.snoww_subl, summary.daily_gpp*1000); 
+ 
 			}
 
 			/* DAILY OUTPUT HANDLING */
@@ -1172,7 +1163,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 			if (ctrl.spinup == 0 && epv.dsws > 0 && ctrl.onscreen) printf("stomatal conductance is SWC-limited:%d\t\n",yday);
 			
-			annet += wf.canopyw_evap + wf.snoww_subl + wf.soilw_evap + wf.soilw_trans_SUM;			
+			annet += wf.evapotransp;			
 			anndeeppercol += wf.soilw_percolated[N_SOILLAYERS-2];
 			annnpp += summary.daily_npp * 1000.0;		/* (kgC/m2 -> gC/m2) */
 			annnee += summary.daily_nee * 1000.0;		/* (kgC/m2 -> gC/m2) */

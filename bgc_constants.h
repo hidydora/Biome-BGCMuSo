@@ -65,6 +65,11 @@ are set to 0.0 to control rounding and overflow errors */
 #define pF_wiltingpoint		4.2		/* (dimless)  pF value at wilting point */
 #define pF_fieldcapacity	2.5		/* (dimless)  pF value at field capacity */
 
-#define NDAY_OF_YEAR	    365.0	
+/* Hidy 2013 - contants for snow estimation in GSI calculation */
+#define sn_abs				0.1			/* absorptivity of snow */
+#define lh_fus				335.0		/* (kJ/kg) latent heat of fusion */
+#define lh_sub				2845.0		/* (kJ/kg) latent heal of sublimation */
+#define tcoef				0.65		/* (kg/m2/deg C/d) temp. snowmelt coef */
+#define NDAY_OF_YEAR	    365	
 #define DATA_GAP			-999.9	
 #define CAMPBELL_PARAM		200    /* (dimless) based on Cambell and Diaz 1988: Simplifiled soil-water balance model (runoff calc. in mm) */

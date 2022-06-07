@@ -3,7 +3,7 @@ bgc_constants.h
 Holds macro definitions for constants used in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.0.4
+Biome-BGCMuSo v4.0.7
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2017, D. Hidy [dori.hidy@gmail.com]
@@ -76,7 +76,7 @@ are set to 0.0 to control rounding and overflow errors */
 
 /* Hidy 2015 - number of parameter arrays regarding to management sections */
 #define n_FRZparam			12
-#define n_GRZparam			14
+#define n_GRZparam			15
 #define n_HRVparam			3
 #define n_IRGparam			2
 #define n_MOWparam			3

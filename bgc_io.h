@@ -4,7 +4,7 @@ header file to hold the structures used to communicate with bgc()
 also contains the function prototype for bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.0.4
+Biome-BGCMuSo v4.0.7
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2017, D. Hidy [dori.hidy@gmail.com]
@@ -51,8 +51,9 @@ typedef struct
 	file anntext;           /* file containing simple annual text output */
 	double spinup_resid_trend; /* kgC/m2/yr remaining trend after spinup */
 	int spinup_years;       /* number of years before reaching steady-state */
-	file control_file;
 	file log_file;
+	file control_file;
+	file GSI_file;
 } bgcout_struct;
 
 /* function prototypes for calling bgc */

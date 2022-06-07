@@ -3,7 +3,7 @@ pointbgc_struct.h
 for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v4.0.4
+Biome-BGCMuSo v4.0.7
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2017, D. Hidy [dori.hidy@gmail.com]
@@ -56,8 +56,8 @@ typedef struct
 	file annavgout;        /* annual average output file */
     file annout;           /* annual output file */
 	file anntext;          /* simple annual text output */
-	file control_file;	   /* Hidy 2012 - file to write out control variables */
-	file log_file;		   /* Hidy 2015 - main information about model run */
+	file control_file;	   /* Hidy  - file to write out control variables */
+	file log_file;		   /* Hidy  - main information about model run */
 } output_struct;
 
 

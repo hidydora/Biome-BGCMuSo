@@ -168,7 +168,9 @@ int ploughing(int yday, phenology_struct* phen, const control_struct* ctrl, cons
 	ns->litr4n += nf->PLG_to_litr4n;
 	ns->PLGsrc += nf->PLG_to_litr1n + nf->PLG_to_litr2n + nf->PLG_to_litr3n + nf->PLG_to_litr4n;
 
-	
+	ws->canopyw_PLGsnk += wf->canopyw_to_PLG;
+	ws->canopyw -= wf->canopyw_to_PLG;
+	ws->soilw[0] += wf->canopyw_to_PLG;
 
 
    return (!ok);

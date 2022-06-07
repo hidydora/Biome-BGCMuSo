@@ -162,6 +162,8 @@ int harvesting(int yday, phenology_struct* phen, const control_struct* ctrl, con
 	ns->litr4n += nf->HRV_to_litr4n;
 	ns->HRVsrc += nf->HRV_to_litr1n + nf->HRV_to_litr2n + nf->HRV_to_litr3n + nf->HRV_to_litr4n;
 
+	ws->canopyw_HRVsnk += wf->canopyw_to_HRV;
+	ws->canopyw -= wf->canopyw_to_HRV;
 
    return (!ok);
 }

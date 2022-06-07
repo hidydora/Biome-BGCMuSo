@@ -147,7 +147,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			file_open (&GSI.GSI_file, 'w');				/* file of GSI parameters - Hidy 2009.*/
 		}
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2010.*/
-		fprintf(bgcout->control_file.ptr, "yday gpp nee cpool npool\n");												
+		fprintf(bgcout->control_file.ptr, "yday m_soilprop leafc leafc_to_SNSC SNSC_to_litrc litrc_strg_SNSC SNSC_snk SNSC_src leafn leafn_to_SNSC SNSC_to_litrn litrn_strg_SNSC SNSC_snk SNSC_src\n");
 
 	}
 
@@ -362,15 +362,22 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	steady1 = 0;
 	steady2 = 0;
 	rising = 1;
-	
+
+
+
 	/* do loop for spinup */
 	do
 	{	
+
 		/* annual model loop, one cycle of metyears at a time */
 		for (simyr=0 ; ok && simyr<nblock ; simyr++)
 		{
 			/* set current month to 0 (january) at the beginning of each year */
 			curmonth = 0;
+
+			/* set vegetation period flag to 0 - Hidy 2013 */
+			ctrl.vegper_flag = 0;
+
 			
 			/* calculate scaling for N additions (decreasing with
 			time since the beginning of metcycle = 0 block */
@@ -413,6 +420,14 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				ctrl.simyr = simyr;
 				ctrl.yday = yday;
 				ctrl.spinyears = spinyears;
+		
+				/* Hidy 2013. - determine vegetation period */ 
+				if (ok && vegetation_period_determ(&ctrl, &phen))
+				{
+					printf("Error in call to vegetation_period_determ() from bgc()\n");
+					ok=0;
+				} 
+			
 				
 				/* Test for very low state variable values and force them
 				to 0.0 to avoid rounding and floating point overflow errors */
@@ -470,13 +485,19 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				printf("%d\t%d\tdone phenology\n",simyr,yday);
 #endif
 
-if (ctrl.spinyears == 1799)
-{
- 	int balus=6;
-}
 
 				
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hidy 2011 - MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+		/* rooting depth */
+ 				 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &epv, &ns))
+				 {
+					printf("Error in multilayer_rootdepth() from bgc()\n");
+					ok=0;
+				 }
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone multilayer_rootdepth\n",simyr,yday);
+#endif
 				
 				/* soil temperature calculations */
 				if (ok && multilayer_tsoil(&epc, &sitec, &ws, &metv, &epv))
@@ -489,16 +510,7 @@ if (ctrl.spinyears == 1799)
 			printf("%d\t%d\tdone multilayer_tsoil\n",simyr,yday);
 #endif
 		
-				/* rooting depth */
- 				 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &epv, &ns))
-				 {
-					printf("Error in multilayer_rootdepth() from bgc()\n");
-					ok=0;
-				 }
-
-#ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_rootdepth\n",simyr,yday);
-#endif
+		
 
 				/* soil hydrological parameters: psi, vwc, conductivity */
  			   if (ok && multilayer_hydrolparams(&ctrl, &sitec, &ws, &epv))
@@ -581,7 +593,7 @@ if (ctrl.spinyears == 1799)
 
 	
 				/* conductance - Hidy 2011 */
-				if (ok && conduct_calc(&metv, &epc, &sitec, &epv))
+				if (ok && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
 				{
 					printf("Error in conduct_calc() from bgc()\n");
 					ok=0;
@@ -697,7 +709,7 @@ if (ctrl.spinyears == 1799)
 					/* end new 28.5.02*/
 				}
 				
-			/* Hidy 2010 - soil water potential */
+			/* Hidy 2010 - calculation water stress days */
  			if (ok && waterstress_days(yday, &phen, &epv))
 			{
 				printf("Error in waterstress_days() from bgc()\n");
@@ -707,7 +719,7 @@ if (ctrl.spinyears == 1799)
 			printf("%d\t%d\tdone waterstress_days\n",simyr,yday);
 #endif	
 				
-				/* !!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!! TRANSPIRATION AND SOILPSI IN MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */		        
+				/* !!!!!!!!!!!!!!!!!!!!!!  TRANSPIRATION AND SOILPSI IN MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */		        
 				/* Hidy 2010 - calculate the part-transpiration from total transpiration */
 			
 			if (ok && multilayer_transpiration(&ctrl, &sitec, &epc, &epv, &ws, &wf))
@@ -797,7 +809,7 @@ if (ctrl.spinyears == 1799)
 #endif
 			
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
-				/* Hidy 2010 - multilayer soil hydrology: precipitation, evaporation, runoff, percolation and diffusion */
+				/* Hidy 2010 - multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
 			
 				if (ok && multilayer_hydrolprocess(&ctrl, &sitec, &epc, &epv, &ws, &wf))
 				{
@@ -865,7 +877,7 @@ if (ctrl.spinyears == 1799)
 				/* this is done last, with a special state update procedure, to
 				insure that pools don't go negative due to mortality fluxes
 				conflicting with other proportional fluxes */
-				if (ok && mortality(&ctrl, &epc,&cs,&cf,&ns,&nf, &epv, simyr))
+				if (ok && mortality(&ctrl, &epc, &cs, &cf, &ns, &nf, simyr))
 				{
 					printf("Error in mortality() from bgc()\n");
 					ok=0;
@@ -875,6 +887,16 @@ if (ctrl.spinyears == 1799)
 				printf("%d\t%d\tdone mortality\n",simyr,yday);
 #endif
 
+				/* Hidy 2013 - calculate daily senescence mortality fluxes and update state variables */
+				if (ok && senescence(&epc, &metv, &sitec, &cs, &cf, &ns, &nf, &epv))
+				{
+					printf("Error in senescence() from bgc()\n");
+					ok=0;
+				}
+						
+#ifdef DEBUG
+			printf("%d\t%d\tdone mortality\n",simyr,yday);
+#endif
 
 
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
@@ -892,15 +914,6 @@ if (ctrl.spinyears == 1799)
 				printf("%d\t%d\tdone multilayer_sminn\n",simyr,yday);
 #endif
 			
-
-				
-		if (ctrl.onscreen && (ctrl.spinyears == 100 || ctrl.spinyears == 1199))
-		{
-			fprintf(bgcout->control_file.ptr, "%i %f %f %f %f\n", 
-							yday, summary.daily_gpp*1000, summary.daily_nee, cs.cpool, ns.npool);												
-
-		}
-	
 
 
 				/* test for water balance */
@@ -952,9 +965,18 @@ if (ctrl.spinyears == 1799)
 				printf("%d\t%d\tdone carbon summary\n",simyr,yday);
 #endif
 
-				
+						
+			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */		
+			if (ctrl.onscreen && ctrl.spinyears < 10)
+			{
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f %f %f %f %f\n", 
+				yday, epv.m_soilprop, 
+				cs.leafc*1000, cf.m_leafc_to_SNSC*1000, (cf.SNSC_to_litr1c+cf.SNSC_to_litr2c+cf.SNSC_to_litr3c+cf.SNSC_to_litr4c)*1000, 
+				(cs.litr1c_strg_SNSC+cs.litr2c_strg_SNSC+cs.litr3c_strg_SNSC+cs.litr4c_strg_SNSC)*1000, cs.SNSC_snk*1000, cs.SNSC_src*1000,
+				ns.leafn*1000, nf.m_leafn_to_SNSC*1000, (nf.SNSC_to_litr1n+nf.SNSC_to_litr2n+nf.SNSC_to_litr3n+nf.SNSC_to_litr4n)*1000, 
+				(ns.litr1n_strg_SNSC+ns.litr2n_strg_SNSC+ns.litr3n_strg_SNSC+ns.litr4n_strg_SNSC)*1000, ns.SNSC_snk*1000, ns.SNSC_src*1000); 
+			}
 
-			
 
 				/* DAILY OUTPUT HANDLING */
 				/* fill the daily output array if daily output is requested,

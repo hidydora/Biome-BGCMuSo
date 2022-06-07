@@ -94,10 +94,10 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	endstep = n_hour_in_day * (n_sec_in_min / discretization_level);
 
 	/* if the precipitation is greater than critical amount (based on Campbell and Diaz, 1988) */
-	if (prcp > 200 * sitec->runoff_param)  
+	if (prcp > CAMPBELL_PARAM * sitec->runoff_param)  
 	{
-		first_part = prcp - 200 * sitec->runoff_param;
-		second_part = prcp + 800 * sitec->runoff_param;
+		first_part = prcp - CAMPBELL_PARAM * sitec->runoff_param;
+		second_part = prcp + 4*CAMPBELL_PARAM * sitec->runoff_param;
 		runoff = (first_part*first_part)/second_part;
 	}
 	else

@@ -27,30 +27,31 @@ int grazing(int yday, phenology_struct* phen, const control_struct* ctrl, const 
 {
 
 	/* local variables */
-	int grazing = 0;			/* flag, 1=grazing; 0=no grazing */
-	double befgrazing_leafc = 0;	/* value of leafc before grazing */
-	double aftergrazing_leafc = 0;	/* value of leafc before grazing */
-	double grazing_effect = 0;		/* decreasing of plant material caused by grazing: plant_material_before_grazing - plant_material_after_grazing  */
-	double rate_of_removal = 0;		/* if grazing calculation based on LSU, a fixed proportion of the abovegroind biomass is removed */
-	
+	int grazing = 0;						/* flag, 1=grazing; 0=no grazing */
+	double befgrazing_leafc = 0;			/* value of leafc before grazing */
+	double aftergrazing_leafc = 0;			/* value of leafc before grazing */
+	double grazing_effect = 0;				/* decreasing of plant material caused by grazing: plant_material_before_grazing - plant_material_after_grazing  */
+	double rate_of_removal = 0;				/* if grazing calculation based on LSU, a fixed proportion of the abovegroind biomass is removed */
+	double daily_excrement_production = 0;	/* daily excrement production */	
+	double daily_C_loss = 0;				/* daily carbon loss due to grazing */
+	double Cplus_from_excrement = 0;		/* daily carbon plus from excrement */
+	double Nplus_from_excrement = 0;        /* daily nitrogen plus from excrement */
+
 	int first_day_of_GRZ = GRZ->first_day_of_GRZ;
 	int last_day_of_GRZ = GRZ->last_day_of_GRZ;
 	int grazing_period = last_day_of_GRZ - first_day_of_GRZ;
 
-	double drymatter_intake = GRZ->drymatter_intake;			                  	/*  unit: kgDM/LSU (DM:dry matter)*/
-	double stocking_rate = GRZ->stocking_rate  / 10000;							/*  unit: LSU/ha -> new unit: LSU/m2 */
+	double drymatter_intake = GRZ->drymatter_intake;			  /*  unit: kgDM/LSU (DM:dry matter)*/
+	double stocking_rate = GRZ->stocking_rate  / 10000;			 /*  unit: LSU/ha -> new unit: LSU/m2 */
 
 
-	double prop_DMintake_formed_excrement = GRZ->prop_DMintake_formed_excrement / 100.;	    /* from proporiton(%) to ratio(number) */
-	double C_content_of_drymatter = GRZ->C_content_of_drymatter / 100.;						/* from proporiton(%) to ratio(number) */
-	double C_content_of_excrement = GRZ->C_content_of_excrement / 100.;				/* from proporiton(%) to ratio(number) */
-	double N_content_of_excrement = GRZ->N_content_of_excrement / 100.;				/* from proporiton(%) to ratio(number) */
+	double prop_DMintake_formed_excrement = GRZ->prop_DMintake_formed_excrement / 100.;	/* from proporiton(%) to ratio(number) */
+	double C_content_of_drymatter = GRZ->C_content_of_drymatter / 100.;				    /* from proporiton(%) to ratio(number) */
+	double C_content_of_excrement = GRZ->C_content_of_excrement / 100.;					/* from proporiton(%) to ratio(number) */
+	double N_content_of_excrement = GRZ->N_content_of_excrement / 100.;					/* from proporiton(%) to ratio(number) */
     double prop_excrement_return2litter = GRZ->prop_excrement_return2litter / 100;
 
-	double daily_excrement_production = 0;
-    double daily_C_loss = 0;
-	double Cplus_from_excrement = 0;
-	double Nplus_from_excrement = 0;
+	
 
 	double grazing_limit = 0.01;	/* limitation for carbon content before grazing in order to avoid negative leaf carbon content */
 	
@@ -92,11 +93,6 @@ int grazing(int yday, phenology_struct* phen, const control_struct* ctrl, const 
 						[kgC/m2 = kgDM/LSU * (kgC/kgDM) * (LSU/m2)] */	
 		daily_C_loss = (drymatter_intake * C_content_of_drymatter) * stocking_rate;	
 	
-		/* daily manure production per m2 (return to the litter) from daily total ingested dry matter and litter_return_ratio and its C and N content
-						[kgMANURE = (kgDM/LSU) * (LSU/m2) * (%)] */
-		daily_excrement_production = drymatter_intake * stocking_rate * prop_DMintake_formed_excrement;	 /* unit change: kg manure/m2/day -> kgC/m2/day */
-		Cplus_from_excrement = daily_excrement_production * C_content_of_excrement;
-		Nplus_from_excrement = daily_excrement_production * N_content_of_excrement;
 		
 		/* effect of grazing: decrease of leafc and increase of soilc and soiln (manure)*/
 		befgrazing_leafc = cs->leafc;
@@ -113,6 +109,10 @@ int grazing(int yday, phenology_struct* phen, const control_struct* ctrl, const 
 		{
 			aftergrazing_leafc = 0.0;
 			grazing_effect = 0.0;
+			daily_C_loss = 0;
+			daily_excrement_production = 0;
+			Cplus_from_excrement = 0;
+			Nplus_from_excrement = 0;
 			if (ctrl->onscreen) printf("not enough grass for grazing on yearday:%d\t\n",yday);
 		}
 			
@@ -121,8 +121,18 @@ int grazing(int yday, phenology_struct* phen, const control_struct* ctrl, const 
 	else 
 	{
 		grazing_effect = 0.0;
+		daily_C_loss = 0;
+		daily_excrement_production = 0;
+		Cplus_from_excrement = 0;
+		Nplus_from_excrement = 0;
 	}
 
+
+	/* daily manure production per m2 (return to the litter) from daily total ingested dry matter and litter_return_ratio and its C and N content
+					[kgMANURE = (kgDM/LSU) * (LSU/m2) * (%)] */
+	daily_excrement_production = (daily_C_loss/C_content_of_drymatter) * prop_DMintake_formed_excrement;	 /* unit change: kg manure/m2/day -> kgC/m2/day */
+	Cplus_from_excrement = daily_excrement_production * C_content_of_excrement;
+	Nplus_from_excrement = daily_excrement_production * N_content_of_excrement;
 
 	/* carbon loss from grazing is determined using grazing_effect */
 	cf->leafc_to_GRZ = cs->leafc * grazing_effect;
@@ -189,8 +199,8 @@ int grazing(int yday, phenology_struct* phen, const control_struct* ctrl, const 
 	
 	ns->GRZsrc += nf->GRZ_to_litr1n + nf->GRZ_to_litr2n + nf->GRZ_to_litr3n + nf->GRZ_to_litr4n;
 
-
-
+	ws->canopyw_GRZsnk += wf->canopyw_to_GRZ;
+	ws->canopyw -= wf->canopyw_to_GRZ;
 	
    return (!ok);
 }

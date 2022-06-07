@@ -87,7 +87,7 @@ int daily_nitrogen_state_update(const control_struct* ctrl,nflux_struct* nf, nst
 
 /* Hidy 2010 - plus/new input variables */
 int mortality(const control_struct* ctrl, const epconst_struct* epc, cstate_struct* cs, cflux_struct* cf,
-	nstate_struct* ns, nflux_struct* nf, epvar_struct* epv, int simyr);	
+	nstate_struct* ns, nflux_struct* nf, int simyr);	
 
 /* Hidy 2010 - plus/new input variables */
 int check_water_balance(wstate_struct* ws, control_struct* ctrl, int first_balance);
@@ -101,7 +101,8 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 /* Hidy 2011 - NEW FUNCTIONS: water stress, multilayer soil and management */
 
 /* calculating conductance values based on limitation factors (original: included into canopy_et.c) */
-int conduct_calc(const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, epvar_struct* epv);
+int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, 
+				 epvar_struct* epv, int simyr);
 
 /* calculating the water stress days */
 int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv);
@@ -164,3 +165,10 @@ int fertilizing(int yday, const control_struct* ctrl, fertilizing_struct* FRZ,
 
 /* limitation factors of conductance calculation - Hidy 2012. */
 int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* epc, epvar_struct* epv);
+
+/* determine vegetation period (0: before, 1: in, -1: after) */
+int vegetation_period_determ(control_struct* ctrl, phenology_struct* phen);
+
+/* senescence mortality calculation */
+int senescence(const epconst_struct* epc, const metvar_struct* metv, const siteconst_struct* sitec,
+			   cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, epvar_struct* epv);

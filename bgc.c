@@ -181,7 +181,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
-		fprintf(bgcout->control_file.ptr, "yday tsoil0 tsoil1 tsoil2 tsoil3 GPP TER LE stoma m_soilprop vwc0 vwc1 vwc2 vwc3 vwc4 prcp_to_soilw LAI leafc_transfer\n");
+		fprintf(bgcout->control_file.ptr, "yday m_soilprop leafc leafc_to_SNSC SNSC_to_litrc litrc_strg_SNSC SNSC_snk SNSC_src leafn leafn_to_SNSC SNSC_to_litrn litrn_strg_SNSC SNSC_snk SNSC_src\n");
+
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -395,7 +396,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		ann_nitrogen_GRZplus = 0.0;     /* by Hidy 2008. */
 		ann_nitrogen_FRZplus = 0.0;  /* by Hidy 2008. */
 
+		/* set vegetation period flag to 0 - Hidy 2013 */
+		ctrl.vegper_flag = 0;
 
+	
 		/* set current month to 0 (january) at the beginning of each year */
 		curmonth = 0;
 		
@@ -447,8 +451,14 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			ctrl.simyr = simyr;
 			ctrl.yday = yday;
 			ctrl.spinyears = 0;
-
-
+			
+			/* Hidy 2013. - determine vegetation period */ 
+			if (ok && vegetation_period_determ(&ctrl, &phen))
+			{
+				printf("Error in call to vegetation_period_determ() from bgc()\n");
+				ok=0;
+			} 
+			
 			/* Test for very low state variable values and force them
 			to 0.0 to avoid rounding and floating point overflow errors */
 			if (ok && precision_control(&sitec, &ws, &cs, &ns))
@@ -539,6 +549,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone multilayer_hydrolparams\n",simyr,yday);
 #endif
 			
+			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 	
 
 			/* calculate leaf area index, sun and shade fractions, and specific
@@ -610,7 +621,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* conductance - Hidy 2011 */
-			if (ok && conduct_calc(&metv, &epc, &sitec, &epv))
+			if (ok && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
 			{
 				printf("Error in conduct_calc() from bgc()\n");
 				ok=0;
@@ -938,7 +949,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* this is done last, with a special state update procedure, to
 			insure that pools don't go negative due to mortality fluxes
 			conflicting with other proportional fluxes */
-			if (ok && mortality(&ctrl,&epc,&cs,&cf,&ns,&nf, &epv, simyr))
+			if (ok && mortality(&ctrl, &epc, &cs, &cf, &ns, &nf, simyr))
 			{
 				printf("Error in mortality() from bgc()\n");
 				ok=0;
@@ -947,6 +958,17 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone mortality\n",simyr,yday);
 #endif
+			/* Hidy 2013 - calculate daily senescence mortality fluxes and update state variables */
+			if (ok && senescence(&epc, &metv, &sitec, &cs, &cf, &ns, &nf, &epv))
+			{
+				printf("Error in senescence() from bgc()\n");
+				ok=0;
+			}
+			
+#ifdef DEBUG
+			printf("%d\t%d\tdone mortality\n",simyr,yday);
+#endif
+
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!! */
 			/* Hidy 2011 - calculate the change of soil mineralized N in multilayer soil.  
                         This is a special state variable update routine, done after the other fluxes and states are
@@ -1013,28 +1035,23 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				printf("Error in csummary() from bgc()\n");
 				ok=0;
 			}
-
-	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	if (ctrl.onscreen && ctrl.simyr < 5)
-	{
-		fprintf(bgcout->control_file.ptr, "%i %f %f %f\n", 
-		yday,
-	//	metv.tsoil[0], metv.tsoil[1], metv.tsoil[2], metv.tsoil[3], 
-	//	summary.daily_gpp*1000, (summary.daily_gr+summary.daily_hr+summary.daily_mr)*1000, (wf.canopyw_evap+wf.soilw_evap+wf.soilw_trans_SUM+wf.snoww_subl),
-	//	epv.gl_s_sun, epv.m_soilprop, epv.vwc[0], epv.vwc[1],epv.vwc[2],epv.vwc[3],epv.vwc[4], wf.prcp_to_soilw, epv.proj_lai, cs.leafc_transfer,
-	cs.frootc, cs.deadcrootc, epv.rooting_depth); 
-
-	}
-	
-
-			
 	
 	
 #ifdef DEBUG
 			printf("%d\t%d\tdone carbon summary\n",simyr,yday);
 #endif
 
+			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */
+			if (ctrl.onscreen && ctrl.simyr < 10)
+			{
+			fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f %f %f %f %f\n", 
+				yday, epv.m_soilprop, 
+				cs.leafc*1000, cf.m_leafc_to_SNSC*1000, (cf.SNSC_to_litr1c+cf.SNSC_to_litr2c+cf.SNSC_to_litr3c+cf.SNSC_to_litr4c)*1000, 
+				(cs.litr1c_strg_SNSC+cs.litr2c_strg_SNSC+cs.litr3c_strg_SNSC+cs.litr4c_strg_SNSC)*1000, cs.SNSC_snk*1000, cs.SNSC_src*1000,
+				ns.leafn*1000, nf.m_leafn_to_SNSC*1000, (nf.SNSC_to_litr1n+nf.SNSC_to_litr2n+nf.SNSC_to_litr3n+nf.SNSC_to_litr4n)*1000, 
+				(ns.litr1n_strg_SNSC+ns.litr2n_strg_SNSC+ns.litr3n_strg_SNSC+ns.litr4n_strg_SNSC)*1000, ns.SNSC_snk*1000, ns.SNSC_src*1000); 
 
+			}
 
 			/* DAILY OUTPUT HANDLING */
 			/* fill the daily output array if daily output is requested,
@@ -1172,7 +1189,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			ann_nitrogen_GRZplus += (nf.GRZ_to_litr1n + nf.GRZ_to_litr2n + nf.GRZ_to_litr3n  + nf.GRZ_to_litr4n) * 1000.0;  /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */	
 			ann_nitrogen_FRZplus += (nf.FRZ_to_sminn+nf.FRZ_to_litr1n + nf.FRZ_to_litr2n + nf.FRZ_to_litr3n  + nf.FRZ_to_litr4n) * 1000.0;  /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
 	
-			
 			/* at the end of first day of simulation, turn off the 
 			first_balance switch */
 			if (first_balance) first_balance = 0;

@@ -70,7 +70,7 @@ int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws)
 
 		}
 		/* bottom layer is special: infinite depth, saturated */
-		ws->soilw[N_SOILLAYERS-1] = -999.9;
+		ws->soilw[N_SOILLAYERS-1] = DATA_GAP;
 	}
 	
 	return (!ok);

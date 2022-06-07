@@ -86,6 +86,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->litr2c = 0.0;
 	cs->litr3c = 0.0;
 	cs->litr4c = 0.0;
+	/* Hidy 2013 - senescence */
+	cs->litr1c_strg_SNSC = 0.0;
+	cs->litr2c_strg_SNSC = 0.0;
+	cs->litr3c_strg_SNSC = 0.0;
+	cs->litr4c_strg_SNSC = 0.0;
 	cs->soil1c = 0.0;
 	cs->soil2c = 0.0;
 	cs->soil3c = 0.0;
@@ -157,6 +162,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->litr2n = 0.0;
 	ns->litr3n = 0.0;
 	ns->litr4n = 0.0;
+	/* Hidy 2013 - senescence */
+	ns->litr1n_strg_SNSC = 0.0;
+	ns->litr2n_strg_SNSC = 0.0;
+	ns->litr3n_strg_SNSC = 0.0;
+	ns->litr4n_strg_SNSC = 0.0;
 	ns->soil1n = 0.0;
 	ns->soil2n = 0.0;
 	ns->soil3n = 0.0;

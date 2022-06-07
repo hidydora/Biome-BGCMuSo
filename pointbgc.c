@@ -270,8 +270,11 @@ void main(int argc, char *argv[])
 	bgcin.ctrl.yday = 0;							/* counter - Hidy 2010.*/
 	bgcin.ctrl.spinyears = 0;						/* counter - Hidy 2010.*/
 	bgcin.ctrl.n_limitation = 0;					/* Hidy 2010 - flag for nitrogen limitation */
-
-
+	bgcin.ctrl.vegper_flag = 0;                     /* counter - Hidy 2013.*/
+	bgcin.ctrl.vegperday = 0;                       /* counter - Hidy 2013.*/
+	bgcin.ctrl.vegperday_pre = 0;                   /* counter - Hidy 2013.*/
+	bgcin.ctrl.varMSC_flag = 0;
+	bgcin.ctrl.varWPM_flag = 0;
 
 	
 	/* copy the output file structures into bgcout */

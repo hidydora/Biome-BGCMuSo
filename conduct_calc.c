@@ -14,7 +14,8 @@ Hidy 2011.
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int conduct_calc(const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, epvar_struct* epv)
+int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const epconst_struct* epc, const siteconst_struct* sitec, 
+                 epvar_struct* epv, int simyr)
 {
 	int ok=1;
 	double gl_bl, gl_c, gl_s_sun, gl_s_shade;
@@ -29,12 +30,22 @@ int conduct_calc(const metvar_struct* metv, const epconst_struct* epc, const sit
 	double proj_lai;
 	double gcorr;
 
+	/* Hidy 2013 - changing MSC value */
+	double max_conduct;
 	
 	/* Hidy 2010. - multiplier for soil properties in multilayer soil (instead of psi: vwc) */
 	int layer;
 	double m_vwcR_layer; 
 	double vwc_ratio;	
 	double m_soilprop_avg = 0;
+
+	/* Hidy 2013 - changing MSC value */
+	max_conduct=epc->gl_smax;
+	if (ctrl->varMSC_flag)
+	{
+		max_conduct=epc->msc_array[simyr];
+	}
+	
 	
 	/* assign variables that are used more than once */
 	tday =      metv->tday;
@@ -145,8 +156,8 @@ int conduct_calc(const metvar_struct* metv, const epconst_struct* epc, const sit
 
 	m_final_sun = m_ppfd_sun * m_soilprop_avg * m_co2 * m_tmin * m_vpd;
 	m_final_shade = m_ppfd_shade * m_soilprop_avg * m_co2 * m_tmin * m_vpd;
-	gl_s_sun = epc->gl_smax * m_final_sun * gcorr;
-	gl_s_shade = epc->gl_smax * m_final_shade * gcorr;
+	gl_s_sun = max_conduct * m_final_sun * gcorr;
+	gl_s_shade = max_conduct * m_final_shade * gcorr;
 	
 	/* calculate leaf-and canopy-level conductances to water vapor and
 	sensible heat fluxes, to be used in Penman-Monteith calculations of

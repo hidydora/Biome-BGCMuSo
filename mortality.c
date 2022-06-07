@@ -37,7 +37,7 @@ is not burned (70%) stays in CWD pools.
 #include "bgc_constants.h"
 
 int mortality(const control_struct* ctrl, const epconst_struct* epc, cstate_struct* cs, cflux_struct* cf,
-nstate_struct* ns, nflux_struct* nf, epvar_struct* epv, int simyr)
+nstate_struct* ns, nflux_struct* nf, int simyr)
 {
 	int ok=1;
 	double mort;
@@ -45,16 +45,7 @@ nstate_struct* ns, nflux_struct* nf, epvar_struct* epv, int simyr)
 	/* dead stem combustion proportion */
 	double dscp = 0.2;
 
-	/* Hidy 2010 - assign days since water stress, end of water stress and the mortality effect of senescence (water stress) */
-	double dsws, dsws_FULL;
-	
 
-	double coeff = 1.0;
-	double mort_SNSC_displayed = 0;
-	double mort_SNSC_storaged = 0;
-	
-	dsws = epv->dsws;
-	dsws_FULL = epv->dsws_FULL;
 
 	/******************************************************************/
 	/* Non-fire mortality: these fluxes all enter litter or CWD pools */
@@ -274,131 +265,6 @@ nstate_struct* ns, nflux_struct* nf, epvar_struct* epv, int simyr)
 		ns->cwdn       += nf->m_deadcrootn_to_cwdn;
 		ns->deadcrootn -= nf->m_deadcrootn_to_cwdn;
 	}
-	
-	/************************************************************/
-	/* Hidy 2010 - Senescence mortality: these fluxes all enter litter sinks due to  low VWC during a long period	 */
-	/************************************************************/
-	
-	if (cs->leafc > 0 && ns->leafn > 0 && dsws > 0)
-	{		
-		mort_SNSC_displayed = epc->mort_SNSC_displayed;
-		mort_SNSC_storaged = epc->mort_SNSC_storaged;
-	}	
-	else
-	{
-		mort_SNSC_displayed = 0;
-		mort_SNSC_storaged = 0;
-	}
-	
-	
-
-	/* CARBON mortality state variable update */	
-	/* leaf and fine root  mortality fluxes out of leaf and fine root pools */
-	cf->m_leafc_to_SNSC				= mort_SNSC_displayed * cs->leafc;  
-	cf->m_leafc_storage_to_SNSC		= mort_SNSC_storaged * cs->leafc_storage;
-	cf->m_leafc_transfer_to_SNSC	= mort_SNSC_storaged * cs->leafc_transfer;
-	
-	cf->m_gresp_storage_to_SNSC		= mort_SNSC_storaged * cs->gresp_storage;
-	cf->m_gresp_transfer_to_SNSC	= mort_SNSC_storaged * cs->gresp_transfer;
-
-	cf->m_frootc_to_SNSC			= mort_SNSC_displayed * cs->frootc;	 
-	cf->m_frootc_storage_to_SNSC	= mort_SNSC_storaged * cs->frootc_storage;	
-	cf->m_frootc_transfer_to_SNSC	= mort_SNSC_storaged * cs->frootc_transfer;
-
-	/* update state variables - decreasing state variables */
-	cs->leafc			-= cf->m_leafc_to_SNSC;
-	cs->frootc			-= cf->m_frootc_to_SNSC;
-	cs->leafc_storage	-= cf->m_leafc_storage_to_SNSC;
-    cs->frootc_storage	-= cf->m_frootc_storage_to_SNSC; 
-	cs->leafc_transfer	-= cf->m_leafc_transfer_to_SNSC; 
-	cs->frootc_transfer -= cf->m_frootc_transfer_to_SNSC; 
-	cs->gresp_storage	-= cf->m_gresp_storage_to_SNSC;
-	cs->gresp_transfer	-= cf->m_gresp_transfer_to_SNSC;
-	
-	/* plant material losses because of senescence */
-	cs->SNSC_snk  += cf->m_leafc_to_SNSC + cf->m_frootc_to_SNSC + 
-						cf->m_leafc_storage_to_SNSC + cf->m_frootc_storage_to_SNSC + 
-						cf->m_leafc_transfer_to_SNSC + cf->m_frootc_transfer_to_SNSC + 
-						cf->m_gresp_storage_to_SNSC + cf->m_gresp_transfer_to_SNSC ;
-
-	/* mortality fluxes into litter pools */
-	cf->SNSC_to_litr1c = ((cf->m_leafc_to_SNSC * epc->leaflitr_flab) + (cf->m_frootc_to_SNSC * epc->frootlitr_flab) +
-						   cf->m_leafc_storage_to_SNSC + cf->m_frootc_storage_to_SNSC + 
-						   cf->m_leafc_transfer_to_SNSC + cf->m_frootc_transfer_to_SNSC + 
-						   cf->m_gresp_storage_to_SNSC + cf->m_gresp_transfer_to_SNSC);
-	cf->SNSC_to_litr2c = ((cf->m_leafc_to_SNSC * epc->leaflitr_fucel) + (cf->m_frootc_to_SNSC * epc->frootlitr_fucel));
-	cf->SNSC_to_litr3c = ((cf->m_leafc_to_SNSC * epc->leaflitr_fscel) + (cf->m_frootc_to_SNSC * epc->frootlitr_fscel));
-	cf->SNSC_to_litr4c = ((cf->m_leafc_to_SNSC* epc->leaflitr_flig) + (cf->m_frootc_to_SNSC * epc->frootlitr_flig));
-
-	/* update state variables - increasing litter state variables */
-	cs->litr1c         += cf->SNSC_to_litr1c;
-	cs->litr2c         += cf->SNSC_to_litr2c ;
-	cs->litr3c         += cf->SNSC_to_litr3c;
-	cs->litr4c         += cf->SNSC_to_litr4c;
-	
-	/* litter plus because of senescenceing out and returning of dead plant material */
-	cs->SNSC_src       += cf->SNSC_to_litr1c+ cf->SNSC_to_litr2c + cf->SNSC_to_litr3c + cf->SNSC_to_litr4c;
-
-
-	/* NITROGEN mortality state variable update */	
-	/* Leaf and fine root mortality fluxes out of leaf and fine root pools */
-
-	nf->m_leafn_to_SNSC				= cf->m_leafc_to_SNSC / epc->leaf_cn;  	
-	nf->m_frootn_to_SNSC			= cf->m_frootc_to_SNSC / epc->froot_cn; 
-	nf->m_leafn_storage_to_SNSC		= mort_SNSC_storaged * ns->leafn_storage;
-	nf->m_leafn_transfer_to_SNSC	= mort_SNSC_storaged * ns->leafn_transfer;
-	nf->m_frootn_storage_to_SNSC	= mort_SNSC_storaged * ns->frootn_storage;	
-	nf->m_frootn_transfer_to_SNSC	= mort_SNSC_storaged * ns->frootn_transfer;
-	nf->m_retransn_to_SNSC			= mort_SNSC_storaged * ns->retransn;	
-
-
-	/* precision control */
-	ns->leafn            -= nf->m_leafn_to_SNSC;
-	if (fabs(ns->leafn) < 1e-10)
-	{	
-		nf->m_leafn_to_SNSC += ns->leafn;
-		ns->leafn = 0;
-	}
-
-	ns->frootn           -= nf->m_frootn_to_SNSC;
-	if (fabs(ns->frootn) < 1e-10)
-	{	
-		nf->m_frootn_to_SNSC += ns->frootn;
-		ns->frootn = 0;
-	}
-
-	/* update state variables - decreasing state variables */	
-	ns->leafn_storage    -= nf->m_leafn_storage_to_SNSC;
-	ns->frootn_storage   -= nf->m_frootn_storage_to_SNSC;
-	ns->leafn_transfer   -= nf->m_leafn_transfer_to_SNSC;
-	ns->frootn_transfer  -= nf->m_frootn_transfer_to_SNSC;
-	ns->retransn         -= nf->m_retransn_to_SNSC;
-
-	
-	/* plant material losses because of senescenceing out */
-	ns->SNSC_snk    += nf->m_leafn_to_SNSC + nf->m_frootn_to_SNSC + 
-					   nf->m_leafn_storage_to_SNSC + nf->m_frootn_storage_to_SNSC + 
-					   nf->m_leafn_transfer_to_SNSC + nf->m_frootn_transfer_to_SNSC + 
-					   nf->m_retransn_to_SNSC;
-	
-	/* mortality fluxes into litter pools */
-	nf->SNSC_to_litr1n = ((nf->m_leafn_to_SNSC * epc->leaflitr_flab) + (nf->m_frootn_to_SNSC * epc->frootlitr_flab) + 
-						   nf->m_leafn_storage_to_SNSC + nf->m_frootn_storage_to_SNSC + 
-						   nf->m_leafn_transfer_to_SNSC + nf->m_frootn_transfer_to_SNSC + 
-						   nf->m_retransn_to_SNSC)  * coeff ;
-	nf->SNSC_to_litr2n = ((nf->m_leafn_to_SNSC * epc->leaflitr_fucel) + (nf->m_frootn_to_SNSC * epc->frootlitr_fucel)) * coeff;
-	nf->SNSC_to_litr3n = ((nf->m_leafn_to_SNSC * epc->leaflitr_fscel) + (nf->m_frootn_to_SNSC * epc->frootlitr_fscel)) * coeff;
-	nf->SNSC_to_litr4n = ((nf->m_leafn_to_SNSC * epc->leaflitr_flig) + (nf->m_frootn_to_SNSC * epc->frootlitr_flig)) * coeff;
-
-   /* update state variables - increasing litter state variables */
-	ns->litr1n         += nf->SNSC_to_litr1n;
-	ns->litr2n         += nf->SNSC_to_litr2n;
-	ns->litr3n         += nf->SNSC_to_litr3n;
-	ns->litr4n         += nf->SNSC_to_litr4n;
-	
-	/* litter plus because of senescence and returning of dead plant material */
-	ns->SNSC_src       += nf->SNSC_to_litr1n + nf->SNSC_to_litr2n  + nf->SNSC_to_litr3n + nf->SNSC_to_litr4n;
-
 	
 	/************************************************************/
 	/* Fire mortality: these fluxes all enter atmospheric sinks */

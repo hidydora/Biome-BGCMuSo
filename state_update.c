@@ -81,31 +81,6 @@ int daily_water_state_update(const control_struct* ctrl, const siteconst_struct*
 	ws->soilw_SUM = soilw_SUM;
 	
 	
-
-	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! MANAGEMENT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-	/* Hidy 2012 -	thinning */
-	ws->canopyw_THNsnk += wf->canopyw_to_THN;
-	ws->canopyw -= wf->canopyw_to_THN;
-
-	/* Hidy 2010 - mowing */
-	ws->canopyw_MOWsnk += wf->canopyw_to_MOW;
-	ws->canopyw -= wf->canopyw_to_MOW;
-
-	/* Hidy 2012 - harvesting */
-	ws->canopyw_HRVsnk += wf->canopyw_to_HRV;
-	ws->canopyw -= wf->canopyw_to_HRV;
-
-	/* Hidy 2012 - ploughing */
-	ws->canopyw_PLGsnk += wf->canopyw_to_PLG;
-	ws->canopyw -= wf->canopyw_to_PLG;
-	ws->soilw[0] += wf->canopyw_to_PLG;
-
-	/* Hidy 2010 - grazing */
-	ws->canopyw_GRZsnk += wf->canopyw_to_GRZ;
-	ws->canopyw -= wf->canopyw_to_GRZ;
-
-
-	
 	return (!ok);
 }
 

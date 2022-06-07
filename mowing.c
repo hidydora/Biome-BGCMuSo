@@ -176,6 +176,9 @@ int mowing(int yday, phenology_struct* phen, const control_struct* ctrl, const e
 	
 	ns->MOWsrc += nf->MOW_to_litr1n + nf->MOW_to_litr2n + nf->MOW_to_litr3n + nf->MOW_to_litr4n;
 
+	ws->canopyw_MOWsnk += wf->canopyw_to_MOW;
+	ws->canopyw -= wf->canopyw_to_MOW;
+
    return (!ok);
 }
 	

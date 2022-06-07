@@ -310,6 +310,8 @@ int thinning(int yday, phenology_struct* phen, const control_struct* ctrl, const
 	ns->THNsrc += nf->THN_to_litr1n + nf->THN_to_litr2n + nf->THN_to_litr3n + nf->THN_to_litr4n + nf->THN_to_cwdn;
 
 
+	ws->canopyw_THNsnk += wf->canopyw_to_THN;
+	ws->canopyw -= wf->canopyw_to_THN;
 
 
 

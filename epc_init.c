@@ -31,7 +31,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	int ok = 1;
 	double t1,t2,t3,t4,r1,sum;
 	int i;
-	file temp, wpm_file; 	// Hidy 2011.
+	file temp, wpm_file, msc_file; 	// Hidy 2011.
 	char key1[] = "EPC_FILE";
 	char key2[] = "ECOPHYS";
 	char keyword[80];
@@ -189,11 +189,11 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		
 		for (i=0 ; ok && i<ctrl->simyears ; i++)
 		{
-			epc->wpm_array[i]=-999.9;
+			epc->wpm_array[i]=DATA_GAP;
 		}
 	}	
 	
-	/* ------------------------------------------------------ */
+
 	if (ok && scan_value(temp, &t1, 'd'))
 	{
 		printf("Error reading fire mortality, epc_init()\n");
@@ -435,6 +435,63 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading gl_smax, epc_init()\n");
 		ok=0;
 	}
+
+		/* ------------------------------------------------------ */
+	/* Hidy 2013 - using varying maximum stomatal conductance values */
+
+
+	strcpy(msc_file.name, "conductance.txt");
+	
+	/* open the main init file for ascii read and check for errors */
+	if (file_open(&msc_file,'i') || ctrl->spinup)
+	{
+		ctrl->varMSC_flag = 0;
+	}
+	else ctrl->varMSC_flag = 1;
+
+
+	/* allocate space for the annual MSC array */
+	if (!(epc->msc_array = (double*) malloc(ctrl->simyears * sizeof(double))))
+	{
+		printf("Error allocating for annual MSC array, epc_init()\n");
+		ok=0;
+	}
+	if (ctrl->varMSC_flag) 
+	{
+		printf("conductance.txt is found, changing  MSC is used\n");
+
+		/* read year and co2 concentration for each simyear */
+		for (i=0 ; ok && i<ctrl->simyears ; i++)
+		{
+			if (fscanf(msc_file.ptr,"%*lf%lf", &(epc->msc_array[i]))==EOF)
+			{
+				printf("Error reading annual MSC array, epc_init()\n");
+				printf("Note: file must contain a pair of values for each\n");
+				printf("simyear: year and MSC.\n");
+				ok=0;
+			}
+			if (epc->msc_array[i] < 0.0)
+			{
+				printf("Error in epc_init(): msc must be positive\n");
+				ok=0;
+			}
+		}
+		fclose(msc_file.ptr);
+	}	
+	else /* if no changing data constant EPC parameter are used */
+	{
+		if (!ctrl->spinup)
+		{
+			printf("conductance.txt not found, constant MSC is used\n"); 
+		}
+		
+		for (i=0 ; ok && i<ctrl->simyears ; i++)
+		{
+			epc->msc_array[i]=DATA_GAP;
+		}
+	}	
+	
+	/* ------------------------------------------------------ */
 	if (ok && scan_value(temp, &epc->gl_c, 'd'))
 	{
 		printf("Error reading gl_c, epc_init()\n");
@@ -516,7 +573,13 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading storaged senescence mortality parameter of displayed plant material: epc_init()\n");
 		ok=0;
 	}
-	
+
+	if (ok && scan_value(temp, &epc->mort_SNSC_to_litter, 'd'))
+	{
+		printf("Error reading turnover rate of wilted standing biomass to litter parameter: epc_init()\n");
+		ok=0;
+	}
+
 	/* -------------------------------------------*/
 	/* Hidy 2012 - Q10 parameter (temperature coefficient for calculating maint. resp.) */
 	if (ok && scan_value(temp, &epc->q10_value, 'd'))

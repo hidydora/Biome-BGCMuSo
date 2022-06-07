@@ -59,17 +59,17 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[19] = &metv->dayl;
 		
 		/* water state variables */
-		output_map[20] = &ws->soilw_SUM;				/* Hidy 2010 - multilayer soil */
-		output_map[21] = &ws->snoww;
-		output_map[22] = &ws->canopyw;
-		output_map[23] = &ws->prcp_src;
-		output_map[25] = &ws->soilevap_snk;
-		output_map[26] = &ws->snowsubl_snk;
-		output_map[27] = &ws->canopyevap_snk;
-		output_map[28] = &ws->trans_snk;
-		output_map[29] = &ws->runoff_snk;			/* soilwater submodel - Hidy 2010. */
-		output_map[30] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
-		output_map[31] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[20] = &ws->soilw_SUM;	 /* Hidy 2010 - multilayer soil */
+		output_map[25] = &ws->snoww;
+		output_map[26] = &ws->canopyw;
+		output_map[27] = &ws->prcp_src;
+		output_map[28] = &ws->soilevap_snk;
+		output_map[29] = &ws->snowsubl_snk;
+		output_map[30] = &ws->canopyevap_snk;
+		output_map[31] = &ws->trans_snk;
+		output_map[32] = &ws->runoff_snk;			/* soilwater submodel - Hidy 2010. */
+		output_map[33] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[34] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
 		
 		/* water flux variables */
 		output_map[35] = &wf->prcp_to_canopyw;
@@ -141,18 +141,20 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[98] = &cs->soil4_hr_snk;
 		output_map[99] = &cs->fire_snk;
 		/* management and senescence - Hidy 2012. */
-		output_map[104] = &cs->THNsnk;	
-		output_map[105] = &cs->MOWsnk;			
-		output_map[106] = &cs->GRZsnk;	
-		output_map[107] = &cs->GRZsrc;	
-		output_map[108] = &cs->HRVsnk;	
-		output_map[109] = &cs->HRVsrc;
-		output_map[110] = &cs->PLGsnk;	
-		output_map[111] = &cs->PLGsrc;
-		output_map[112] = &cs->PLTsrc;
-		output_map[113] = &cs->FRZsrc;						
-		output_map[114] = &cs->SNSC_snk;		
-		output_map[115] = &cs->SNSC_src;	
+		output_map[104] = &cs->THNsnk;
+		output_map[105] = &cs->THNsrc;	
+		output_map[106] = &cs->MOWsnk;	
+		output_map[107] = &cs->MOWsrc;
+		output_map[108] = &cs->GRZsnk;	
+		output_map[109] = &cs->GRZsrc;	
+		output_map[110] = &cs->HRVsnk;	
+		output_map[111] = &cs->HRVsrc;
+		output_map[112] = &cs->PLGsnk;	
+		output_map[113] = &cs->PLGsrc;
+		output_map[114] = &cs->PLTsrc;
+		output_map[115] = &cs->FRZsrc;						
+		output_map[116] = &cs->SNSC_snk;		
+		output_map[117] = &cs->SNSC_src;	
 		
 		/* carbon flux variables */
 		output_map[120] = &cf->m_leafc_to_litr1c;
@@ -278,6 +280,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[240] = &cf->gresp_storage_to_gresp_transfer;
 		output_map[241] = &cf->livestemc_to_deadstemc;
 		output_map[242] = &cf->livecrootc_to_deadcrootc;
+		output_map[243] = &cf->leafc_to_MOW;
 	
 		
 		/* nitrogen state variables */
@@ -506,6 +509,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[547] = &epv->vwc[1];
 		output_map[548] = &epv->vwc[2];
 		output_map[549] = &epv->vwc[3];
+		output_map[550] = &epv->vwc[4];
 		
 		/* photosynthesis variables */
 		/* sunlit canopy fraction */

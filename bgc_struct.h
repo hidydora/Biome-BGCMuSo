@@ -49,11 +49,15 @@ typedef struct
 	int PLG_flag;
 	int PLT_flag;
 	int FRZ_flag;
-	int simyr;			   /* Hidy 2010 - counter */
-	int yday;			   /* Hidy 2010 - counter */
-	int spinyears;		   /* Hidy 2010 - counter */
-	int n_limitation;	   /* Hidy 2010 - flag for nitrogen limitation */
-	int varWPM_flag;	   /* Hidy 2012 - changing WPM value */
+	int simyr;			     /* Hidy 2010 - counter */
+	int yday;			     /* Hidy 2010 - counter */
+	int spinyears;		     /* Hidy 2010 - counter */
+	int n_limitation;	     /* Hidy 2010 - flag for nitrogen limitation */
+	int varWPM_flag;	     /* Hidy 2012 - changing WPM value */
+	int varMSC_flag;	     /* Hidy 2012 - changing MSC value */
+	double vegperday;        /* Hidy 2013 - counter */
+	double vegperday_pre;    /* Hidy 2013 - counter */
+	int vegper_flag;         /* Hidy 2013 - flag: start and end of VP */
 } control_struct;
 
 /* a structure to hold information about ramped N-deposition scenario */
@@ -219,6 +223,11 @@ typedef struct
     double litr2c;           /* (kgC/m2) litter unshielded cellulose C */
     double litr3c;           /* (kgC/m2) litter shielded cellulose C */
     double litr4c;           /* (kgC/m2) litter lignin C */
+	/* Hidy 2013: senescence */
+	double litr1c_strg_SNSC;
+	double litr2c_strg_SNSC;
+	double litr3c_strg_SNSC;
+	double litr4c_strg_SNSC;
     double soil1c;           /* (kgC/m2) microbial recycling pool C (fast) */
     double soil2c;           /* (kgC/m2) microbial recycling pool C (medium) */
     double soil3c;           /* (kgC/m2) microbial recycling pool C (slow) */
@@ -528,6 +537,11 @@ typedef struct
     double litr2n;             /* (kgN/m2) litter unshielded cellulose N */
     double litr3n;             /* (kgN/m2) litter shielded cellulose N */
     double litr4n;             /* (kgN/m2) litter lignin N */
+	/* Hidy 2013: senescence */
+	double litr1n_strg_SNSC;
+	double litr2n_strg_SNSC;
+	double litr3n_strg_SNSC;
+	double litr4n_strg_SNSC;
     double soil1n;             /* (kgN/m2) microbial recycling pool N (fast) */
     double soil2n;             /* (kgN/m2) microbial recycling pool N (medium) */
     double soil3n;             /* (kgN/m2) microbial recycling pool N (slow) */
@@ -944,6 +958,7 @@ typedef struct
 	double vwc_fc_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at field capacity*/
 	double vwc_wp_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at wilting point*/
 } siteconst_struct;								
+
 /* canopy ecophysiological constants */
 typedef struct
 {
@@ -998,8 +1013,10 @@ typedef struct
     double deadwood_flig;    /* (DIM) dead wood lignin fraction */
 	double mort_SNSC_displayed;	 /* Hidy 2011 - mortality parameter of senescence reagrding to displayed plant material */
 	double mort_SNSC_storaged;	 /* Hidy 2011 - mortality parameter of senescence regarding to storaged plant material */
+    double mort_SNSC_to_litter; /* Hidy 2013 - turnover rate of wilted standing biomass to litter*/
 	double q10_value;				/* (DIM) temperature coefficient for calculating maint.resp. */
 	double* wpm_array;		 /* Hidy 2011 - changingx WPM values */
+	double* msc_array;		 /* Hidy 2011 - changingx WPM values */
 } epconst_struct;
 
 /* strucure for thinning paramteres - by Hidy 2012. */
@@ -1195,6 +1212,11 @@ typedef struct
 	double litr2c;
 	double litr3c;
 	double litr4c;
+	/* Hidy 2013: senescence */
+//	double litr1c_strg_SNSC;
+//	double litr2c_strg_SNSC;
+//	double litr3c_strg_SNSC;
+//	double litr4c_strg_SNSC;
 	double soil1c;
 	double soil2c;
 	double soil3c;
@@ -1223,6 +1245,11 @@ typedef struct
 	double litr2n;
 	double litr3n;
 	double litr4n;
+	/* Hidy 2013: senescence */
+//  double litr1n_strg_SNSC;
+//	double litr2n_strg_SNSC;
+//	double litr3n_strg_SNSC;
+//	double litr4n_strg_SNSC;
 	double soil1n;
 	double soil2n;
 	double soil3n;

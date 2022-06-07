@@ -89,10 +89,10 @@ int sitec_init(file init, siteconst_struct* sitec)
 	}
 
 	/* Hidy 2012 - the 5th (bottom) layer is "fictive": infinitive depth */
-	sitec->rel_soillayer_thickness[N_SOILLAYERS-1] = -999.9;
-	sitec->soillayer_depths[N_SOILLAYERS-1]        = -999.9;
-	sitec->delta_z[N_SOILLAYERS-1]                 = -999.9;
-	sitec->soillayer_thickness[N_SOILLAYERS-1]     = -999.9;
+	sitec->rel_soillayer_thickness[N_SOILLAYERS-1] = DATA_GAP;
+	sitec->soillayer_depths[N_SOILLAYERS-1]        = DATA_GAP;
+	sitec->delta_z[N_SOILLAYERS-1]                 = DATA_GAP;
+	sitec->soillayer_thickness[N_SOILLAYERS-1]     = DATA_GAP;
 
 	/* *************************************************- */
 	if (ok && scan_value(init, &sand, 'd'))

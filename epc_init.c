@@ -200,6 +200,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		ok=0;
 	}
 	epc->daily_fire_turnover = t1/NDAY_OF_YEAR;
+
 	if (ok && scan_value(temp, &epc->alloc_frootc_leafc, 'd'))
 	{
 		printf("Error reading froot C:leaf C, epc_init()\n");
@@ -573,20 +574,35 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}
 
 	/* -------------------------------------------*/
-	/* Hidy 2013 - Q10 parameter (temperature coefficient for calculating maint.resp.) and GRPERC (growth resp ratio )
+	/* Hidy 2013 - GRPERC (growth resp ratio), denetirification proportion and mobilen proportion
 		original: BBGC constant - new version: can be set in EPC file*/
 
-	if (ok && scan_value(temp, &epc->q10_value, 'd'))
-	{
-		printf("Error reading Q10 parameter: epc_init()\n");
-		ok=0;
-	}
 
 	if (ok && scan_value(temp, &epc->GR_ratio, 'd'))
 	{
 		printf("Error reading growth resp.ratio: epc_init()\n");
 		ok=0;
 	}
+
+	if (ok && scan_value(temp, &epc->denitrif_prop, 'd'))
+	{
+		printf("Error reading denitrif_prop: epc_init()\n");
+		ok=0;
+	}
+
+
+	if (ok && scan_value(temp, &epc->mobilen_prop, 'd'))
+	{
+		printf("Error reading mobilen_prop: epc_init()\n");
+		ok=0;
+	}
+
+	if (ok && scan_value(temp, &epc->maturity_coeff, 'd'))
+	{
+		printf("Error reading maturity_coeff: epc_init()\n");
+		ok=0;
+	}
+	
 	/* -------------------------------------------*/
 	fclose(temp.ptr);
 		

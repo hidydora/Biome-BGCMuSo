@@ -27,6 +27,8 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 
 {
 	int ok=1;
+	int n_yday = NDAY_OF_YEAR;
+	
 	int model,woody,evergreen,south;
 	double t1;
 	char round[80];
@@ -72,10 +74,11 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 	double tmin_annavg;
 
 
+
+	nyears = ctrl->metyears;
+	ndays = n_yday * nyears;
 	
 	/* allocate space for phenology arrays */
-	nyears = ctrl->metyears;
-	ndays = 365 * nyears;
 	if (ok && !(phenarr->remdays_curgrowth = (int*) malloc(ndays*sizeof(int))))
 	{
 		printf("Error allocating for phenarr->curgrowth, prephenology()\n");
@@ -148,8 +151,8 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 	are constant between years */
 	if (evergreen || !model)
 	{
-		/* zero the 365-day phen arrays */
-		for (pday=0 ; pday<365 ; pday++)
+		/* zero the n_yday-day phen arrays */
+		for (pday=0 ; pday<n_yday ; pday++)
 		{
 			remdays_curgrowth[pday] = 0;
 			remdays_transfer[pday] = 0;
@@ -173,7 +176,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 		{
 			/* this is the special signal to repress all vegetation
 			growth, for simulations of bare ground */
-			for (pday=0 ; pday<365 ; pday++)
+			for (pday=0 ; pday<n_yday ; pday++)
 			{
 				remdays_curgrowth[pday] = 0;
 				remdays_transfer[pday] = 0;
@@ -235,7 +238,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					remdays_curgrowth[pday] = counter;
 					counter--;
 				}
-				for (pday=offday ; pday<365 ; pday++)
+				for (pday=offday ; pday<n_yday ; pday++)
 				{
 					remdays_curgrowth[pday] = 0;
 				}
@@ -251,7 +254,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					remdays_transfer[pday] = 0;
 					predays_transfer[pday] = ntransferdays;
 				}
-				for (pday=offday+1 ; pday<365 ; pday++)
+				for (pday=offday+1 ; pday<n_yday ; pday++)
 				{
 					remdays_transfer[pday] = 0;
 					predays_transfer[pday] = 0;
@@ -268,7 +271,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					predays_litfall[pday] = nlitfalldays - counter;
 					counter--;
 				}
-				for (pday=offday+1 ; pday<365 ; pday++)
+				for (pday=offday+1 ; pday<n_yday ; pday++)
 				{
 					remdays_litfall[pday] = 0;
 					predays_litfall[pday] = 0;
@@ -282,11 +285,11 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 				and current growth signals.  Treatment is the same for woody and
 				non-woody types, and the same for model or user-input phenology */
 				/* fill the local phenyear control arrays */
-				for (pday=0 ; pday<365 ; pday++)
+				for (pday=0 ; pday<n_yday ; pday++)
 				{
-					remdays_curgrowth[pday] = 365-pday;
-					remdays_transfer[pday] = 365-pday;
-					remdays_litfall[pday] = 365-pday;
+					remdays_curgrowth[pday] = n_yday-pday;
+					remdays_transfer[pday] = n_yday-pday;
+					remdays_litfall[pday] = n_yday-pday;
 					predays_transfer[pday] = pday;
 					predays_litfall[pday] = pday;
 				} 
@@ -303,7 +306,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 				{
 					/* only copy the second half of this phenological
 					year to the permanent phenology array */
-					for (pday=182 ; pday<365 ; pday++)
+					for (pday=182 ; pday<n_yday ; pday++)
 					{
 						phenarr->remdays_curgrowth[pday-182] = remdays_curgrowth[pday];
 						phenarr->remdays_transfer[pday-182] = remdays_transfer[pday];
@@ -318,35 +321,35 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					year to the permanent phenology array */
 					for (pday=0 ; pday<182 ; pday++)
 					{
-						phenarr->remdays_curgrowth[py*365-182+pday] = remdays_curgrowth[pday];
-						phenarr->remdays_transfer[py*365-182+pday] = remdays_transfer[pday];
-						phenarr->remdays_litfall[py*365-182+pday] = remdays_litfall[pday];
-						phenarr->predays_transfer[py*365-182+pday] = predays_transfer[pday];
-						phenarr->predays_litfall[py*365-182+pday] = predays_litfall[pday];
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
 					}
 				}
 				else
 				{
-					for (pday=0 ; pday<365 ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
-						phenarr->remdays_curgrowth[py*365-182+pday] = remdays_curgrowth[pday];
-						phenarr->remdays_transfer[py*365-182+pday] = remdays_transfer[pday];
-						phenarr->remdays_litfall[py*365-182+pday] = remdays_litfall[pday];
-						phenarr->predays_transfer[py*365-182+pday] = predays_transfer[pday];
-						phenarr->predays_litfall[py*365-182+pday] = predays_litfall[pday];
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
 					}
 				}
 			} /* end if south */
 			else
 			{
 				/* north */
-				for (pday=0 ; pday<365 ; pday++)
+				for (pday=0 ; pday<n_yday ; pday++)
 				{
-					phenarr->remdays_curgrowth[py*365+pday] = remdays_curgrowth[pday];
-					phenarr->remdays_transfer[py*365+pday] = remdays_transfer[pday];
-					phenarr->remdays_litfall[py*365+pday] = remdays_litfall[pday];
-					phenarr->predays_transfer[py*365+pday] = predays_transfer[pday];
-					phenarr->predays_litfall[py*365+pday] = predays_litfall[pday];
+					phenarr->remdays_curgrowth[py*n_yday+pday] = remdays_curgrowth[pday];
+					phenarr->remdays_transfer[py*n_yday+pday] = remdays_transfer[pday];
+					phenarr->remdays_litfall[py*n_yday+pday] = remdays_litfall[pday];
+					phenarr->predays_transfer[py*n_yday+pday] = predays_transfer[pday];
+					phenarr->predays_litfall[py*n_yday+pday] = predays_litfall[pday];
 				}
 			} /* end if north */
 		} /* end py loop */
@@ -396,12 +399,12 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 							}
 							else
 							{
-								phensoilt = metarr->tavg_ra[py*365-182+pday];
+								phensoilt = metarr->tavg_ra[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg_ra[py*365+pday];
+							phensoilt = metarr->tavg_ra[py*n_yday+pday];
 						}
 						
 						fall_tavg += phensoilt;
@@ -416,7 +419,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 				{
 					sum_soilt = 0.0;
 					onset_day = offset_day = -1;
-					for (pday=0 ; pday<365 ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
 						if (south)
 						{
@@ -437,14 +440,14 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 							}
 							else
 							{
-								phensoilt = metarr->tavg_ra[py*365-182+pday];
-								phendayl = metarr->dayl[py*365-182+pday];
+								phensoilt = metarr->tavg_ra[py*n_yday-182+pday];
+								phendayl = metarr->dayl[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg_ra[py*365+pday];
-							phendayl = metarr->dayl[py*365+pday];
+							phensoilt = metarr->tavg_ra[py*n_yday+pday];
+							phendayl = metarr->dayl[py*n_yday+pday];
 						}
 						
 						/* tree onset test */
@@ -548,7 +551,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 				for (py=0 ; py<phenyears ; py++)
 				{
 					new_tmax = -1000.0;
-					for (pday=0 ; pday<365 ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
 						if (south)
 						{
@@ -569,14 +572,14 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 							}
 							else
 							{
-								tmax = metarr->tmax[py*365-182+pday];
-								tmin_annavg += metarr->tmin[py*365-182+pday];
+								tmax = metarr->tmax[py*n_yday-182+pday];
+								tmin_annavg += metarr->tmin[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							tmax = metarr->tmax[py*365+pday];
-							tmin_annavg += metarr->tmin[py*365+pday];
+							tmax = metarr->tmax[py*n_yday+pday];
+							tmin_annavg += metarr->tmin[py*n_yday+pday];
 						}
 						
 						if (tmax > new_tmax) new_tmax = tmax;
@@ -596,7 +599,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					sum_soilt = 0.0;
 					sum_prcp = 0.0;
 					onset_day = offset_day = -1;
-					for (pday=0 ; pday<365 ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
 						if (south)
 						{
@@ -623,20 +626,20 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 							}
 							else
 							{
-								phensoilt = metarr->tavg_ra[py*365-182+pday];
-								phenprcp = metarr->prcp[py*365-182+pday];
+								phensoilt = metarr->tavg_ra[py*n_yday-182+pday];
+								phenprcp = metarr->prcp[py*n_yday-182+pday];
 								grass_prcpyear[pday] = phenprcp;
-								grass_tminyear[pday] = metarr->tmin[py*365-182+pday];
-								grass_tmaxyear[pday] = metarr->tmax[py*365-182+pday];
+								grass_tminyear[pday] = metarr->tmin[py*n_yday-182+pday];
+								grass_tmaxyear[pday] = metarr->tmax[py*n_yday-182+pday];
 							}
 						}
 						else /* north */
 						{
-							phensoilt = metarr->tavg_ra[py*365+pday];
-							phenprcp = metarr->prcp[py*365+pday];
+							phensoilt = metarr->tavg_ra[py*n_yday+pday];
+							phenprcp = metarr->prcp[py*n_yday+pday];
 							grass_prcpyear[pday] = phenprcp;
-							grass_tminyear[pday] = metarr->tmin[py*365+pday];
-							grass_tmaxyear[pday] = metarr->tmax[py*365+pday];
+							grass_tminyear[pday] = metarr->tmin[py*n_yday+pday];
+							grass_tmaxyear[pday] = metarr->tmax[py*n_yday+pday];
 						}
 						
 						/* grass onset test */
@@ -658,13 +661,13 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					if (onset_day != -1)
 					{
 						/* calculate three-day boxcar average of tmin */
-						if (boxcar_smooth(grass_tminyear, grass_3daytmin, 365,3,0))
+						if (boxcar_smooth(grass_tminyear, grass_3daytmin, n_yday,3,0))
 						{
 							printf("Error in prephenology() call to boxcar()\n");
 							ok=0;
 						}
 						
-						for (pday=onset_day+30 ; pday<365 ; pday++)
+						for (pday=onset_day+30 ; pday<n_yday ; pday++)
 						{
 							/* calculate the previous 31-day prcp total */
 							psum_startday = pday - 30;
@@ -773,8 +776,8 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 		the permanent phen struct arrays */
 		for (py=0 ; py<phenyears ; py++)
 		{
-			/* zero the 365-day phen arrays */
-			for (pday=0 ; pday<365 ; pday++)
+			/* zero the n_yday-day phen arrays */
+			for (pday=0 ; pday<n_yday ; pday++)
 			{
 				remdays_curgrowth[pday] = 0;
 				remdays_transfer[pday] = 0;
@@ -790,7 +793,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 			{
 				/* this is the special signal to repress all vegetation
 				growth */
-				for (pday=0 ; pday<365 ; pday++)
+				for (pday=0 ; pday<n_yday ; pday++)
 				{
 					remdays_curgrowth[pday] = 0;
 					remdays_transfer[pday] = 0;
@@ -841,7 +844,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					remdays_curgrowth[pday] = counter;
 					counter--;
 				}
-				for (pday=offday ; pday<365 ; pday++)
+				for (pday=offday ; pday<n_yday ; pday++)
 				{
 					remdays_curgrowth[pday] = 0;
 				}
@@ -857,7 +860,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					remdays_transfer[pday] = 0;
 					predays_transfer[pday] = ntransferdays;
 				}
-				for (pday=offday+1 ; pday<365 ; pday++)
+				for (pday=offday+1 ; pday<n_yday ; pday++)
 				{
 					remdays_transfer[pday] = 0;
 					predays_transfer[pday] = 0;
@@ -874,7 +877,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					predays_litfall[pday] = nlitfalldays - counter;
 					counter--;
 				}
-				for (pday=offday+1 ; pday<365 ; pday++)
+				for (pday=offday+1 ; pday<n_yday ; pday++)
 				{
 					remdays_litfall[pday] = 0;
 					predays_litfall[pday] = 0;
@@ -889,7 +892,7 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 				{
 					/* only copy the second half of this phenological
 					year to the permanent phenology array */
-					for (pday=182 ; pday<365 ; pday++)
+					for (pday=182 ; pday<n_yday ; pday++)
 					{
 						phenarr->remdays_curgrowth[pday-182] = remdays_curgrowth[pday];
 						phenarr->remdays_transfer[pday-182] = remdays_transfer[pday];
@@ -904,35 +907,35 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 					year to the permanent phenology array */
 					for (pday=0 ; pday<182 ; pday++)
 					{
-						phenarr->remdays_curgrowth[py*365-182+pday] = remdays_curgrowth[pday];
-						phenarr->remdays_transfer[py*365-182+pday] = remdays_transfer[pday];
-						phenarr->remdays_litfall[py*365-182+pday] = remdays_litfall[pday];
-						phenarr->predays_transfer[py*365-182+pday] = predays_transfer[pday];
-						phenarr->predays_litfall[py*365-182+pday] = predays_litfall[pday];
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
 					}
 				}
 				else
 				{
-					for (pday=0 ; pday<365 ; pday++)
+					for (pday=0 ; pday<n_yday ; pday++)
 					{
-						phenarr->remdays_curgrowth[py*365-182+pday] = remdays_curgrowth[pday];
-						phenarr->remdays_transfer[py*365-182+pday] = remdays_transfer[pday];
-						phenarr->remdays_litfall[py*365-182+pday] = remdays_litfall[pday];
-						phenarr->predays_transfer[py*365-182+pday] = predays_transfer[pday];
-						phenarr->predays_litfall[py*365-182+pday] = predays_litfall[pday];
+						phenarr->remdays_curgrowth[py*n_yday-182+pday] = remdays_curgrowth[pday];
+						phenarr->remdays_transfer[py*n_yday-182+pday] = remdays_transfer[pday];
+						phenarr->remdays_litfall[py*n_yday-182+pday] = remdays_litfall[pday];
+						phenarr->predays_transfer[py*n_yday-182+pday] = predays_transfer[pday];
+						phenarr->predays_litfall[py*n_yday-182+pday] = predays_litfall[pday];
 					}
 				}
 			} /* end if south */
 			else
 			{
 				/* north */
-				for (pday=0 ; pday<365 ; pday++)
+				for (pday=0 ; pday<n_yday ; pday++)
 				{
-					phenarr->remdays_curgrowth[py*365+pday] = remdays_curgrowth[pday];
-					phenarr->remdays_transfer[py*365+pday] = remdays_transfer[pday];
-					phenarr->remdays_litfall[py*365+pday] = remdays_litfall[pday];
-					phenarr->predays_transfer[py*365+pday] = predays_transfer[pday];
-					phenarr->predays_litfall[py*365+pday] = predays_litfall[pday];
+					phenarr->remdays_curgrowth[py*n_yday+pday] = remdays_curgrowth[pday];
+					phenarr->remdays_transfer[py*n_yday+pday] = remdays_transfer[pday];
+					phenarr->remdays_litfall[py*n_yday+pday] = remdays_litfall[pday];
+					phenarr->predays_transfer[py*n_yday+pday] = predays_transfer[pday];
+					phenarr->predays_litfall[py*n_yday+pday] = predays_litfall[pday];
 				}
 			} /* end if north */
 		} /* end phenyears loop for filling permanent arrays */

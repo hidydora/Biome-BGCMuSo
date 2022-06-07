@@ -19,76 +19,58 @@ Copyright 2009, Hidy
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
 
-int harvesting(int yday, phenology_struct* phen, const control_struct* ctrl, const epconst_struct* epc, harvesting_struct* HRV, 
+int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting_struct* HRV, 
 			cflux_struct* cf, nflux_struct* nf, wflux_struct* wf,  cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
 {
 	/* harvesting parameters */
-	int harvesting;			/* flag, 1=harvesting; 0=no harvesting */
-	int count;
+	double remained_prop;	/* remained proportion of plant  */
+	double LAI_snag;
+
+	/* local parameters */
 	double befharv_LAI;		/* value of LAI before harvesting */
 	double harvest_effect;	/* decrease of plant material caused by harvest: difference between plant material before and after harvesting */
- 
-	int ok=1;
-	double remained_prop = (100 - HRV->transport_coeff)/100.;	/* remained proportion of plabnt material is calculated from transport coefficient */
-	
+	int ok = 1;
+	int ny;
+	int mgmd = HRV->mgmd;
+
+	/* yearly varied or constant management parameters */
+	if(HRV->HRV_flag == 2)
+	{
+		ny = ctrl->simyr;
+	}
+	else ny=0;
 
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     CALCULATING FLUXES 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
 	/* harvesting if gapflag=1 */
-	if (HRV->HRV_flag == 1)
+	if (mgmd >= 0)
 	{ 
+		remained_prop = (100 - HRV->transport_coeff_array[mgmd][ny])/100.; /* remained prop. of plant mat.is calculated from transport coeff. */
+		LAI_snag = HRV->LAI_snag_array[mgmd][ny];
+		
 	
-		/* harvesting on HRVdays (ini file) */
-		harvesting=0;
-		for(count=0; count < HRV->n_HRVdays; ++count)
-		{
-			if (yday == HRV->HRVdays[count])
-			{
-				if (phen->remdays_curgrowth > 0)
-				{
-					harvesting = 1;
-				}
-				else
-				{
-					harvesting = 0;
-					if (ctrl->onscreen) printf("out of growing season no plantmaterial is available - no harvesting on yearday:%d\t\n",yday);
-				}
-			}
-				else
-				harvesting = 0;
-		}
-		
-
-		if (harvesting) 
-		{	
-		
 		/* if before harvesting the value of the LAI is less than LAI_snag (limit value) - > no harvesting
-		   if harvest: plant material decreases as the rate of "harvest effect", which is th ratio of LAI before harvest and LAI snag */
-				
-				befharv_LAI = cs->leafc * epc->avg_proj_sla;
-				if (befharv_LAI > HRV->LAI_snag)
-				{	
-					harvest_effect = 1. - (HRV->LAI_snag/befharv_LAI);			
-					if (ctrl->onscreen) printf("harvesting on yearday:%d\t\n",yday);
-				}
-				else
-				{
-					harvest_effect = 0.0;
-					if (ctrl->onscreen) printf("value of LAI before harvesting is less than LAI_snag - no harvest\n");
-				}
-					
+	   if harvest: plant material decreases as the rate of "harvest effect", which is th ratio of LAI before harvest and LAI snag */
+			
+		befharv_LAI = cs->leafc * epc->avg_proj_sla;
+		if (befharv_LAI > LAI_snag)
+		{	
+			harvest_effect = 1. - (LAI_snag/befharv_LAI);			
 		}
-		else 
+		else
 		{
 			harvest_effect = 0.0;
+			if (ctrl->onscreen) printf("value of LAI before harvesting is less than LAI_snag - no harvest\n");
 		}
-
+					
+	
 	}
 	else
 	{
 		harvest_effect=0.0;
+		remained_prop = 0.0;
 	}
 
 	/* as results of the harvesting the carbon, nitrogen and water content of the leaf decreases*/
@@ -109,15 +91,15 @@ int harvesting(int yday, phenology_struct* phen, const control_struct* ctrl, con
 
 	/* if harvested plant material remains at the site, returns to the litter */
 	cf->HRV_to_litr1c = (cf->leafc_to_HRV * epc->leaflitr_flab + 
-					 cf->leafc_transfer_to_HRV + cf->leafc_storage_to_HRV +
-					 cf->gresp_storage_to_HRV  + cf->gresp_transfer_to_HRV) * remained_prop;
+						cf->leafc_transfer_to_HRV + cf->leafc_storage_to_HRV +
+						cf->gresp_storage_to_HRV  + cf->gresp_transfer_to_HRV) * remained_prop;
 	cf->HRV_to_litr2c = (cf->leafc_to_HRV * epc->leaflitr_fucel) * remained_prop;
 	cf->HRV_to_litr3c = (cf->leafc_to_HRV * epc->leaflitr_fscel) * remained_prop;
 	cf->HRV_to_litr4c = (cf->leafc_to_HRV * epc->leaflitr_flig) * remained_prop;
 
 
 	nf->HRV_to_litr1n = (nf->leafn_to_HRV * epc->leaflitr_flab + 
-					 nf->leafn_transfer_to_HRV + cf->leafc_storage_to_HRV) * remained_prop;
+						nf->leafn_transfer_to_HRV + cf->leafc_storage_to_HRV) * remained_prop;
 	nf->HRV_to_litr2n = (nf->leafn_to_HRV * epc->leaflitr_fucel) * remained_prop;
 	nf->HRV_to_litr3n = (nf->leafn_to_HRV * epc->leaflitr_fscel) * remained_prop;
 	nf->HRV_to_litr4n = (nf->leafn_to_HRV * epc->leaflitr_flig) * remained_prop;

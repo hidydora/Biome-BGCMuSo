@@ -19,60 +19,47 @@ Copyright 2012, Hidy
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
 
-int thinning(int yday, phenology_struct* phen, const control_struct* ctrl, const epconst_struct* epc, thinning_struct* THN, cflux_struct* cf,
-				 nflux_struct* nf, wflux_struct* wf, cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
+int thinning(const control_struct* ctrl, const epconst_struct* epc, thinning_struct* THN, cflux_struct* cf,nflux_struct* nf,wflux_struct* wf, 
+				 cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
 {
 	/* thinning parameters */
-	int thinning;		/* flag, 1=thinning; 0=no thinning */
-	int thini;
+	double transp_leaf_rate;
+	double transp_stem_rate;
 	
 	double thinning_rate;	/* decreasing of plant material caused by thinning*/
-
-
 	int ok=1;
+	int ny;
+	int mgmd = THN->mgmd;
+
+	/* yearly varied or constant management parameters */
+	if(THN->THN_flag == 2)
+	{
+		ny = ctrl->simyr;
+	}
+	else ny=0;
 
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     CALCULATING FLUXES 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
 	/* thinning if flag=1 */
-	if (THN->THN_flag == 1)
-	{
-		thinning=0;
-	
-		for(thini=0; thini < THN->n_THNdays; ++thini)
-		{
-			if (yday == THN->THNdays[thini])
-			{
-				if (phen->remdays_curgrowth > 0)
-				{
-					thinning = 1;
-					if (ctrl->onscreen) printf("thinning on yearday:%d\t\n",yday);
-				}
-				else
-				{
-					thinning = 0;
-					if (ctrl->onscreen) printf("out of growing season no plantmaterial is available - no thinning on yearday:%d\t\n",yday);
-				}
-			}
-				else
-				thinning = 0;
-		}
+	if (mgmd >= 0)
+	{	
 
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (thinning) 
-		{	
-			thinning_rate = THN->thinning_rate;	
-		}
-		else 
-		{
-			thinning_rate = 0.0;
-		}
+		thinning_rate = THN->thinning_rate_array[mgmd][ny];
+		transp_leaf_rate=THN->transp_leaf_rate_array[mgmd][ny]/100.;
+		transp_stem_rate=THN->transp_stem_rate_array[mgmd][ny]/100.;
+	
 	}
 	else
 	{
-		thinning_rate=0.0;
+		thinning_rate = 0;
+		transp_leaf_rate=0;
+		transp_stem_rate=0;
 	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
 
 	/* leaf */
 	cf->leafc_to_THN          = cs->leafc * thinning_rate;
@@ -137,63 +124,47 @@ int thinning(int yday, phenology_struct* phen, const control_struct* ctrl, const
 
 	/* on thinning days the whole amount of THNed grass get onto the ground -> THN_cpool adn THN_npool. Carbon and nitrogen content
 	   of THNed grass are returns into the soil determined by dissolving coefficient */
-	if (thinning)
-	{
-		
-		cf->THN_to_litr1c = (cf->leafc_to_THN * epc->leaflitr_flab) * THN->transp_leaf_rate +
-							(cf->frootc_to_THN * epc->frootlitr_flab) +
-							(cf->leafc_transfer_to_THN + cf->leafc_storage_to_THN) * THN->transp_leaf_rate +
-							(cf->frootc_transfer_to_THN + cf->frootc_storage_to_THN)  +
-							(cf->livestemc_transfer_to_THN + cf->livestemc_storage_to_THN) * THN->transp_stem_rate +
-							(cf->deadstemc_transfer_to_THN + cf->deadstemc_storage_to_THN) * THN->transp_stem_rate +
-						    (cf->gresp_storage_to_THN  + cf->gresp_transfer_to_THN) * THN->transp_stem_rate;
-		cf->THN_to_litr2c = (cf->leafc_to_THN * epc->leaflitr_fucel * THN->transp_leaf_rate) +
-							(cf->frootc_to_THN * epc->frootlitr_fucel);
-		cf->THN_to_litr3c = (cf->leafc_to_THN * epc->leaflitr_fscel) + 
-							(cf->frootc_to_THN * epc->frootlitr_fucel);
-		cf->THN_to_litr4c = (cf->leafc_to_THN * epc->leaflitr_flig) + 
-							(cf->frootc_to_THN * epc->frootlitr_flig);
 
-		cf->THN_to_cwdc =   cf->livestemc_to_THN * THN->transp_stem_rate +
-							cf->deadstemc_to_THN * THN->transp_stem_rate +
-							cf->livecrootc_to_THN +
-							cf->deadcrootc_to_THN;
+	cf->THN_to_litr1c = (cf->leafc_to_THN * epc->leaflitr_flab) * transp_leaf_rate +
+						(cf->frootc_to_THN * epc->frootlitr_flab) +
+						(cf->leafc_transfer_to_THN + cf->leafc_storage_to_THN) * transp_leaf_rate +
+						(cf->frootc_transfer_to_THN + cf->frootc_storage_to_THN)  +
+						(cf->livestemc_transfer_to_THN + cf->livestemc_storage_to_THN) * transp_stem_rate +
+						(cf->deadstemc_transfer_to_THN + cf->deadstemc_storage_to_THN) * transp_stem_rate +
+						(cf->gresp_storage_to_THN  + cf->gresp_transfer_to_THN) * transp_stem_rate;
+	cf->THN_to_litr2c = (cf->leafc_to_THN * epc->leaflitr_fucel * transp_leaf_rate) +
+						(cf->frootc_to_THN * epc->frootlitr_fucel);
+	cf->THN_to_litr3c = (cf->leafc_to_THN * epc->leaflitr_fscel) + 
+						(cf->frootc_to_THN * epc->frootlitr_fucel);
+	cf->THN_to_litr4c = (cf->leafc_to_THN * epc->leaflitr_flig) + 
+						(cf->frootc_to_THN * epc->frootlitr_flig);
+
+	cf->THN_to_cwdc =   cf->livestemc_to_THN * transp_stem_rate +
+						cf->deadstemc_to_THN * transp_stem_rate +
+						cf->livecrootc_to_THN +
+						cf->deadcrootc_to_THN;
 
 
-		nf->THN_to_litr1n = (nf->leafn_to_THN * epc->leaflitr_flab) * THN->transp_leaf_rate +
-							(nf->frootn_to_THN * epc->frootlitr_flab) +
-							(nf->leafn_transfer_to_THN + nf->leafn_storage_to_THN) * THN->transp_leaf_rate +
-							(nf->frootn_transfer_to_THN + nf->frootn_storage_to_THN)  +
-							(nf->livestemn_transfer_to_THN + nf->livestemn_storage_to_THN) * THN->transp_stem_rate +
-							(nf->deadstemn_transfer_to_THN + nf->deadstemn_storage_to_THN) * THN->transp_stem_rate +
-							nf->restransn_to_THN;
-		nf->THN_to_litr2n = (nf->leafn_to_THN * epc->leaflitr_fucel * THN->transp_leaf_rate) +
-							(nf->frootn_to_THN * epc->frootlitr_fucel);
-		nf->THN_to_litr3n = (nf->leafn_to_THN * epc->leaflitr_fscel) + 
-							(nf->frootn_to_THN * epc->frootlitr_fucel);
-		nf->THN_to_litr4n = (nf->leafn_to_THN * epc->leaflitr_flig) + 
-							(nf->frootn_to_THN * epc->frootlitr_flig);
+	nf->THN_to_litr1n = (nf->leafn_to_THN * epc->leaflitr_flab) * transp_leaf_rate +
+						(nf->frootn_to_THN * epc->frootlitr_flab) +
+						(nf->leafn_transfer_to_THN + nf->leafn_storage_to_THN) * transp_leaf_rate +
+						(nf->frootn_transfer_to_THN + nf->frootn_storage_to_THN)  +
+						(nf->livestemn_transfer_to_THN + nf->livestemn_storage_to_THN) * transp_stem_rate +
+						(nf->deadstemn_transfer_to_THN + nf->deadstemn_storage_to_THN) * transp_stem_rate +
+						nf->restransn_to_THN;
+	nf->THN_to_litr2n = (nf->leafn_to_THN * epc->leaflitr_fucel * transp_leaf_rate) +
+						(nf->frootn_to_THN * epc->frootlitr_fucel);
+	nf->THN_to_litr3n = (nf->leafn_to_THN * epc->leaflitr_fscel) + 
+						(nf->frootn_to_THN * epc->frootlitr_fucel);
+	nf->THN_to_litr4n = (nf->leafn_to_THN * epc->leaflitr_flig) + 
+						(nf->frootn_to_THN * epc->frootlitr_flig);
 
-		nf->THN_to_cwdn =   nf->livestemn_to_THN * THN->transp_stem_rate +
-							nf->deadstemn_to_THN * THN->transp_stem_rate +
-							nf->livecrootn_to_THN +
-							nf->deadcrootn_to_THN;
-	}
-	/* no thinning on the given day */
-	else	
-	{ 
-		cf->THN_to_litr1c = 0;
-		cf->THN_to_litr2c = 0;
-		cf->THN_to_litr3c = 0;
-		cf->THN_to_litr4c = 0;
-		cf->THN_to_cwdc   = 0;
+	nf->THN_to_cwdn =   nf->livestemn_to_THN * transp_stem_rate +
+						nf->deadstemn_to_THN * transp_stem_rate +
+						nf->livecrootn_to_THN +
+						nf->deadcrootn_to_THN;
 
-		nf->THN_to_litr1n = 0;  
-		nf->THN_to_litr2n = 0;  
-		nf->THN_to_litr3n = 0;  
-		nf->THN_to_litr4n = 0;  
-		
-	}
+
 		
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     STATE UPDATE 

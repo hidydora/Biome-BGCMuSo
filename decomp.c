@@ -75,8 +75,8 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	Orchard, V.A., and F.J. Cook, 1983. Relationship between soil respiration
 	and soil moisture. Soil Biol. Biochem., 15(4):447-453.
 	*/
-	/* set the maximum and minimum values for water potential limits (MPa) */
-	minvwc = sitec->vwc_wp;
+	/* Hidy 2013 . set the maximum and minimum values for water content limits (m3/m3) */
+	minvwc = sitec->vwc_hw;
 	maxvwc = sitec->vwc_sat;
 
 	if (vwc < minvwc)
@@ -93,7 +93,7 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	{
 		if (epv->dsws > 0) 	
 		{
-			w_scalar = (vwc - sitec->vwc_wp) / (sitec->vwc_sat - sitec->vwc_wp);
+			w_scalar = (vwc - minvwc) / (maxvwc - minvwc);
 		}
 		else
 		{

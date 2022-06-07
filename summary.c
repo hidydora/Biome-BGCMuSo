@@ -141,7 +141,7 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 	
 	/* ditrurbance is positive is it mean net carbon surplus to the system and it is negative is net carbon loss */
 	/* summerize thinning effect - Hidy 2012 */
-	summary->carbonchange_THN =  cf->THN_to_litr1c + cf->THN_to_litr2c + cf->THN_to_litr3c + cf->THN_to_litr4c + cf->THN_to_cwdc - 
+	summary->Cchange_THN =  cf->THN_to_litr1c + cf->THN_to_litr2c + cf->THN_to_litr3c + cf->THN_to_litr4c + cf->THN_to_cwdc - 
 								 cf->leafc_storage_to_THN - cf->leafc_transfer_to_THN - cf->leafc_to_THN -
 								 cf->frootc_storage_to_THN - cf->frootc_transfer_to_THN - cf->frootc_to_THN -
 								 cf->livecrootc_storage_to_THN - cf->livecrootc_transfer_to_THN - cf->livecrootc_to_THN -
@@ -151,31 +151,31 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 								 cf->gresp_transfer_to_THN - cf->gresp_storage_to_THN;
 
 	/* summerize mowing effect - Hidy 2008 */
-	summary->carbonchange_MOW =  cf->MOW_to_litr1c + cf->MOW_to_litr2c + cf->MOW_to_litr3c + cf->MOW_to_litr4c - 
+	summary->Cchange_MOW =  cf->MOW_to_litr1c + cf->MOW_to_litr2c + cf->MOW_to_litr3c + cf->MOW_to_litr4c - 
 								 cf->leafc_storage_to_MOW - cf->leafc_transfer_to_MOW - cf->leafc_to_MOW -
 								 cf->gresp_transfer_to_MOW - cf->gresp_storage_to_MOW;
 
 	/* summerize harvesting effect - Hidy 2008 */
-	summary->carbonchange_HRV = - cf->leafc_storage_to_HRV - cf->leafc_transfer_to_HRV - cf->leafc_to_HRV - 
+	summary->Cchange_HRV = - cf->leafc_storage_to_HRV - cf->leafc_transfer_to_HRV - cf->leafc_to_HRV - 
 		                          cf->gresp_transfer_to_HRV - cf->gresp_storage_to_HRV;
 
 	/* summerize ploughing effect - Hidy 2008 */
-	summary->carbonchange_PLG = -cf->leafc_storage_to_PLG - cf->leafc_transfer_to_PLG - cf->leafc_to_PLG -
+	summary->Cchange_PLG = -cf->leafc_storage_to_PLG - cf->leafc_transfer_to_PLG - cf->leafc_to_PLG -
 							   cf->frootc_storage_to_PLG - cf->frootc_transfer_to_PLG - cf->frootc_to_PLG - 
 							   cf->gresp_transfer_to_PLG - cf->gresp_storage_to_PLG;
 
 	/* summerize grazing effect - Hidy 2009 */
-	summary->carbonchange_GRZ =  cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c - 
+	summary->Cchange_GRZ =  cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c - 
 								cf->leafc_storage_to_GRZ - cf->leafc_transfer_to_GRZ - cf->leafc_to_GRZ - 
 								cf->gresp_transfer_to_GRZ - cf->gresp_storage_to_GRZ;
 
 
-	summary->carbonchange_FRZ = cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
+	summary->Cchange_FRZ = cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
 
-	summary->carbonchange_PLT = cf->leafc_transfer_from_PLT + cf->frootc_transfer_from_PLT;
+	summary->Cchange_PLT = cf->leafc_transfer_from_PLT + cf->frootc_transfer_from_PLT;
 
 	/* summerize senescence effect - Hidy 2008 */
-	summary->carbonchange_SNSC =  cf->SNSC_to_litr1c + cf->SNSC_to_litr2c + cf->SNSC_to_litr3c + cf->SNSC_to_litr4c - 
+	summary->Cchange_SNSC =  cf->SNSC_to_litr1c + cf->SNSC_to_litr2c + cf->SNSC_to_litr3c + cf->SNSC_to_litr4c - 
 								 cf->m_leafc_storage_to_SNSC - cf->m_leafc_transfer_to_SNSC - cf->m_leafc_to_SNSC -
 								 cf->m_frootc_storage_to_SNSC - cf->m_frootc_transfer_to_SNSC - cf->m_frootc_to_SNSC -
 								 cf->m_gresp_transfer_to_SNSC - cf->m_gresp_storage_to_SNSC;
@@ -194,6 +194,11 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 	/* nbp is positive is it mean net carbon surplus to the system and it is negative is net carbon loss */
 	nbp = nep + disturb_surplus - disturb_loss;
 	summary->daily_nbp = nbp;
+
+	/* main nitrogen information */
+	summary->Nplus_GRZ = (nf->GRZ_to_litr1n + nf->GRZ_to_litr2n + nf->GRZ_to_litr3n  + nf->GRZ_to_litr4n);  
+	summary->Nplus_FRZ = (nf->FRZ_to_sminn+nf->FRZ_to_litr1n + nf->FRZ_to_litr2n + nf->FRZ_to_litr3n  + nf->FRZ_to_litr4n);  
+	
 
 	
 	return(!ok);

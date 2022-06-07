@@ -18,104 +18,94 @@ Copyright 2008, Hidy
 #include "pointbgc_struct.h"
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 int fertilizing(int yday, const control_struct* ctrl, fertilizing_struct* FRZ, 
 				cstate_struct* cs, nstate_struct*ns, cflux_struct* cf, nflux_struct* nf)
 {
 
 	/* fertilizing parameters .*/
-	int fertil;
 	int ok=1;
-	double nitrate_content = FRZ->nitrate_content / 100.;		/* from % to number */
-	double ammonium_content = FRZ->ammonium_content / 100.;	/* from % to number */
-	double carbon_content = FRZ->carbon_content / 100.;		/* from % to number */
-	double litr_flab = FRZ->litr_flab / 100.;					/* from % to number */
-	double litr_fucel = FRZ->litr_fucel / 100.;				/* from % to number */
-	double litr_fscel = FRZ->litr_fscel / 100.;				/* from % to number */
-	double litr_flig = FRZ->litr_flig / 100.;					/* from % to number */
-	double utilization_coeff = FRZ->utilization_coeff / 100.;	/* from % to number */
-	double dissolv_coeff = FRZ->dissolv_coeff /100;			/* from % to number */
+	int ny, mgmd;
+	double fertilizer;
+	
 	double FRZ_to_sminn_act = 0;
 	double FRZ_to_litrn_act = 0;
 	double FRZ_to_litrc_act = 0;
+
+	/* yearly varied or constant management parameters */
+	if(FRZ->FRZ_flag == 2)
+	{
+		ny = ctrl->simyr;
+	}
+	else ny=0;
+
 	
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     CALCULATING FLUXES 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 	
-	/* do fertilization if gapflag=1  - Hidy 2008.*/
-	if (FRZ->FRZ_flag)
+	/* on management days fertilizer is put on the field */
+
+	mgmd=FRZ->mgmd;
+
+	if (mgmd >=0) 
 	{
-	
-		for(fertil=0; fertil < FRZ->n_FRZdays; ++fertil)
-		{
-			if (yday == FRZ->FRZdays[fertil])
-			{
-				/* on fertilization days a given amunt of fertilizer is put out on the ground (FRZ_pool_act contains the actual fertilizer content) */	
-				FRZ->FRZ_pool_act += FRZ->fertilizer[fertil] / 10000.; // kgN/ha -> kgN/m2
-				
-				if (ctrl->onscreen) printf("fertilizing on yearday:%d\t\n",yday);
-				break;
-			}
-		}
+		fertilizer        = FRZ->fertilizer_array[mgmd][ny] / 10000.;	
+		FRZ->FRZ_pool_act += FRZ->fertilizer_array[mgmd][ny]  / 10000.;		/* kgN/ha -> kgN/m2 */
 
-				
-		if (FRZ->FRZ_pool_act> 0.0)
-		{
-			/* not all the amount of the nitrogen from fertilization is available on the given fertilization day to plants ->
-			dissolv_coeff define the ratio */
+		FRZ->Ncont_act   = FRZ->Ncontent_array[mgmd][ny] / 100.;			/* from % to number */
+		FRZ->NH3cont_act = FRZ->NH3content_array[mgmd][ny] / 100.;		/* from % to number */
+		FRZ->Ccont_act   = FRZ->Ccontent_array[mgmd][ny] / 100.;			/* from % to number */
+		FRZ->flab_act    = FRZ->litr_flab_array[mgmd][ny] / 100.;			/* from % to number */
+		FRZ->fucel_act   = FRZ->litr_fucel_array[mgmd][ny] / 100.;		/* from % to number */
+		FRZ->fscel_act   = FRZ->litr_fscel_array[mgmd][ny] / 100.;		/* from % to number */
+		FRZ->flig_act    = FRZ->litr_flig_array[mgmd][ny] / 100.;			/* from % to number */
+		FRZ->UC_act      = FRZ->utiliz_coeff_array[mgmd][ny] / 100.; 	    /* from % to number */
+		FRZ->DC_act      = FRZ->dissolv_coeff_array[mgmd][ny] /100;		/* from % to number */
+	}
 
-			/* nitrate content of fertilizer can be uptaken by plant directly -> get to the sminn pool */
-			FRZ_to_sminn_act = dissolv_coeff * FRZ->FRZ_pool_act * nitrate_content;
-			/* ammonium content of fertilizer have to be nitrificatied before be uptaken by plant  -> get to the litrn pool */
-			FRZ_to_litrn_act = dissolv_coeff * FRZ->FRZ_pool_act * ammonium_content;
-			/* carbon content of fertilizer turn to the litter pool */
-			FRZ_to_litrc_act = dissolv_coeff * FRZ->FRZ_pool_act * carbon_content;
-			
-			FRZ->FRZ_pool_act = FRZ->FRZ_pool_act - FRZ->FRZ_pool_act * dissolv_coeff;
+	/* on and after fertilizing day, ammonium and nitrate enters into the soil */			
+	if (FRZ->FRZ_pool_act> 0.0)
+	{
+		/* not all the amount of the nitrogen from fertilization is available on the given fertilization day to plants ->
+		dissolv_coeff define the ratio */
+
+		/* nitrate content of fertilizer can be uptaken by plant directly -> get to the sminn pool */
+		FRZ_to_sminn_act = FRZ->DC_act * FRZ->FRZ_pool_act * FRZ->Ncont_act;
+		/* ammonium content of fertilizer have to be nitrificatied before be uptaken by plant  -> get to the litrn pool */
+		FRZ_to_litrn_act = FRZ->DC_act * FRZ->FRZ_pool_act * FRZ->NH3cont_act;
+		/* carbon content of fertilizer turn to the litter pool */
+		FRZ_to_litrc_act = FRZ->DC_act * FRZ->FRZ_pool_act * FRZ->Ccont_act;
 		
+		FRZ->FRZ_pool_act = FRZ->FRZ_pool_act - FRZ->FRZ_pool_act * FRZ->DC_act;
+	
 
-			/* if N from fertilization is available (in FRZ_pool_act) a given ratio of its N content (defined by useful part)
-				get into the soil mineral nitrogen pool, the rest disappers from the system (leaching...) */
-			if (FRZ_to_sminn_act > 0.00001)
-			{
-				nf->FRZ_to_sminn = FRZ_to_sminn_act * utilization_coeff;
-				
-				nf->FRZ_to_litr1n = FRZ_to_litrn_act * litr_flab  * utilization_coeff;
-				nf->FRZ_to_litr2n = FRZ_to_litrn_act * litr_fucel * utilization_coeff;
-				nf->FRZ_to_litr3n = FRZ_to_litrn_act * litr_fscel * utilization_coeff;
-				nf->FRZ_to_litr4n = FRZ_to_litrn_act * litr_flig  * utilization_coeff;
+		/* if N from fertilization is available (in FRZ_pool_act) a given ratio of its N content (defined by useful part)
+			get into the soil mineral nitrogen pool, the rest disappers from the system (slipping away...) */
+		if (FRZ_to_sminn_act > 0.00001)
+		{
+			nf->FRZ_to_sminn = FRZ_to_sminn_act * FRZ->UC_act;
+			
+			nf->FRZ_to_litr1n = FRZ_to_litrn_act * FRZ->flab_act  * FRZ->UC_act;
+			nf->FRZ_to_litr2n = FRZ_to_litrn_act * FRZ->fucel_act * FRZ->UC_act;
+			nf->FRZ_to_litr3n = FRZ_to_litrn_act * FRZ->fscel_act * FRZ->UC_act;
+			nf->FRZ_to_litr4n = FRZ_to_litrn_act * FRZ->flig_act  * FRZ->UC_act;
 
-				cf->FRZ_to_litr1c = FRZ_to_litrc_act * litr_flab  * utilization_coeff;
-				cf->FRZ_to_litr2c = FRZ_to_litrc_act * litr_fucel * utilization_coeff;
-				cf->FRZ_to_litr3c = FRZ_to_litrc_act * litr_fscel * utilization_coeff;
-				cf->FRZ_to_litr4c = FRZ_to_litrc_act * litr_flig  * utilization_coeff;	
-				
-				if (ctrl->onscreen) printf("fertilizing's effect on yearday:%d\t\n",yday);
+			cf->FRZ_to_litr1c = FRZ_to_litrc_act * FRZ->flab_act  * FRZ->UC_act;
+			cf->FRZ_to_litr2c = FRZ_to_litrc_act * FRZ->fucel_act * FRZ->UC_act;
+			cf->FRZ_to_litr3c = FRZ_to_litrc_act * FRZ->fscel_act * FRZ->UC_act;
+			cf->FRZ_to_litr4c = FRZ_to_litrc_act * FRZ->flig_act  * FRZ->UC_act;	
+			
+			if (ctrl->onscreen) printf("SMINN TO SOIL FROM FERTIL\n");
 
-			}
-
-			/* if the nitrogen from fertilization has been consumed already, the fertilization has no more effect .*/ 
-			else
-			{
-				nf->FRZ_to_sminn = 0;
-				
-				nf->FRZ_to_litr1n = 0;
-				nf->FRZ_to_litr2n = 0;
-				nf->FRZ_to_litr3n = 0;
-				nf->FRZ_to_litr4n = 0;
-
-				cf->FRZ_to_litr1c = 0;
-				cf->FRZ_to_litr2c = 0;
-				cf->FRZ_to_litr3c = 0;
-				cf->FRZ_to_litr4c = 0;	
-				
-			}
 		}
+
+		/* if the nitrogen from fertilization has been consumed already, the fertilization has no more effect .*/ 
 		else
 		{
 			nf->FRZ_to_sminn = 0;
-				
+			
 			nf->FRZ_to_litr1n = 0;
 			nf->FRZ_to_litr2n = 0;
 			nf->FRZ_to_litr3n = 0;
@@ -124,10 +114,26 @@ int fertilizing(int yday, const control_struct* ctrl, fertilizing_struct* FRZ,
 			cf->FRZ_to_litr1c = 0;
 			cf->FRZ_to_litr2c = 0;
 			cf->FRZ_to_litr3c = 0;
-			cf->FRZ_to_litr4c = 0;		
+			cf->FRZ_to_litr4c = 0;	
+			
 		}
-
 	}
+	else
+	{
+		nf->FRZ_to_sminn = 0;
+			
+		nf->FRZ_to_litr1n = 0;
+		nf->FRZ_to_litr2n = 0;
+		nf->FRZ_to_litr3n = 0;
+		nf->FRZ_to_litr4n = 0;
+
+		cf->FRZ_to_litr1c = 0;
+		cf->FRZ_to_litr2c = 0;
+		cf->FRZ_to_litr3c = 0;
+		cf->FRZ_to_litr4c = 0;		
+	}
+
+
 
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     STATE UPDATE 

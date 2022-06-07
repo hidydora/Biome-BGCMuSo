@@ -1,4 +1,4 @@
-/*
+	/*
 pointbgc.c
 front-end to BIOME-BGC for single-point, single-biome simulations
 Uses BIOME-BGC function library v4.1
@@ -176,49 +176,49 @@ void main(int argc, char *argv[])
 	/* MANAGEMENT SECTION - Hidy 2012.. */
 	
 	/* read the planting information */
-	if (planting_init(init, MAX_PLTDAYS, &bgcin.PLT))
+	if (planting_init(init, &bgcin.ctrl, &bgcin.PLT))
 	{
 		printf("Error in call to planting_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
 
 	/* read the thinning  information */
-	if (thinning_init(init, MAX_THNDAYS, &bgcin.THN))
+	if (thinning_init(init, &bgcin.ctrl, &bgcin.THN))
 	{
 		printf("Error in call to thinning_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
 
 	/* read the mowing  information */
-	if (mowing_init(init, MAX_MOWDAYS, &bgcin.MOW))
+	if (mowing_init(init, &bgcin.ctrl, &bgcin.MOW))
 	{
 		printf("Error in call to mowing_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
 
 	/* read the grazing information */
-	if (grazing_init(init, &bgcin.GRZ))
+	if (grazing_init(init, &bgcin.ctrl, &bgcin.GRZ))
 	{
 		printf("Error in call to grazing_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
 
 	/* read the harvesting information */
-	if (harvesting_init(init, MAX_HRVDAYS, &bgcin.HRV))
+	if (harvesting_init(init, &bgcin.ctrl, &bgcin.HRV))
 	{
 		printf("Error in call to harvesting_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
 
 	/* read the harvesting information */
-	if (ploughing_init(init, MAX_PLGDAYS, &bgcin.PLG))
+	if (ploughing_init(init, &bgcin.ctrl, &bgcin.PLG))
 	{
 		printf("Error in call to ploughing_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
 
 	/* read the fertilizing  information */
-	if (fertilizing_init(init, MAX_FRZDAYS, &bgcin.FRZ))
+	if (fertilizing_init(init, &bgcin.ctrl, &bgcin.FRZ))
 	{
 		printf("Error in call to fertilizing_init() from pointbgc.c... Exiting\n");
 		exit(1);
@@ -266,6 +266,13 @@ void main(int argc, char *argv[])
 	bgcin.ctrl.PLG_flag = bgcin.PLG.PLG_flag;       /* do PL - Hidy 2009.*/
 	bgcin.ctrl.PLT_flag = bgcin.PLT.PLT_flag;       /* do PLT - Hidy 2009.*/
 	bgcin.FRZ.FRZ_pool_act = 0;					    /* local pool - Hidy 2009.*/
+	bgcin.FRZ.mgmd = -1;
+	bgcin.THN.mgmd = -1;
+	bgcin.MOW.mgmd = -1;
+	bgcin.GRZ.mgmd = -1;
+	bgcin.HRV.mgmd = -1;
+	bgcin.PLG.mgmd = -1;
+	bgcin.PLT.mgmd = -1;
 	bgcin.ctrl.simyr = 0;							/* counter - Hidy 2010.*/
 	bgcin.ctrl.yday = 0;							/* counter - Hidy 2010.*/
 	bgcin.ctrl.spinyears = 0;						/* counter - Hidy 2010.*/

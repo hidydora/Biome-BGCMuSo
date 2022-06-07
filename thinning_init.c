@@ -20,11 +20,20 @@ Copyright 2008, Hidy
 #include "pointbgc_func.h"
 
 
-int thinning_init(file init, int max_THNdays, thinning_struct* THN)
+int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
 {
-	int ok = 1;
+
 	char key1[] = "THINNING";
 	char keyword[80];
+	char bin[100];
+
+	char THN_filename[100];
+	file THN_file;
+
+	int i;
+	int ok = 1;
+	int ny=1;
+	int n_THNparam=4;
 
 	/********************************************************************
 	**                                                                 **
@@ -47,57 +56,67 @@ int thinning_init(file init, int max_THNdays, thinning_struct* THN)
 	
 	if (ok && scan_value(init, &THN->THN_flag, 'i'))
 	{
-		printf("Error reading thinning calculating flag\n");
-		ok=0;
-	}
-
-
-	if (ok && scan_value(init, &THN->n_THNdays, 'i'))
-	{
-		printf("Error reading number of thinning days\n");
-		ok=0;
-	}
-	if (THN->n_THNdays > max_THNdays)
-	{
-		printf("Error in n_THNdays; maximum value = %d\n", max_THNdays);
-		ok=0;
-	}
-
-	if (ok)
-	{
-        int ngd=0;
-		for (ngd=0; ngd<max_THNdays; ngd++)
+		if (ok && scan_value(init, THN_filename, 's'))
 		{
-			if (ngd<THN->n_THNdays)
-			{
-				if (scan_value(init, &THN->THNdays[ngd], 'i'))
-				{	
-					printf("Error reading %d thinning days\n", ngd+1);
-				}
-			}
-			else THN->THNdays[ngd]=-1;
+			printf("Error reading thinning calculating flag\n");
+			ok=0;
+		}
+		else
+		{
+			
+			ok=1;
+			printf("thinning information from file\n");
+			THN->THN_flag = 2;
+			strcpy(THN_file.name, THN_filename);
 		}
 	}
+
+	/* yeary varied thinning parameters (THN_flag=2); else: constant thinning parameters (THN_flag=1) */
+	if (THN->THN_flag == 2)
+	{
+		ny = ctrl->simyears; 
+	
+		/* open the main init file for ascii read and check for errors */
+		if (file_open(&THN_file,'i'))
+		{
+			printf("Error opening THN_file, thinning_int.c\n");
+			exit(1);
+		}
+
+		/* step forward in init file */
+		for (i=0; i < n_THNparam; i++) scan_value(init, bin, 'd');
+
+	}
+	else THN_file=init;
 	
 
-
-	if (ok && scan_value(init, &THN->thinning_rate, 'd'))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->THNdays_array)))
 	{
-		printf("Error reading thinning rate\n");
+		printf("Error reading first day of thinning\n");
 		ok=0;
 	}
 
-
-	if (ok && scan_value(init, &THN->transp_stem_rate, 'd'))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->thinning_rate_array)))
 	{
-		printf("Error reading rate of the transported stem\n");
+		printf("Error reading first day of thinning\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(init, &THN->transp_leaf_rate, 'd'))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transp_stem_rate_array)))
 	{
-		printf("Error reading rate of the transported leaf\n");
+		printf("Error reading first day of thinning\n");
 		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transp_leaf_rate_array)))
+	{
+		printf("Error reading last day of thinning\n");
+		ok=0;
+	}
+
+	if (THN->THN_flag == 2)
+	{
+		fclose (THN_file.ptr);
 	}
 	
 	return (!ok);

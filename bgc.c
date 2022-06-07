@@ -137,8 +137,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	/* simple annual variables for text output  - Hidy 2008. */
 	double annmaxlai,annet,anndeeppercol,annnpp, annnee, annnbp, annprcp,anntavg, 
-		ann_carbonchange_THN,  ann_carbonchange_MOW,  ann_carbonchange_HRV,ann_carbonchange_PLG, ann_carbonchange_GRZ, 
-		ann_carbonchange_FRZ, ann_carbonchange_PLT, ann_nitrogen_GRZplus, ann_nitrogen_FRZplus;
+		ann_Cchange_SNSC, ann_Cchange_THN,  ann_Cchange_MOW,  ann_Cchange_HRV,ann_Cchange_PLG, ann_Cchange_GRZ, 
+		ann_Cchange_FRZ, ann_Cchange_PLT, ann_Nplus_GRZ, ann_Nplus_FRZ;
 	
 
 	/* copy the input structures into local structures */
@@ -182,7 +182,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
-		fprintf(bgcout->control_file.ptr, "yday prcp tavg soilw snoww snoww_to_soilw snoww_subl GPP\n");
+		fprintf(bgcout->control_file.ptr, "yday LAI leafc leafc_transfer GPP TR SNSC SNSCchange standingB\n");
 
 	}
 
@@ -289,7 +289,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (ctrl.GSI_flag)
 	{
 		/* Hidy 2009. - calculate GSI to deterime onday and offday 	*/	
-		if (ok && GSI_calculation(&metarr, &ctrl, &sitec, &GSI, &phenarr))
+		if (ok && GSI_calculation(&metarr, &ctrl, &GSI, &phenarr))
 		{
 			printf("Error in call to GSI_calculation(), from bgc()\n");
 			ok=0;
@@ -315,8 +315,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	/* calculate the annual average air temperature for use in soil 
 	temperature corrections. This code added 9 February 1999, in
-	conjunction with soil temperature testing done with Mike White. 
-	tair_annavg = 0.0; */
+	conjunction with soil temperature testing done with Mike White.  */
+	tair_annavg = 0.0;
 	nmetdays = ctrl.metyears * NDAY_OF_YEAR;
 	for (i=0 ; i<nmetdays ; i++)
 	{
@@ -387,16 +387,17 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		annnbp = 0.0;		/* by Hidy 2009. - including effect of management strategies */
 		annprcp = 0.0;
 		anntavg = 0.0;
-		ann_carbonchange_THN = 0.0;       /* by Hidy 2012. */
-		ann_carbonchange_MOW = 0.0;       /* by Hidy 2008. */
-		ann_carbonchange_HRV = 0.0;        /* by Hidy 2008. */
-		ann_carbonchange_PLG = 0.0;         /* by Hidy 2008. */
-		ann_carbonchange_GRZ = 0.0;       /* by Hidy 2008. */
-		ann_carbonchange_FRZ= 0.0;
-		ann_carbonchange_PLT = 0.0;
-		ann_nitrogen_GRZplus = 0.0;     /* by Hidy 2008. */
-		ann_nitrogen_FRZplus = 0.0;  /* by Hidy 2008. */
-
+		ann_Cchange_SNSC = 0.0;	
+		ann_Cchange_THN = 0.0;     /* by Hidy 2012. - calculation effect of management strategies and senescence */
+		ann_Cchange_MOW = 0.0;       
+		ann_Cchange_HRV = 0.0;       
+		ann_Cchange_PLG = 0.0;       
+		ann_Cchange_GRZ = 0.0;       
+		ann_Cchange_FRZ= 0.0;		 
+		ann_Cchange_PLT = 0.0;		 
+		ann_Nplus_GRZ = 0.0;		 
+		ann_Nplus_FRZ = 0.0;		
+			 
 
 	
 		/* set current month to 0 (january) at the beginning of each year */
@@ -436,7 +437,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		else
 		{	
 			/* Ndep from file */
-			daily_ndep = ramp_ndep.ndep_array[simyr]/NDAY_OF_YEAR;
+			daily_ndep = ramp_ndep.ndep_array[simyr] / NDAY_OF_YEAR;
 		}
 		
 
@@ -446,12 +447,15 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("year %d\tyday %d\n",simyr,yday);
 #endif
+			if (ctrl.onscreen) printf("day of year:%d\t\n",yday);
+		
 			/* Hidy 2010. - counters into control sturct */ 
 			ctrl.simyr = simyr;
 			ctrl.yday = yday;
 			ctrl.spinyears = 0;
 			
-					
+
+			
 			/* Test for very low state variable values and force them
 			to 0.0 to avoid rounding and floating point overflow errors */
 			if (ok && precision_control(&sitec, &ws, &cs, &ns))
@@ -633,7 +637,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			{
 		
 				/* evapo-transpiration */
-				if (ok && canopy_et(&metv, &epv, &wf))
+				if (ok && canopy_et(&ctrl, &metv, &epv, &wf))
 				{
 					printf("Error in canopy_et() from bgc()\n");
 					ok=0;
@@ -649,9 +653,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			keeps the occurrence of new growth consistent with the treatment
 			of litterfall and allocation */
 
-			if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl && ws.snoww == 0)
+			if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl)
 			{
-		
 				/* SUNLIT canopy fraction photosynthesis */
 				/* set the input variables */
 				psn_sun.c3 = epc.c3_flag;
@@ -838,7 +841,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* daily update of the water state variables */
-			if (ok && daily_water_state_update(&ctrl, &sitec, &wf, &ws))
+			if (ok && daily_water_state_update(&ctrl, &wf, &ws))
 			{
 				printf("Error in daily_water_state_update() from bgc()\n");
 				ok=0;
@@ -863,7 +866,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 			/* daily update of nitrogen state variables */
-			if (ok && daily_nitrogen_state_update(&ctrl, &nf, &ns, annual_alloc,
+			if (ok && daily_nitrogen_state_update(&ctrl, &epc, &nf, &ns, annual_alloc,
 				epc.woody, epc.evergreen))
 			{
 				printf("Error in daily_nitrogen_state_update() from bgc()\n");
@@ -874,45 +877,54 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone nitrogen state update\n",simyr,yday);
 #endif
 
+	
+
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MANAGEMENT SUBMODULES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
+			/* MANAGEMENT DAYS - Hidy 2013. */
+			if (ok && management(yday, &ctrl, &FRZ, &GRZ, &HRV, &MOW, &PLT, &PLG, &THN))
+			{
+				printf("Error in management days() from bgc()\n");
+				ok=0;
+		   }
+			
 			/* PLANTING - Hidy 2009. */
-           if (ok && planting(yday, &ctrl, &epc, &PLT, &cs, &ns, &cf, &nf, &phen))
+           if (ok && planting(&ctrl, &epc, &PLT, &cf, &nf, &cs, &ns))
 			{
 				printf("Error in planting() from bgc()\n");
 				ok=0;
 		   }
 
 		   	/* THINNIG - Hidy 2012. */
-           if (ok && thinning(yday, &phen, &ctrl, &epc, &THN, &cf, &nf, &wf, &cs, &ns, &ws))
+           if (ok && thinning(&ctrl, &epc, &THN, &cf, &nf, &wf, &cs, &ns, &ws))
 			{
 				printf("Error in thinning() from bgc()\n");
 				ok=0;
 		   }
 
 			/* MOWING - Hidy 2008. */
-           if (ok && mowing(yday, &phen, &ctrl, &epc, &MOW, &cf, &nf, &wf, &cs, &ns, &ws))
+           if (ok && mowing(&ctrl, &epc, &MOW, &cf, &nf, &wf, &cs, &ns, &ws))
 			{
 				printf("Error in mowing() from bgc()\n");
 				ok=0;
 		   }
 
 		   /* GRAZING - Hidy 2009. */
-           if (ok && grazing(yday, &phen, &ctrl, &epc, &GRZ, &cf, &nf, &wf, &cs, &ns, &ws))
+           if (ok && grazing(&ctrl, &epc, &GRZ, &cf, &nf, &wf, &cs, &ns, &ws))
 			{
 				printf("Error in grazing() from bgc()\n");
 				ok=0;
 		   }
 	
 		   	/* HARVESTING - Hidy 2012. */
-           if (ok && harvesting(yday, &phen, &ctrl, &epc, &HRV, &cf, &nf, &wf, &cs, &ns, &ws))
+           if (ok && harvesting(&ctrl, &epc, &HRV, &cf, &nf, &wf, &cs, &ns, &ws))
 			{
 				printf("Error in harvesting() from bgc()\n");
 				ok=0;
 		   }
  
 		   /* PLOUGHING - Hidy 2012. */
-           if (ok && ploughing(yday, &phen, &ctrl, &epc, &PLG, &cf, &nf, &wf, &cs, &ns, &ws))
+           if (ok && ploughing(&ctrl, &epc, &PLG, &cf, &nf, &wf, &cs, &ns, &ws))
 			{
 				printf("Error in ploughing() from bgc()\n");
 				ok=0;
@@ -968,7 +980,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
                         This is a special state variable update routine, done after the other fluxes and states are
                         reconciled (nleaching is included) */
 
-			if (ok && multilayer_sminn(&sitec, &epv, &ns, &nf, &ws, &wf))
+			if (ok && multilayer_sminn(&epc, &sitec, &epv, &ns, &nf, &ws, &wf))
 			{
 				printf("Error in multilayer_sminn() from bgc()\n");
 				ok=0;
@@ -1038,9 +1050,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */
 			if (ctrl.onscreen && ctrl.simyr < 10)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f\n", 
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f\n", 
 				yday, 
-				metv.prcp, metv.tavg, ws.soilw_SUM, ws.snoww, wf.snoww_to_soilw, wf.snoww_subl, summary.daily_gpp*1000); 
+				epv.vwc[0], cs.leafc, cs.leafc_transfer,  
+				summary.daily_gpp*1000, summary.daily_tr*1000, cf.m_leafc_to_SNSC, summary.Cchange_SNSC, cs.litr1c_strg_SNSC); 
  
 			}
 
@@ -1160,8 +1173,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 			/* very simple annual summary variables for text file output */
 			if (epv.proj_lai > annmaxlai) annmaxlai = epv.proj_lai;
-			
-			if (ctrl.spinup == 0 && epv.dsws > 0 && ctrl.onscreen) printf("stomatal conductance is SWC-limited:%d\t\n",yday);
+			if (ctrl.spinup == 0 && epv.dsws > 0 && ctrl.onscreen) printf("stomatal conductance is SWC-limited\n");
 			
 			annet += wf.evapotransp;			
 			anndeeppercol += wf.soilw_percolated[N_SOILLAYERS-2];
@@ -1170,15 +1182,17 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			annnbp += summary.daily_nbp * 1000.0;
 			annprcp += metv.prcp;
 			anntavg += metv.tavg / NDAY_OF_YEAR;
-			ann_carbonchange_THN += summary.carbonchange_THN * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2012. */
-			ann_carbonchange_MOW += summary.carbonchange_MOW * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_carbonchange_HRV += summary.carbonchange_HRV * 1000.0;     /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_carbonchange_PLG += summary.carbonchange_PLG * 1000.0;       /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_carbonchange_GRZ += summary.carbonchange_GRZ * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_carbonchange_FRZ += summary.carbonchange_FRZ * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_carbonchange_PLT += summary.carbonchange_PLT * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
-			ann_nitrogen_GRZplus += (nf.GRZ_to_litr1n + nf.GRZ_to_litr2n + nf.GRZ_to_litr3n  + nf.GRZ_to_litr4n) * 1000.0;  /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */	
-			ann_nitrogen_FRZplus += (nf.FRZ_to_sminn+nf.FRZ_to_litr1n + nf.FRZ_to_litr2n + nf.FRZ_to_litr3n  + nf.FRZ_to_litr4n) * 1000.0;  /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Cchange_SNSC += summary.Cchange_SNSC * 1000.0	;	/* (kgC/m2 -> gN/m2) ;  Hidy 2013. */
+			ann_Cchange_THN += summary.Cchange_THN * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2012. */
+			ann_Cchange_MOW += summary.Cchange_MOW * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Cchange_HRV += summary.Cchange_HRV * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Cchange_PLG += summary.Cchange_PLG * 1000.0;        /* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Cchange_GRZ += summary.Cchange_GRZ * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Cchange_FRZ += summary.Cchange_FRZ * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Cchange_PLT += summary.Cchange_PLT * 1000.0;		/* (kgC/m2 -> gC/m2) ;  Hidy 2008. */
+			ann_Nplus_GRZ += summary.Nplus_GRZ * 1000.0	;			/* (kgN/m2 -> gN/m2) ;  Hidy 2013. */	
+			ann_Nplus_FRZ += summary.Nplus_FRZ * 1000.0	;			/* (kgN/m2 -> gN/m2) ;  Hidy 2013. */
+
 	
 			/* at the end of first day of simulation, turn off the 
 			first_balance switch */
@@ -1209,10 +1223,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 		}
 		/* write the simple annual text output - Hidy 2008. */
-		fprintf(bgcout->anntext.ptr,"%i %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
-			ctrl.simstartyear+simyr,annprcp,anntavg,annmaxlai,annet,anndeeppercol,annnee,annnbp,ann_carbonchange_THN, ann_carbonchange_MOW,
-			ann_carbonchange_HRV,ann_carbonchange_PLG,ann_carbonchange_GRZ, ann_carbonchange_FRZ, ann_carbonchange_PLT, 
-			ann_nitrogen_GRZplus, ann_nitrogen_FRZplus);
+		fprintf(bgcout->anntext.ptr,"%i %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+			ctrl.simstartyear+simyr,annprcp,anntavg,annmaxlai,annet,anndeeppercol,annnee,annnbp,
+			ann_Cchange_SNSC, ann_Cchange_PLT, ann_Cchange_THN, ann_Cchange_MOW, ann_Cchange_GRZ, ann_Cchange_HRV,ann_Cchange_PLG, ann_Cchange_FRZ,  
+			ann_Nplus_GRZ, ann_Nplus_FRZ);
 
 		metyr++;
 

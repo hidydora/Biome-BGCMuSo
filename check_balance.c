@@ -185,7 +185,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 		/*  senescence */
 		ns->SNSC_src +	/*  senescence */
 		/* management */
-		ns->PLTsrc + ns->THNsrc + ns->MOWsrc + ns->GRZsrc +	ns->PLGsnk + ns->PLTsrc + ns->FRZsrc;        
+		ns->THNsrc + ns->MOWsrc + ns->GRZsrc +	ns->PLGsnk + ns->PLTsrc + ns->FRZsrc;        
 	
 	
 	/* sum of sinks */

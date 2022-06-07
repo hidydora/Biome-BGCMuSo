@@ -20,11 +20,19 @@ Copyright 2008, Hidy
 #include "pointbgc_func.h"
 
 
-int harvesting_init(file init, int max_HRVdays, harvesting_struct* HRV)
+int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV)
 {
-	int ok = 1;
 	char key1[] = "HARVESTING";
 	char keyword[80];
+	char bin[100];
+
+	char HRV_filename[100];
+	file HRV_file;
+
+	int i;
+	int ok = 1;
+	int ny=1;
+	int n_HRVparam=3;
 
 	/********************************************************************
 	**                                                                 **
@@ -45,54 +53,65 @@ int harvesting_init(file init, int max_HRVdays, harvesting_struct* HRV)
 		ok=0;
 	}
 
-/*  ----------------------------- */
-/*  ----------------------------- */
-
 	if (ok && scan_value(init, &HRV->HRV_flag, 'i'))
 	{
-		printf("Error reading harvesting calculating flag\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(init, &HRV->n_HRVdays, 'i'))
-	{
-		printf("Error reading n_HRVdays\n");
-		ok=0;
-	}
-
-
-	if (HRV->n_HRVdays > max_HRVdays)
-	{
-		printf("Error in n_HRVdays; maximum value = %d\n", max_HRVdays);
-		ok=0;
-	}
-
-	if (ok)
-	{
-        int nhd=0;
-		for (nhd=0; nhd<max_HRVdays; nhd++)
+		if (ok && scan_value(init, HRV_filename, 's'))
 		{
-			if (nhd < HRV->n_HRVdays)
-			{
-				if (scan_value(init, &HRV->HRVdays[nhd], 'i'))
-				{	
-					printf("Error reading %d harvesting days\n", nhd+1);
-				}
-			}
-			else HRV->HRVdays[nhd]=-1;
+			printf("Error reading harvesting calculating flag\n");
+			ok=0;
+		}
+		else
+		{
+			
+			ok=1;
+			printf("harvesting information from file\n");
+			HRV->HRV_flag = 2;
+			strcpy(HRV_file.name, HRV_filename);
 		}
 	}
-	
-	if (ok && scan_value(init, &HRV->LAI_snag, 'd'))
+
+	/* yeary varied garzing parameters (HRV_flag=2); else: constant garzing parameters (HRV_flag=1) */
+	if (HRV->HRV_flag == 2)
 	{
-		printf("Error reading LAI_snag flag\n");
+		ny = ctrl->simyears; 
+	
+		/* open the main init file for ascii read and check for errors */
+		if (file_open(&HRV_file,'i'))
+		{
+			printf("Error opening HRV_file, harvesting_int.c\n");
+			exit(1);
+		}
+
+		/* step forward in init file */
+		for (i=0; i < n_HRVparam; i++) scan_value(init, bin, 'd');
+
+	}
+	else HRV_file=init;
+	
+
+	if (ok && read_mgmarray(ny, HRV->HRV_flag, HRV_file, &(HRV->HRVdays_array)))
+	{
+		printf("Error reading first day of harvesting\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(init, &HRV->transport_coeff, 'd'))
+	if (ok && read_mgmarray(ny, HRV->HRV_flag, HRV_file, &(HRV->LAI_snag_array)))
 	{
-		printf("Error reading transport_coeff\n");
+		printf("Error reading LAI_snag\n");
 		ok=0;
 	}
+
+	if (ok && read_mgmarray(ny, HRV->HRV_flag, HRV_file, &(HRV->transport_coeff_array)))
+	{
+		printf("Error reading transport_coef\n");
+		ok=0;
+	}
+
+
+	if (HRV->HRV_flag == 2)
+	{
+		fclose (HRV_file.ptr);
+	}
+
 	return (!ok);
 }

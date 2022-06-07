@@ -37,7 +37,8 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 
 	/* internal variables */
 	int layer;
-	double prcp, evap, runoff;
+	double prcp, runoff, prcp_to_soil;
+	double evap_diff;
 	double first_part;
 	double second_part;
 
@@ -48,7 +49,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	double hydr_conduct;  /* hydrological conduction coefficient (m/s) */
 	double hydr_diffus;	  /* hydrological diffusion coefficient (m2/s) */
 	
-	double diffus, percol, diffus_max, percol_max, soilw_wp; /* (kgH2O/m2/min) */
+	double diffus, percol, diffus_max, percol_max, soilw_hw; /* (kgH2O/m2/min) */
 
 	double soilw_i1 = 0;
 	double soilw_i0 = 0;
@@ -93,7 +94,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 	}
 	endstep = n_hour_in_day * (n_sec_in_min / discretization_level);
 
-	/* if the precipitation is greater than critical amount (based on Campbell and Diaz, 1988) */
+	/* if the precipitation is greater than critical amount a fixed part of prcp is lost due to runoff (based on Campbell and Diaz, 1988) */
 	if (prcp > CAMPBELL_PARAM * sitec->runoff_param)  
 	{
 		first_part = prcp - CAMPBELL_PARAM * sitec->runoff_param;
@@ -107,16 +108,35 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 
 	wf->prcp_to_runoff = runoff;
 
+	/* amount of prcp after runoff */
+	prcp_to_soil = prcp - runoff;
+
+	ws->soilw[0] += prcp_to_soil;
+
 	/* ********************************************/
 	/* 1B. EVAPORATION */
 	
-	evap      = wf->soilw_evap;
+
+	/* actual soil water content at theoretical lower limit of water content: hygroscopic water content */
+	soilw_hw = ws->soilw[0] * sitec->vwc_hw;
+
+	/* evap_diff: control parameter to avoid negative soil water content (due to overestimated evaporation + dry soil) */
+	evap_diff = ws->soilw[0] - wf->soilw_evap - soilw_hw;
+
+	/* theoretical lower limit of water content: wilting point: if evap_diff less than 0, evaporation from the next layer  */
+	if (evap_diff < 0)
+	{
+		wf->soilw_evap += evap_diff;
+		if (ctrl->onscreen) printf("Warning: limited evaporation due to dry soil (multilayer_hydrolprocess.c)\n");
+	}
+	
+	ws->soilw[0] -= wf->soilw_evap;
+
+
 
 	/* ********************************/
 	/* 1C. POND WATER: water stored on surface which can not infiltrated because of saturation */
 	
-	/* internal variables state update */
-	ws->soilw[0] += prcp - runoff - evap;
 
 	/* theoretical upper limit of water content: saturation value (amount above saturation is stored on the surface) */
 	if (ws->soilw[0] > soilw_sat_i0)
@@ -168,7 +188,8 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 			vwc_i0  = epv->vwc[layer];
 			vwc_i1	= epv->vwc[layer+1];
 
-			soilw_wp = soilw_i0 * sitec->vwc_wp;
+			/* actual soil water content at theoretical lower limit of water content: hygroscopic water content */
+			soilw_hw = soilw_i0 * sitec->vwc_hw;
 			
 			/* -----------------------------*/
 			/* conductivity coefficient - theoretical upper limit: saturation value */
@@ -177,14 +198,13 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 			/* percolation flux - ten minute amount */
 			percol = hydr_conduct * water_density * n_sec_in_min * discretization_level;
 			
-			/* limit of the diffusion: balanced water content */
-		
-			percol_max = soilw_i0 - soilw_wp;
+			/* limit of the percolation: hygroscopic water content */
+			percol_max = soilw_i0 - soilw_hw;
 			
 			if (percol > percol_max) 
 			{
 				percol = percol_max;
-				if (ctrl->onscreen && !ctrl->spinup) printf("Warning: limited percolation flux (multilayer_hydrolprocess.c)\n");
+				if (ctrl->onscreen) printf("Warning: limited percolation flux (multilayer_hydrolprocess.c)\n");
 			}
 		
 			/* -----------------------------*/
@@ -208,7 +228,6 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 			if (fabs(diffus) > fabs(diffus_max)) 
 			{
 				diffus = diffus_max;
-				if (ctrl->onscreen && !ctrl->spinup) printf("Warning: limited diffusion flux (multilayer_hydrolprocess.c)\n");
 			}
 			
 			/* -----------------------------*/	
@@ -219,7 +238,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 			/* CONTROL - avoiding negative pools */
 			if (ws->soilw[layer] < 0.0)       
 			{
-				if (ctrl->onscreen) printf("Fatal error: negative soil water content (multilayer_hydrolprocess.c)\n");
+				printf("Fatal error: negative soil water content (multilayer_hydrolprocess.c)\n");
 				ok=0;	
 			}
 	
@@ -253,7 +272,7 @@ int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct*
 		/* CONTROL - avoiding negative pools */
 		if (ws->soilw[layer] < 0.0)       
 		{
-			if (ctrl->onscreen) printf("Fatal error: negative soil water content (multilayer_hydrolprocess.c)\n");
+			printf("Fatal error: negative soil water content (multilayer_hydrolprocess.c)\n");
 			ok=0;	
 		}
 	

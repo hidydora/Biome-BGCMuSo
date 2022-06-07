@@ -20,12 +20,19 @@ Copyright 2008, Hidy
 #include "pointbgc_func.h"
 
 
-int ploughing_init(file init, int max_PLGdays, ploughing_struct* PLG)
+int ploughing_init(file init, control_struct* ctrl, ploughing_struct* PLG)
 {
-	int ok = 1;
 	char key1[] = "PLOUGHING";
 	char keyword[80];
+	char bin[100];
 
+	char PLG_filename[100];
+	file PLG_file;
+
+	int i;
+	int ok = 1;
+	int ny=1;
+	int n_PLGparam=1;
 	/********************************************************************
 	**                                                                 **
 	** Begin reading initialization file block starting with keyword:  **
@@ -48,39 +55,51 @@ int ploughing_init(file init, int max_PLGdays, ploughing_struct* PLG)
 
 	if (ok && scan_value(init, &PLG->PLG_flag, 'i'))
 	{
-		printf("Error reading plough calculating flag\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(init, &PLG->n_PLGdays, 'i'))
-	{
-		printf("Error reading n_PLGdays\n");
-		ok=0;
-	}
-
-
-	if (PLG->n_PLGdays > max_PLGdays)
-	{
-		printf("Error in n_PLGdays; maximum value = %d\n", max_PLGdays);
-		ok=0;
-	}
-
-	if (ok)
-	{
-        int npd=0;
-		for (npd=0; npd<max_PLGdays; npd++)
+		if (ok && scan_value(init, PLG_filename, 's'))
 		{
-			if (npd < PLG->n_PLGdays)
-			{
-				if (scan_value(init, &PLG->PLGdays[npd], 'i'))
-				{	
-					printf("Error reading %d PLGdays\n", npd+1);
-				}
-			}
-			else PLG->PLGdays[npd]=-1;
+			printf("Error reading ploughing calculating flag\n");
+			ok=0;
+		}
+		else
+		{
+			
+			ok=1;
+			printf("ploughing information from file\n");
+			PLG->PLG_flag = 2;
+			strcpy(PLG_file.name, PLG_filename);
 		}
 	}
 
+	/* yeary varied garzing parameters (PLG_flag=2); else: constant garzing parameters (PLG_flag=1) */
+	if (PLG->PLG_flag == 2)
+	{
+		ny = ctrl->simyears; 
+	
+		/* open the main init file for ascii read and check for errors */
+		if (file_open(&PLG_file,'i'))
+		{
+			printf("Error opening PLG_file, ploughing_int.c\n");
+			exit(1);
+		}
+
+		/* step forward in init file */
+		for (i=0; i < n_PLGparam; i++) scan_value(init, bin, 'd');
+
+	}
+	else PLG_file=init;
+	
+
+	if (ok && read_mgmarray(ny, PLG->PLG_flag, PLG_file, &(PLG->PLGdays_array)))
+	{
+		printf("Error reading first day of ploughing\n");
+		ok=0;
+	}
+
+
+	if (PLG->PLG_flag == 2)
+	{
+		fclose (PLG_file.ptr);
+	}
 	
 	return (!ok);
 }

@@ -20,11 +20,19 @@ Copyright 2008, Hidy
 #include "pointbgc_func.h"
 
 
-int fertilizing_init(file init, int max_FRZdays, fertilizing_struct* FRZ)
+int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 {
-	int ok = 1;
 	char key1[] = "FERTILIZING";
 	char keyword[80];
+	char bin[100];
+
+	char FRZ_filename[100];
+	file FRZ_file;
+
+	int i;
+	int ok = 1;
+	int ny=1;
+	int n_FRZparam=11;
 
 	/********************************************************************
 	**                                                                 **
@@ -47,106 +55,118 @@ int fertilizing_init(file init, int max_FRZdays, fertilizing_struct* FRZ)
 
 	if (ok && scan_value(init, &FRZ->FRZ_flag, 'i'))
 	{
-		printf("Error reading harvest_or_grazing flag\n");
-		ok=0;
-	}
-
-
-	if (ok && scan_value(init, &FRZ->n_FRZdays, 'i'))
-	{
-		printf("Error reading number of fertilizing days\n");
-		ok=0;
-	}
-	if (FRZ->n_FRZdays > max_FRZdays)
-	{
-		printf("Error in n_FRZdays; maximum value = %d\n", max_FRZdays);
-		ok=0;
-	}
-
-	if (ok)
-	{
-        int nfd=0;
-		for (nfd=0; nfd<max_FRZdays; nfd++)
+		if (ok && scan_value(init, FRZ_filename, 's'))
 		{
-			if (nfd<FRZ->n_FRZdays)
-			{
-				if (scan_value(init, &FRZ->FRZdays[nfd], 'i'))
-				{	
-					printf("Error reading %d fertilizing days\n", nfd+1);
-				}
-			}
-			else FRZ->FRZdays[nfd]=-1;
+			printf("Error reading fertilizing calculating flag\n");
+			ok=0;
+		}
+		else
+		{
+			
+			ok=1;
+			printf("fertilizing information from file\n");
+			FRZ->FRZ_flag = 2;
+			strcpy(FRZ_file.name, FRZ_filename);
 		}
 	}
+
+	/* yeary varied garzing parameters (FRZ_flag=2); else: constant garzing parameters (FRZ_flag=1) */
+	if (FRZ->FRZ_flag == 2)
+	{
+		ny = ctrl->simyears; 
 	
-		if (ok)
-	{
-        int nfd=0;
-		for (nfd=0; nfd<max_FRZdays; nfd++)
+		/* open the main init file for ascii read and check for errors */
+		if (file_open(&FRZ_file,'i'))
 		{
-			if (nfd<FRZ->n_FRZdays)
-			{
-				if (scan_value(init, &FRZ->fertilizer[nfd], 'd'))
-				{	
-					printf("Error reading %d the amuont of fertilizer\n", nfd+1);
-				}
-			}
-			else FRZ->fertilizer[nfd]=-1;
+			printf("Error opening FRZ_file, fertilizing_int.c\n");
+			exit(1);
 		}
-	}
 
-	if (ok && scan_value(init, &FRZ->nitrate_content, 'd'))
+		/* step forward in init file */
+		for (i=0; i < n_FRZparam; i++) scan_value(init, bin, 'd');
+
+	}
+	else FRZ_file=init;
+	
+
+
+
+
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->FRZdays_array)))
 	{
-		printf("Error reading nitrate_content\n");
+		printf("Error reading FRZdays\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(init, &FRZ->ammonium_content, 'd'))
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->fertilizer_array)))
+	{
+		printf("Error reading fertilizer\n");
+		ok=0;
+	}
+
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->Ncontent_array)))
+	{
+		printf("Error reading prop. of the nitrate_content\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->NH3content_array)))
 	{
 		printf("Error reading ammonium_content\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(init, &FRZ->carbon_content, 'd'))
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->Ccontent_array)))
 	{
 		printf("Error reading carbon_content\n");
 		ok=0;
 	}
-
-	if (ok && scan_value(init, &FRZ->litr_flab, 'd'))
+		
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_flab_array)))
 	{
-		printf("Error reading labile fraction\n");
+		printf("Error reading litr_flab\n");
+		ok=0;
+	}
+			
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_fucel_array)))
+	{
+		printf("Error reading litr_fucel\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(init, &FRZ->litr_fucel, 'd'))
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_fscel_array)))
 	{
-		printf("Error reading unshielded cellulose fraction\n");
+		printf("Error reading litr_fscel\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(init, &FRZ->litr_fscel, 'd'))
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->litr_flig_array)))
 	{
-		printf("Error reading shielded cellulose fraction\n");
+		printf("Error reading litr_flig\n");
 		ok=0;
 	}
 
-	if (ok && scan_value(init, &FRZ->litr_flig, 'd'))
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->dissolv_coeff_array)))
 	{
-		printf("Error reading lignin fraction\n");
+		printf("Error reading dissolv_coeff\n");
 		ok=0;
 	}
-	
-	if (ok && scan_value(init, &FRZ->dissolv_coeff, 'd'))
-	{
-		printf("Error reading dissolving coefficient\n");
-		ok=0;
-	}
-	
-	if (ok && scan_value(init, &FRZ->utilization_coeff, 'd'))
+
+	if (ok && read_mgmarray(ny, FRZ->FRZ_flag, FRZ_file, &(FRZ->utiliz_coeff_array)))
 	{
 		printf("Error reading utilization_coeff\n");
 		ok=0;
 	}
+
+	if (FRZ->FRZ_flag == 2)
+	{
+		fclose (FRZ_file.ptr);
+	}
+
+
 	return (!ok);
 }

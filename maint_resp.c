@@ -58,7 +58,7 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns,const epconst_st
 
 	/* Hidy 2012 - using external data as temperature coefficient */ 
 	double q10;
-	q10 = epc->q10_value;
+	q10 = Q10_VALUE;
 
 
 
@@ -120,10 +120,11 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns,const epconst_st
 			t1 = pow(q10, exponent);
 			froot_mr += frootn_layer * mrpern * t1;
 		}
-		cf->froot_mr = froot_mr;
+		
 	}
-	else /* no fine roots on */
-		cf->froot_mr = 0.0;
+	else froot_mr = 0;/* no fine roots on */
+
+	cf->froot_mr = froot_mr;
 
 	/* TREE-specific fluxes */
 	if (epc->woody)
@@ -143,9 +144,10 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns,const epconst_st
 			exponent = (tsoil - 20.0) / 10.0;
 			t1 = pow(q10, exponent);
 			livecroot_mr += livecrootn_layer * mrpern * t1;
-		}
-		cf->livecroot_mr = froot_mr;
+		}	
 	}
+	else livecroot_mr = 0;
+	cf->livecroot_mr = livecroot_mr;
 	
 	return (!ok);
 }

@@ -194,6 +194,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 		/* estimated soil water potential at wilting point, field capacity in MPa (1MPa = 10000cm)  (fc: pF = 2.5; wp: pF = 4.2) */
 		sitec->psi_fc  = pow(10,pF_fieldcapacity) / (-10000);
 		sitec->psi_wp  = pow(10,pF_wiltingpoint) / (-10000);
+		sitec->psi_hw  = pow(10,pF_hygroscopw) / (-10000);
 
 
 		if (sitec->vwc_sat_mes == DATA_GAP)
@@ -222,10 +223,9 @@ int sitec_init(file init, siteconst_struct* sitec)
 			
 			sitec->psi_sat = sitec->psi_fc / pow(sitec->vwc_sat/sitec->vwc_fc, sitec->soil_b);
 			sitec->psi_sat = sitec->psi_wp / pow(sitec->vwc_sat/sitec->vwc_wp, sitec->soil_b);
-
-
 		}
 		
+		sitec->vwc_hw = sitec->vwc_sat * (log(sitec->soil_b) / log(sitec->psi_hw/sitec->psi_sat));	
 		/* !!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
 

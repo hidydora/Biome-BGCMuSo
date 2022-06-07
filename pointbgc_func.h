@@ -37,17 +37,18 @@ int prephenology(const control_struct* ctrl, const epconst_struct* epc,
 	const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* phenarr);
 
 /* new init functions - modified by Hidy 2008.*/
-int thinning_init(file init, int max_THNdays, thinning_struct* THN);
-int mowing_init(file init, int max_MOWdays, mowing_struct* MOW);
-int grazing_init(file init, grazing_struct* GRZ);
-int harvesting_init(file init, int max_HRVdays, harvesting_struct* HRV);
-int ploughing_init(file init, int max_PLGdays, ploughing_struct* PLG);
-int fertilizing_init(file init, int max_FRZdays, fertilizing_struct* FRZ);
-int planting_init(file init, int max_PLTdays, planting_struct* PLT);
+int thinning_init(file init, control_struct* ctrl, thinning_struct* THN);
+int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW);
+int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ);
+int harvesting_init(file init, control_struct* ctrl, harvesting_struct* HRV);
+int ploughing_init(file init,  control_struct* ctrl, ploughing_struct* PLG);
+int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ);
+int planting_init(file init, control_struct* ctrl, planting_struct* PLT);
 int GSI_init(file init, GSI_struct* GSI);
+int read_mgmarray(int simyr, int varMGM, file MGM_file, double*** mgmarray);
 
 /* model corrections - Hidy 2009. */
-int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, const siteconst_struct* sitec, 
+int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, 
 	GSI_struct* GSI, phenarray_struct* phenarr);
 
 

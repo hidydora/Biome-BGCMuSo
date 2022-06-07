@@ -70,8 +70,8 @@ typedef struct
 	double tmin_limit2;				/* upper limit of tmin to calculate tmin index  */
 	double vpd_limit1;				/* lower limit of tmin to calculate vpd index  */
 	double vpd_limit2;				/* upper limit of tmin to calculate vpd index  */
-	double dayl_limit1;				/* lower limit of daylength to calculate vpd index  */
-	double dayl_limit2;				/* upper limit of daylength to calculate vpd index  */
+	double photoperiod_limit1;		/* lower limit of photoperiod to calculate vpd index  */
+	double photoperiod_limit2;		/* upper limit of photoperiod to calculate vpd index  */
 	int n_moving_avg;			/* moving average (calculated from indicatiors to avoid the effects of single extreme events)*/
 	double GSI_limit_SGS;			/* when GSI index fisrt time greater that limit -> start of the growing season */
 	double GSI_limit_EGS;			/* when GSI index fisrt time less that limit -> end of the growing season */

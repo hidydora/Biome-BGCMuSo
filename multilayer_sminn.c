@@ -20,8 +20,8 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_sminn(const siteconst_struct* sitec, const epvar_struct* epv, nstate_struct* ns, nflux_struct* nf, 
-					 wstate_struct* ws, wflux_struct* wf)
+int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, const epvar_struct* epv, 
+					 nstate_struct* ns, nflux_struct* nf, wstate_struct* ws, wflux_struct* wf)
 {
 	int ok=1;
 	int layer;
@@ -85,7 +85,7 @@ int multilayer_sminn(const siteconst_struct* sitec, const epvar_struct* epv, nst
 	sminn_from_top = 0;
 	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
 	{
-		soilwater_nconc			= MOBILEN_PROPORTION * ns->sminn[layer] / ws->soilw[layer];
+		soilwater_nconc			= epc->mobilen_prop * ns->sminn[layer] / ws->soilw[layer];
 
 		wflux_downward			= wf->soilw_percolated[layer];
 

@@ -39,8 +39,7 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 #define SOIL4_CN    10.0     /* C:N for recalcitrant SOM pool (humus) */
 #define GRPNOW      1.0      /* (DIM) proportion of storage growth resp at fixation */
 #define PPFD50      75.0     /* (umol/m2/s) PPFD for 1/2 stomatal closure */
-#define DENITRIF_PROPORTION  0.01  /* fraction of mineralization to volatile */
-#define MOBILEN_PROPORTION   0.1   /* fraction mineral N avail for leaching */
+#define Q10_VALUE	2.0      /* q10 value for respiration calculation */
 
 /* precision control */
 /* This constant determines the lower limit of state variables before they
@@ -62,14 +61,10 @@ are set to 0.0 to control rounding and overflow errors */
 #define n_sec_in_min		60		/* (s/min)  calculation of hourly value from second values */
 #define n_hour_in_day		24		/* (hour/day)  calculation of daily value from hourly values */
 #define water_density		1000	/* (kg/m3)  mean value of water density */
+#define pF_hygroscopw		6.2		/* (dimless)  pF value at hygroscopic water point (dry air) */
 #define pF_wiltingpoint		4.2		/* (dimless)  pF value at wilting point */
 #define pF_fieldcapacity	2.5		/* (dimless)  pF value at field capacity */
 
-/* Hidy 2013 - contants for snow estimation in GSI calculation */
-#define sn_abs				0.1			/* absorptivity of snow */
-#define lh_fus				335.0		/* (kJ/kg) latent heat of fusion */
-#define lh_sub				2845.0		/* (kJ/kg) latent heal of sublimation */
-#define tcoef				0.65		/* (kg/m2/deg C/d) temp. snowmelt coef */
 #define NDAY_OF_YEAR	    365	
 #define DATA_GAP			-999.9	
 #define CAMPBELL_PARAM		200    /* (dimless) based on Cambell and Diaz 1988: Simplifiled soil-water balance model (runoff calc. in mm) */

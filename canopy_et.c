@@ -21,7 +21,7 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int canopy_et(const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
+int canopy_et(const control_struct* ctrl, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
 {
 	int ok=1;
 
@@ -151,6 +151,7 @@ int canopy_et(const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
 	else
 	{
 		wf->soilw_trans_SUM = 0;
+		if (ctrl->onscreen) printf("Warning: no transpiration due to stomatal closure - dry soil (canopy_et.c)\n");
 	}
 	
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */

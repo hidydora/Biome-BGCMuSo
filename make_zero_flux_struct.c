@@ -21,8 +21,7 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf,
-nflux_struct* nf)
+int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 {
 	int ok=1;
 	int layer;
@@ -236,6 +235,10 @@ nflux_struct* nf)
 	cf->leafc_transfer_to_HRV =0.0;
 	cf->gresp_storage_to_HRV =0.0;
 	cf->gresp_transfer_to_HRV =0.0;
+	cf->HRV_to_litr1c = 0.0;				
+	cf->HRV_to_litr2c = 0.0;				 
+	cf->HRV_to_litr3c = 0.0;				
+	cf->HRV_to_litr4c = 0.0;
 	/* ploughing */
 	cf->leafc_to_PLG =0.0;
 	cf->leafc_storage_to_PLG =0.0;
@@ -403,58 +406,77 @@ nflux_struct* nf)
     nf->livestemn_to_retransn = 0.0;
     nf->livecrootn_to_deadcrootn = 0.0;
     nf->livecrootn_to_retransn = 0.0;
-	/* Hidy 2009 - management */
-	nf->leafn_transfer_from_PLT = 0.0;
-	nf->frootn_transfer_from_PLT = 0.0;
-	nf->leafn_to_THN =0.0;
-	nf->leafn_storage_to_THN =0.0;
-	nf->leafn_transfer_to_THN =0.0;
-	nf->leafn_to_MOW =0.0;
-	nf->leafn_storage_to_MOW =0.0;
-	nf->leafn_transfer_to_MOW =0.0;
-	nf->leafn_to_HRV =0.0;
-	nf->leafn_storage_to_HRV =0.0;
-	nf->leafn_transfer_to_HRV =0.0;
-	nf->leafn_to_PLG =0.0;
-	nf->leafn_storage_to_PLG =0.0;
-	nf->leafn_transfer_to_PLG =0.0;
-	nf->frootn_to_PLG =0.0;
-	nf->frootn_storage_to_PLG =0.0;
-	nf->frootn_transfer_to_PLG =0.0;
-	nf->livecrootn_to_THN;
-	nf->livecrootn_storage_to_THN;
-	nf->livecrootn_transfer_to_THN;
-	nf->deadcrootn_to_THN;
-	nf->deadcrootn_storage_to_THN; 
-	nf->deadcrootn_transfer_to_THN;
-	nf->livestemn_to_THN;		
-	nf->livestemn_storage_to_THN;        
-	nf->livestemn_transfer_to_THN;      
-	nf->deadstemn_to_THN;				 
-	nf->deadstemn_storage_to_THN;        
-	nf->deadstemn_transfer_to_THN;        
-	nf->restransn_to_THN;				 
-	nf->THN_to_litr1n = 0.0;				
-	nf->THN_to_litr2n = 0.0;				 
-	nf->THN_to_litr3n = 0.0;				
-	nf->THN_to_litr4n = 0.0;	
-	nf->THN_to_cwdn = 0.0;
-	nf->MOW_to_litr1n = 0.0;				
-	nf->MOW_to_litr2n = 0.0;				 
-	nf->MOW_to_litr3n = 0.0;				
-	nf->MOW_to_litr4n = 0.0;				
-	nf->GRZ_to_litr1n = 0.0;				
-	nf->GRZ_to_litr2n = 0.0;				 
-	nf->GRZ_to_litr3n = 0.0;				
-	nf->GRZ_to_litr4n = 0.0;
-	nf->FRZ_to_litr1n = 0.0;				
-	nf->FRZ_to_litr2n = 0.0;				 
-	nf->FRZ_to_litr3n = 0.0;				
-	nf->FRZ_to_litr4n = 0.0;
-	nf->FRZ_to_sminn = 0.0;
 	nf->sminn_to_denitrif =0.0;
-	
-       /* Hidy 2010 - senescence */
+	/* planting - Hidy 2012. */
+	nf->leafn_transfer_from_PLT = 0.0;
+	nf->frootn_transfer_from_PLT= 0.0;
+	/* thinning - by Hidy 2012. */
+	nf->leafn_to_THN= 0.0;
+	nf->leafn_storage_to_THN= 0.0;
+	nf->leafn_transfer_to_THN = 0.0;
+	nf->frootn_to_THN= 0.0;
+	nf->frootn_storage_to_THN= 0.0;
+	nf->frootn_transfer_to_THN = 0.0;
+	nf->livecrootn_to_THN= 0.0;
+	nf->livecrootn_storage_to_THN= 0.0;
+	nf->livecrootn_transfer_to_THN = 0.0;
+	nf->deadcrootn_to_THN= 0.0;
+	nf->deadcrootn_storage_to_THN= 0.0;
+	nf->deadcrootn_transfer_to_THN = 0.0;
+	nf->livestemn_to_THN= 0.0;
+	nf->livestemn_storage_to_THN= 0.0;
+	nf->livestemn_transfer_to_THN = 0.0;
+	nf->deadstemn_to_THN= 0.0;
+	nf->deadstemn_storage_to_THN= 0.0;
+	nf->deadstemn_transfer_to_THN = 0.0;
+	nf->restransn_to_THN= 0.0;
+	nf->THN_to_litr1n = 0.0;
+	nf->THN_to_litr2n = 0.0;
+	nf->THN_to_litr3n = 0.0;
+	nf->THN_to_litr4n = 0.0;				 
+	nf->THN_to_cwdn;
+	/* mowing - by Hidy 2008. */
+	nf->leafn_to_MOW= 0.0;                 
+	nf->leafn_storage_to_MOW = 0.0;        
+	nf->leafn_transfer_to_MOW = 0.0;
+	nf->MOW_to_litr1n = 0.0;				 
+	nf->MOW_to_litr2n = 0.0;				 
+	nf->MOW_to_litr3n = 0.0;				 
+	nf->MOW_to_litr4n = 0.0;				 
+	/* harvesting - by Hidy 2012. */
+	nf->leafn_to_HRV= 0.0;                 
+	nf->leafn_storage_to_HRV= 0.0;         
+	nf->leafn_transfer_to_HRV = 0.0;
+	nf->HRV_to_litr1n = 0.0;				 
+	nf->HRV_to_litr2n = 0.0;				 
+	nf->HRV_to_litr3n = 0.0;				 
+	nf->HRV_to_litr4n = 0.0;				 
+	/* ploughing - Hidy 2012. */
+	nf->leafn_to_PLG = 0.0;                 
+	nf->leafn_storage_to_PLG = 0.0;        
+	nf->leafn_transfer_to_PLG = 0.0;
+	nf->frootn_to_PLG = 0.0;				
+	nf->frootn_storage_to_PLG;         
+	nf->frootn_transfer_to_PLG = 0.0;
+	nf->PLG_to_litr1n = 0.0;
+	nf->PLG_to_litr2n = 0.0;
+	nf->PLG_to_litr3n = 0.0;
+	nf->PLG_to_litr4n = 0.0;
+	/* grazing - by Hidy 2008. */
+	nf->leafn_to_GRZ = 0.0;                 
+	nf->leafn_storage_to_GRZ = 0.0;        
+	nf->leafn_transfer_to_GRZ = 0.0;
+	nf->GRZ_to_litr1n = 0.0;				 
+	nf->GRZ_to_litr2n = 0.0;				 
+	nf->GRZ_to_litr3n = 0.0;				 
+	nf->GRZ_to_litr4n = 0.0;				 
+	/* fertiliziation -  by Hidy 2008 */
+	nf->FRZ_to_sminn = 0.0;      
+	nf->FRZ_to_litr1n = 0.0;				 
+	nf->FRZ_to_litr2n = 0.0;				 
+	nf->FRZ_to_litr3n = 0.0;				 
+	nf->FRZ_to_litr4n = 0.0;				 
+    /* Hidy 2010 - senescence */
 	nf->SNSC_to_litr1n = 0.0;
 	nf->SNSC_to_litr2n = 0.0;
 	nf->SNSC_to_litr3n = 0.0;

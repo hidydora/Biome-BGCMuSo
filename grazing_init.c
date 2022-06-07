@@ -20,11 +20,21 @@ Copyright 2008, Hidy
 #include "pointbgc_func.h"
 
 
-int grazing_init(file init,  grazing_struct* GRZ)
+int grazing_init(file init, control_struct* ctrl, grazing_struct* GRZ)
 {
-	int ok = 1;
+
 	char key1[] = "GRAZING";
 	char keyword[80];
+	char bin[100];
+
+	char GRZ_filename[100];
+	file GRZ_file;
+
+	int i;
+	int ok = 1;
+	int ny=1;
+	int n_GRZparam=9;
+
 
 	/********************************************************************
 	**                                                                 **
@@ -47,70 +57,99 @@ int grazing_init(file init,  grazing_struct* GRZ)
 	
 	if (ok && scan_value(init, &GRZ->GRZ_flag, 'i'))
 	{
-		printf("Error reading grazing calculating flag\n");
-		ok=0;
+		if (ok && scan_value(init, GRZ_filename, 's'))
+		{
+			printf("Error reading grazing calculating flag\n");
+			ok=0;
+		}
+		else
+		{
+			
+			ok=1;
+			printf("grazing information from file\n");
+			GRZ->GRZ_flag = 2;
+			strcpy(GRZ_file.name, GRZ_filename);
+		}
 	}
 
-	if (ok && scan_value(init, &GRZ->first_day_of_GRZ, 'i'))
+	/* yeary varied garzing parameters (GRZ_flag=2); else: constant garzing parameters (GRZ_flag=1) */
+	if (GRZ->GRZ_flag == 2)
 	{
-		printf("Error reading first_day_of_grazing\n");
-		ok=0;
-	}
-
-
-	if (ok && scan_value(init, &GRZ->last_day_of_GRZ, 'i'))
-	{
-		printf("Error reading last_day_of_grazing\n");
-		ok=0;
-	}
-
-
-	if (ok && scan_value(init, &GRZ->drymatter_intake, 'd'))
-	{
-		printf("Error reading value of drymatter_intake\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(init, &GRZ->stocking_rate, 'd'))
-	{
-		printf("Error reading value of stocking_rate\n");
-		ok=0;
-	}
-
-
-	if (ok && scan_value(init, &GRZ->prop_DMintake_formed_excrement, 'd'))
-	{
-		printf("Error reading value of prop_DMintake_formed_excrement\n");
-		ok=0;
-	}
-
-	if (ok && scan_value(init, &GRZ->prop_excrement_return2litter, 'd'))
-	{
-		printf("Error reading value of prop_excrement_return2litter\n");
-		ok=0;
-	}
-
+		ny = ctrl->simyears; 
 	
-	if (ok && scan_value(init, &GRZ->C_content_of_drymatter, 'd'))
-	{
-		printf("Error reading value of C_content_of_drymatter\n");
-		ok=0;
+		/* open the main init file for ascii read and check for errors */
+		if (file_open(&GRZ_file,'i'))
+		{
+			printf("Error opening GRZ_file, grazing_int.c\n");
+			exit(1);
+		}
+
+		/* step forward in init file */
+		for (i=0; i < n_GRZparam; i++) scan_value(init, bin, 'd');
+
 	}
+	else GRZ_file=init;
 	
 
-	if (ok && scan_value(init, &GRZ->N_content_of_excrement, 'd'))
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->GRZ_start_array)))
 	{
-		printf("Error reading value of N_content_of_excrement\n");
-		ok=0;
-	}
-	
-
-	if (ok && scan_value(init, &GRZ->C_content_of_excrement, 'd'))
-	{
-		printf("Error reading value of C_content_of_excrement\n");
+		printf("Error reading first day of grazing\n");
 		ok=0;
 	}
 
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->GRZ_end_array)))
+	{
+		printf("Error reading first day of grazing\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->DMintake_array)))
+	{
+		printf("Error reading last day of grazing\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->stocking_rate_array)))
+	{
+		printf("Error reading animal stocking rate\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->prop_DMintake2excr_array)))
+	{
+		printf("Error reading prop. of the dry matter intake formed excrement\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->prop_excr2litter_array)))
+	{
+		printf("Error reading prop. of excrement return to litter\n");
+		ok=0;
+	}
+
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->DM_Ccontent_array)))
+	{
+		printf("Error reading carbon content of dry matter\n");
+		ok=0;
+	}
 		
-	return (!ok);
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EXCR_Ncontent_array)))
+	{
+		printf("Error reading nitrogen content of the fertilizer\n");
+		ok=0;
+	}
+			
+	if (ok && read_mgmarray(ny, GRZ->GRZ_flag, GRZ_file, &(GRZ->EXCR_Ccontent_array)))
+	{
+		printf("Error reading carbon content of the fertilizer\n");
+		ok=0;
+	}
+
+	if (GRZ->GRZ_flag == 2)
+	{
+		fclose (GRZ_file.ptr);
+	}
+		
+	return (!ok);	
+
 }

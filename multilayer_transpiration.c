@@ -36,8 +36,9 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 
 	/* internal variables */
 	int layer;
-	double soilw_wp;
+	double soilw_hw;
 	double soilw_trans_control;
+	double transp_diff;
 	int ok=1;
 
 
@@ -46,10 +47,10 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 	/* 1. PART-TRANSPIRATION: first approximation tanspiration from every soil layer equally */
 	
 
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
 	{
-		/* soil water content at wilting point */
-		soilw_wp = sitec->vwc_wp * sitec->soillayer_thickness[layer] * water_density;
+		/* actual soil water content at theoretical lowe limit of water content: hygroscopic water point */
+		soilw_hw = ws->soilw[layer] * sitec->vwc_hw;
 
 		/* root water uptake is be possible from the layers where root is located  */
 		if (layer < epv->n_rootlayers)
@@ -68,14 +69,22 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 		}
 		else wf->soilw_trans[layer] = 0;
 
-		ws->soilw[layer] -= wf->soilw_trans[layer];
 
-		if (ws->soilw[layer] < soilw_wp)
+		/* transp_diff: control parameter to avoid negative soil water content (due to overestimated transpiration + dry soil) */
+		transp_diff = ws->soilw[layer] - wf->soilw_trans[layer] - soilw_hw;
+
+		/* theoretical lower limit of water content: wilting point: if transp_diff less than 0, limited transpiration flux  */
+		if (transp_diff < 0)
 		{
-			if (ctrl->spinup == 0 && ctrl->onscreen) printf("very low soil moisture content in layer:%i\t\n",layer);
+			wf->soilw_trans[layer] += transp_diff;
+			wf->soilw_trans_SUM += transp_diff;
+			if (ctrl->onscreen) printf("Warning: limited transpiration due to dry soil (multilayer_transpiration.c)\n");
 		}
-		
+
+		ws->soilw[layer] -= wf->soilw_trans[layer];
 	}
+	/* no transpiration from the bottom layer (deeper than 4m */
+	wf->soilw_trans[N_SOILLAYERS-1] = 0;
 
 	/* control */
 	soilw_trans_control = 0;

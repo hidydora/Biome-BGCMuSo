@@ -19,106 +19,100 @@ Copyright 2008, Hidy
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
 
-int mowing(int yday, phenology_struct* phen, const control_struct* ctrl, const epconst_struct* epc, mowing_struct* MOW, cflux_struct* cf,
-				 nflux_struct* nf, wflux_struct* wf, cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
+int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct* MOW, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf,
+				  cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
 {
 	/* mowing parameters */
-	int mowing;		/* flag, 1=mowing; 0=no mowing */
-	int mowi;
-	
-	double befgrass_LAI;										/* value of LAI before mowing */
-	double mowing_rate;										/* decreasing of plant material caused by mowing*/
-	double remained_prop = (100 - MOW->transport_coeff)/100.;	/* remained proportion of plabnt material is calculated from transport coefficient */
+	int mowing;						/* flag, 1=mowing; 0=no mowing */
+	double LAI_limit;
+	double remained_prop;			/* remained proportion of plabnt material is calculated from transport coefficient */
+
+	/* local parameters */
+	double befgrass_LAI;			/* value of LAI before mowing */
+	double mowing_effect;				/* decreasing of plant material caused by mowing*/
+
 
 	int ok=1;
+	int ny;
+	int mgmd = MOW->mgmd;
+
+	/* yearly varied or constant management parameters */
+	if(MOW->MOW_flag == 2)
+	{
+		ny = ctrl->simyr;
+	}
+	else ny=0;
 
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     CALCULATING FLUXES 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 	
-	/* mowing if flag=1 */
-	if (MOW->MOW_flag == 1)
-	{
+
+	/* mowing calculation based on LAI_limit: we assume that due to the mowing LAI (leafc) reduces to the value of LAI_limit  */
+	befgrass_LAI = cs->leafc * epc->avg_proj_sla;
+
+	/* mowing type: fixday or LAIlimit */
+	if (MOW->fixday_or_fixLAI_flag == 0 || MOW->MOW_flag == 2)
+	{	
+		if (mgmd >=0) 
+		{
 	
-		mowing=0;
-
-		/* mowing type: fixday or LAIlimit */
-		if (MOW->fixday_or_fixLAI_flag == 0)
-		{
-			for(mowi=0; mowi < MOW->n_MOWdays; ++mowi)
-			{
-				if (yday == MOW->MOWdays[mowi])
-				{
-					if (phen->remdays_curgrowth > 0)
-					{
-						mowing = 1;
-						break;
-					}
-					else
-					{
-						mowing = 0;
-						if (ctrl->onscreen) printf("out of growing season no plantmaterial is available - no mowing on yearday:%d\t\n",yday);
-					}
-				}
-					else
-					mowing = 0;
-			}
-		}
-		else
-		{
-			/* mowing if LAI greater than a given value (fixLAI_befMOW) */
-			if (cs->leafc * epc->avg_proj_sla > MOW->fixLAI_befMOW)
-			{
-				mowing = 1;
-			}
-			else
-			{
-				mowing = 0;
-			}
-		}
-		
-
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (mowing) 
-		{	
-			/* mowing calculation based on LAI_limit: we assume that due to the mowing LAI (leafc) reduces to the value of LAI_limit  */
-			befgrass_LAI = cs->leafc * epc->avg_proj_sla;
-			if (befgrass_LAI > MOW->LAI_limit)
-			{	
-				mowing_rate = 1. - (MOW->LAI_limit/befgrass_LAI);			
-				if (ctrl->onscreen) printf("mowing (LAI limit) on yearday:%d\t\n",yday);
-			}
-			else
-			{
-				/* if LAI before mowing is less than LAI_limit_aftermowing -> no  mowing  */
-				mowing_rate = 0.0;
-				if (ctrl->onscreen) printf("value of LAI before mowing is less than LAI_limit - no mowing on yearday:%d\t\n",yday);
-			}	
-						
+			mowing = 1;
+			remained_prop = (100 - MOW->transport_coeff_array[mgmd][ny])/100.;
+			LAI_limit = MOW->LAI_limit_array[mgmd][ny];
 		}
 		else 
 		{
-			mowing_rate = 0.0;
+			mowing = 0;
+			remained_prop = 0;
+			LAI_limit = befgrass_LAI;
 		}
 	}
 	else
 	{
-		mowing_rate=0.0;
+		/* mowing if LAI greater than a given value (fixLAI_befMOW) */
+		if (cs->leafc * epc->avg_proj_sla > MOW->fixLAI_befMOW)
+		{
+			mowing = 1;
+			remained_prop = (100 - MOW->transport_coeff_array[0][0])/100.;
+			LAI_limit = MOW->fixLAI_aftMOW;
+		}
+		else
+		{
+			mowing = 0;
+			remained_prop = 0;
+			LAI_limit = befgrass_LAI;
+		}
 	}
+	
 
-	cf->leafc_to_MOW          = cs->leafc * mowing_rate;
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	if (befgrass_LAI > LAI_limit)
+	{	
+		mowing_effect = (1- LAI_limit/befgrass_LAI);			
+	}
+	else
+	{
+		/* if LAI before mowing is less than LAI_limit_aftermowing -> no  mowing  */
+		mowing_effect = 0.0;
+	}	
+					
+
+	cf->leafc_to_MOW          = cs->leafc * mowing_effect;
 	cf->leafc_transfer_to_MOW = 0;
 	cf->leafc_storage_to_MOW  = 0;
 	
 	cf->gresp_transfer_to_MOW = 0;
 	cf->gresp_storage_to_MOW  = 0;
 
-	nf->leafn_to_MOW          = ns->leafn * mowing_rate;
+	nf->leafn_to_MOW          = ns->leafn * mowing_effect;
 	nf->leafn_transfer_to_MOW = 0;
 	nf->leafn_storage_to_MOW  = 0;
 
-	wf->canopyw_to_MOW = ws->canopyw * mowing_rate;
+	wf->canopyw_to_MOW = ws->canopyw * mowing_effect;
 
 
 	/* if mowed grass remains at the site, returns into the litter */

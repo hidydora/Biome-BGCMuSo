@@ -18,47 +18,31 @@ Copyright 2009, Hidy
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
 
-int ploughing(int yday, phenology_struct* phen, const control_struct* ctrl, const epconst_struct* epc, ploughing_struct* PLG, 
+int ploughing(const control_struct* ctrl, const epconst_struct* epc, ploughing_struct* PLG, 
 			cflux_struct* cf, nflux_struct* nf, wflux_struct* wf,  cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
 {
 	/* ploughing parameters */
-	int plough;				/* flag, 1=plough; 0=no plough */
-	int count;
 	double plough_effect;	/* decrease of plant material caused by ploughing: difference between plant material before and after ploughing */
+	
 	int ok=1;
+	int ny;
+	int mgmd = PLG->mgmd;
+
+	/* yearly varied or constant management parameters */
+	if(PLG->PLG_flag == 2)
+	{
+		ny = ctrl->simyr;
+	}
+	else ny=0;
 
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     CALCULATING FLUXES 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 
 	/* ploughing if gapflag=1 */
-	if (PLG->PLG_flag == 1)
+	if (mgmd >=0)
 	{
-	
-		/* ploughing on PLGdays (ini file) */
-		plough=0;
-		for(count=0; count < PLG->n_PLGdays; ++count)
-		{
-			if (yday == PLG->PLGdays[count])
-			{
-				plough = 1;
-				break;
-			}
-				else
-				plough = 0;
-		}
-		
-		/* we assume that as result of the ploughing all the plant material of snags returns to the soil*/
-		if (plough) 
-		{						
-			plough_effect = 1.0;
-			if (ctrl->onscreen) printf("ploughing on yearday:%d\t\n",yday);
-		}
-		else 
-		{
-			plough_effect = 0.0;
-		}
-
+		plough_effect = 1.0;
 	}
 	else
 	{

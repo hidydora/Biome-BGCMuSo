@@ -24,7 +24,7 @@ for complete description of this change.
 #include "bgc_constants.h"
 
 
-int daily_water_state_update(const control_struct* ctrl, const siteconst_struct* sitec, wflux_struct* wf, wstate_struct* ws)
+int daily_water_state_update(const control_struct* ctrl, wflux_struct* wf, wstate_struct* ws)
 {
 	/* daily update of the water state variables */
 	 
@@ -32,7 +32,7 @@ int daily_water_state_update(const control_struct* ctrl, const siteconst_struct*
 
 	/* Hidy 2011 - multilayer soil */
 	int layer;
-	double soilw_SUM;
+	double soilw_SUM = 0;
 	
 	/* precipitation fluxes */
 	ws->canopyw        += wf->prcp_to_canopyw;
@@ -46,6 +46,7 @@ int daily_water_state_update(const control_struct* ctrl, const siteconst_struct*
 	/* canopy intercepted water fluxes */
 	ws->canopyevap_snk += wf->canopyw_evap;
 	ws->canopyw        -= wf->canopyw_evap;
+	ws->canopyw        -= wf->canopyw_to_soilw;
 
 	/* snowmelt fluxes */
 	ws->snoww          -= wf->snoww_to_soilw;
@@ -56,7 +57,7 @@ int daily_water_state_update(const control_struct* ctrl, const siteconst_struct*
 	/* MODIFICATIONS -  Hidy 2011 */
 	
 	/* bare soil evaporation */
-	ws->soilevap_snk   += wf->soilw_evap;
+	ws->soilevap_snk   += wf->soilw_evap + wf->canopyw_to_soilw;
 	
 	/* transpiration */
 	ws->trans_snk      += wf->soilw_trans_SUM;
@@ -349,7 +350,7 @@ int alloc, int woody, int evergreen)
 	return (!ok);
 }		
 
-int daily_nitrogen_state_update(const control_struct* ctrl, nflux_struct* nf, nstate_struct* ns,
+int daily_nitrogen_state_update(const control_struct* ctrl, const epconst_struct* epc, nflux_struct* nf, nstate_struct* ns,
 int alloc, int woody, int evergreen)
 {
 	int ok=1;
@@ -431,7 +432,7 @@ int alloc, int woody, int evergreen)
 	ns->litr1n     -= nf->litr1n_to_soil1n;
 	if (nf->sminn_to_soil1n_l1 < 0.0)
 	{
-		nf->sminn_to_nvol_l1s1 = -DENITRIF_PROPORTION * nf->sminn_to_soil1n_l1;
+		nf->sminn_to_nvol_l1s1 = -epc->denitrif_prop * nf->sminn_to_soil1n_l1;
 	}
 	else
 	{
@@ -446,7 +447,7 @@ int alloc, int woody, int evergreen)
 	ns->litr2n     -= nf->litr2n_to_soil2n;
 	if (nf->sminn_to_soil2n_l2 < 0.0)
 	{
-		nf->sminn_to_nvol_l2s2 = -DENITRIF_PROPORTION * nf->sminn_to_soil2n_l2;
+		nf->sminn_to_nvol_l2s2 = -epc->denitrif_prop * nf->sminn_to_soil2n_l2;
 	}
 	else
 	{
@@ -464,7 +465,7 @@ int alloc, int woody, int evergreen)
 	ns->litr4n     -= nf->litr4n_to_soil3n;
 	if (nf->sminn_to_soil3n_l4 < 0.0)
 	{
-		nf->sminn_to_nvol_l4s3 = -DENITRIF_PROPORTION * nf->sminn_to_soil3n_l4;
+		nf->sminn_to_nvol_l4s3 = -epc->denitrif_prop * nf->sminn_to_soil3n_l4;
 	}
 	else
 	{
@@ -479,7 +480,7 @@ int alloc, int woody, int evergreen)
 	ns->soil1n     -= nf->soil1n_to_soil2n;
 	if (nf->sminn_to_soil2n_s1 < 0.0)
 	{
-		nf->sminn_to_nvol_s1s2 = -DENITRIF_PROPORTION * nf->sminn_to_soil2n_s1;
+		nf->sminn_to_nvol_s1s2 = -epc->denitrif_prop * nf->sminn_to_soil2n_s1;
 	}
 	else
 	{
@@ -494,7 +495,7 @@ int alloc, int woody, int evergreen)
 	ns->soil2n     -= nf->soil2n_to_soil3n;
 	if (nf->sminn_to_soil3n_s2 < 0.0)
 	{
-		nf->sminn_to_nvol_s2s3 = -DENITRIF_PROPORTION * nf->sminn_to_soil3n_s2;
+		nf->sminn_to_nvol_s2s3 = -epc->denitrif_prop * nf->sminn_to_soil3n_s2;
 	}
 	else
 	{
@@ -509,7 +510,7 @@ int alloc, int woody, int evergreen)
 	ns->soil3n     -= nf->soil3n_to_soil4n;
 	if (nf->sminn_to_soil4n_s3 < 0.0)
 	{
-		nf->sminn_to_nvol_s3s4 = -DENITRIF_PROPORTION * nf->sminn_to_soil4n_s3;
+		nf->sminn_to_nvol_s3s4 = -epc->denitrif_prop * nf->sminn_to_soil4n_s3;
 	}
 	else
 	{
@@ -520,7 +521,7 @@ int alloc, int woody, int evergreen)
 	ns->nvol_snk     += nf->sminn_to_nvol_s3s4;
 	ns->sminn_RZ      -= nf->sminn_to_nvol_s3s4;
 	
-	nf->sminn_to_nvol_s4 = DENITRIF_PROPORTION * nf->soil4n_to_sminn;
+	nf->sminn_to_nvol_s4 = epc->denitrif_prop * nf->soil4n_to_sminn;
 	ns->sminn_RZ       += nf->soil4n_to_sminn;
 	ns->soil4n        -= nf->soil4n_to_sminn;
 	ns->nvol_snk      += nf->sminn_to_nvol_s4;

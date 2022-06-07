@@ -19,6 +19,10 @@ element ndep_array (array). Changes are made by Galina Churkina.
 */
 
 #define N_POOLS 3			/* Hidy 2010 - number of type of pools: water, carbon, nitrogen */
+#define N_MGMDAYS 7			/* Hidy 2013 - number of type of management events in a single year */
+#define N_SOILLAYERS 5		/* Hidy 2013 - number of type of soil layers in multilayer soil module */
+
+
 /* simulation control variables */
 typedef struct
 {
@@ -41,6 +45,8 @@ typedef struct
 	int onscreen;          /* (flag) 1=show progress on-screen 0=don't */
 
 	/*  !!!!!!!!!!!!!!!!!! Hidy 2009 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
+
+
 	int GSI_flag;		/*(flag) 1=if onday and offday calc. is not user-defined (epc file), use GSI_calculation to determine onday&offday*/
 	int THN_flag;
 	int MOW_flag;
@@ -95,7 +101,6 @@ typedef struct
 } metarr_struct;
 
 
-#define N_SOILLAYERS 5
 /* daily values that are passed to daily model subroutines */
 typedef struct
 {
@@ -937,10 +942,12 @@ typedef struct
     double soil_b;										/* (DIM) Clapp-Hornberger "b" parameter */
     double vwc_sat;										/* (DIM) volumetric water content at saturation */
     double vwc_fc;								/* (DIM) VWC at field capacity ( = -0.033 MPa) */
-	double vwc_wp;								/* (DIM) VWC at wilting point ( = -2.0 MPa) */
+	double vwc_wp;								/* (DIM) VWC at wilting point ( = pF 4.2) */
+	double vwc_hw;								/* (DIM) VWC at hygroscopic water point  ( = pF 6.2) */
     double psi_sat;								/* (MPa) soil matric potential at saturation */
 	double psi_fc;								/* (MPa) soil matric potential at field capacity */
 	double psi_wp;								/* (MPa) soil matric potential at wilting point */
+	double psi_hw;								/* (MPa) soil matric potential at hygroscopic water point */
 	double hydr_conduct_sat;					/* (m/s) hidraulic conductivity at saturation  - Hidy 2010 */
 	double hydr_diffus_sat;				    	/* (m2/s) hidraulic diffusivity at saturation  - Hidy 2010 */
 	double hydr_conduct_fc;				    	/* (m/s) hidraulic conductivity at field capacity  - Hidy 2010 */
@@ -1012,102 +1019,113 @@ typedef struct
 	double mort_SNSC_displayed;	/* Hidy 2011 - mortality parameter of senescence reagrding to displayed plant material */
 	double mort_SNSC_storaged;	/* Hidy 2011 - mortality parameter of senescence regarding to storaged plant material */
     double mort_SNSC_to_litter; /* Hidy 2013 - turnover rate of wilted standing biomass to litter*/
-	double q10_value;			/* (DIM) temperature coefficient for calculating maint.resp. */
 	double GR_ratio;            /* Hidy 2013 - (DIM) growth resp per unit of C grown */
-	double* wpm_array;		 /* Hidy 2011 - changingx WPM values */
-	double* msc_array;		 /* Hidy 2011 - changingx WPM values */
+	double denitrif_prop;		/* Hidy 2013 - fraction of mineralization to volatile */
+	double mobilen_prop;		/* Hidy 2013 -fraction mineral N avail for leaching */
+	double maturity_coeff;		/* Hidy 2013 - maturity coefficient (to calculate maximum rooting depth) */
+	double* wpm_array;			/* Hidy 2011 - changingx WPM values */
+	double* msc_array;			/* Hidy 2011 - changingx WPM values */
 } epconst_struct;
 
 /* strucure for thinning paramteres - by Hidy 2012. */
-#define MAX_THNDAYS 5
 typedef struct
 {
-	int THN_flag;					/* (flag) 1=do thinning , 0=no thinning */	
-	int n_THNdays;					/* number of of the thinning days in 1 year */
-	int THNdays[MAX_THNDAYS];		/* array contains the thinning days in 1 year*/
-	double thinning_rate;			/* (prop.) rate of the thinned trees */
-	double transp_stem_rate;		/* (prop.) rate of the transported stem */
-	double transp_leaf_rate;		/* (prop.) rate of the transported leaf */
+	int THN_flag;							/* (flag) 1=do thinning , 0=no thinning */
+	int mgmd;								/* (flag) 1=do management , 0=no management on actual day */
+	double** THNdays_array;					/* (array) contains the thinning days in 1 year*/
+	double** thinning_rate_array;			/* (array) rate of the thinned trees */
+	double** transp_stem_rate_array;		/* (array) rate of the transported stem */
+	double** transp_leaf_rate_array;		/* (array) rate of the transported leaf */
 } thinning_struct;
 
 /* strucure for mowing paramteres - by Hidy 2008 */
-#define MAX_MOWDAYS 5
 typedef struct
 {
-	int MOW_flag;					/* (flag) 1=do mowing , 0=no mowing */	
-	int fixday_or_fixLAI_flag;		/* (flag) 0=mowing is occured on fix days, 1=mowing is occured is LAI greater than a limit */
-	int MOWdays[MAX_MOWDAYS];		/* array contains the mowing days in 1 year*/
-	int n_MOWdays;					/* number of of the mowing days in 1 year */
-	double fixLAI_befMOW;			/*  value of the LAI before mowing*/
-	double LAI_limit;				/*  value of the LAI after mowing*/
-	double transport_coeff;			/* define the proportion of plant material transported away */
+	int MOW_flag;								/* (flag) 1=do mowing , 0=no mowing */
+	int mgmd;									/* (flag) 1=do management , 0=no management on actual day */
+	int fixday_or_fixLAI_flag;					/* (flag) 0=mowing on fixed days, 1=mowing if LAI greater than a fixed value */
+	double fixLAI_befMOW;						/* (value) LAI before mowing (fixvalue method)*/
+	double fixLAI_aftMOW;						/* (value) LAI after mowing (fixvalue method) */
+	double** MOWdays_array;						/* (array) contains the mowing days in 1 year (fixday method)*/
+	double** LAI_limit_array;					/* (array) LAI after mowing (fixday method)*/
+	double** transport_coeff_array;				/* (array) proportion of plant material transported away (fixday method)*/
 } mowing_struct;
 
 /* strucure for harvesting paramteres - by Hidy 2009 */
-#define MAX_HRVDAYS 5
 typedef struct
 {
-	int HRV_flag;						/* (flag) 1=do harvesting , 0=no harvesting */
-	int n_HRVdays;						/* number of the harvesting days in 1 year */
-    int HRVdays[MAX_HRVDAYS];			/* array contains the harvesting days in 1 year*/
-	double LAI_snag;					/*  value of the LAI after harvesting*/
-	double transport_coeff;				/* define the proportion of plant material transported away */
+	int HRV_flag;								/* (flag) 1=do harvesting , 0=no harvesting */
+	int mgmd;									/* (flag) 1=do management , 0=no management on actual day */
+    double** HRVdays_array;						/* (array) contains the harvesting days in 1 year*/
+	double** LAI_snag_array;					/* (array) LAI after harvesting*/
+	double** transport_coeff_array;				/* (array) proportion of plant material transported away */
 } harvesting_struct;
 
 /* strucure for ploughing paramteres - by Hidy 2012 */
-#define MAX_PLGDAYS 5
 typedef struct
 {
-	int PLG_flag;						/* (flag) 1=do plough , 0=no plough */
-	int n_PLGdays;					/* number of the plough days in 1 year */
-	int PLGdays[MAX_PLGDAYS];	/* array contains the plough days in 1 year*/
+	int PLG_flag;								/* (flag) 1=do plough , 0=no plough */
+	int mgmd;									/* (flag) 1=do management , 0=no management on actual day */
+	double** PLGdays_array;						/* (array) contains the plough days in 1 year*/
 } ploughing_struct;
 
 /* strucure for grazing paramteres - by Hidy 2009 */
 typedef struct
 {
-	int GRZ_flag;							/* (flag) 1=do grazin , 0=no grazing */	
-	int first_day_of_GRZ;					/* yday - beginning of grazing */
-	int last_day_of_GRZ;						/* yday - end of grazing */
-	double drymatter_intake;        		/*  (kg dry matter/LSU) pasture forgage dry matter intake */
-	double stocking_rate;					/* animal stocking rate: Livestock Units per hectare */
-	double prop_DMintake_formed_excrement;	/* prop of the dry matter intake formed excrement */
-	double prop_excrement_return2litter;	/* prop. of excrement return to litter */
-	double C_content_of_drymatter;			/* carbon content of dry matter*/
-	double N_content_of_excrement;		/* ratio - nitrogen content of the fertilizer */
-	double C_content_of_excrement;	    	/* ratio - carbon content of the fertilizer */
+	int GRZ_flag;								/* (flag) 1=do grazin , 0=no grazing */	
+	int mgmd;									/* (flag) 0,1..6=do management (first, second...) , -1=no management on actual day */
+	double** GRZ_start_array;					/* (array) beginning of grazing */
+	double** GRZ_end_array;						/* (array) end of grazing */
+	double** DMintake_array;					/* (array) pasture forgage dry matter intake */
+	double** stocking_rate_array;				/* (array) animal stocking rate: Livestock Units per hectare */
+	double** prop_DMintake2excr_array;			/* (array) prop of the dry matter intake formed excrement */
+	double** prop_excr2litter_array;			/* (array) prop. of excrement return to litter */ 
+	double** DM_Ccontent_array;					/* (array) carbon content of dry matter*/
+	double** EXCR_Ncontent_array;				/* (array) nitrogen content of the fertilizer */
+	double** EXCR_Ccontent_array;				/* (array) carbon content of the fertilizer */
 } grazing_struct;
 
+
+
 /* strucure for planting paramteres - by Hidy 2008 */
-#define MAX_PLTDAYS 5
 typedef struct
 {
-	int PLT_flag;					/* (flag) 1=do planting , 0=no planting */	
-    int n_PLTdays;					/* number of of the planting days in 1 year */
-    int PLTdays[MAX_PLTDAYS];       /* array contains the planting days in 1 year*/
-	double seed_quantity;			/*  quantity of seed*/
-	double seed_carbon;				/*  carbon content of seed*/
-	double prop_leaf_product;	/* (%) proportion of material of seed which produces leaf */
+	int PLT_flag;								/* (flag) 1=do planting , 0=no planting */	
+	int mgmd;									/* (flag) 1=do management , 0=no management on actual day */
+    double** PLTdays_array;						/* (array) contains the planting days in 1 year*/
+	double** seed_quantity_array;				/* (array) quantity of seed*/
+	double** seed_carbon_array;					/* (array) carbon content of seed*/
+	double** prop_leaf_product_array;			/* (array) proportion of material of seed which produces leaf */
 } planting_struct;
 
 /* strucure for fertilizing paramteres - by Hidy 2008 */
-#define MAX_FRZDAYS 5
 typedef struct
 {
-	int FRZ_flag;					    /* (flag) 1=fertilizing , 0=no fertilizing */
-	int n_FRZdays;					/* number of of the fertilizing days in 1 year */
-    int FRZdays[MAX_FRZDAYS];       /* array contains the fertilizing days in 1 year*/
-	double fertilizer[MAX_FRZDAYS];   /* array contains the amount of fertilizer on the fertilizing days*/
-	double FRZ_pool_act;				/* actual  nitrogen content of fertilization above the ground */
-	double nitrate_content;				/*(%)  nitrate content of fertilizer*/
- 	double ammonium_content;			/*(%)  ammonium content of fertilizer*/
-	double carbon_content;				/*(%)  carbon content of fertilizer*/
-	double litr_flab;					/*(%)  labile fraction of fertilizer*/
-	double litr_fucel;					/*(%)  unshielded cellulose fraction of fertilizer*/
-	double litr_fscel;					/*(%)  shielded cellulose fraction of fertilizer*/
-	double litr_flig;					/*(%)  lignin fraction of fertilizer*/
-    double dissolv_coeff;				/*(%)  define the quantity of the N from fertilization (ratio) get into the mineralized N pool on a given day*/
-    double utilization_coeff;			/*(%)  useful part of the fertilizer */
+	int FRZ_flag;								/* (flag) 1=fertilizing , 0=no fertilizing */
+	int mgmd;
+	double FRZ_pool_act;						/* (value) actual  nitrogen content of fertilization above the ground *//* (flag) 1=do management , 0=no management on actual day */
+    double** FRZdays_array;						/* (array) contains the fertilizing days in 1 year*/
+	double** fertilizer_array;					/* (array) contains the amount of fertilizer on the fertilizing days*/
+	double** Ncontent_array;					/* (array) nitrate content of fertilizer*/
+ 	double** NH3content_array;					/* (array) ammonium content of fertilizer*/
+	double** Ccontent_array;					/* (array) carbon content of fertilizer*/
+	double** litr_flab_array;					/* (array) labile fraction of fertilizer*/
+	double** litr_fucel_array;					/* (array) unshielded cellulose fraction of fertilizer*/
+	double** litr_fscel_array;					/* (array) shielded cellulose fraction of fertilizer*/
+	double** litr_flig_array;					/* (array) lignin fraction of fertilizer*/
+    double** dissolv_coeff_array;				/* (array) define the quantity of the N from fertilization (ratio) get into the mineralized N pool on a given day*/
+    double** utiliz_coeff_array;				/* (array) useful part of the fertilizer */
+	/* actual values of fertilizing parameters (unit change!) */
+	double Ncont_act;
+	double NH3cont_act;
+	double Ccont_act;
+	double flab_act;
+	double fucel_act;
+	double fscel_act;
+	double flig_act;
+	double UC_act;
+	double DC_act;
+
 } fertilizing_struct;
 
 /* structure for the photosynthesis routine */
@@ -1172,14 +1190,18 @@ typedef struct
 	double soilc;          /* kgC/m2  total soil C */
 	double totalc;         /* kgC/m2  total of vegc, litrc, and soilc */
 	/*effect of planting, thinning, mowing, grazing, harvesting, ploughing and fertilizing   - Hidy 2012.*/
-	double carbonchange_THN;   /* kgC/m2  total of thinning carbon change   */
-	double carbonchange_MOW;   /* kgC/m2  total of mowing carbon change   */
-	double carbonchange_HRV;   /* kgC/m2  total of harvesting carbon change   */
-	double carbonchange_PLG;	   /* kgC/m2  total of plouging carbon change   */
-	double carbonchange_GRZ;	   /* kgC/m2  total of grazing carbon change   */
-	double carbonchange_PLT;   /* kgC/m2  total of planting carbon change   */
-	double carbonchange_FRZ;  /* kgC/m2  total of fertilizing carbon change   */
-	double carbonchange_SNSC;  /* kgC/m2  total of senescence carbon change   */
+	double Cchange_THN;    /* kgC/m2  total of thinning carbon change   */
+	double Cchange_MOW;    /* kgC/m2  total of mowing carbon change   */
+	double Cchange_HRV;    /* kgC/m2  total of harvesting carbon change   */
+	double Cchange_PLG;	   /* kgC/m2  total of plouging carbon change   */
+	double Cchange_GRZ;	   /* kgC/m2  total of grazing carbon change   */
+	double Cchange_PLT;    /* kgC/m2  total of planting carbon change   */
+	double Cchange_FRZ;    /* kgC/m2  total of fertilizing carbon change   */
+	double Cchange_SNSC;   /* kgC/m2  total of senescence carbon change   */
+	double Nplus_GRZ;      /* kgN/m2  N from grazing   */
+	double Nplus_FRZ;      /* kgN/m2  N from fertilizing   */
+
+
 } summary_struct;
 
 /* restart data structure */

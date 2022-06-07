@@ -156,14 +156,16 @@ int output_init(file init, output_struct* output)
 		fprintf(output->anntext.ptr,"ann_DP = annual total deep percolation (mm/yr)\n");
 		fprintf(output->anntext.ptr,"ann_NEE = annual total net ecosystem production (positive: net source; gC/m2/yr)\n");
 		fprintf(output->anntext.ptr,"ann_NBP = annual total net biome production (positive: net sink; gC/m2/yr)\n");
-		fprintf(output->anntext.ptr,"ann_C_change_MOW = annual net change of ecosystem's carbon content caused by mowing (positive: net surplus; gC/m2/yr)\n");         /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"ann_C_change_HRV = annual net change of ecosystem's carbon content caused by harvesting (positive: net surplus; gC/m2/yr)\n");         /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"ann_C_change_PLG = annual net change of ecosystem's carbon content caused by ploughing (positive: net surplus;gC/m2/yr)\n");         /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"ann_C_change_GRZ = annual net change of ecosystem's carbon content caused by grazing(positive: net surplus;gC/m2/yr)\n");          /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"ann_C_change_FRZ = annual net change of ecosystem's carbon content caused by fertilization (positive: net surplus;gC/m2/yr)\n");      /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"ann_C_change_PLT = annual net change of ecosystem's carbon content caused by planting (positive: net surplus;gC/m2/yr)\n");      /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"ann_N_GRplus = annual total N input from grazing (gN/m2/yr)\n");             /* by Hidy 2008. */
-		fprintf(output->anntext.ptr,"ann_N_FRZplus = annual total N input from fertilizing (gN/m2/yr)\n");             /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_SNSC  = annual net change of ecosystem's carbon content caused by senescence (gC/m2/yr)\n");             /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_PLT = annual net change of ecosystem's carbon content caused by planting (positive: net surplus;gC/m2/yr)\n");      /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_THN = annual net change of ecosystem's carbon content caused by thinning (positive: net surplus; gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_MOW = annual net change of ecosystem's carbon content caused by mowing (positive: net surplus; gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_GRZ = annual net change of ecosystem's carbon content caused by grazing(positive: net surplus;gC/m2/yr)\n");          /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_HRV = annual net change of ecosystem's carbon content caused by harvesting (positive: net surplus; gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_PLG = annual net change of ecosystem's carbon content caused by ploughing (positive: net surplus;gC/m2/yr)\n");         /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_Cchange_FRZ = annual net change of ecosystem's carbon content caused by fertilization (positive: net surplus;gC/m2/yr)\n");      /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_N_plus_GRZ = annual total N input from grazing (gN/m2/yr)\n");             /* by Hidy 2008. */
+		fprintf(output->anntext.ptr,"ann_N_plus_FRZ = annual total N input from fertilizing (gN/m2/yr)\n");             /* by Hidy 2008. */
 		fprintf(output->anntext.ptr,"--------------------------------------------------------------\n");
 
 	}

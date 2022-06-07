@@ -580,13 +580,13 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[638] = &summary->soilc;
 		output_map[639] = &summary->totalc;
 		output_map[640] = &summary->daily_litfallc;
-		output_map[641] = &summary->carbonchange_MOW;		/* Hidy 2008. */
-		output_map[642] = &summary->carbonchange_HRV;		/* Hidy 2008. */
-		output_map[643] = &summary->carbonchange_PLG;		/* Hidy 2008. */
-		output_map[644] = &summary->carbonchange_GRZ;	/* Hidy 2008. */
-		output_map[645] = &summary->carbonchange_FRZ;	/* Hidy 2008. */
-		output_map[646] = &summary->carbonchange_PLT;	/* Hidy 2008. */
-		output_map[647] = &summary->carbonchange_SNSC;	/* Hidy 2013. */
+		output_map[641] = &summary->Cchange_MOW;		/* Hidy 2008. */
+		output_map[642] = &summary->Cchange_HRV;		/* Hidy 2008. */
+		output_map[643] = &summary->Cchange_PLG;		/* Hidy 2008. */
+		output_map[644] = &summary->Cchange_GRZ;	/* Hidy 2008. */
+		output_map[645] = &summary->Cchange_FRZ;	/* Hidy 2008. */
+		output_map[646] = &summary->Cchange_PLT;	/* Hidy 2008. */
+		output_map[647] = &summary->Cchange_SNSC;	/* Hidy 2013. */
 		output_map[648] = &summary->daily_sr;			/* Hidy 2008. */
 		output_map[649] = &summary->daily_tr;			/* Hidy 2013 - merging output data */
 

@@ -147,8 +147,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			file_open (&GSI.GSI_file, 'w');				/* file of GSI parameters - Hidy 2009.*/
 		}
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2010.*/
-		fprintf(bgcout->control_file.ptr, "yday VWC1 VWC3 w_scalar cum_NPP SNSC_src litr1c soil4c(kg) soil4n(kg) GPP AR HR EVAP \n");
-
+		fprintf(bgcout->control_file.ptr, "yday soil1c soil2c soil3c soil4c soil1n soil2n soil3n soil4n sminn\n");
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,7 +255,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* Hidy 2009. - calculate GSI to deterime onday and offday 	*/
 	if (ctrl.GSI_flag)
 	{
-		if (ok && GSI_calculation(&metarr, &ctrl, &sitec, &GSI, &phenarr))
+		if (ok && GSI_calculation(&metarr, &ctrl, &GSI, &phenarr))
 		{
 			printf("Error in call to GSI_calculation(), from bgc()\n");
 			ok=0;
@@ -375,6 +374,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* set current month to 0 (january) at the beginning of each year */
 			curmonth = 0;
 
+
 	
 			
 			/* calculate scaling for N additions (decreasing with
@@ -479,7 +479,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 				
 				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hidy 2011 - MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-		/* rooting depth */
+				/* rooting depth */
  				 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &epv, &ns))
 				 {
 					printf("Error in multilayer_rootdepth() from bgc()\n");
@@ -501,8 +501,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone multilayer_tsoil\n",simyr,yday);
 #endif
 		
-		
-
 				/* soil hydrological parameters: psi, vwc, conductivity */
  			   if (ok && multilayer_hydrolparams(&ctrl, &sitec, &ws, &epv))
 			     {
@@ -601,7 +599,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				{
 
 					/* evapo-transpiration */
-					if (ok && canopy_et(&metv, &epv, &wf))
+					if (ok && canopy_et(&ctrl, &metv, &epv, &wf))
 					{
 						printf("Error in canopy_et() from bgc()\n");
 						ok=0;
@@ -618,9 +616,8 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				growth season, as defined by the remdays_curgrowth flag.  This
 				keeps the occurrence of new growth consistent with the treatment
 				of litterfall and allocation */
-				if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl && ws.snoww == 0)
+				if (ok && cs.leafc && phen.remdays_curgrowth && metv.dayl)
 				{
-		
 					/* SUNLIT canopy fraction photosynthesis */
 					/* set the input variables */
 					psn_sun.c3 = epc.c3_flag;
@@ -710,264 +707,262 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone waterstress_days\n",simyr,yday);
 #endif	
-				
-				/* !!!!!!!!!!!!!!!!!!!!!!  TRANSPIRATION AND SOILPSI IN MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */		        
-				/* Hidy 2010 - calculate the part-transpiration from total transpiration */
 			
+			/* !!!!!!!!!!!!!!!!!!!!!!  TRANSPIRATION AND SOILPSI IN MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */		        
+			/* Hidy 2010 - calculate the part-transpiration from total transpiration */
+
 			if (ok && multilayer_transpiration(&ctrl, &sitec, &epc, &epv, &ws, &wf))
-				{
-					printf("Error in multilayer_transpiration() from bgc()\n");
-					ok=0;
-				}
+			{
+				printf("Error in multilayer_transpiration() from bgc()\n");
+				ok=0;
+			}
 #ifdef DEBUG
 			printf("%d\t%d\tdone multilayer_transpiration\n",simyr,yday);
 #endif		
 
-                /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-				
-				/* nitrogen deposition and fixation */
-				nf.ndep_to_sminn = sitec.ndep / NDAY_OF_YEAR;
-				nf.nfix_to_sminn = sitec.nfix / NDAY_OF_YEAR;
-
-
-				/* daily litter and soil decomp and nitrogen fluxes */
-				if (ok && decomp(&metv,&epc,&epv,&sitec,&cs,&cf,&ns,&nf,&nt))
-				{
-					printf("Error in decomp() from bgc.c\n");
-					ok=0;
-				}
-
-#ifdef DEBUG
-				printf("%d\t%d\tdone decomp\n",simyr,yday);
-#endif
-
+            /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 			
-				/* Daily allocation gets called whether or not this is a
-				current growth day, because the competition between decomp
-				immobilization fluxes and plant growth N demand is resolved
-				here.  On days with no growth, no allocation occurs, but
-				immobilization fluxes are updated normally */
-				/* spinup control */
-				/* in the rising limb, use the spinup allocation code
-				that supplements N supply */
-				if (!steady1 && rising && metcycle == 0)
-				{
-					if (ok && spinup_daily_allocation(&cf,&cs,&nf,&ns,&epc,&epv,&nt,naddfrac))
-					{
-						printf("Error in daily_allocation() from bgc.c\n");
-						ok=0;
-					}
-				}
-				else
-				{
-					ctrl.n_limitation = 0;
-					if (ok && daily_allocation(&cf,&cs,&nf,&ns,&epc,&epv,&nt, &ctrl.n_limitation))
-					{
-						printf("Error in daily_allocation() from bgc.c\n");
-						ok=0;
-					}
-				}
+			/* nitrogen deposition and fixation */
+			nf.ndep_to_sminn = sitec.ndep / NDAY_OF_YEAR;
+			nf.nfix_to_sminn = sitec.nfix / NDAY_OF_YEAR;
+
+
+			/* daily litter and soil decomp and nitrogen fluxes */
+			if (ok && decomp(&metv,&epc,&epv,&sitec,&cs,&cf,&ns,&nf,&nt))
+			{
+				printf("Error in decomp() from bgc.c\n");
+				ok=0;
+			}
 
 #ifdef DEBUG
-				printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
+			printf("%d\t%d\tdone decomp\n",simyr,yday);
 #endif
 
-				/* reassess the annual turnover rates for livewood --> deadwood,
-				and for evergreen leaf and fine root litterfall. This happens
-				once each year, on the annual_alloc day (the last litterfall day) */
-				if (ok && annual_alloc)
+		
+			/* Daily allocation gets called whether or not this is a
+			current growth day, because the competition between decomp
+			immobilization fluxes and plant growth N demand is resolved
+			here.  On days with no growth, no allocation occurs, but
+			immobilization fluxes are updated normally */
+			/* spinup control */
+			/* in the rising limb, use the spinup allocation code
+			that supplements N supply */
+			if (!steady1 && rising && metcycle == 0)
+			{
+				if (ok && spinup_daily_allocation(&cf,&cs,&nf,&ns,&epc,&epv,&nt,naddfrac))
 				{
-					if (ok && annual_rates(&epc,&epv))
-					{
-						printf("Error in annual_rates() from bgc()\n");
-						ok=0;
-					}
+					printf("Error in daily_allocation() from bgc.c\n");
+					ok=0;
+				}
+			}
+			else
+			{
+				ctrl.n_limitation = 0;
+				if (ok && daily_allocation(&cf,&cs,&nf,&ns,&epc,&epv,&nt, &ctrl.n_limitation))
+				{
+					printf("Error in daily_allocation() from bgc.c\n");
+					ok=0;
+				}
+			}
 
 #ifdef DEBUG
-					printf("%d\t%d\tdone annual rates\n",simyr,yday);
+			printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
 #endif
-				} 
 
-
-				/* daily growth respiration */
-				if (ok && growth_resp(&epc, &cf))
+			/* reassess the annual turnover rates for livewood --> deadwood,
+			and for evergreen leaf and fine root litterfall. This happens
+			once each year, on the annual_alloc day (the last litterfall day) */
+			if (ok && annual_alloc)
+			{
+				if (ok && annual_rates(&epc,&epv))
 				{
-					printf("Error in daily_growth_resp() from bgc.c\n");
+					printf("Error in annual_rates() from bgc()\n");
 					ok=0;
 				}
 
 #ifdef DEBUG
-				printf("%d\t%d\tdone growth_resp\n",simyr,yday);
+				printf("%d\t%d\tdone annual rates\n",simyr,yday);
 #endif
+			} 
+
+
+			/* daily growth respiration */
+			if (ok && growth_resp(&epc, &cf))
+			{
+				printf("Error in daily_growth_resp() from bgc.c\n");
+				ok=0;
+			}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone growth_resp\n",simyr,yday);
+#endif
+		
+			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
+			/* Hidy 2010 - multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
+
+		
+			if (ok && multilayer_hydrolprocess(&ctrl, &sitec, &epc, &epv, &ws, &wf))
+			{
+				printf("Error in multilayer_hydrolprocess() from bgc()\n");
+				ok=0;
+			}
+
+#ifdef DEBUG
+		printf("%d\t%d\tdone multilayer_hydrolprocess\n",simyr,yday);
+#endif
+
+			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+
+
+
+			/* daily update of the water state variables */
+			if (ok && daily_water_state_update(&ctrl, &wf, &ws))
+			{
+				printf("Error in daily_water_state_update() from bgc()\n");
+				ok=0;
+			}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone water state update\n",simyr,yday);
+#endif
+
+			/* daily update of carbon state variables */
+			if (ok && daily_carbon_state_update(&ctrl, &cf, &cs, annual_alloc, epc.woody, epc.evergreen))
+			{
+				printf("Error in daily_carbon_state_update() from bgc()\n");
+				ok=0;
+			}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone carbon state update\n",simyr,yday);
+#endif
+
+			/* daily update of nitrogen state variables */
+			if (ok && daily_nitrogen_state_update(&ctrl, &epc, &nf, &ns, annual_alloc, epc.woody, epc.evergreen))
+			{
+				printf("Error in daily_nitrogen_state_update() from bgc()\n");
+				ok=0;
+			}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone nitrogen state update\n",simyr,yday);
+#endif
+
+
+
+			/* Hidy 2010 - test again for very low state variable values and force them
+			to 0.0 to avoid rounding and floating point overflow errors */
+			if (ok && precision_control(&sitec, &ws, &cs, &ns))
+			{
+				printf("Error in call to precision_control() from bgc()\n");
+				ok=0;
+			} 
 			
-				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
-				/* Hidy 2010 - multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
-			
-				if (ok && multilayer_hydrolprocess(&ctrl, &sitec, &epc, &epv, &ws, &wf))
-				{
-					printf("Error in multilayer_hydrolprocess() from bgc()\n");
-					ok=0;
-				}
-
 #ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_hydrolprocess\n",simyr,yday);
-#endif
-
-				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-
-
-
-				/* daily update of the water state variables */
-				if (ok && daily_water_state_update(&ctrl,  &sitec, &wf, &ws))
-				{
-					printf("Error in daily_water_state_update() from bgc()\n");
-					ok=0;
-				}
-
-#ifdef DEBUG
-				printf("%d\t%d\tdone water state update\n",simyr,yday);
-#endif
-
-				/* daily update of carbon state variables */
-				if (ok && daily_carbon_state_update(&ctrl, &cf, &cs, annual_alloc, epc.woody, epc.evergreen))
-				{
-					printf("Error in daily_carbon_state_update() from bgc()\n");
-					ok=0;
-				}
-
-#ifdef DEBUG
-				printf("%d\t%d\tdone carbon state update\n",simyr,yday);
-#endif
-
-				/* daily update of nitrogen state variables */
-				if (ok && daily_nitrogen_state_update(&ctrl, &nf, &ns, annual_alloc, epc.woody, epc.evergreen))
-				{
-					printf("Error in daily_nitrogen_state_update() from bgc()\n");
-					ok=0;
-				}
-
-#ifdef DEBUG
-				printf("%d\t%d\tdone nitrogen state update\n",simyr,yday);
+			printf("%d\t%d\tdone precision_control\n",simyr,yday);
 #endif
 
 
+            /* calculate daily mortality fluxes and update state variables */
+			/* this is done last, with a special state update procedure, to
+			insure that pools don't go negative due to mortality fluxes
+			conflicting with other proportional fluxes */
+			if (ok && mortality(&ctrl, &epc, &cs, &cf, &ns, &nf, simyr))
+			{
+				printf("Error in mortality() from bgc()\n");
+				ok=0;
+			}
 
-				/* Hidy 2010 - test again for very low state variable values and force them
-				to 0.0 to avoid rounding and floating point overflow errors */
-				if (ok && precision_control(&sitec, &ws, &cs, &ns))
-				{
-					printf("Error in call to precision_control() from bgc()\n");
-					ok=0;
-				} 
-				
-#ifdef DEBUG
-				printf("%d\t%d\tdone precision_control\n",simyr,yday);
-#endif
-
-
-                /* calculate daily mortality fluxes and update state variables */
-				/* this is done last, with a special state update procedure, to
-				insure that pools don't go negative due to mortality fluxes
-				conflicting with other proportional fluxes */
-				if (ok && mortality(&ctrl, &epc, &cs, &cf, &ns, &nf, simyr))
-				{
-					printf("Error in mortality() from bgc()\n");
-					ok=0;
-				}
-
-#ifdef DEBUG
-				printf("%d\t%d\tdone mortality\n",simyr,yday);
-#endif
-
-				/* Hidy 2013 - calculate daily senescence mortality fluxes and update state variables */
-				if (ok && senescence(&epc, &metv, &sitec, &cs, &cf, &ns, &nf, &epv))
-				{
-					printf("Error in senescence() from bgc()\n");
-					ok=0;
-				}
-						
 #ifdef DEBUG
 			printf("%d\t%d\tdone mortality\n",simyr,yday);
 #endif
 
-
-				/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
-				/* Hidy 2011 - calculate the change of soil mineralized N in multilayer soil.  
-				This is a special state variable update routine, done after the other fluxes and states are reconciled 
-				in order to avoid negative sminn */
-				
-				if (ok && multilayer_sminn(&sitec, &epv, &ns, &nf, &ws, &wf))
-				{
-					printf("Error in multilayer_sminn() from bgc()\n");
-					ok=0;
-				}
-
+			/* Hidy 2013 - calculate daily senescence mortality fluxes and update state variables */
+			if (ok && senescence(&epc, &metv, &sitec, &cs, &cf, &ns, &nf, &epv))
+			{
+				printf("Error in senescence() from bgc()\n");
+				ok=0;
+			}
+					
 #ifdef DEBUG
-				printf("%d\t%d\tdone multilayer_sminn\n",simyr,yday);
+		printf("%d\t%d\tdone mortality\n",simyr,yday);
 #endif
+
+
+			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */	
+			/* Hidy 2011 - calculate the change of soil mineralized N in multilayer soil.  
+			This is a special state variable update routine, done after the other fluxes and states are reconciled 
+			in order to avoid negative sminn */
 			
-
-
-				/* test for water balance */
-				if (ok && check_water_balance(&ws, &ctrl, first_balance))
-				{
-					printf("Error in check_water_balance() from bgc()\n");
-					printf("%d\n",metday);
-					ok=0;
-				}
+			if (ok && multilayer_sminn(&epc, &sitec, &epv, &ns, &nf, &ws, &wf))
+			{
+				printf("Error in multilayer_sminn() from bgc()\n");
+				ok=0;
+			}
 
 #ifdef DEBUG
-				printf("%d\t%d\tdone water balance\n",simyr,yday);
+			printf("%d\t%d\tdone multilayer_sminn\n",simyr,yday);
+#endif
+		
+
+
+			/* test for water balance */
+			if (ok && check_water_balance(&ws, &ctrl, first_balance))
+			{
+				printf("Error in check_water_balance() from bgc()\n");
+				printf("%d\n",metday);
+				ok=0;
+			}
+
+#ifdef DEBUG
+			printf("%d\t%d\tdone water balance\n",simyr,yday);
 #endif
 
 
 
-				/* test for carbon balance */
-				if (ok && check_carbon_balance(&cs, &ctrl, first_balance))
-				{
-					printf("Error in check_carbon_balance() from bgc()\n");
-					printf("%d\n",metday);
-					ok=0;
-				}
+			/* test for carbon balance */
+			if (ok && check_carbon_balance(&cs, &ctrl, first_balance))
+			{
+				printf("Error in check_carbon_balance() from bgc()\n");
+				printf("%d\n",metday);
+				ok=0;
+			}
 
 #ifdef DEBUG
-				printf("%d\t%d\tdone carbon balance\n",simyr,yday);
+			printf("%d\t%d\tdone carbon balance\n",simyr,yday);
 #endif
 
-				/* test for nitrogen balance */
-				if (ok && check_nitrogen_balance(&ns, &ctrl, first_balance))
-				{
-					printf("Error in check_nitrogen_balance() from bgc()\n");
-					printf("%d\n",metday);
-					ok=0;
-				}
+			/* test for nitrogen balance */
+			if (ok && check_nitrogen_balance(&ns, &ctrl, first_balance))
+			{
+				printf("Error in check_nitrogen_balance() from bgc()\n");
+				printf("%d\n",metday);
+				ok=0;
+			}
 
 #ifdef DEBUG
-				printf("%d\t%d\tdone nitrogen balance\n",simyr,yday);
+			printf("%d\t%d\tdone nitrogen balance\n",simyr,yday);
 #endif
 
-				
-                /* calculate carbon summary variables */
-				if (ok && csummary(&cf, &cs, &nf, &summary))
-				{
-					printf("Error in csummary() from bgc()\n");
-					ok=0;
-				} 
+			
+            /* calculate carbon summary variables */
+			if (ok && csummary(&cf, &cs, &nf, &summary))
+			{
+				printf("Error in csummary() from bgc()\n");
+				ok=0;
+			} 
 #ifdef DEBUG
-				printf("%d\t%d\tdone carbon summary\n",simyr,yday);
+			printf("%d\t%d\tdone carbon summary\n",simyr,yday);
 #endif
 
 						
 				/* INTERNAL VARIALBE CONTROL - Hidy 2013 */		
-				if (ctrl.onscreen && ctrl.spinyears < 20)
+			if (ctrl.onscreen && yday==0)
 			{
-				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f %f %f %f\n", 
+				fprintf(bgcout->control_file.ptr, "%i %f %f %f %f %f %f %f %f %f\n", 
 				yday, 
-				epv.vwc[0], epv.vwc[3], epv.w_scalar, 
-				summary.cum_npp*1000, cs.SNSC_src*1000, cs.litr1c, cs.soil4c, ns.soil4n,
-				summary.daily_gpp*1000, (summary.daily_mr+summary.daily_gr)*1000, summary.daily_hr*1000,
-				wf.canopyw_evap+wf.soilw_evap+wf.soilw_trans_SUM+wf.snoww_subl); 
-
+				cs.soil1c, cs.soil2c, cs.soil3c, cs.soil4c, ns.soil1n, ns.soil2n, ns.soil3n, ns.soil4n, ns.sminn_SUM); 
+ 
 			}
 
 

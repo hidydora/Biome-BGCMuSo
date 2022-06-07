@@ -5,11 +5,10 @@ grazing  - decrease the plant material (leafc, leafn, canopy water) and increase
 method: Vuichard et al, 2007
 NOTE: LSU: livestock unit = unit used to compare or aggregate different species and it is equivalnet to 500 kg live weight (1 adult cattle = 1 LSU)
 
- *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2009, Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
 #include <stdlib.h>
@@ -28,7 +27,6 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 
 	/* grazing parameters */
 	int ny;
-	double grazing_period;
 	double DMintake;		
 	double stocking_rate;			
 
@@ -41,7 +39,6 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	double GRZcoeff;						/* coefficient determining decrease of plant material caused by grazing  */
 	double befgrazing_leafc = 0;			/* value of leafc before grazing */
 	double aftergrazing_leafc = 0;			/* value of leafc before grazing */
-	double rate_of_removal = 0;				/* if grazing calculation based on LSU, a fixed proportion of the abovegroind biomass is removed */
 	double daily_excr_prod = 0;				/* daily excrement production */	
 	double daily_C_loss = 0;				/* daily carbon loss due to grazing */
 	double Cplus_from_excrement = 0;		/* daily carbon plus from excrement */
@@ -52,7 +49,7 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	int ok=1;
 
 	/* test variable */
-	int nonactpool_coeff=1;
+	double belowbiom_MGMmort=epc->belowbiom_MGMmort;
 
 
 	/* yearly varied or constant management parameters */
@@ -71,8 +68,6 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 
 	if (mgmd >= 0) 
 	{
-		grazing_period		= GRZ->GRZ_end_array[mgmd][ny] - GRZ->GRZ_start_array[mgmd][ny];
-
 		DMintake            = GRZ->DMintake_array[mgmd][ny];						 /*  unit: kgDM/LSU (DM:dry matter)*/
 		stocking_rate       = GRZ->stocking_rate_array[mgmd][ny]/10000;				 /*  unit: LSU/ha -> new unit: LSU/m2 */
 
@@ -125,28 +120,28 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	Nplus_from_excrement = daily_excr_prod * EXCR_Ncontent_array;
 
 	cf->leafc_to_GRZ          = cs->leafc * GRZcoeff;
-	cf->leafc_transfer_to_GRZ = cs->leafc_transfer * GRZcoeff * nonactpool_coeff;
-	cf->leafc_storage_to_GRZ  = cs->leafc_storage * GRZcoeff * nonactpool_coeff;
+	cf->leafc_transfer_to_GRZ = cs->leafc_transfer * GRZcoeff * belowbiom_MGMmort;
+	cf->leafc_storage_to_GRZ  = cs->leafc_storage * GRZcoeff * belowbiom_MGMmort;
 	
     /* fruit simulation - Hidy 2013. */
 	cf->fruitc_to_GRZ          = cs->fruitc * GRZcoeff;
-	cf->fruitc_transfer_to_GRZ = cs->fruitc_transfer * GRZcoeff * nonactpool_coeff;
-	cf->fruitc_storage_to_GRZ  = cs->fruitc_storage * GRZcoeff * nonactpool_coeff;
+	cf->fruitc_transfer_to_GRZ = cs->fruitc_transfer * GRZcoeff * belowbiom_MGMmort;
+	cf->fruitc_storage_to_GRZ  = cs->fruitc_storage * GRZcoeff * belowbiom_MGMmort;
 		
-	cf->gresp_transfer_to_GRZ = cs->gresp_transfer * GRZcoeff * nonactpool_coeff;
-	cf->gresp_storage_to_GRZ  = cs->gresp_storage * GRZcoeff * nonactpool_coeff;
+	cf->gresp_transfer_to_GRZ = cs->gresp_transfer * GRZcoeff * belowbiom_MGMmort;
+	cf->gresp_storage_to_GRZ  = cs->gresp_storage * GRZcoeff * belowbiom_MGMmort;
 
 	nf->leafn_to_GRZ          = ns->leafn * GRZcoeff;
-	nf->leafn_transfer_to_GRZ = ns->leafn_transfer * GRZcoeff * nonactpool_coeff;
-	nf->leafn_storage_to_GRZ  = ns->leafn_storage * GRZcoeff * nonactpool_coeff;
+	nf->leafn_transfer_to_GRZ = ns->leafn_transfer * GRZcoeff * belowbiom_MGMmort;
+	nf->leafn_storage_to_GRZ  = ns->leafn_storage * GRZcoeff * belowbiom_MGMmort;
 
 	/* fruit simulation - Hidy 2013. */
 	nf->fruitn_to_GRZ          = ns->fruitn * GRZcoeff;
-	nf->fruitn_transfer_to_GRZ = ns->fruitn_transfer * GRZcoeff * nonactpool_coeff;
-	nf->fruitn_storage_to_GRZ  = ns->fruitn_storage * GRZcoeff * nonactpool_coeff;
+	nf->fruitn_transfer_to_GRZ = ns->fruitn_transfer * GRZcoeff * belowbiom_MGMmort;
+	nf->fruitn_storage_to_GRZ  = ns->fruitn_storage * GRZcoeff * belowbiom_MGMmort;
 	
 	/* restranslocated N pool is decreasing also */
-	nf->retransn_to_GRZ        = ns->retransn * GRZcoeff * nonactpool_coeff;
+	nf->retransn_to_GRZ        = ns->retransn * GRZcoeff * belowbiom_MGMmort;
 	 
 	wf->canopyw_to_GRZ = ws->canopyw * GRZcoeff;
 

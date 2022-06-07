@@ -3,8 +3,8 @@ harvesting.c
 do harvesting  - decrease the plant material (leafc, leafn, canopy water)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2009, Hidy
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -38,7 +38,7 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 	double HRV_to_litter_coeff = epc->mort_CnW_to_litter;
 
 	/* test variable */
-	int nonactpool_coeff=1;
+	double belowbiom_MGMmort=epc->belowbiom_MGMmort;
 
 
 	/* yearly varied or constant management parameters */
@@ -88,25 +88,25 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 	/* fruit simulation - Hidy 2013.: harvested fruit is transported from the site  */
 	
 	cf->leafc_to_HRV          = cs->leafc * HRVcoeff_leaf;
-	cf->leafc_storage_to_HRV  = cs->leafc_storage * HRVcoeff_leaf * nonactpool_coeff;
-	cf->leafc_transfer_to_HRV = cs->leafc_transfer * HRVcoeff_leaf * nonactpool_coeff;
+	cf->leafc_storage_to_HRV  = cs->leafc_storage * HRVcoeff_leaf * belowbiom_MGMmort;
+	cf->leafc_transfer_to_HRV = cs->leafc_transfer * HRVcoeff_leaf * belowbiom_MGMmort;
 
 	cf->fruitc_to_HRV          = cs->fruitc * HRVcoeff_fruit;
 	cf->fruitc_storage_to_HRV  = cs->fruitc_storage * HRVcoeff_fruit;
 	cf->fruitc_transfer_to_HRV = cs->fruitc_transfer * HRVcoeff_fruit;
 
-	cf->gresp_storage_to_HRV  = cs->gresp_storage * HRVcoeff_leaf * nonactpool_coeff;
-	cf->gresp_transfer_to_HRV = cs->gresp_transfer * HRVcoeff_leaf * nonactpool_coeff;
+	cf->gresp_storage_to_HRV  = cs->gresp_storage * HRVcoeff_leaf * belowbiom_MGMmort;
+	cf->gresp_transfer_to_HRV = cs->gresp_transfer * HRVcoeff_leaf * belowbiom_MGMmort;
 
 	nf->leafn_to_HRV          = ns->leafn * HRVcoeff_leaf;
-	nf->leafn_storage_to_HRV  = ns->leafn_storage * HRVcoeff_leaf * nonactpool_coeff;
-	nf->leafn_transfer_to_HRV = ns->leafn_transfer * HRVcoeff_leaf * nonactpool_coeff;
+	nf->leafn_storage_to_HRV  = ns->leafn_storage * HRVcoeff_leaf * belowbiom_MGMmort;
+	nf->leafn_transfer_to_HRV = ns->leafn_transfer * HRVcoeff_leaf * belowbiom_MGMmort;
 
 	nf->fruitn_to_HRV          = ns->fruitn * HRVcoeff_fruit;
 	nf->fruitn_storage_to_HRV  = ns->fruitn_storage * HRVcoeff_fruit;
 	nf->fruitn_transfer_to_HRV = ns->fruitn_transfer * HRVcoeff_fruit;
 
-	nf->retransn_to_HRV        = ns->retransn * HRVcoeff_leaf * nonactpool_coeff;
+	nf->retransn_to_HRV        = ns->retransn * HRVcoeff_leaf * belowbiom_MGMmort;
 
 	wf->canopyw_to_HRV = ws->canopyw * HRVcoeff_leaf;
 
@@ -264,8 +264,7 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc, harvesting
 
 	if (fabs(diffC) > CRIT_PREC && fabs(diffN) > CRIT_PREC)
 	{
-		printf("Fatal error: harvesting pools are incorrect (harvesting.c)\n");
-		ok=0;
+		printf("Warning: small rounding error in harvesting pools (harvesting.c)\n");
 	}
 	
 

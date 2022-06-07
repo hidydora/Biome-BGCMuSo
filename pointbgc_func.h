@@ -4,11 +4,9 @@ function prototypes for pointbgc
 for use with pointbgc front-end to BIOME-BGC library v4.1
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.2
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2013, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 13/07/2000: Added input of Ndep from file=> added simyears function to
@@ -23,7 +21,7 @@ int co2_init(file init, co2control_struct* co2, int simyears);
 int sitec_init(file init, siteconst_struct* sitec);
 int ramp_ndep_init(file init, ramp_ndep_struct* ramp_ndep, int simyears);
 /* Hidy 2011: new parameter of epc_init function sitec to contol new EPC parameters */
-int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, control_struct* ctrl);
+int epc_init(file init, epconst_struct* epc, control_struct* ctrl);
 int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws);
 int cnstate_init(file init, const epconst_struct* epc, cstate_struct* cs,
 	cinit_struct* cinit, nstate_struct* ns);
@@ -46,6 +44,7 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ);
 int planting_init(file init, control_struct* ctrl, planting_struct* PLT);
 int GSI_init(file init, GSI_struct* GSI);
 int read_mgmarray(int simyr, int varMGM, file MGM_file, double*** mgmarray);
+int groundwater_init(siteconst_struct* sitec, control_struct* ctrl);
 
 /* model corrections - Hidy 2009. */
 int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, const siteconst_struct* sitec,

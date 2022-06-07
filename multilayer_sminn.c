@@ -4,11 +4,8 @@ Calculating the change in content of soil mineral nitrogen in multilayer soil (p
 depostion and fixing). State update of sminn_RZ (mineral N content of rootzone).
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -25,7 +22,7 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 					 nstate_struct* ns, nflux_struct* nf, wstate_struct* ws, wflux_struct* wf)
 {
 	int ok=1;
-	int layer;
+	int layer=0;
 	double soilwater_nconc, wflux_downward, sminn_from_top;
 	double sminn_SOILPROC_SUM, sminn_RZ;
 	double sminn_to_soil_ctrl, diff;
@@ -42,11 +39,15 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 	sminn_SOILPROC_SUM= 0;
 
-	for (layer = 0; layer < epv->n_rootlayers-1; layer++)
-	{	
-		nf->sminn_to_soil[layer] = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) * (ns->sminn[layer]/ns->sminn_RZ);
-		sminn_SOILPROC_SUM += nf->sminn_to_soil[layer];
+	if (ns->sminn_RZ > 0)
+	{
+		for (layer = 0; layer < epv->n_rootlayers-1; layer++)
+		{	
+			nf->sminn_to_soil[layer] = (nf->sminn_to_soil_SUM + nf->sminn_to_npool) * (ns->sminn[layer]/ns->sminn_RZ);
+			sminn_SOILPROC_SUM += nf->sminn_to_soil[layer];
+		}
 	}
+	else nf->sminn_to_soil[layer] = 0;
 
 
 	/* the rest comes from the last layer */
@@ -86,7 +87,7 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 		if (layer == 0) ns->sminn[0]     += nf->ndep_to_sminn;
 
 		/* 3. fixation: based on the quantity of the root mass in the given layer */
-		ns->sminn[layer] += nf->nfix_to_sminn * epv->soillayer_RZportion[layer];
+		ns->sminn[layer] += nf->nfix_to_sminn * epv->rootlength_prop[layer];
 	
 	}
 
@@ -113,14 +114,17 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 		
 		ns->sminn[layer]        += sminn_from_top - nf->sminn_leached[layer];
 
-		sminn_from_top			= nf->sminn_leached[layer];
-	
+		
 		/* control */
 		if (ns->sminn[layer] < 0.0 && fabs(ns->sminn[layer]) > CRIT_PREC)       
 		{
- 			printf("Fatal error: negative N content (multilayer_sminn.c)\n");
-			ok=0;	
+			nf->sminn_leached[layer] += ns->sminn[layer];
+			ns->sminn[layer]  = 0;
+ 			printf("Limited N leaching (multilayer_sminn.c)\n");	
 		}
+
+		sminn_from_top			= nf->sminn_leached[layer];
+	
 	}
 	ns->nleached_snk	+= nf->sminn_leached[N_SOILLAYERS-2];
 	
@@ -139,7 +143,7 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 		{
 			sminn_RZ	+= ns->sminn[layer];
 		}	
-		sminn_RZ	+= ns->sminn[epv->n_rootlayers-1] * (epv->rooting_depth - sitec->soillayer_depths[layer-1]) / sitec->soillayer_thickness[layer];
+		sminn_RZ	+= ns->sminn[epv->n_rootlayers-1] * (epv->rooting_depth - sitec->soillayer_depth[layer-1]) / sitec->soillayer_thickness[layer];
 	}
 	ns->sminn_RZ	  = sminn_RZ;
 

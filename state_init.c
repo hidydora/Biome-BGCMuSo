@@ -3,11 +3,9 @@ state_init.c
 Initialize water, carbon, and nitrogen state variables for pointbgc simulation  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -27,7 +25,7 @@ int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws)
 	int layer;
 	char key[] = "W_STATE";
 	char keyword[80];
-	double psat;
+	double psat = 0;
 	
 	
 	/* read water state variable initialization values from *.init */
@@ -62,15 +60,14 @@ int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws)
 	if (ok)
 	{
 		/* calculate initial soilwater in kg/m2 from proportion of
-		saturated volumetric water content, depth, and density of water */
-		for (layer = 0; layer < N_SOILLAYERS-1; layer ++)
+		field capacity volumetric water content, depth, and density of water */
+		for (layer = 0; layer < N_SOILLAYERS; layer ++)
 		{
 			ws->soilw[layer] = sitec->vwc_fc * (sitec->soillayer_thickness[layer]) * 1000.0;
 			ws->soilw_SUM += ws->soilw[layer];
 
 		}
-		/* bottom layer is special: infinite depth, saturated */
-		ws->soilw[N_SOILLAYERS-1] = DATA_GAP;
+	
 	}
 	
 	return (!ok);

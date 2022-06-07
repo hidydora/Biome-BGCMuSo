@@ -3,11 +3,9 @@ zero_srcsnk.c
 fill the source and sink variables with 0.0 at the start of the simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -31,6 +29,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	ws->soilevap_snk = 0.0;
 	ws->snowsubl_snk = 0.0;
 	ws->canopyevap_snk = 0.0;
+	ws->pondwevap_snk = 0.0;
 	ws->trans_snk = 0.0;
 	/* thinning - Hidy 2012.*/
 	ws->canopyw_THNsnk = 0.0;
@@ -46,6 +45,8 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	ws->runoff_snk = 0.0;		
 	ws->deeppercolation_snk = 0.0; 
 	ws->deepdiffusion_snk = 0.0; 
+	ws->deeptrans_src = 0.0; 
+	ws->groundwater_src = 0.0;
 
 	/* zero the carbon sources and sinks */
 	cs->psnsun_src = 0.0;

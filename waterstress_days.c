@@ -3,7 +3,8 @@ waterstress_days.c
 Hidy 2011 -  calculating the number of the days since water stress occurs in the vegetation period based on soil water status
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version vHD2
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -16,7 +17,7 @@ Biome-BGC version vHD2
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv)
+int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv, epconst_struct* epc) //TEST
 {
 
 	int ok=1;
@@ -32,7 +33,7 @@ int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv)
 	/* if vwcTOP less than a limit -> water stress, calculating day since water stress */
 	if (yday > phen->onday && yday < phen->offday)
 	{
-		if (epv->m_soilprop < 0.1)
+		if (epv->m_soilstress < epc->m_soilstress_crit) 
 		{
 			dsws = dsws + 1;
 		}
@@ -48,7 +49,7 @@ int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv)
 
 	if (yday > phen->onday && yday < phen->offday)
 	{
-		if (epv->m_soilprop == 0.0)
+		if (epv->m_soilstress == 0.0)
 		{
 			dsws_FULL = dsws_FULL + 1;
 		}

@@ -4,12 +4,10 @@ A single-function treatment of canopy evaporation and transpiration
 fluxes.  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+Copyright 2014, D. Hidy
+*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
 #include <stdio.h>
@@ -21,12 +19,11 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int canopy_et(const control_struct* ctrl, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
+int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
 {
 	int ok=1;
 
 	double tday;
-	double tmin;
 	double dayl;
 	double vpd;
 	double canopy_w;
@@ -38,7 +35,6 @@ int canopy_et(const control_struct* ctrl, const metvar_struct* metv, epvar_struc
 
 	/* assign variables that are used more than once */
 	tday =      metv->tday;
-	tmin =      metv->tmin;
 	vpd  =      0; // Hidy 2012 - error correction
 	vpd =       metv->vpd;
 	dayl =      metv->dayl;
@@ -144,15 +140,17 @@ int canopy_et(const control_struct* ctrl, const metvar_struct* metv, epvar_struc
 	}
 	/* Hidy 2011 - multilayer soil model: transpiration is calculated in multilayer_transpiration.c 
 	original: wf->soilw_trans = trans; */	
-	if (epv->m_soilprop > 0)
+	if (epv->m_soilstress > epc->m_soilstress_crit)
 	{
 		wf->soilw_trans_SUM = trans;
 	}
 	else
 	{
-		wf->soilw_trans_SUM = 0;
-		if (ctrl->onscreen) printf("Warning: no transpiration due to stomatal closure - dry soil (canopy_et.c)\n");
+		wf->soilw_trans_SUM = (epv->m_soilstress / epc->m_soilstress_crit) * trans;
+		if (ctrl->onscreen && !ctrl->spinup) printf("Limited transpiration due to dry soil (canopy_et.c)\n");
 	}
+
+	wf->soilw_trans_SUM = epv->m_soilstress * trans;
 	
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
 	wf->canopyw_evap = cwe;

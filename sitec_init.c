@@ -3,11 +3,9 @@ sitec_init.c
 Initialize the site physical constants for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -29,8 +27,10 @@ int sitec_init(file init, siteconst_struct* sitec)
 	int ok=1;
 	char key[] = "SITE";
 	char keyword[80];
-	double sand,silt,clay; /* percent sand, silt, and clay */
-	int layer; /* Hidy 2011: multilyer soil */
+	/* percent sand, silt, and clay */
+	double sand = 0;
+	double silt = 0;
+	double clay = 0; 
 
 	/* first scan keyword to ensure proper *.init format */ 
 	if (ok && scan_value(init, keyword, 's'))
@@ -52,47 +52,38 @@ int sitec_init(file init, siteconst_struct* sitec)
 	/* reading from ini file: max_rootzone_depth */
 	if (ok && scan_value(init, &sitec->max_rootzone_depth, 'd'))
 	{
-		printf("Error reading number of max_rootzone_depths\n");
+		printf("Error reading number of max_rootzone_depth\n");
 		ok=0;
 	}
 
-	if (sitec->max_rootzone_depth < 0)
-	{
-		printf("maximum of rooting depth must have positive value\n");
-		ok=0;
-	}
+  	/* predefined values: depth of the layers (soillayer_depth;[m]) */
+	sitec->soillayer_depth[0] = 0.1;
+	sitec->soillayer_depth[1] = 0.3;
+	sitec->soillayer_depth[2] = 0.6;
+	sitec->soillayer_depth[3] = 1.;
+	sitec->soillayer_depth[4] = 2.;
+	sitec->soillayer_depth[5] = 3.;
+	sitec->soillayer_depth[6] = 5.;
 
 
-  	/* predefined values: depth of the layers (soillayer_depths;[m]) */
-	sitec->soillayer_depths[0] = 0.1;
-	sitec->soillayer_depths[1] = 0.3;
-	sitec->soillayer_depths[2] = 1.;
-	sitec->soillayer_depths[3] = 3.;
-
-	/* calculated values: depth of the layers (delta_z;[m]) */
-	sitec->delta_z[0] = -0.05;
-	sitec->delta_z[1] = -0.2;
-	sitec->delta_z[2] = -0.65;
-	sitec->delta_z[3] = -2.0;
+	/* calculated values: depth of the layers (soillayer_midpoint;[m]) */
+	sitec->soillayer_midpoint[0] = 0.05;
+	sitec->soillayer_midpoint[1] = 0.2;
+	sitec->soillayer_midpoint[2] = 0.45;
+	sitec->soillayer_midpoint[3] = 0.8;
+	sitec->soillayer_midpoint[4] = 1.5;
+	sitec->soillayer_midpoint[5] = 2.5;
+	sitec->soillayer_midpoint[6] = 4;
 
 	/* calculated values: thickness of the layers (soillayer_thickness;[m]) */
 	sitec->soillayer_thickness[0] = 0.1;
 	sitec->soillayer_thickness[1] = 0.2;
-	sitec->soillayer_thickness[2] = 0.7;
-	sitec->soillayer_thickness[3] = 2.0;
+	sitec->soillayer_thickness[2] = 0.3;
+	sitec->soillayer_thickness[3] = 0.7;
+	sitec->soillayer_thickness[4] = 1.0;
+	sitec->soillayer_thickness[5] = 1.0;
+	sitec->soillayer_thickness[6] = 2.0;
 
-	/* ratio of actual layer and the total soil depth (bottom layer is special: "infinite depth")*/
-	for (layer = 0; layer < N_SOILLAYERS; layer++)
-	{
-		sitec->rel_soillayer_thickness[layer] = sitec->soillayer_thickness[layer] / sitec->soillayer_depths[N_SOILLAYERS-2];
-		
-	}
-
-	/* Hidy 2012 - the 5th (bottom) layer is "fictive": infinitive depth */
-	sitec->rel_soillayer_thickness[N_SOILLAYERS-1] = DATA_GAP;
-	sitec->soillayer_depths[N_SOILLAYERS-1]        = DATA_GAP;
-	sitec->delta_z[N_SOILLAYERS-1]                 = DATA_GAP;
-	sitec->soillayer_thickness[N_SOILLAYERS-1]     = DATA_GAP;
 
 	/* *************************************************- */
 	if (ok && scan_value(init, &sand, 'd'))
@@ -172,6 +163,23 @@ int sitec_init(file init, siteconst_struct* sitec)
 		ok=0;
 	}
 
+	/* -------------------------------------------------- CONTROL -----------------------------------------------------------------*/
+
+	/* Hidy 2013 - control to avoid negative meteorological data */
+ 	if (sitec->max_rootzone_depth < 0 || sand < 0 || silt < 0 || clay < 0 || sitec->sw_alb < 0 || sitec->ndep < 0 || sitec->nfix < 0 || 
+		sitec->runoff_param < 0 || sitec->vwc_sat_mes < 0 || sitec->vwc_fc_mes < 0 || sitec->vwc_wp_mes < 0 )
+	{
+		printf("Error in site data in INI file: negative rootzone_depth/sand/silt/clay/ndep/nfix/runoff/vwc data, sitec_init()\n");
+		ok=0;
+	}
+
+	/* maximum of the soil depth of the model is 5 m */
+	if (sitec->max_rootzone_depth > 5)
+	{
+		printf("maximum of rooting depth must be less than equal to 5 meter\n");
+		ok=0;
+	}
+
 
 	/* calculate the soil pressure-volume coefficients from texture data */
 	/* Uses the multivariate regressions from Cosby et al., 1984 and Wagner et al. 2001*/
@@ -187,29 +195,29 @@ int sitec_init(file init, siteconst_struct* sitec)
 	
 		/* soil water content, soil water potential and Clapp-Hornberger parameter */	
 		/* !!!!!!!!!!!!!!!!!!!! MEASURED DATA IS USED IF IT IS AVAILABLE (Hidy, 2011) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
-	
-	
-		
-	
 		/* estimated soil water potential at wilting point, field capacity in MPa (1MPa = 10000cm)  (fc: pF = 2.5; wp: pF = 4.2) */
 		sitec->psi_fc  = pow(10,pF_fieldcapacity) / (-10000);
 		sitec->psi_wp  = pow(10,pF_wiltingpoint) / (-10000);
 		sitec->psi_hw  = pow(10,pF_hygroscopw) / (-10000);
 
 
-		if (sitec->vwc_sat_mes == DATA_GAP)
+		if (sitec->vwc_sat_mes == (double) DATA_GAP)
 		{
 			/* Clapp-Hornberger parameter from empirical function */
 			sitec->soil_b = 3.10 + 0.157*clay - 0.003*sand;
 		
 			/* saturation value of soil water potential */
-			sitec->psi_sat = -(exp((1.54 - 0.0095*sand + 0.0063*silt)*log(10.0))*9.8e-5);
+	        sitec->psi_sat = -(exp((1.54 - 0.0095*sand + 0.0063*silt)*log(10.0))*9.8e-5);
 
 			/* soil water content at wilting point, field capacity and saturation in m3/m3 */
-			sitec->vwc_sat = (50.5 - 0.142*sand - 0.037*clay)/100.0;
+		    sitec->vwc_sat = (50.5 - 0.142*sand - 0.037*clay)/100.0;
 			sitec->vwc_fc = sitec->vwc_sat * (log(sitec->soil_b) / log(sitec->psi_fc/sitec->psi_sat));
 			sitec->vwc_wp = sitec->vwc_sat * (log(sitec->soil_b) / log(sitec->psi_wp/sitec->psi_sat));
-		
+
+			/* control for soil type with higy clay content - Hidy 2013. */
+			if (sitec->vwc_fc > sitec->vwc_sat) sitec->vwc_fc = sitec->vwc_sat - 0.05;
+			if (sitec->vwc_wp > sitec->vwc_fc) sitec->vwc_wp = sitec->vwc_fc - 0.05;
+	
 		}
 		else
 		{
@@ -221,8 +229,7 @@ int sitec_init(file init, siteconst_struct* sitec)
 
 			sitec->soil_b = log(sitec->psi_fc/sitec->psi_wp) / log(sitec->vwc_wp/sitec->vwc_fc);
 			
-			sitec->psi_sat = sitec->psi_fc / pow(sitec->vwc_sat/sitec->vwc_fc, sitec->soil_b);
-			sitec->psi_sat = sitec->psi_wp / pow(sitec->vwc_sat/sitec->vwc_wp, sitec->soil_b);
+			sitec->psi_sat = sitec->psi_fc / pow(sitec->vwc_sat/sitec->vwc_fc, -1*sitec->soil_b);
 		}
 		
 		sitec->vwc_hw = sitec->vwc_sat * (log(sitec->soil_b) / log(sitec->psi_hw/sitec->psi_sat));	

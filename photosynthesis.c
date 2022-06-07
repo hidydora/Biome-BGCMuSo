@@ -3,11 +3,9 @@ photosynthesis.c
 C3/C4 photosynthesis model
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 Updated1:
@@ -104,7 +102,6 @@ int photosynthesis(psn_struct* psn)
 	/* local variables */
 	int ok=1;	
 	double t;      /* (deg C) temperature */
-	double tk;     /* (K) absolute temperature */
 	double Kc;     /* (Pa) MM constant for carboxylase reaction */
 	double Ko;     /* (Pa) MM constant for oxygenase reaction */
 	double act;    /* (umol CO2/kgRubisco/s) Rubisco activity */
@@ -118,12 +115,10 @@ int photosynthesis(psn_struct* psn)
 	double Vpm, V4m, V4;	 /* umol pepcaseCO2/(m2s) */
 	double Cm,Om,Kp;		 /* (Pa) */
 	double rbs;				 /* (m2sPa/umol)*/
-	double Cbsv,Cbsj;		 /* CO2 concentration in bundle sheath cell (Pa)*/
 	
 	/* begin by assigning local variables */
 	g = psn->g;
 	t = psn->t;
-	tk = t + 273.15;
 	Rd = psn->dlmr;
 	rbs = Rbs * psn->pa;	/* use atmospheric pressure to convert from m2s/umol to m2sPa/umol */
 	
@@ -293,12 +288,8 @@ int photosynthesis(psn_struct* psn)
 	}
 	
 	/***********************************************************************/
-	/* 4. calculate the different Cbs */
+	/* 4. estimate A as the minimum of (Av,Aj)  */
 
-	Cbsv = Cm + rbs * (V4 - Av);
-	Cbsj = Cm + rbs * (V4 - Aj);
-
-	/* estimate A as the minimum of (Av,Aj) */
 	if (Av < Aj) A = Av; 
 	else         A = Aj;
 	psn->A = A;

@@ -3,11 +3,8 @@ output_init.c
 Reads output control information from initialization file
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 4/17/2000 (PET): Added annual total precipitation and annual average air
@@ -148,7 +145,7 @@ int output_init(file init, output_struct* output)
 			ok=0;
 		}
 		/* write the header info for simple text file */
-		fprintf(output->anntext.ptr,"Annual summary output from Biome-BGC version 4.1.1\n");
+		fprintf(output->anntext.ptr,"Annual summary output from BBGC MuSo 2.2\n");
 		fprintf(output->anntext.ptr,"ann_PRCP = annual total precipitation (cm/yr)\n");
 		fprintf(output->anntext.ptr,"ann_Tavg = annual average air temperature (deg C)\n");
 		fprintf(output->anntext.ptr,"max_LAI = annual maximum value of projected leaf area index (m2/m2)\n");
@@ -197,10 +194,14 @@ int output_init(file init, output_struct* output)
 		ok=0;
 	}
 	/* allocate space for the daily output variable indices */
-	if (ok && !(output->daycodes = (int*) malloc(output->ndayout * sizeof(int))))
+	if (ok)
 	{
-		printf("Error allocating for daycodes array: output_init()\n");
-		ok=0;
+		output->daycodes = (int*) malloc(output->ndayout * sizeof(int));
+		if 	(!output->daycodes)
+		{
+			printf("Error allocating for daycodes array: output_init()\n");
+			ok=0;
+		}
 	}
 	/* begin loop to read in the daily output variable indices */
 	for (i=0 ; ok && i<output->ndayout ; i++)
@@ -238,11 +239,16 @@ int output_init(file init, output_struct* output)
 		ok=0;
 	}
 	/* allocate space for the annual output variable indices */
-	if (ok && !(output->anncodes = (int*) malloc(output->nannout * sizeof(int))))
+	if (ok)
 	{
-		printf("Error allocating for anncodes array: output_init()\n");
-		ok=0;
+		output->anncodes = (int*) malloc(output->nannout * sizeof(int));
+		if 	(!output->anncodes)
+		{
+			printf("Error allocating for anncodes array: output_init()\n");
+			ok=0;
+		}
 	}
+	
 	/* begin loop to read in the annual output variable indices */
 	for (i=0 ; ok && i<output->nannout ; i++)
 	{

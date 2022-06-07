@@ -3,11 +3,8 @@ ramp_ndep_init.c
 Initialize the ramped N deposition parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 13/07/2000: Added input of Ndep from file. Changes are made by Galina Churkina.
@@ -78,17 +75,19 @@ int ramp_ndep_init(file init, ramp_ndep_struct* ramp_ndep, int simyears)
 		}
 		
 		/* allocate space for the annual Ndep array */
-		if (ok && !(ramp_ndep->ndep_array = (double*) malloc(simyears *
-			sizeof(double))))
+		if (ok)
 		{
-			printf("Error allocating for annual Ndep array, ramp_Ndep_init()\n");
-			ok=0;
+			ramp_ndep->ndep_array = (double*) malloc(simyears * sizeof(double));
+			if (!ramp_ndep->ndep_array)
+			{
+				printf("Error allocating for annual Ndep array, ramp_Ndep_init()\n");
+				ok=0;
+			}
 		}
 		/* read year and Ndep for each simyear */
 		for (i=0 ; ok && i<simyears ; i++)
 		{
-			if (fscanf(temp.ptr,"%*lf%lf",
-				&(ramp_ndep->ndep_array[i]))==EOF)
+			if (fscanf(temp.ptr,"%*i%lf",&(ramp_ndep->ndep_array[i]))==EOF)
 			{
 				printf("Error reading annual Ndep array, ctrl_init()\n");
 				printf("Note: file must contain a pair of values for each\n");

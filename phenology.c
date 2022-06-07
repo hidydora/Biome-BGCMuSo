@@ -3,11 +3,9 @@ phenology.c
 daily phenology fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -25,17 +23,20 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 {
 	int ok=1;
 	double ndays;
-	double leaflitfallc, frootlitfallc, fruitlitfallc;	/* fruit simulation - Hidy 2013. */
+	double leaflitfallc, frootlitfallc;
 	double livestemtovrc, livestemtovrn;
 	double livecroottovrc, livecroottovrn;
 	double drate;
+	double fruitlitfallc = 0;	/* fruit simulation - Hidy 2013. */
+
 	
 	/* phenological control for EVERGREENS */
 	if (epc->evergreen)
 	{
 		/* transfer growth fluxes */
 		/* check for days left in transfer growth period */
-		if (ndays = phen->remdays_transfer)
+		ndays = phen->remdays_transfer;
+		if (ndays > 0)
 		{
 			/* calculate rates required to empty each transfer
 			compartment by the end of transfer period, at approximately a
@@ -68,6 +69,7 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				nf->deadcrootn_transfer_to_deadcrootn = ns->deadcrootn_transfer / ndays;
 			}
 		}
+	
 
 		/* litterfall happens everyday, at a rate determined each year
 		on the annual allocation day.  To prevent litterfall from driving
@@ -140,7 +142,8 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 		/* deciduous */
 		/* transfer growth fluxes */
 		/* check for days left in transfer growth period */
-		if (ndays = phen->remdays_transfer)
+		ndays = phen->remdays_transfer;
+		if (ndays > 0)
 		{
 			/* transfer rate is defined to be a linearly decreasing
 			function that reaches zero on the last day of the transfer
@@ -176,12 +179,14 @@ int phenology(int yday, const epconst_struct* epc, const phenology_struct* phen,
 				nf->deadcrootn_transfer_to_deadcrootn = 2.0*ns->deadcrootn_transfer / ndays;
 			}
 		}
+	
 		
 		/* litterfall */
 		/* defined such that all live material is removed by the end of the
 		litterfall period, with a linearly ramping removal rate. assumes that
 		the initial rate on the first day of litterfall is 0.0. */
-		if (ndays = phen->remdays_litfall)
+		ndays = phen->remdays_litfall;
+		if (ndays > 0)
 		{
 			if (ndays == 1.0)
 			{

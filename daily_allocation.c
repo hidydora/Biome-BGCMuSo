@@ -4,11 +4,9 @@ daily allocation of carbon and nitrogen, as well as the final reconciliation
 of N immobilization by microbes (see decomp.c)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 Modified:
@@ -112,13 +110,13 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	double actual_immob;
 	double sum_plant_nsupply;
 	double plant_nalloc, plant_calloc;
-	double fpi;
 	double plant_remaining_ndemand;
     double excess_c;
 	int nlimit;
 	double cn_l1,cn_l2,cn_l4,cn_s1,cn_s2,cn_s3,cn_s4;
 	double rfl1s1, rfl2s2, rfl4s3, rfs1s2, rfs2s3, rfs3s4;
 	double daily_net_nmin;
+	double fpi = 0.0;
 	int allocfruit = 0;		/* fruit simulation Hidy 2013.*/
 
 	/* Hidy 2009. */
@@ -398,9 +396,9 @@ int daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	plant uptake, but immobilizing fluxes are reduced when soil mineral
 	N is limiting */
 	/* calculate litter and soil compartment C:N ratios */
-	if (ns->litr1n > 0.0) cn_l1 = cs->litr1c/ns->litr1n;
-	if (ns->litr2n > 0.0) cn_l2 = cs->litr2c/ns->litr2n;
-	if (ns->litr4n > 0.0) cn_l4 = cs->litr4c/ns->litr4n;
+	cn_l1 = cs->litr1c/ns->litr1n;
+	cn_l2 = cs->litr2c/ns->litr2n;
+	cn_l4 = cs->litr4c/ns->litr4n;
 	cn_s1 = SOIL1_CN;
 	cn_s2 = SOIL2_CN;
 	cn_s3 = SOIL3_CN;

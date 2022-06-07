@@ -4,7 +4,8 @@ Hidy 2010 - soil water potential, hydr. conductivity and hydr. diffusivity as a 
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version vHD2
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -17,7 +18,7 @@ Biome-BGC version vHD2
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_hydrolparams(const control_struct* ctrl, const siteconst_struct* sitec,  wstate_struct* ws, epvar_struct* epv)
+int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, epvar_struct* epv)
 {
 	/* given a list of site constants and the soil water mass (kg/m2),
 	this function returns the soil water potential (MPa)
@@ -86,6 +87,22 @@ int multilayer_hydrolparams(const control_struct* ctrl, const siteconst_struct* 
 		/* convert kg/m2 --> m3/m2 --> m3/m3 */
 		vwc_act = ws->soilw[layer] / (1000.0 * sitec->soillayer_thickness[layer]);
 
+	    /* PRECISION CONTROL - avoid unrealistic VWC content (higher than saturation value) */
+		if (vwc_act > sitec->vwc_sat)       
+		{
+			if (vwc_act- sitec->vwc_sat > CRIT_PREC)       
+			{
+				printf("Fatal error: soil water content is higher than saturation value (multilayer_hydrolprocess.c)\n");
+				ok=0;	
+			}
+			else
+			{
+				ws->deeppercolation_snk += vwc_act - sitec->vwc_sat;
+				vwc_act = sitec->vwc_sat;
+				ws->soilw[layer] = vwc_act * sitec->soillayer_thickness[layer] * water_density;
+			}
+		}
+
 		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
 		psi_act = psi_sat * pow( (vwc_act/vwc_sat), -1*soil_b);
 		
@@ -105,12 +122,29 @@ int multilayer_hydrolparams(const control_struct* ctrl, const siteconst_struct* 
         epv->hydr_conduct[layer] = hydr_conduct_act;
 		epv->hydr_diffus[layer] = hydr_diffus_act;
 
-	
-		vwc_avg		     +=	vwc_act			* epv->soillayer_RZportion[layer];
-		psi_avg			 +=	psi_act			* epv->soillayer_RZportion[layer];
-		hydr_conduct_avg += hydr_conduct_act* epv->soillayer_RZportion[layer];
-		hydr_diffus_avg  += hydr_diffus_act * epv->soillayer_RZportion[layer];
+		/* average values regarding to soil without bottom layer */
+		vwc_avg		     +=	vwc_act			* epv->rootlength_prop[layer];
+		psi_avg			 +=	psi_act			* epv->rootlength_prop[layer];
+		hydr_conduct_avg += hydr_conduct_act* epv->rootlength_prop[layer];
+		hydr_diffus_avg  += hydr_diffus_act * epv->rootlength_prop[layer];
 
+	}
+
+	/* PRECISION CONTROL */
+	if (vwc_avg - sitec->vwc_sat > 0)
+	{
+		if (vwc_avg - sitec->vwc_sat < CRIT_PREC)
+		{
+			vwc_avg = sitec->vwc_sat;
+			psi_avg=sitec->psi_sat;
+			hydr_conduct_avg = sitec->hydr_conduct_sat;
+			hydr_diffus_avg = sitec->hydr_diffus_sat;
+		}
+		else
+		{	
+			printf("Error in vwc_avg calculation in multilayer_hydrolparams.c\n");
+			ok=0;
+		}
 	}
 
 	epv->vwc_avg			= vwc_avg;
@@ -118,15 +152,16 @@ int multilayer_hydrolparams(const control_struct* ctrl, const siteconst_struct* 
 	epv->hydr_conduct_avg   = hydr_conduct_avg;
 	epv->hydr_diffus_avg    = hydr_diffus_avg;
 
-	/* Hidy 2012 - bottom layer is special: infinite depth, saturated */
-	if (ctrl->yday == 0)
+	/* BOTTOM LAYER - special: always field capacity */
+	if (epv->vwc[N_SOILLAYERS-1] == 0)
 	{
-		epv->vwc[N_SOILLAYERS-1] = sitec->vwc_sat;
-		epv->psi[N_SOILLAYERS-1] = sitec->psi_sat;
-		epv->pF[N_SOILLAYERS-1]  = log10(fabs(10000*sitec->psi_sat));
-		epv->hydr_conduct[N_SOILLAYERS-1] = sitec->hydr_conduct_sat;
-		epv->hydr_diffus[N_SOILLAYERS-1] = sitec->hydr_diffus_sat;
+		epv->vwc[N_SOILLAYERS-1]			= sitec->vwc_fc;
+		epv->psi[N_SOILLAYERS-1]			= sitec->psi_fc;
+		epv->pF[N_SOILLAYERS-1]				= log10(fabs(10000*sitec->psi_fc));
+		epv->hydr_conduct[N_SOILLAYERS-1]	= sitec->hydr_conduct_fc;
+		epv->hydr_diffus[N_SOILLAYERS-1]	= sitec->hydr_diffus_fc;
 	}
+
 
 
 	return(!ok);

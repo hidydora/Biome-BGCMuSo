@@ -4,11 +4,9 @@ create structures initialized with zero for forcing fluxes to zero
 between simulation days
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -32,6 +30,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	wf->canopyw_evap = 0.0;
 	wf->canopyw_to_soilw = 0.0;
 	wf->snoww_subl = 0.0;
+	wf->pondw_evap = 0.0;
 	wf->snoww_to_soilw = 0.0;
 	wf->soilw_evap = 0.0;
 
@@ -53,6 +52,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 		wf->soilw_percolated[layer] = 0.0;
 		wf->soilw_trans[layer] = 0.0;
 		wf->soilw_diffused[layer] = 0.0;
+		wf->soilw_from_GW[layer] = 0.0;
 	}
 
 	/* daily carbon fluxes */
@@ -109,6 +109,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	cf->m_cwdc_to_fire = 0.0;
     cf->leafc_transfer_to_leafc = 0.0;
     cf->frootc_transfer_to_frootc = 0.0;
+	cf->fruitc_transfer_to_fruitc = 0.0;
     cf->livestemc_transfer_to_livestemc = 0.0;
     cf->deadstemc_transfer_to_deadstemc = 0.0;
     cf->livecrootc_transfer_to_livecrootc = 0.0;
@@ -376,6 +377,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->m_cwdn_to_fire = 0.0;
     nf->leafn_transfer_to_leafn = 0.0;
     nf->frootn_transfer_to_frootn = 0.0;
+	nf->fruitn_transfer_to_fruitn = 0.0;
     nf->livestemn_transfer_to_livestemn = 0.0;
     nf->deadstemn_transfer_to_deadstemn = 0.0;
     nf->livecrootn_transfer_to_livecrootn = 0.0;
@@ -473,7 +475,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->THN_to_litr2n = 0.0;
 	nf->THN_to_litr3n = 0.0;
 	nf->THN_to_litr4n = 0.0;				 
-	nf->THN_to_cwdn;
+	nf->THN_to_cwdn = 0.0;
 	/* mowing - by Hidy 2008. */
 	nf->leafn_to_MOW= 0.0;                 
 	nf->leafn_storage_to_MOW = 0.0;        
@@ -495,7 +497,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	nf->leafn_storage_to_PLG = 0.0;        
 	nf->leafn_transfer_to_PLG = 0.0;
 	nf->frootn_to_PLG = 0.0;				
-	nf->frootn_storage_to_PLG;         
+	nf->frootn_storage_to_PLG = 0.0;        
 	nf->frootn_transfer_to_PLG = 0.0;
 	nf->PLG_to_litr1n = 0.0;
 	nf->PLG_to_litr2n = 0.0;

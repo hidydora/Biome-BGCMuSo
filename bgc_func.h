@@ -3,11 +3,9 @@ bgc_func.h
 header file for function prototypes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.2
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2013, PD. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -19,9 +17,9 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf);
 int atm_pres(double elev, double* pa);
 
 /* Hidy 2010 - plus/new input variables */
-int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_struct* ws, cstate_struct* cs,
+int restart_input(const control_struct* ctrl, wstate_struct* ws, cstate_struct* cs,
 	nstate_struct* ns, epvar_struct* epv, int* metyr, restart_data_struct* restart);
-int restart_output(const siteconst_struct* sitec,  control_struct* ctrl, wstate_struct* ws,cstate_struct* cs,
+int restart_output(wstate_struct* ws,cstate_struct* cs,
 	nstate_struct* ns, epvar_struct* epv, int metyr, restart_data_struct* restart);
 
 int free_phenmem(phenarray_struct* phen);
@@ -30,7 +28,7 @@ int free_phenmem(phenarray_struct* phen);
 int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cinit_struct* cinit,
 	epvar_struct* epv, phenarray_struct* phen, cstate_struct* cs, nstate_struct* ns, metvar_struct* metv);
 
-int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns);
+int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns);
 int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws,
 	summary_struct* summary);
 
@@ -60,10 +58,10 @@ int baresoil_evap(const metvar_struct* metv, wflux_struct* wf, double* dsr_ptr);
 int prcp_route(const metvar_struct* metv, double precip_int_coef,double all_lai, wflux_struct* wf);
 
 int maint_resp(const cstate_struct* cs, const nstate_struct* ns, const epconst_struct* epc,  const metvar_struct* metv, 
-	const siteconst_struct* sitec, cflux_struct* cf, epvar_struct* epv);
+	           cflux_struct* cf, epvar_struct* epv);
 
 /* Hidy 2010 - plus/new input variables */
-int canopy_et(const control_struct* ctrl, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf);
+int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf);
 int penmon(const pmet_struct* in, int out_flag,	double* et);
 int photosynthesis(psn_struct* psn);
 int decomp(const metvar_struct* metv, const epconst_struct* epc, epvar_struct* epv, 
@@ -80,13 +78,11 @@ int spinup_daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 int annual_rates(const epconst_struct* epc, epvar_struct* epv);
 int growth_resp(epconst_struct* epc, cflux_struct* cf);
 /* Hidy 2010 - plus/new input variables */
-int daily_water_state_update(const control_struct* ctrl, wflux_struct* wf, wstate_struct* ws);
+int daily_water_state_update(wflux_struct* wf, wstate_struct* ws);
 /* Hidy 2010 - plus/new input variables */
-int daily_carbon_state_update(const control_struct* ctrl, cflux_struct* cf, cstate_struct* cs, 
-							  int alloc, int woody, int evergreen);
+int daily_carbon_state_update(cflux_struct* cf, cstate_struct* cs, int alloc, int woody, int evergreen);
 /* Hidy 2010 - plus/new input variables */
-int daily_nitrogen_state_update(const control_struct* ctrl, const epconst_struct* epc, nflux_struct* nf, nstate_struct* ns, 
-								int alloc, int woody, int evergreen);
+int daily_nitrogen_state_update(const epconst_struct* epc, nflux_struct* nf, nstate_struct* ns, int alloc, int woody, int evergreen);
 
 
 /* Hidy 2010 - plus/new input variables */
@@ -94,9 +90,9 @@ int mortality(const control_struct* ctrl, const epconst_struct* epc, cstate_stru
 	nstate_struct* ns, nflux_struct* nf, int simyr);	
 
 /* Hidy 2010 - plus/new input variables */
-int check_water_balance(wstate_struct* ws, control_struct* ctrl, int first_balance);
-int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_balance);
-int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_balance);
+int check_water_balance(wstate_struct* ws, int first_balance);
+int check_carbon_balance(cstate_struct* cs, int first_balance);
+int check_nitrogen_balance(nstate_struct* ns, int first_balance);
 
 /* Hidy 2010 - plus/new input variables */
 int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_struct* summary);
@@ -109,22 +105,23 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 				 epvar_struct* epv, int simyr);
 
 /* calculating the water stress days */
-int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv);
+int waterstress_days(int yday, phenology_struct* phen, epvar_struct* epv, epconst_struct* epc);
 
 /* change of mineralized N in multilayer soil */
 int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, const epvar_struct* epv, 
 					 nstate_struct* ns, nflux_struct* nf, wstate_struct* ws, wflux_struct* wf);
 
 /* calculate the hydrological parameters in the multilayer soil */
-int multilayer_hydrolparams(const control_struct* ctrl, const siteconst_struct* sitec,  wstate_struct* ws, epvar_struct* epv);
+int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, epvar_struct* epv);
 
 /* calculate the hydrological processes in the multilayer soil */
-int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct* sitec, const epconst_struct* epc, epvar_struct* epv,
-	wstate_struct* ws, wflux_struct* wf);
+int multilayer_hydrolprocess(const control_struct* ctrl, const siteconst_struct* sitec, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+
+/* calculate the effect of gound water depth in the soil */
+int groundwater(const control_struct* ctrl, siteconst_struct* sitec, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
 /* calculate the transpiration processes in the multilayer soil */
-int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct* sitec,const epconst_struct* epc, epvar_struct* epv,
-							 wstate_struct* ws, wflux_struct* wf);
+int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct* sitec, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
 /* calculating tsoil in the multilayer soil  */
 int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, const wstate_struct* ws, 
@@ -155,7 +152,7 @@ int harvesting(const control_struct* ctrl, const epconst_struct* epc,
 	           cstate_struct* cs, nstate_struct* ns, wstate_struct* ws);
 
 /* ploughing - Hidy 2012 */
-int ploughing(const control_struct* ctrl, const epconst_struct* epc, 
+int ploughing(const epconst_struct* epc, 
 			   ploughing_struct* PLG, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf, 
 	           cstate_struct* cs, nstate_struct* ns, wstate_struct* ws);
 

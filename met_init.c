@@ -3,11 +3,9 @@ met_init.c
 open met file for input, scan through header lines
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -24,7 +22,8 @@ Missoula, MT 59812
 int met_init(file init, point_struct* point)
 {
 	int ok = 1;
-	int nhead,i;
+	int nhead = 0;
+	int i;
 	char key1[] = "MET_INPUT";
 	char keyword[80];
 	char junk_head[1024];

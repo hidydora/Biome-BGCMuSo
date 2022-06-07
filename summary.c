@@ -3,11 +3,9 @@ summary.c
 summary variables for potential output
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -34,7 +32,7 @@ int csummary(cflux_struct* cf, cstate_struct* cs, nflux_struct* nf, summary_stru
 		cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer +
 		cs->livecrootc + cs->livecrootc_storage + cs->livecrootc_transfer +
 		cs->deadcrootc + cs->deadcrootc_storage + cs->deadcrootc_transfer +
-		cs->gresp_storage + cs->gresp_transfer + cs->cpool + 
+		cs->gresp_storage + cs->gresp_transfer + 
 		/* fruit simulation - Hidy 2013. */
 		cs->fruitc + cs->fruitc_storage + cs->fruitc_transfer;
 	summary->litrc = cs->cwdc + cs->litr1c + cs->litr2c + cs->litr3c + 

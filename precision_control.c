@@ -4,11 +4,9 @@ Detects very low values in state variable structures, and forces them to
 0.0, in order to avoid rounding and overflow errors.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 Updated:
@@ -23,7 +21,7 @@ Updated:
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
+int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 {
 	int ok = 1;
 	int layer;
@@ -107,56 +105,56 @@ int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_s
 	
 	/* test for litter and soil poils. Excess goes to hr sink (C)
 	or volatilized sink (N) */
-	if (fabs(cs->litr1c) < CRIT_PREC)
+	if (fabs(cs->litr1c) < CRIT_PREC || fabs(ns->litr1n) < CRIT_PREC)
 	{
 		cs->litr1_hr_snk += cs->litr1c;
 		ns->nvol_snk += ns->litr1n;
 		cs->litr1c = 0.0;
 		ns->litr1n = 0.0;
 	}
-	if (fabs(cs->litr2c) < CRIT_PREC)
+	if (fabs(cs->litr2c) < CRIT_PREC || fabs(ns->litr2n)  < CRIT_PREC)
 	{
 		cs->litr2_hr_snk += cs->litr2c;
 		ns->nvol_snk += ns->litr2n;
 		cs->litr2c = 0.0;
 		ns->litr2n = 0.0;
 	}
-	if (fabs(cs->litr3c) < CRIT_PREC)
+	if (fabs(cs->litr3c) < CRIT_PREC || fabs(ns->litr3n)  < CRIT_PREC)
 	{
 		cs->litr4_hr_snk += cs->litr3c; /* NO LITR3C HR SINK */
 		ns->nvol_snk += ns->litr3n;
 		cs->litr3c = 0.0;
 		ns->litr3n = 0.0;
 	}
-	if (fabs(cs->litr4c) < CRIT_PREC)
+	if (fabs(cs->litr4c) < CRIT_PREC || fabs(ns->litr4n)  < CRIT_PREC)
 	{
 		cs->litr4_hr_snk += cs->litr4c;
 		ns->nvol_snk += ns->litr4n;
 		cs->litr4c = 0.0;
 		ns->litr4n = 0.0;
 	}
-	if (fabs(cs->soil1c) < CRIT_PREC)
+	if (fabs(cs->soil1c) < CRIT_PREC || fabs(ns->soil1n)  < CRIT_PREC)
 	{
 		cs->soil1_hr_snk += cs->soil1c;
 		ns->nvol_snk += ns->soil1n;
 		cs->soil1c = 0.0;
 		ns->soil1n = 0.0;
 	}
-	if (fabs(cs->soil2c) < CRIT_PREC)
+	if (fabs(cs->soil2c) < CRIT_PREC || fabs(ns->soil2n)  < CRIT_PREC)
 	{
 		cs->soil2_hr_snk += cs->soil2c;
 		ns->nvol_snk += ns->soil2n;
 		cs->soil2c = 0.0;
 		ns->soil2n = 0.0;
 	}
-	if (fabs(cs->soil3c) < CRIT_PREC)
+	if (fabs(cs->soil3c) < CRIT_PREC || fabs(ns->soil3n)  < CRIT_PREC)
 	{
 		cs->soil3_hr_snk += cs->soil3c;
 		ns->nvol_snk += ns->soil3n;
 		cs->soil3c = 0.0;
 		ns->soil3n = 0.0;
 	}
-	if (fabs(cs->soil4c) < CRIT_PREC)
+	if (fabs(cs->soil4c) < CRIT_PREC || fabs(ns->soil4n)  < CRIT_PREC)
 	{
 		cs->soil4_hr_snk += cs->soil4c;
 		ns->nvol_snk += ns->soil4n;
@@ -175,7 +173,7 @@ int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_s
 		}
 	}
 
-	if (fabs(ns->retransn) < CRIT_PREC)
+	if (ns->retransn < CRIT_PREC)
 	{
 		ns->litr1n += ns->retransn;
 		ns->retransn = 0.0;
@@ -192,6 +190,7 @@ int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_s
 			ws->soilevap_snk += ws->soilw[layer];
 			ws->soilw[layer] = 0.0;
 		}
+
 	}
 
 	if (fabs(ws->snoww) < CRIT_PREC)
@@ -203,6 +202,12 @@ int precision_control(const siteconst_struct* sitec, wstate_struct* ws, cstate_s
 	{
 		ws->canopyevap_snk += ws->canopyw;
 		ws->canopyw = 0.0;
+	}
+
+	if (fabs(ws->pond_water) < CRIT_PREC)
+	{
+		ws->pondwevap_snk += ws->pond_water;
+		ws->pond_water = 0.0;
 	}
 	
 	return(!ok);

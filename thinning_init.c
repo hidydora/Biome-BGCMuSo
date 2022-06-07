@@ -3,8 +3,8 @@ thinning_init.c
 read thinning information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2008, Hidy
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -98,19 +98,19 @@ int thinning_init(file init, control_struct* ctrl, thinning_struct* THN)
 
 	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->thinning_rate_array)))
 	{
-		printf("Error reading first day of thinning\n");
+		printf("Error reading thinninng rate\n");
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transp_stem_rate_array)))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transpcoeff_woody_array)))
 	{
-		printf("Error reading first day of thinning\n");
+		printf("Error reading transpcoeff_woody\n");
 		ok=0;
 	}
 
-	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transp_leaf_rate_array)))
+	if (ok && read_mgmarray(ny, THN->THN_flag, THN_file, &(THN->transpcoeff_nwoody_array)))
 	{
-		printf("Error reading last day of thinning\n");
+		printf("Error reading transpcoeff_nwoody\n");
 		ok=0;
 	}
 

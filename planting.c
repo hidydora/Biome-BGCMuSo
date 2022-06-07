@@ -3,8 +3,8 @@ planting.c
 planting  - planting seeds in soil - increase transfer pools
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2009, Hidy
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -48,7 +48,7 @@ int planting(const control_struct* ctrl,const epconst_struct* epc, planting_stru
 	/* we assume that the transfer pools contain the palnt material of seeds. Therefore planting increase the transfer pools */ 
 	if (mgmd >= 0) 
 	{	
-		seed_quantity = PLT->seed_quantity_array[mgmd][ny]/10;				 /* change unit: kg seed/ha -> g seed/m2 */
+		seed_quantity = PLT->seed_quantity_array[mgmd][ny]/1000;				 /* change unit: kg seed/ha -> kg seed/m2 */
 		seed_Ccontent = PLT->seed_carbon_array[mgmd][ny]/100;			     /* change unit: % to number */
 		utiliz_coeff  = PLT->utiliz_coeff_array[mgmd][ny]/100;	         /* change unit: % to number */
 	

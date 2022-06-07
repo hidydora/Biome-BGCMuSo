@@ -4,11 +4,9 @@ defines an array of pointers to doubles that map to all the intermediate
 variables in bgc
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -59,17 +57,19 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[19] = &metv->dayl;
 		
 		/* water state variables */
-		output_map[23] = &ws->soilw_SUM;	 /* Hidy 2010 - multilayer soil */
-		output_map[24] = &ws->snoww;
-		output_map[25] = &ws->canopyw;
-		output_map[26] = &ws->prcp_src;
-		output_map[27] = &ws->soilevap_snk;
-		output_map[28] = &ws->snowsubl_snk;
-		output_map[29] = &ws->canopyevap_snk;
-		output_map[30] = &ws->trans_snk;
-		output_map[31] = &ws->runoff_snk;			/* soilwater submodel - Hidy 2010. */
-		output_map[32] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
-		output_map[33] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[21] = &ws->soilw_SUM;	 /* Hidy 2010 - multilayer soil */
+		output_map[22] = &ws->snoww;
+		output_map[23] = &ws->canopyw;
+		output_map[24] = &ws->prcp_src;
+		output_map[25] = &ws->soilevap_snk;
+		output_map[26] = &ws->snowsubl_snk;
+		output_map[27] = &ws->canopyevap_snk;
+		output_map[28] = &ws->trans_snk;
+		output_map[29] = &ws->runoff_snk;			/* soilwater submodel - Hidy 2010. */
+		output_map[30] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[31] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[32] = &ws->deeptrans_src;		/* soilwater submodel - Hidy 2013. */
+		output_map[33] = &ws->groundwater_src;		/* soilwater submodel - Hidy 2013. */
 		
 		/* water flux variables */
 		output_map[34] = &wf->evapotransp;			/* Hidy 2013 - merging output data */
@@ -493,7 +493,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[527] = &epv->daily_gross_nimmob;
 		output_map[528] = &epv->daily_net_nmin;
 		output_map[529] = &epv->m_tmin;
-		output_map[530] = &epv->m_soilprop;
+		output_map[530] = &epv->m_soilstress;
 		output_map[531] = &epv->m_co2;
 		output_map[532] = &epv->m_ppfd_sun;
 		output_map[533] = &epv->m_ppfd_shade;
@@ -514,6 +514,7 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[548] = &epv->vwc[2];
 		output_map[549] = &epv->vwc[3];
 		output_map[550] = &epv->vwc[4];
+		output_map[551] = &epv->vwc[5];
 		
 		/* photosynthesis variables */
 		/* sunlit canopy fraction */

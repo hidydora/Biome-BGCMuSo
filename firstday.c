@@ -4,11 +4,9 @@ Initializes the state variables for the first day of a simulation that
 is not using a restart file.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -62,31 +60,23 @@ int firstday(const siteconst_struct* sitec, const epconst_struct* epc, const cin
 	epv->dsws_FULL = 0.0;
 
 	/* Hidy 2010 - initialize multilayer variables (first approximation: field cap.) and multipliers for stomatal limitation calculation */
-	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		epv->vwc[layer]				= sitec->vwc_fc;
-		epv->psi[layer]				= sitec->psi_fc;
-		epv->hydr_conduct[layer]	= sitec->hydr_conduct_fc;
-		epv->hydr_diffus[layer]		= sitec->hydr_diffus_fc;
-		epv->pF[layer]				= log10(fabs(10000*sitec->psi_fc));	// dimension of psi: MPa to cm (10000 MPa = 1 cm)
-		epv->m_soilprop_layer[layer]= 1;
+		epv->vwc[layer]				  = sitec->vwc_fc;
+		epv->psi[layer]				  = sitec->psi_fc;
+		epv->hydr_conduct[layer]	  = sitec->hydr_conduct_fc;
+		epv->hydr_diffus[layer]		  = sitec->hydr_diffus_fc;
+		epv->pF[layer]				  = log10(fabs(10000*sitec->psi_fc));	// dimension of psi: MPa to cm (10000 MPa = 1 cm)
+		epv->m_soilstress_layer[layer]= 1;
 	}
 
-	/* Hidy 2012 - below 3m the soil is assumed to saturated */
-	epv->vwc[N_SOILLAYERS-1]			  = sitec->vwc_sat;
-	epv->psi[N_SOILLAYERS-1]			  = sitec->psi_sat;
-	epv->hydr_conduct[N_SOILLAYERS-1]	  = sitec->hydr_conduct_sat;
-	epv->hydr_diffus[N_SOILLAYERS-1]	  = sitec->hydr_diffus_sat;
-	epv->pF[N_SOILLAYERS-1]				  = log10(fabs(10000*sitec->psi_sat));
-	epv->m_soilprop_layer[N_SOILLAYERS-1] = 1;
-
-	epv->vwc_avg		  = DATA_GAP;
-	epv->psi_avg		  = DATA_GAP;
-	epv->hydr_conduct_avg = DATA_GAP;
-	epv->hydr_diffus_avg  = DATA_GAP;
-	metv->tsoil_avg	   	  = DATA_GAP;
-	metv->tsoil_top_pre	  = DATA_GAP;	
-	epv->m_soilprop		  = 1;
+	epv->vwc_avg		    = sitec->vwc_fc;
+	epv->psi_avg		    = sitec->psi_fc;
+	epv->hydr_conduct_avg   = sitec->hydr_conduct_fc;
+	epv->hydr_diffus_avg    = sitec->hydr_diffus_fc;
+	metv->tsoil_avg	   	    = sitec->mean_surf_air_temp;
+	metv->tsoil_top_pre	    = sitec->mean_surf_air_temp;	
+	epv->m_soilstress	    = 1;
 
 	/* *****************************************************************************- */
 

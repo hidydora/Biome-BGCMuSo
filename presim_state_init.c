@@ -4,11 +4,9 @@ Initialize water, carbon, and nitrogen state variables to 0.0 before
 each simulation.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -41,6 +39,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->soilevap_snk = 0.0;
 	ws->snowsubl_snk = 0.0;
 	ws->canopyevap_snk = 0.0;
+	ws->pondwevap_snk = 0.0;
 	ws->trans_snk = 0.0;	
 	/* thinning - Hidy 2012. */
 	ws->canopyw_THNsnk = 0.0;
@@ -56,7 +55,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->runoff_snk = 0.0;
 	ws->deeppercolation_snk = 0.0;
 	ws->deepdiffusion_snk = 0.0;
-
+	ws->deeptrans_src = 0.0;
+    ws->groundwater_src = 0.0;
 
 	cinit->max_leafc = 0.0;
 	cinit->max_stemc = 0.0;
@@ -121,6 +121,12 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* thinning - Hidy 2012.*/
 	cs->THNsnk = 0.0; 
 	cs->THNsrc = 0.0;
+	cs->THN_transportC  = 0.0;
+	cs->litr1c_strg_THN = 0.0;
+	cs->litr2c_strg_THN = 0.0;
+	cs->litr3c_strg_THN = 0.0;
+	cs->litr4c_strg_THN = 0.0;
+	cs->cwdc_strg_THN   = 0.0;
 	/* mowing - Hidy 2008.*/
 	cs->MOWsnk = 0.0; 
 	cs->MOWsrc = 0.0;
@@ -205,6 +211,12 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	/* thining - Hidy 2012. */
 	ns->THNsnk = 0.0;  
 	ns->THNsrc = 0.0;
+	ns->THN_transportN  = 0.0;
+	ns->litr1n_strg_THN = 0.0;
+	ns->litr2n_strg_THN = 0.0;
+	ns->litr3n_strg_THN = 0.0;
+	ns->litr4n_strg_THN = 0.0;
+	ns->cwdn_strg_THN   = 0.0;
 	/* mowing - Hidy 2008. */
 	ns->MOWsnk = 0.0;  
 	ns->MOWsrc = 0.0;

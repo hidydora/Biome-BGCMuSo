@@ -4,11 +4,9 @@ front-end to BIOME-BGC for single-point, single-biome simulations
 Uses BIOME-BGC function library v4.1
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -138,11 +136,19 @@ void main(int argc, char *argv[])
 	}
 	
 	/* read ecophysiological constants */
-	if (epc_init(init, &bgcin.sitec, &bgcin.epc, &bgcin.ctrl))
+	if (epc_init(init, &bgcin.epc, &bgcin.ctrl))
 	{
 		printf("Error in call to epc_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
+
+	/* read groundwater depth if it is available */
+	if (groundwater_init(&bgcin.sitec, &bgcin.ctrl))
+	{
+		printf("Error in call to groundwater_init() from pointbgc.c... Exiting\n");
+		exit(1);
+	}
+	
 
 	/* initialize water state structure */
 	if (wstate_init(init, &bgcin.sitec, &bgcin.ws))
@@ -266,6 +272,14 @@ void main(int argc, char *argv[])
 	bgcin.ctrl.PLG_flag = bgcin.PLG.PLG_flag;       /* do PL - Hidy 2009.*/
 	bgcin.ctrl.PLT_flag = bgcin.PLT.PLT_flag;       /* do PLT - Hidy 2009.*/
 	bgcin.FRZ.FRZ_pool_act = 0;					    /* local pool - Hidy 2009.*/
+	bgcin.PLG.PLG_pool_litr1c = 0;				    /* local pool - Hidy 2014.*/
+	bgcin.PLG.PLG_pool_litr2c = 0;				    /* local pool - Hidy 2014.*/
+	bgcin.PLG.PLG_pool_litr3c = 0;				    /* local pool - Hidy 2014.*/
+	bgcin.PLG.PLG_pool_litr4c = 0;				    /* local pool - Hidy 2014.*/
+	bgcin.PLG.PLG_pool_litr1n = 0;				    /* local pool - Hidy 2014.*/
+	bgcin.PLG.PLG_pool_litr2n = 0;				    /* local pool - Hidy 2014.*/
+	bgcin.PLG.PLG_pool_litr3n = 0;				    /* local pool - Hidy 2014.*/
+	bgcin.PLG.PLG_pool_litr4n = 0;				    /* local pool - Hidy 2014.*/
 	bgcin.FRZ.mgmd = -1;
 	bgcin.THN.mgmd = -1;
 	bgcin.MOW.mgmd = -1;
@@ -280,6 +294,11 @@ void main(int argc, char *argv[])
 	bgcin.ctrl.varMSC_flag = 0;
 	bgcin.ctrl.varWPM_flag = 0;
 
+	/* Hidy 2014 - temporaty parameter initalizing */
+	bgcin.epc.belowbiom_MGMmort=0.1;
+	bgcin.epc.m_soilstress_crit=0.5;
+	bgcin.epc.n_stressdays_crit=30;
+	bgcin.epc.rootdistrib_param=3.67;
 	
 	/* copy the output file structures into bgcout */
 	if (output.dodaily) bgcout.dayout = output.dayout;

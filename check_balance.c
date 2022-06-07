@@ -3,11 +3,9 @@ check_balance.c
 daily test of mass balance (water, carbon, and nitrogen state variables)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -20,7 +18,7 @@ Missoula, MT 59812
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int check_water_balance(wstate_struct* ws, control_struct* ctrl, int first_balance)
+int check_water_balance(wstate_struct* ws, int first_balance)
 {
 	int ok=1;
 	static double old_balance;
@@ -29,11 +27,11 @@ int check_water_balance(wstate_struct* ws, control_struct* ctrl, int first_balan
 	/* DAILY CHECK ON WATER BALANCE */
 	
 	/* sum of sources */
-	in = ws->prcp_src;
+	in = ws->prcp_src + ws->deeptrans_src + ws->groundwater_src;
 	
 	/* sum of sinks */
 	out = ws->soilevap_snk + ws->snowsubl_snk + 
-		ws->canopyevap_snk + ws->trans_snk +
+		ws->canopyevap_snk + ws->trans_snk + ws->pondwevap_snk +
 		ws->canopyw_THNsnk +		/* thinning - Hidy 2012.*/
 		ws->canopyw_MOWsnk +		/* mowing - Hidy 2008.*/
 		ws->canopyw_HRVsnk +		/* harvesting - Hidy 2008.*/
@@ -68,7 +66,7 @@ int check_water_balance(wstate_struct* ws, control_struct* ctrl, int first_balan
 			printf("Sinks   (summed over entire run)  = %lf\n",out);
 			printf("Storage (current state variables) = %lf\n",store);
 		 	printf("Exiting...\n");
-		 	ok=0; 
+			ok=0; 
 		}
 	}
 	old_balance = balance;
@@ -76,7 +74,7 @@ int check_water_balance(wstate_struct* ws, control_struct* ctrl, int first_balan
 	return (!ok);
 }
 
-int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_balance)
+int check_carbon_balance(cstate_struct* cs, int first_balance)
 {
 	int ok=1;
 	static double old_balance;
@@ -159,26 +157,24 @@ int check_carbon_balance(cstate_struct* cs, control_struct* ctrl, int first_bala
 	return (!ok);
 }		
 
-int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_balance)
+int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 {
 	int ok=1;
 	double in,out,store,balance;
 	static double old_balance = 0.0;
-	double ERR_LIMIT = 1e-5;
 	
 	/* Hidy 2010 -	CONTROL AVOIDING NITROGEN POOLS */
 	if (ns->leafn < 0.0 || ns->leafn < 0.0 ||  ns->leafn_storage < 0.0 || ns->leafn_transfer < 0.0 || 
-	ns->frootn < 0.0 || ns->frootn_storage < 0.0 || ns->frootn_transfer < 0.0 || 
-	ns->fruitn < 0.0 || ns->fruitn_storage < 0.0 || ns->fruitn_transfer < 0.0 || 
-	ns->livestemn < 0.0 || ns->livestemn_storage < 0.0 || ns->livestemn_transfer < 0.0 || 
-	ns->deadstemn < 0.0 || ns->deadstemn_storage < 0.0 || ns->deadstemn_transfer < 0.0 || 
-	ns->livecrootn < 0.0 ||  ns->livecrootn_storage < 0.0 || ns->livecrootn_transfer < 0.0 || 
-	ns->deadcrootn < 0.0 || ns->deadcrootn_storage < 0.0 || ns->deadcrootn_transfer < 0.0 || 
-	ns->retransn < 0.0 || ns->cwdn < 0.0 || 
-	(ns->litr1n < 0.0 &&  fabs(ns->litr1n) > ERR_LIMIT) || (ns->litr2n < 0.0 &&  fabs(ns->litr2n) > ERR_LIMIT) || 
-	(ns->litr3n < 0.0 &&  fabs(ns->litr3n) > ERR_LIMIT) || (ns->litr4n < 0.0 &&  fabs(ns->litr4n) > ERR_LIMIT) || 
-	(ns->soil1n < 0.0 &&  fabs(ns->soil1n) > ERR_LIMIT) || (ns->soil2n < 0.0 &&  fabs(ns->soil2n) > ERR_LIMIT) || 
-	(ns->soil3n < 0.0 &&  fabs(ns->soil3n) > ERR_LIMIT) || (ns->soil4n < 0.0 &&  fabs(ns->soil4n) > ERR_LIMIT))
+		ns->frootn < 0.0 || ns->frootn_storage < 0.0 || ns->frootn_transfer < 0.0 || 
+		ns->fruitn < 0.0 || ns->fruitn_storage < 0.0 || ns->fruitn_transfer < 0.0 || 
+		ns->livestemn < 0.0 || ns->livestemn_storage < 0.0 || ns->livestemn_transfer < 0.0 || 
+		ns->deadstemn < 0.0 || ns->deadstemn_storage < 0.0 || ns->deadstemn_transfer < 0.0 || 
+		ns->livecrootn < 0.0 ||  ns->livecrootn_storage < 0.0 || ns->livecrootn_transfer < 0.0 || 
+		ns->deadcrootn < 0.0 || ns->deadcrootn_storage < 0.0 || ns->deadcrootn_transfer < 0.0 || 
+		ns->cwdn < 0.0 || 
+		ns->sminn[0] < 0.0 || ns->sminn[1] < 0.0 || ns->sminn[2] < 0.0 || ns->sminn[3] < 0.0 || 
+		ns->litr1n < 0.0  || ns->litr2n < 0.0  || ns->litr3n < 0.0  || ns->litr4n < 0.0 || 
+		ns->soil1n < 0.0  || ns->soil2n < 0.0  || ns->soil3n < 0.0  || ns->soil4n < 0.0)
 	{	
 		printf("ERROR: negative nitrogen stock\n");
 		ok=0;
@@ -212,7 +208,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 		ns->deadcrootn + ns->deadcrootn_storage + ns->deadcrootn_transfer + 
 		ns->cwdn + ns->litr1n + ns->litr2n + ns->litr3n + ns->litr4n +
 		ns->soil1n + ns->soil2n + ns->soil3n + ns->soil4n +
-		ns->sminn[0] + ns->sminn[1] + ns->sminn[2] + ns->sminn[3] + ns->sminn[4] + 
+		ns->sminn[0] + ns->sminn[1] + ns->sminn[2] + ns->sminn[3] + ns->sminn[4] + ns->sminn[5] + 
 		ns->npool + ns->retransn +
 		/* fruit simulation */
 		ns->fruitn + ns->fruitn_storage + ns->fruitn_transfer;
@@ -222,7 +218,7 @@ int check_nitrogen_balance(nstate_struct* ns, control_struct* ctrl, int first_ba
 	 
 	if (!first_balance)
 	{
-		if (fabs(old_balance - balance) > 1e-8)
+		if (fabs(old_balance - balance) > 1e-6)
 		{
 			printf("FATAL ERRROR: nitrogen balance error:\n");
 			printf("Balance from previous day = %lf\n",old_balance);

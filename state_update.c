@@ -3,11 +3,9 @@ state_update.c
 Resolve the fluxes in bgc() daily loop to update state variables
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 4/17/2000 (PET): Included the new denitrification flux. See daily_allocation.c
@@ -24,7 +22,7 @@ for complete description of this change.
 #include "bgc_constants.h"
 
 
-int daily_water_state_update(const control_struct* ctrl, wflux_struct* wf, wstate_struct* ws)
+int daily_water_state_update(wflux_struct* wf, wstate_struct* ws)
 {
 	/* daily update of the water state variables */
 	 
@@ -48,6 +46,10 @@ int daily_water_state_update(const control_struct* ctrl, wflux_struct* wf, wstat
 	ws->canopyw        -= wf->canopyw_evap;
 	ws->canopyw        -= wf->canopyw_to_soilw;
 
+	/* pind water evaporation */
+	ws->pondwevap_snk  += wf->pondw_evap;
+	ws->pond_water     -= wf->pondw_evap;
+
 	/* snowmelt fluxes */
 	ws->snoww          -= wf->snoww_to_soilw;
 	ws->snowsubl_snk   += wf->snoww_subl;
@@ -65,18 +67,22 @@ int daily_water_state_update(const control_struct* ctrl, wflux_struct* wf, wstat
 	/* runoff - from the top soil layer (net loss) */
 	ws->runoff_snk	   += wf->prcp_to_runoff;
 
-	/* deep percolation: percolation of the last layer is net loss for the sytem*/
+	/* deep percolation: percolation of the bottom layer is net loss for the sytem*/
 	ws->deeppercolation_snk += wf->soilw_percolated[N_SOILLAYERS-2];
 
-	/* deep diffusion: diffusion (downward) of the last layer is net loss for the sytem*/
+	/* deep diffusion: diffusion (downward) of the bottom layer is net loss for the sytem*/
 	ws->deepdiffusion_snk += wf->soilw_diffused[N_SOILLAYERS-2];
+
+	/* deep transpiration: transpiration from bottom layer is net surplus for the sytem*/
+	ws->deeptrans_src += wf->soilw_trans[N_SOILLAYERS-1];
 
    
 	
 	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!! MULTILAYER SOIL !!!!!!!!!!!!!!!!!!!!!!!!!! */	
 	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
 	{
-		soilw_SUM +=  ws->soilw[layer];
+		soilw_SUM           +=  ws->soilw[layer];
+		ws->groundwater_src += wf->soilw_from_GW[layer];
 	}
 
 	ws->soilw_SUM = soilw_SUM;
@@ -87,7 +93,7 @@ int daily_water_state_update(const control_struct* ctrl, wflux_struct* wf, wstat
 	return (!ok);
 }
 
-int daily_carbon_state_update(const control_struct* ctrl, cflux_struct* cf, cstate_struct* cs,
+int daily_carbon_state_update(cflux_struct* cf, cstate_struct* cs,
 int alloc, int woody, int evergreen)
 {
 	/* daily update of the carbon state variables */
@@ -389,7 +395,7 @@ int alloc, int woody, int evergreen)
 	return (!ok);
 }		
 
-int daily_nitrogen_state_update(const control_struct* ctrl, const epconst_struct* epc, nflux_struct* nf, nstate_struct* ns,
+int daily_nitrogen_state_update(const epconst_struct* epc, nflux_struct* nf, nstate_struct* ns,
 int alloc, int woody, int evergreen)
 {
 	int ok=1;

@@ -5,9 +5,10 @@ based on literure (Jolly et al, 2005) and own method. The goal is to replace pre
 of the model-defined onset and offset day does not work correctly
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2009, Hidy
-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-**/
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,16 +38,12 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 	int offday = 0;
 	int nyears = ctrl->metyears;
 	int n_yday = NDAY_OF_YEAR;
-	int ndays = NDAY_OF_YEAR * nyears;
-
 	
 	/*  enviromental conditions taken account to calculate onset and offset days */
 	double tmax_act, tmin_act, tavg_act, vpd_act, dayl_act, heatsum_act;	
 
 	
 	/* threshold limits for each variable, between assuming that phenological activity varied linearly from inactive to unconstrained */
-
-	
 	double basic_temperature = GSI->basic_temperature;
 	double heatsum_limit1 = GSI->heatsum_limit1;
 	double heatsum_limit2 = GSI->heatsum_limit2;
@@ -63,7 +60,11 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 
 
 	/* indexes for the different variables and total index (multiplication of  partial indexes)*/
-	double tmin_index, vpd_index, dayl_index, heatsum_index, GSI_index;
+	double tmin_index = 0;
+	double vpd_index = 0; 
+	double dayl_index = 0; 
+	double heatsum_index = 0; 
+	double GSI_index = 0; 
 
 	/* at the presence of snow cover no vegetation period (calculating snow cover from precipitation, Tavg and srad) */
 	double snowcover, snowcover_limit, prcp_act, srad_act;
@@ -75,7 +76,8 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 	double GSI_index_avg = 0;
 	double GSI_index_total = 0;
 	
-	int *onday_arr, *offday_arr;
+	int *onday_arr = 0;
+	int *offday_arr = 0;
 
 	onday_flag = 0;
 	offday_flag = 1;
@@ -87,15 +89,23 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////allocate memory for arrays containing ondays and offdays /////////////////////////////////////
-	if (ok && !(onday_arr = (int*) malloc((nyears+1) * sizeof(int))))
+	if (ok) 
 	{
-		printf("Error allocating for onday_arr, prephenology()\n");
-		ok=0;
+		onday_arr = (int*) malloc((nyears+1) * sizeof(int));
+		if (!onday_arr)
+		{
+			printf("Error allocating for onday_arr, prephenology()\n");
+			ok=0;
+		}
 	}
-	if (ok && !(offday_arr = (int*) malloc((nyears+1) * sizeof(int))))
+	if (ok) 
 	{
-		printf("Error allocating for offday_arr, prephenology()\n");
-		ok=0;
+		offday_arr = (int*) malloc((nyears+1) * sizeof(int));
+		if (!offday_arr)
+		{
+			printf("Error allocating for offday_arr, prephenology()\n");
+			ok=0;
+		}
 	}
 		
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,7 +311,7 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 			/* 4. writing out the enviromental parameters and GSI indexes */
 			if (ctrl->onscreen)
 			{
-				fprintf(GSI->GSI_file.ptr, "%i %i %f %f %f %f %f %f %f %f %f\n", ctrl->simstartyear+ny, yday, 
+				fprintf(GSI->GSI_file.ptr, "%i %i %4.2f %4.2f %4.2f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\n", ctrl->simstartyear+ny, yday, 
 									tavg_act, prcp_act, tmin_act, heatsum_act, tmin_index, heatsum_index, snowcover,
 									 GSI_index_avg, GSI_index_total);
 			}
@@ -322,12 +332,8 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 		}
 	}
 
-
-
-
 	phenarr->onday_arr = onday_arr;
 	phenarr->offday_arr= offday_arr;
-
 
 	return (!ok);
 

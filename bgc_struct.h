@@ -3,11 +3,9 @@ bgc_struct.h
 header file for structure definitions
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.2
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2013, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 4/17/2000 (PET): Added new nf structure element (sminn_to_denitrif). This is
@@ -20,7 +18,7 @@ element ndep_array (array). Changes are made by Galina Churkina.
 
 #define N_POOLS 3			/* Hidy 2010 - number of type of pools: water, carbon, nitrogen */
 #define N_MGMDAYS 7			/* Hidy 2013 - number of type of management events in a single year */
-#define N_SOILLAYERS 5		/* Hidy 2013 - number of type of soil layers in multilayer soil module */
+#define N_SOILLAYERS 7		/* Hidy 2013 - number of type of soil layers in multilayer soil module */
 
 
 /* simulation control variables */
@@ -61,6 +59,7 @@ typedef struct
 	int n_limitation;	     /* Hidy 2010 - flag for nitrogen limitation */
 	int varWPM_flag;	     /* Hidy 2012 - changing WPM value */
 	int varMSC_flag;	     /* Hidy 2012 - changing MSC value */
+	int GWD_flag;			 /* Hidy 2012 - using gorundwater depth */
 } control_struct;
 
 /* a structure to hold information about ramped N-deposition scenario */
@@ -143,11 +142,14 @@ typedef struct
     double soilevap_snk;			 /* (kgH2O/m2) SUM of soil water evaporation */
     double snowsubl_snk;			 /* (kgH2O/m2) SUM of snow water sublimation */
     double canopyevap_snk;			 /* (kgH2O/m2) SUM of canopy water evaporation */
+	double pondwevap_snk;		 /* (kgH2O/m2) SUM of pond water evaporation */
     double trans_snk;				 /* (kgH2O/m2) SUM of transpiration */
 	/* soil-water submodel - by Hidy 2008. */
 	double runoff_snk;			 	 /* (kgH2O/m2) SUM of runoff */
 	double deeppercolation_snk;		 /* (kgH2O/m2) SUM of percolated water out of the system */
 	double deepdiffusion_snk;		 /* (kgH2O/m2) SUM of percolated water out of the system */
+	double deeptrans_src;			 /* (kgH2O/m2) SUM of transpirated water from the bottom layer */
+	double groundwater_src;			 /* (kgH2O/m2) SUM of water plus from goundwater */
 	/* thinning - Hidy 2012. */
 	double canopyw_THNsnk;				/* (kgH2O/m2) water stored on canopy is disappered because of thinning*/
 	/* mowing - Hidy 2008. */
@@ -170,7 +172,8 @@ typedef struct
 	double prcp_to_runoff;						    /* (kgH2O/m2/d) Hidy 2010 - runoff flux */
     double canopyw_evap;							/* (kgH2O/m2/d) evaporation from canopy */
     double canopyw_to_soilw;						/* (kgH2O/m2/d) canopy drip and stemflow -  Hidy 2010: on the top soil layer */
-    double snoww_subl;								/* (kgH2O/m2/d) sublimation from snowpack */
+    double pondw_evap;                              /* (kgH2O/m2/d) pond water evaporation -  Hidy 2014 */
+	double snoww_subl;								/* (kgH2O/m2/d) sublimation from snowpack */
     double snoww_to_soilw;							/* (kgH2O/m2/d) melt from snowpack -  Hidy 2010: on the top soil layer */
     double soilw_evap;								/* (kgH2O/m2/d) evaporation from soil */
     double soilw_trans[N_SOILLAYERS];				/* (kgH2O/m2/d) Hidy 2010 - transpiration from the soil layers */
@@ -178,6 +181,7 @@ typedef struct
 	double evapotransp;								/* (kgH2O/m2/d) Hidy 2013 - total water evaporation (canopyw_evap+soilw_evap+soilw_trans+snoww_subl) */
 	double soilw_percolated[N_SOILLAYERS];		    /* (kgH2O/m2/d) Hidy 2010 - percolation fluxes between soil layers */
 	double soilw_diffused[N_SOILLAYERS];			/* (kgH2O/m2/d) Hidy 2010 - diffusion flux between the soil layers (positive: downward) */
+	double soilw_from_GW[N_SOILLAYERS];				/* (kgH2O/m2/d) Hidy 2013 - soil water pélus from ground water */
 	/* thinning - by Hidy 2008. */
 	double canopyw_to_THN;							/* (kgH2O/m2/d) water stored on canopy is disappered because of thinning*/
 	/* mowing - by Hidy 2008. */
@@ -263,6 +267,12 @@ typedef struct
 	/* thinning - by Hidy 2012.  */
 	double THNsnk;              /* (kgC/m2) thinned leaf C */
 	double THNsrc;			    /* (kgC/m2) thinned plant material (C content) returns to the litter  */
+	double THN_transportC;      /* (kgC/m2) thinned and transported plant material (C content)  */
+	double litr1c_strg_THN;     /* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
+	double litr2c_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
+	double litr3c_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
+	double litr4c_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
+	double cwdc_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
 	/* mowing - by Hidy 2008.   */
 	double MOWsnk;              /* (kgC/m2) mowed leaf C */
 	double MOWsrc;			    /* (kgC/m2) mowed plant material (C content) returns to the litter */
@@ -644,6 +654,12 @@ typedef struct
 	/* thinning - by Hidy 2008. */
 	double THNsnk;				 /* (kgN/m2) thinned leaf N */
 	double THNsrc;				 /* (kgC/m2) thinned plant material (N content) returns to the soil (labile litter) */
+	double THN_transportN; 		/* (kgC/m2) thinned and transported plant material (N content)  */
+	double litr1n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
+	double litr2n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
+	double litr3n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
+	double litr4n_strg_THN;		/* (kgC/m2)  amount of thinned plant biomass before turning into litter pool */
+	double cwdn_strg_THN;		/* (kgC/m2) amount of thinned plant biomass before turning into litter pool */
 	/* mowing - by Hidy 2008. */
 	double MOWsnk;              /* (kgN/m2) mowed leaf N */
 	double MOWsrc;				/* (kgC/m2) mowed plant material (N content) returns to the soil (labile litter) */
@@ -754,13 +770,12 @@ typedef struct
 	/* phenology fluxes from transfer pool */
 	double leafn_transfer_to_leafn;           /* (kgN/m2/d) */
 	double frootn_transfer_to_frootn;         /* (kgN/m2/d) */
-	double fruitn_transfer_to_fruitn;         /* (kgN/m2/d) */
 	double livestemn_transfer_to_livestemn;   /* (kgN/m2/d) */
 	double deadstemn_transfer_to_deadstemn;   /* (kgN/m2/d) */
 	double livecrootn_transfer_to_livecrootn; /* (kgN/m2/d) */
 	double deadcrootn_transfer_to_deadcrootn; /* (kgN/m2/d) */
 	/* phenology - fruit simulation (Hidy 2013.)  */
-	double fruitn_transfer_to_leafn;           /* (kgN/m2/d) */
+	double fruitn_transfer_to_fruitn;         /* (kgN/m2/d) */
 	/* litterfall fluxes */
 	double leafn_to_litr1n;               /* (kgN/m2/d) */
 	double leafn_to_litr2n;               /* (kgN/m2/d) */ 
@@ -1013,7 +1028,7 @@ typedef struct
     double shade_proj_sla;					/* (m2/kgC) shaded projected SLA */
     
 	/* Hidy 2010 - new variables */
-	double soillayer_RZportion[N_SOILLAYERS];		/* (ratio) Hidy 2010 - array contains the portion of rootzone in the given soil layer */
+	double rootlength_prop[N_SOILLAYERS];		    /* (prop) Hidy 2014 - array contains the proportion of total root lenght in the given soil layer (Jarvis 1989) */
 	double psi[N_SOILLAYERS];						/* (MPa) water potential of soil and leaves - Hidy 2010: multilayer soil  */
 	double pF[N_SOILLAYERS];						/* (cm) soil water suction derived from log(soil water potential) - Hidy 2010  */
 	double hydr_conduct[N_SOILLAYERS];				/* (m/s) hydraulic conductivity - Hidy 2010: multilayer soil  */
@@ -1025,13 +1040,12 @@ typedef struct
 	double hydr_conduct_avg;						/* (m/s) average hydraulic conductivity (1 meter deep layer) - Hidy 2010  */
 	double hydr_diffus_avg;			    			/* (m2/s) average hydraulic diffusivity (1 meter deep layer) - Hidy 2010  */
     double vwc_avg;									/* (m3/m3) average volumetric water content (1 meter deep layer) - Hidy 2010 */
-    double vwc_ratio_open;							/* (DIM) volumetric water content ratio at start of conductance reduction - Hidy 2012*/
-	double vwc_ratio_close;							/* (DIM) volumetric water content ratio at stomatal closure - Hidy 2012*/
-	double vwc_open;								/* (m3/m3) volumetric water content at start of conductance reduction - Hidy 2012*/
-	double vwc_close;								/* (m3/m3) volumetric water content at stomatal closure - Hidy 2012*/
-	double psi_open;								/* (MPa) soil water potential at start of conductance reduction - Hidy 2012*/
-	double psi_close;								/* (MPa) soil water potential at stomatal closure  - Hidy 2012*/
-
+    double vwc_ratio_crit1;							/* (DIM) volumetric water content ratio at start of conductance reduction - Hidy 2012*/
+	double vwc_ratio_crit2;							/* (DIM) volumetric water content ratio at stomatal closure - Hidy 2012*/
+    double vwc_crit1;							/* (DIM) volumetric water content at start of conductance reduction - Hidy 2012*/
+	double vwc_crit2;							/* (DIM) volumetric water content at stomatal closure - Hidy 2012*/
+	double psi_crit1;							/* (DIM) soil water potential at start of conductance reduction - Hidy 2012*/
+	double psi_crit2;							/* (DIM) soil water potential at stomatal closure - Hidy 2012*/
 	double dlmr_area_sun;					/* (umolC/m2projected leaf area/s) sunlit leaf MR */
     double dlmr_area_shade;					/* (umolC/m2projected leaf area/s) shaded leaf MR */
     double gl_t_wv_sun;						/* (m/s) leaf-scale conductance to transpired water */
@@ -1049,8 +1063,8 @@ typedef struct
     /* the following are optional outputs, usually set if the appropriate
     functions are called with the flag verbose = 1 */
 	double m_tmin;							   /* (DIM) freezing night temperature multiplier */
-	double m_soilprop_layer[N_SOILLAYERS]; /* (DIM) Hidy 2010: CONTROL - soil water content multiplier */
-	double m_soilprop;					      /* (DIM) soil water properties (water content and depth) multiplier */
+	double m_soilstress_layer[N_SOILLAYERS]; /* (DIM) Hidy 2010: CONTROL - soil water stress multiplier */
+	double m_soilstress;					      /* (DIM) soil water properties (water content and depth) multiplier */
 	double m_co2;						   	   /* (DIM) atmospheric [CO2] multiplier */
 	double m_ppfd_sun;						 /* (DIM) PAR flux density multiplier */
 	double m_ppfd_shade;					 /* (DIM) PAR flux density multiplier */
@@ -1074,10 +1088,9 @@ typedef struct
 typedef struct
 {
     double max_rootzone_depth;							/* (m)   Hidy 2010 - maximum depth of rooting zone */
-    double soillayer_depths[N_SOILLAYERS];			/*  (m) Hidy 2010 - array contains the soil layer depths (positive values)*/
-	double soillayer_thickness[N_SOILLAYERS];		/*  (m) Hidy 2010 - array contains the soil layer thickness (positive values) */
-	double rel_soillayer_thickness[N_SOILLAYERS];	/* (ratio) Hidy 2010 - array contains the ratio of soil layer thickness and total soil depth(positive values) */
-	double delta_z[N_SOILLAYERS];					/*  (m) Hidy 2010 - array contains the depth of the middle layers (negative values)*/
+    double soillayer_depth[N_SOILLAYERS];			/*  (m) Hidy 2010 - array contains the soil layer depths (positive values)*/
+	double soillayer_thickness[N_SOILLAYERS];		/*  (m) Hidy 2010 - array contains the soil layer thicknesses (positive values) */
+	double soillayer_midpoint[N_SOILLAYERS];					/*  (m) Hidy 2010 - array contains the depths of the middle layers (positive values)*/
     double soil_b;										/* (DIM) Clapp-Hornberger "b" parameter */
     double vwc_sat;										/* (DIM) volumetric water content at saturation */
     double vwc_fc;								/* (DIM) VWC at field capacity ( = -0.033 MPa) */
@@ -1101,6 +1114,9 @@ typedef struct
 	double vwc_sat_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at saturation*/
 	double vwc_fc_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at field capacity*/
 	double vwc_wp_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at wilting point*/
+    double gwd_act;							    /* (m)	Hidy 2014 - actual depth of the groundwater on a given day */	
+	double* gwd_array;							/* (m)	Hidy 2013 - depth of the groundwater */	
+
 } siteconst_struct;								
 
 /* canopy ecophysiological constants */
@@ -1132,10 +1148,10 @@ typedef struct
     double ext_coef;       /* (DIM) canopy light extinction coefficient */
     double flnr;           /* (kg NRub/kg Nleaf) leaf N in Rubisco */
 	double flnp;           /* (kg PeP/kg Nleaf) fraction of leaf N in PEP Carboxylase */
-	double vwc_ratio_open;			/* (%) Hidy 2011 - vwc ratio at start of conductance reduction */
-    double vwc_ratio_close;			/* (%) Hidy 2011 - vwc at complete conductance */
-	double psi_open;			/* (%) Hidy 2011 - soil water potential at conductance reduction */
-    double psi_close;			/* (%) Hidy 2011 - soil water potential at complete conductance */
+	double relVWC_crit1;  /* (%) Hidy 2014 - relative vwc to calc. soil moisture limitation 1 */
+    double relVWC_crit2;  /* (%) Hidy 2014 - relative vwc to calc. soil moisture limitation 2 */
+	double relPSI_crit1;   /* (%) Hidy 2014 - relative psi to calc. soil moisture limitation 1 */
+    double relPSI_crit2;  /* (%) Hidy 2011 - relative psi to calc. soil moisture limitation 2 */
 	double vpd_open;       /* (Pa)  vpd at start of conductance reduction */
 	double vpd_close;      /* (Pa)  vpd at complete conductance reduction */
     double gl_smax;        /* (m/s) maximum leaf-scale stomatal conductance */
@@ -1165,8 +1181,8 @@ typedef struct
 	double denitrif_prop;		/* Hidy 2013 - fraction of mineralization to volatile */
 	double mobilen_prop;		/* Hidy 2013 -fraction mineral N avail for leaching */
 	double maturity_coeff;		/* Hidy 2013 - maturity coefficient (to calculate maximum rooting depth) */
-	double* wpm_array;			/* Hidy 2011 - changingx WPM values */
-	double* msc_array;			/* Hidy 2011 - changingx WPM values */
+	double* wpm_array;			/* Hidy 2011 - changing WPM values */
+	double* msc_array;			/* Hidy 2011 - changing WPM values */
 	/* fruit simulation - Hidy 2013. */
 	double fruit_turnover;          /* (1/yr) annual fruit turnover fraction */
     double alloc_fruitc_leafc;      /* (ratio) new fruit c to new leaf c */
@@ -1175,6 +1191,12 @@ typedef struct
     double fruitlitr_fucel;         /* (DIM) fruit litter unshielded cellulose fract. */
     double fruitlitr_fscel;         /* (DIM) fruit litter shielded cellulose fract. */
     double fruitlitr_flig;          /* (DIM) fruit litter lignin fraction */
+	/* storage pool mortality  - Hidy 2014 */
+	double belowbiom_MGMmort;		/* (DIM) ratio of the storage pool mortality of the actual pool mortalitay due to management */
+	/* senescence mortality - Hidy 2014*/
+	double m_soilstress_crit;      /* (DIM) critical value os soil stress multiplier below wchich senescence mortaility begins */
+	int n_stressdays_crit;         /* (DIM) critical number of stress days after wchich senescence mortaility  is totally */
+	double rootdistrib_param;       /* (DIM) root distribution parameter (Jarvis 1989) */
 } epconst_struct;
 
 /* strucure for thinning paramteres - by Hidy 2012. */
@@ -1184,8 +1206,8 @@ typedef struct
 	int mgmd;								/* (flag) 1=do management , 0=no management on actual day */
 	double** THNdays_array;					/* (array) contains the thinning days in 1 year*/
 	double** thinning_rate_array;			/* (array) rate of the thinned trees */
-	double** transp_stem_rate_array;		/* (array) rate of the transported stem */
-	double** transp_leaf_rate_array;		/* (array) rate of the transported leaf */
+	double** transpcoeff_woody_array;		/* (array) rate of the transported woody matter */
+	double** transpcoeff_nwoody_array;		/* (array) rate of the transported non woody matter */
 } thinning_struct;
 
 /* strucure for mowing paramteres - by Hidy 2008 */
@@ -1217,6 +1239,15 @@ typedef struct
 	int PLG_flag;								/* (flag) 1=do plough , 0=no plough */
 	int mgmd;									/* (flag) 1=do management , 0=no management on actual day */
 	double** PLGdays_array;						/* (array) contains the plough days in 1 year*/
+	double PLG_pool_litr1c;						/* (value) actual ploughing pool */
+	double PLG_pool_litr2c;						/* (value) actual ploughing pool */
+	double PLG_pool_litr3c;						/* (value) actual ploughing pool */
+	double PLG_pool_litr4c;						/* (value) actual ploughing pool */
+	double PLG_pool_litr1n;						/* (value) actual ploughing pool */
+	double PLG_pool_litr2n;						/* (value) actual ploughing pool */
+	double PLG_pool_litr3n;						/* (value) actual ploughing pool */
+	double PLG_pool_litr4n;						/* (value) actual ploughing pool */
+	double DC_act;								/* (value) dissolving coefficient of actual ploughing pool */
 } ploughing_struct;
 
 /* strucure for grazing paramteres - by Hidy 2009 */

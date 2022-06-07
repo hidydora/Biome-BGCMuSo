@@ -3,11 +3,9 @@ metarr_init.c
 Initialize meteorological data arrays for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -43,61 +41,117 @@ int nyears)
 	int i;
 	int ndays;
 	int year;
-	double tmax,tmin,tday, prcp,vpd,swavgfd,dayl;
+	double tmax = 0;
+	double tmin = 0;
+	double tday = 0;
+	double prcp = 0;
+	double vpd = 0;
+	double swavgfd = 0;
+	double dayl = 0;
 	
 	ndays = NDAY_OF_YEAR * nyears;
 
 	/* allocate space for the metv arrays */
-	if (ok && !(metarr->tmax = (double*) malloc(ndays * sizeof(double))))
+	if (ok)
 	{
-		printf("Error allocating for tmax array\n");
-		ok=0;
+		metarr->tmax = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tmax)
+		{
+			printf("Error allocating for tmax array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->tmin = (double*) malloc(ndays * sizeof(double))))
+
+	if (ok)
 	{
-		printf("Error allocating for tmin array\n");
-		ok=0;
+		metarr->tmin = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tmin)
+		{
+			printf("Error allocating for tmin array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->prcp = (double*) malloc(ndays * sizeof(double))))
+
+	if (ok)
 	{
-		printf("Error allocating for prcp array\n");
-		ok=0;
+		metarr->prcp = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->prcp)
+		{
+			printf("Error allocating for prcp array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->vpd = (double*) malloc(ndays * sizeof(double))))
+
+	if (ok)
 	{
-		printf("Error allocating for vpd array\n");
-		ok=0;
+		metarr->vpd = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->vpd)
+		{
+			printf("Error allocating for vpd array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->tday = (double*) malloc(ndays * sizeof(double))))
+
+	if (ok)
 	{
-		printf("Error allocating for tday array\n");
-		ok=0;
+		metarr->tday = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tday)
+		{
+			printf("Error allocating for tday array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->tavg = (double*) malloc(ndays * sizeof(double))))
+
+	if (ok)
 	{
-		printf("Error allocating for tavg array\n");
-		ok=0;
+		metarr->tavg = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tavg)
+		{
+			printf("Error allocating for tavg array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->tavg_ra = (double*) malloc(ndays * sizeof(double))))
+
+	if (ok)
 	{
-		printf("Error allocating for tavg_ra array\n");
-		ok=0;
+		metarr->tavg_ra = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tavg_ra)
+		{
+			printf("Error allocating for tavg_ra array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->swavgfd = (double*) malloc(ndays * sizeof(double))))
+
+	if (ok)
 	{
-		printf("Error allocating for swavgfd array\n");
-		ok=0;
+		metarr->swavgfd = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->tavg_ra)
+		{
+			printf("Error allocating for swavgfd array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->par = (double*) malloc(ndays * sizeof(double))))
+	
+	if (ok)
 	{
-		printf("Error allocating for par array\n");
-		ok=0;
+		metarr->par = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->par)
+		{
+			printf("Error allocating for par array\n");
+			ok=0;
+		}
 	}
-	if (ok && !(metarr->dayl = (double*) malloc(ndays * sizeof(double))))
+	
+	if (ok)
 	{
-		printf("Error allocating for dayl array\n");
-		ok=0;
+		metarr->dayl = (double*) malloc(ndays * sizeof(double));
+		if (!metarr->dayl)
+		{
+			printf("Error allocating for dayl array\n");
+			ok=0;
+		}
 	}
+
 	
 	/* begin daily loop: read input file, generate array values */
 	for (i=0 ; ok && i<ndays ; i++)
@@ -124,6 +178,13 @@ int nyears)
 			ok=0;
 		}
 		
+		/* Hidy 2013 - control to avoid negative meteorological data */
+ 		if (prcp < 0 || vpd < 0 || swavgfd < 0 || dayl < 0)
+		{
+			printf("Error in met file: negative prcp/vpd/swavgfd/dayl, metv_init()\n");
+			ok=0;
+		}
+
 		/* apply the climate change scenario and store */
 		metarr->tmax[i] = tmax + scc->s_tmax;
 		metarr->tmin[i] = tmin + scc->s_tmin;

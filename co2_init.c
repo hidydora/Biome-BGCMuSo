@@ -3,11 +3,9 @@ co2_init.c
 Initialize the annual co2 concentration parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -71,17 +69,19 @@ int co2_init(file init, co2control_struct* co2, int simyears)
 		}
 		
 		/* allocate space for the annual CO2 array */
-		if (ok && !(co2->co2ppm_array = (double*) malloc(simyears *
-			sizeof(double))))
+		if (ok) 
 		{
-			printf("Error allocating for annual CO2 array, co2_init()\n");
-			ok=0;
+			co2->co2ppm_array = (double*) malloc(simyears * sizeof(double));
+			if (!co2->co2ppm_array)
+			{
+				printf("Error allocating for annual CO2 array, co2_init()\n");
+				ok=0;
+			}
 		}
 		/* read year and co2 concentration for each simyear */
 		for (i=0 ; ok && i<simyears ; i++)
 		{
-			if (fscanf(temp.ptr,"%*lf%lf",
-				&(co2->co2ppm_array[i]))==EOF)
+			if (fscanf(temp.ptr,"%*i%lf",&(co2->co2ppm_array[i]))==EOF)
 			{
 				printf("Error reading annual CO2 array, ctrl_init()\n");
 				printf("Note: file must contain a pair of values for each\n");

@@ -3,11 +3,9 @@ maint_resp.c
 daily maintenance respiration
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -21,7 +19,7 @@ Missoula, MT 59812
 #include "bgc_constants.h"
 
 int maint_resp(const cstate_struct* cs, const nstate_struct* ns,const epconst_struct* epc, const metvar_struct* metv,
-		const siteconst_struct* sitec, cflux_struct* cf, epvar_struct* epv)
+		      cflux_struct* cf, epvar_struct* epv)
 {
 	/*
 	maintenance respiration routine
@@ -115,7 +113,7 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns,const epconst_st
 		{
 			tsoil = metv->tsoil[layer];
 			
-			frootn_layer = ns->frootn * epv->soillayer_RZportion[layer];
+			frootn_layer = ns->frootn * epv->rootlength_prop[layer];
 			exponent = (tsoil - 20.0) / 10.0;
 			t1 = pow(q10, exponent);
 			froot_mr += frootn_layer * mrpern * t1;
@@ -153,7 +151,7 @@ int maint_resp(const cstate_struct* cs, const nstate_struct* ns,const epconst_st
 		{
 			tsoil = metv->tsoil[layer];
 
-			livecrootn_layer = ns->livecrootn * epv->soillayer_RZportion[layer];
+			livecrootn_layer = ns->livecrootn * epv->rootlength_prop[layer];
 			
 			exponent = (tsoil - 20.0) / 10.0;
 			t1 = pow(q10, exponent);

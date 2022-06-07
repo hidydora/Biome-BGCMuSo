@@ -3,8 +3,8 @@ mowing.c
 do mowing  - decrease the plant material (leafc, leafn, canopy water)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2008, Hidy
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -24,7 +24,6 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 				  cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)
 {
 	/* mowing parameters */
-	int mowing;									/* flag, 1=mowing; 0=no mowing */
 	double LAI_limit;
 	double remained_prop;						/* remained proportion of plabnt material is calculated from transport coefficient */
 	double MOW_to_litr1c_strg, MOW_to_litr2c_strg, MOW_to_litr3c_strg, MOW_to_litr4c_strg, MOW_to_transpC;
@@ -41,7 +40,7 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 
 
 	/* test variable */
-	int nonactpool_coeff=1;
+	double belowbiom_MGMmort=epc->belowbiom_MGMmort;
 
 	/* yearly varied or constant management parameters */
 	if(MOW->MOW_flag == 2)
@@ -63,14 +62,11 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 	{	
 		if (mgmd >=0) 
 		{
-	
-			mowing = 1;
 			remained_prop = (100 - MOW->transport_coeff_array[mgmd][ny])/100.;
 			LAI_limit = MOW->LAI_limit_array[mgmd][ny];
 		}
 		else 
 		{
-			mowing = 0;
 			remained_prop = 0;
 			LAI_limit = befgrass_LAI;
 		}
@@ -80,13 +76,11 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 		/* mowing if LAI greater than a given value (fixLAI_befMOW) */
 		if (cs->leafc * epc->avg_proj_sla > MOW->fixLAI_befMOW)
 		{
-			mowing = 1;
 			remained_prop = (100 - MOW->transport_coeff_array[0][0])/100.;
 			LAI_limit = MOW->fixLAI_aftMOW;
 		}
 		else
 		{
-			mowing = 0;
 			remained_prop = 0;
 			LAI_limit = befgrass_LAI;
 		}
@@ -110,29 +104,31 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 	
 
 	cf->leafc_to_MOW          = cs->leafc * MOWcoeff;
-	cf->leafc_transfer_to_MOW = cs->leafc_transfer * MOWcoeff * nonactpool_coeff;
-	cf->leafc_storage_to_MOW  = cs->leafc_storage * MOWcoeff * nonactpool_coeff;
+	cf->leafc_transfer_to_MOW = cs->leafc_transfer * MOWcoeff * belowbiom_MGMmort;
+	cf->leafc_storage_to_MOW  = cs->leafc_storage * MOWcoeff * belowbiom_MGMmort;
 
 	cf->fruitc_to_MOW          = cs->fruitc * MOWcoeff;
-	cf->fruitc_transfer_to_MOW = cs->fruitc_transfer * MOWcoeff * nonactpool_coeff;
-	cf->fruitc_storage_to_MOW  = cs->fruitc_storage * MOWcoeff * nonactpool_coeff;
+	cf->fruitc_transfer_to_MOW = cs->fruitc_transfer * MOWcoeff * belowbiom_MGMmort;
+	cf->fruitc_storage_to_MOW  = cs->fruitc_storage * MOWcoeff * belowbiom_MGMmort;
 	
-	cf->gresp_transfer_to_MOW = cs->gresp_transfer * MOWcoeff * nonactpool_coeff;
-	cf->gresp_storage_to_MOW  = cs->gresp_storage * MOWcoeff * nonactpool_coeff;
+	cf->gresp_transfer_to_MOW = cs->gresp_transfer * MOWcoeff * belowbiom_MGMmort;
+	cf->gresp_storage_to_MOW  = cs->gresp_storage * MOWcoeff * belowbiom_MGMmort;
 
 	nf->leafn_to_MOW          = ns->leafn * MOWcoeff;
-	nf->leafn_transfer_to_MOW = ns->leafn_transfer * MOWcoeff * nonactpool_coeff;
-	nf->leafn_storage_to_MOW  = ns->leafn_storage * MOWcoeff * nonactpool_coeff;
+	nf->leafn_transfer_to_MOW = ns->leafn_transfer * MOWcoeff * belowbiom_MGMmort;
+	nf->leafn_storage_to_MOW  = ns->leafn_storage * MOWcoeff * belowbiom_MGMmort;
    
 	/**********************************************************************************************/
 	/* 2. part of the plant material is transported (MOW_to_transpC and MOW_to_transpN; transp_coeff = 1-remained_prop),
 	      the rest remains at the site (MOW_to_litrc_strg, MOW_to_litrn_strg)*/
 
 	MOW_to_transpC = (cf->leafc_to_MOW + cf->leafc_transfer_to_MOW + cf->leafc_storage_to_MOW +
-				      cf->fruitc_to_MOW + cf->fruitc_transfer_to_MOW + cf->fruitc_storage_to_MOW) * (1-remained_prop);
+				      cf->fruitc_to_MOW + cf->fruitc_transfer_to_MOW + cf->fruitc_storage_to_MOW + 
+					  cf->gresp_storage_to_MOW  + cf->gresp_transfer_to_MOW)                       * (1-remained_prop);
 
 	MOW_to_transpN = (nf->leafn_to_MOW + nf->leafn_transfer_to_MOW + nf->leafn_storage_to_MOW +
-				      nf->fruitn_to_MOW + nf->fruitn_transfer_to_MOW + nf->fruitn_storage_to_MOW) * (1-remained_prop);
+				      nf->fruitn_to_MOW + nf->fruitn_transfer_to_MOW + nf->fruitn_storage_to_MOW + 
+					  nf->retransn_to_MOW)															* (1-remained_prop);
 	
 	MOW_to_litr1c_strg = (cf->leafc_to_MOW * epc->leaflitr_flab   + cf->leafc_transfer_to_MOW  + cf->leafc_storage_to_MOW + 
 		                  cf->fruitc_to_MOW* epc->fruitlitr_flab  + cf->fruitc_transfer_to_MOW + cf->fruitc_storage_to_MOW + 
@@ -208,7 +204,7 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 	cs->litr3c += cf->MOW_to_litr3c;
 	cs->litr4c += cf->MOW_to_litr4c;
 	
-       /* decreasing litter storage state variables*/
+    /* decreasing litter storage state variables*/
 	cs->litr1c_strg_MOW -= cf->MOW_to_litr1c;
 	cs->litr2c_strg_MOW -= cf->MOW_to_litr2c;
 	cs->litr3c_strg_MOW -= cf->MOW_to_litr3c;
@@ -255,7 +251,7 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 	ws->canopyw_MOWsnk += wf->canopyw_to_MOW;
 	ws->canopyw -= wf->canopyw_to_MOW;
 
-		/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                                     TEMPORARY POOLS
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 	/* temporary MOWed plant material pools: if litr1c_strg_MOW is less than a crit. value, the temporary pool becomes empty */
@@ -283,8 +279,7 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, mowing_struct*
 
 	if (fabs(diffC) > CRIT_PREC && fabs(diffN) > CRIT_PREC)
 	{
-		printf("Fatal error: mowing pools are incorrect (mowing.c)\n");
-		ok=0;
+	 	printf("Warning: small rounding error in mowing pools (mowing.c)\n");
 	}
 	
 

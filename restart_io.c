@@ -4,11 +4,9 @@ functions called to copy restart info between restart structure and
 active structures
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -21,9 +19,8 @@ Missoula, MT 59812
 #include "bgc_func.h"       /* function prototypes */
 #include "bgc_constants.h"
 
-int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_struct* ws, cstate_struct* cs,
-	nstate_struct* ns, epvar_struct* epv, int* metyr, 
-	restart_data_struct* restart)
+int restart_input(const control_struct* ctrl, wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, int* metyr, 
+				  restart_data_struct* restart)
 {
 	int ok=1;
 	int layer;
@@ -144,9 +141,8 @@ int restart_input(const siteconst_struct* sitec, control_struct* ctrl, wstate_st
 	return(!ok);
 }
 
-int restart_output(const siteconst_struct* sitec, control_struct* ctrl, wstate_struct* ws,cstate_struct* cs,
-	nstate_struct* ns, epvar_struct* epv, int metyr,
-	restart_data_struct* restart)
+int restart_output(wstate_struct* ws,cstate_struct* cs, nstate_struct* ns, epvar_struct* epv, int metyr, 
+				   restart_data_struct* restart)
 {
 	int ok=1;
 	int layer;

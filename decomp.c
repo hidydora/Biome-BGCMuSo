@@ -6,11 +6,9 @@ end of the daily allocation function, in order to allow competition
 between microbes and plants for available N.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -31,7 +29,7 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	int ok=1;
 	double rate_scalar, t_scalar, w_scalar;
 	double tk, tsoil;
-	double minvwc, maxvwc, vwc;
+	double minvwc, maxvwc, optvwc, vwc;
 	double rfl1s1, rfl2s2,rfl4s3,rfs1s2,rfs2s3,rfs3s4;
 	double kl1_base,kl2_base,kl4_base,ks1_base,ks2_base,ks3_base,ks4_base,kfrag_base;
 	double kl1,kl2,kl4,ks1,ks2,ks3,ks4,kfrag;
@@ -41,13 +39,11 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	double psoil1c_loss, psoil2c_loss, psoil3c_loss, psoil4c_loss;
 	double pmnf_l1s1,pmnf_l2s2,pmnf_l4s3,pmnf_s1s2,pmnf_s2s3,pmnf_s3s4,pmnf_s4;
 	double potential_immob,mineralized;
-	int nlimit;
 	double ratio;
 
 	/* Hidy 2010 - calculate the rate constant scalar in multilayer soil: averaged values */
 	tsoil = metv->tsoil_avg;
-	vwc   = epv->vwc_avg;
-	
+
 	/* calculate the rate constant scalar for soil temperature,
 	assuming that the base rate constants are assigned for non-moisture
 	limiting conditions at 25 C. The function used here is taken from
@@ -78,33 +74,29 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	/* Hidy 2013 . set the maximum and minimum values for water content limits (m3/m3) */
 	minvwc = sitec->vwc_hw;
 	maxvwc = sitec->vwc_sat;
+	optvwc = epv->vwc_crit2; 
+	vwc    = epv->vwc_avg;
 
 	if (vwc < minvwc)
 	{
-		/* no decomp below the minimum soil water potential */
+		/* no decomp below the minimum soil water potential and at saturation*/
 		w_scalar = 0.0;
-	}
-	else if (vwc > maxvwc)
-	{
-		/* this shouldn't ever happen, but just in case... */
-		w_scalar = 1.0;
 	}
 	else
 	{
-		if (epv->dsws > 0) 	
+		/* decreasing decomp near to total saturation*/
+		if (vwc > optvwc) 
 		{
-			w_scalar = (vwc - minvwc) / (maxvwc - minvwc);
+			w_scalar = (maxvwc - vwc) / (maxvwc - optvwc);
 		}
-		else
-		{
-			w_scalar = log(minvwc/vwc)/log(minvwc/maxvwc);	
-		}
+		else w_scalar = (vwc - minvwc) / (maxvwc - minvwc);		
 	}
+
 
 	/* CONTROL - w_scalar must be grater than 0 */
 	if (w_scalar < 0)
 	{
-		printf("Error in w_scalar calculation in decomp.c\n");
+ 		printf("Error in w_scalar calculation in decomp.c\n");
 		ok=0;
 	}
 
@@ -119,9 +111,9 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	epv->rate_scalar = rate_scalar;
 	
 	/* calculate compartment C:N ratios */
-	if (ns->litr1n > 0.0) cn_l1 = cs->litr1c/ns->litr1n;
-	if (ns->litr2n > 0.0) cn_l2 = cs->litr2c/ns->litr2n;
-	if (ns->litr4n > 0.0) cn_l4 = cs->litr4c/ns->litr4n;
+	cn_l1 = cs->litr1c/ns->litr1n;
+	cn_l2 = cs->litr2c/ns->litr2n;
+	cn_l4 = cs->litr4c/ns->litr4n;
 	cn_s1 = SOIL1_CN;
 	cn_s2 = SOIL2_CN;
 	cn_s3 = SOIL3_CN;
@@ -236,7 +228,6 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 	/* determine if there is sufficient mineral N to support potential
 	immobilization. Immobilization fluxes are positive, mineralization fluxes
 	are negative */
-	nlimit = 0;
 	potential_immob = 0.0;
 	mineralized = 0.0;
 	if (pmnf_l1s1 > 0.0) potential_immob += pmnf_l1s1;

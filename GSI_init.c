@@ -3,9 +3,8 @@ GSI_init.c
 read GSI file for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2008, Hidy
-
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -86,42 +85,42 @@ int GSI_init(file init, GSI_struct* GSI)
 	/* tmin_limit1 for calculation tmin index */
 	if (ok && scan_value(init, &GSI->tmin_limit1, 'd'))
 	{
-		printf("Error reading tmin_limit parameter: GSI_init()\n");
+		printf("Error reading tmin_limit1 parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* tmin_limit2 for calculation tmin index */
 	if (ok && scan_value(init, &GSI->tmin_limit2, 'd'))
 	{
-		printf("Error reading tmin_limit parameter: GSI_init()\n");
+		printf("Error reading tmin_limit2 parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* vpd_limit1 for calculation vpd index */
 	if (ok && scan_value(init, &GSI->vpd_limit1, 'd'))
 	{
-		printf("Error reading vpd_limit parameter: GSI_init()\n");
+		printf("Error reading vpd_limit1 parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* vpd for calculation vpd index */
 	if (ok && scan_value(init, &GSI->vpd_limit2, 'd'))
 	{
-		printf("Error reading vpd_limit parameter: GSI_init()\n");
+		printf("Error reading vpd_limit2 parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* dayl_limit1 for calculation dayl index */
 	if (ok && scan_value(init, &GSI->dayl_limit1, 'd'))
 	{
-		printf("Error reading dayl_limit parameter: GSI_init()\n");
+		printf("Error reading dayl_limit1 parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* dayl_limit2 for calculation dayl index */
 	if (ok && scan_value(init, &GSI->dayl_limit2, 'd'))
 	{
-		printf("Error reading dayl_limit parameter: GSI_init()\n");
+		printf("Error reading dayl_limit2 parameter: GSI_init()\n");
 		ok=0;
 	}
 
@@ -135,14 +134,14 @@ int GSI_init(file init, GSI_struct* GSI)
 	/* GSI_limit for calculation yday of start growing season  */
 	if (ok && scan_value(init, &GSI->GSI_limit_SGS, 'd'))
 	{
-		printf("Error reading n_moving_avg parameter: GSI_init()\n");
+		printf("Error reading GSI_limit_SGS parameter: GSI_init()\n");
 		ok=0;
 	}
 
 	/* GSI_limit for calculation yday of end growing season  */
 	if (ok && scan_value(init, &GSI->GSI_limit_EGS, 'd'))
 	{
-		printf("Error reading n_moving_avg parameter: GSI_init()\n");
+		printf("Error reading GSI_limit_EGS parameter: GSI_init()\n");
 		ok=0;
 	}
 

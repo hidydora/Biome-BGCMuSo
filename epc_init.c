@@ -3,11 +3,9 @@ epc_init.c
 read epc file for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 20.03.01 Galina Churkina added variable "sum" substituting  t1+t2+t3 in IF statement,
 which gave an error.
@@ -26,10 +24,16 @@ which gave an error.
 
 
 
-int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, control_struct* ctrl)
+int epc_init(file init, epconst_struct* epc, control_struct* ctrl)
 {
 	int ok = 1;
-	double t1,t2,t3,t4,r1,sum, diff;
+	int dofileclose = 1;
+	double t1 = 0;
+	double t2 = 0;
+	double t3 = 0;
+	double sum = 0;
+	double diff = 0;
+	double t4,r1;
 	int i;
 	file temp, wpm_file, msc_file; 	// Hidy 2011.
 	char key1[] = "EPC_FILE";
@@ -60,6 +64,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	if (ok && scan_open(init,&temp,'r')) 
 	{
 		printf("Error opening epconst file, epc_init()\n");
+		dofileclose = 0;
 		ok=0;
 	}
 	
@@ -131,9 +136,8 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	{
 		epc->leaf_turnover = 1.0;
 	}
-	epc->froot_turnover = epc->leaf_turnover;
-	/* fruit simulation - Hidy 2013. */
-	epc->fruit_turnover = epc->leaf_turnover;
+	if (ok) epc->froot_turnover = epc->leaf_turnover;
+	if (ok) epc->fruit_turnover = epc->leaf_turnover;
 
 	if (ok && scan_value(temp, &epc->livewood_turnover, 'd'))
 	{
@@ -145,35 +149,40 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading whole-plant mortality, epc_init()\n");
 		ok=0;
 	}
-	epc->daily_mortality_turnover = t1/NDAY_OF_YEAR;
-	/* ------------------------------------------------------ */
-	/* Hidy 2011 - using varying whole plant mortality values */
+	if (ok) epc->daily_mortality_turnover = t1/NDAY_OF_YEAR;
 
+	/* ------------------------------------------------------ */
+	/* Hidy 2013 - using varying whole plant mortality values */
 
 	strcpy(wpm_file.name, "mortality.txt");
 	
-	/* open the main init file for ascii read and check for errors */
-	if (file_open(&wpm_file,'i') || ctrl->spinup)
+	/* WPM flag: constans or varying WPM from file */
+	ctrl->varWPM_flag = 0;
+	if (ok)
 	{
-		ctrl->varWPM_flag = 0;
+		if (!ctrl->spinup && !file_open(&wpm_file,'i'))
+		{
+			ctrl->varWPM_flag = 1;
+		}
 	}
-	else ctrl->varWPM_flag = 1;
 
 
-	/* allocate space for the annual WPM array */
-	if (!(epc->wpm_array = (double*) malloc(ctrl->simyears * sizeof(double))))
+	if (ok && ctrl->varWPM_flag) 
 	{
-		printf("Error allocating for annual WPM array, epc_init()\n");
-		ok=0;
-	}
-	if (ctrl->varWPM_flag) 
-	{
-		printf("mortality.txt is found, changing  WPM is used\n");
+		printf("conductance.txt is found, changing  WPM is used\n");
+		
+		/* allocate space for the annual WPM array */
+		epc->wpm_array = (double*) malloc(ctrl->simyears * sizeof(double));
+		if (!epc->wpm_array)
+		{
+			printf("Error allocating for annual WPM array, epc_init()\n");
+			ok=0;
+		}
 
-		/* read year and co2 concentration for each simyear */
+		/* read year and WPM for each simyear */
 		for (i=0 ; ok && i<ctrl->simyears ; i++)
 		{
-			if (fscanf(wpm_file.ptr,"%*lf%lf", &(epc->wpm_array[i]))==EOF)
+			if (fscanf(wpm_file.ptr,"%*i%lf", &(epc->wpm_array[i]))==EOF)
 			{
 				printf("Error reading annual WPM array, epc_init()\n");
 				printf("Note: file must contain a pair of values for each\n");
@@ -188,17 +197,14 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		}
 		fclose(wpm_file.ptr);
 	}	
-	else /* if no changing data constant EPC parameter are used - ATTENTION: WPM = daily_mortality_turnover * NDAY_OF_YEAR */
+	else /* if no changing data constant EPC parameter are used */
 	{
-		if (!ctrl->spinup)
+ 		if (!ctrl->spinup)
 		{
-			printf("mortality.txt not found, constant WPM is used\n"); 
+			printf("mortaliy.txt not found, constant WPM is used\n"); 
 		}
 		
-		for (i=0 ; ok && i<ctrl->simyears ; i++)
-		{
-			epc->wpm_array[i]=DATA_GAP;
-		}
+		epc->wpm_array = 0;
 	}	
 	
 
@@ -207,7 +213,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading fire mortality, epc_init()\n");
 		ok=0;
 	}
-	epc->daily_fire_turnover = t1/NDAY_OF_YEAR;
+	if (ok) epc->daily_fire_turnover = t1/NDAY_OF_YEAR;
 
 	if (ok && scan_value(temp, &epc->alloc_frootc_leafc, 'd'))
 	{
@@ -252,7 +258,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		ok=0;
 	}
 	/* test for leaflitter C:N > leaf C:N */
-	if (epc->leaflitr_cn < epc->leaf_cn)
+	if (ok && epc->leaflitr_cn < epc->leaf_cn)
 	{
 		printf("Error: leaf litter C:N must be >= leaf C:N\n");
 		printf("change the values in ECOPHYS block of initialization file\n");
@@ -283,7 +289,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		ok=0;
 	}
 	/* test for deadwood C:N > livewood C:N */
-	if (epc->deadwood_cn < epc->livewood_cn)
+	if (ok && epc->deadwood_cn < epc->livewood_cn)
 	{
 		printf("Error: livewood C:N must be >= deadwood C:N\n");
 		printf("change the values in ECOPHYS block of initialization file\n");
@@ -296,7 +302,7 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading leaf litter labile proportion, epc_init()\n");
 		ok=0;
 	}
-	epc->leaflitr_flab = t1;
+	if (ok) epc->leaflitr_flab = t1;
 	if (ok && scan_value(temp, &t2, 'd'))
 	{
 		printf("Error reading leaf litter cellulose proportion, epc_init()\n");
@@ -307,9 +313,9 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading leaf litter lignin proportion, epc_init()\n");
 		ok=0;
 	}
-	epc->leaflitr_flig = t3;
+	if (ok) epc->leaflitr_flig = t3;
 	/* test for litter fractions sum to 1.0 */
-	diff=1.0 - (t1+t2+t3);
+	if (ok) diff=1.0 - (t1+t2+t3);
 
 	if (ok && (fabs(diff) > 1e-6))
 	{
@@ -359,10 +365,10 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		
 		ok=0;
 	}
-	epc->frootlitr_flig = t3;
+	if (ok) epc->frootlitr_flig = t3;
 	/* test for litter fractions sum to 1.0 */
-	sum=t1+t2+t3;	
-	diff=1.0 - (t1+t2+t3);
+	if (ok) sum=t1+t2+t3;	
+	if (ok) diff=1.0 - (t1+t2+t3);
 
 	if (ok && (fabs(diff) > 1e-6))
 	{
@@ -412,9 +418,9 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading fruit litter lignin proportion, epc_init()\n");
 		ok=0;
 	}
-	epc->fruitlitr_flig = t3;
+	if (ok) epc->fruitlitr_flig = t3;
 	/* test for litter fractions sum to 1.0 */
-	diff=1.0 - (t1+t2+t3);
+	if (ok) diff=1.0 - (t1+t2+t3);
 
 	if (ok && (fabs(diff) > 1e-6))
 	{
@@ -458,9 +464,9 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading dead wood %% lignin, epc_init()\n");
 		ok=0;
 	}
-	epc->deadwood_flig = t2;
+	if (ok) epc->deadwood_flig = t2;
 	/* test for litter fractions sum to 1.0 */
-	sum=t1+t2;	/* NEW 20.03.01*/
+	if (ok) sum=t1+t2;	/* NEW 20.03.01*/
 	if (ok && sum != 1.0)
 	{
 		printf("Error:\n");
@@ -497,12 +503,12 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}
 	if (ok && scan_value(temp, &epc->ext_coef, 'd'))
 	{
-		printf("Error reading canopy light ext coef, epc_init()\n");
+		printf("Error reading canopy light ext.coef, epc_init()\n");
 		ok=0;
 	}
 	if (ok && scan_value(temp, &epc->lai_ratio, 'd'))
 	{
-		printf("Error reading all to projected LA ratio, epc_init()\n");
+		printf("Error reading all to projected LAI ratio, epc_init()\n");
 		ok=0;
 	}
 	if (ok && scan_value(temp, &epc->avg_proj_sla, 'd'))
@@ -531,34 +537,38 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		ok=0;
 	}
 
-		/* ------------------------------------------------------ */
+	/* ------------------------------------------------------ */
 	/* Hidy 2013 - using varying maximum stomatal conductance values */
-
 
 	strcpy(msc_file.name, "conductance.txt");
 	
-	/* open the main init file for ascii read and check for errors */
-	if (file_open(&msc_file,'i') || ctrl->spinup)
+	/* MSC flag: constans or varying MSC from file */
+	ctrl->varMSC_flag = 0;
+	if (ok)
 	{
-		ctrl->varMSC_flag = 0;
+		if (!ctrl->spinup && !file_open(&msc_file,'i'))
+		{
+			ctrl->varMSC_flag = 1;
+		}
 	}
-	else ctrl->varMSC_flag = 1;
 
 
-	/* allocate space for the annual MSC array */
-	if (!(epc->msc_array = (double*) malloc(ctrl->simyears * sizeof(double))))
-	{
-		printf("Error allocating for annual MSC array, epc_init()\n");
-		ok=0;
-	}
-	if (ctrl->varMSC_flag) 
+	if (ok && ctrl->varMSC_flag) 
 	{
 		printf("conductance.txt is found, changing  MSC is used\n");
+		
+		/* allocate space for the annual MSC array */
+		epc->msc_array = (double*) malloc(ctrl->simyears * sizeof(double));
+		if (!epc->msc_array)
+		{
+			printf("Error allocating for annual MSC array, epc_init()\n");
+			ok=0;
+		}
 
 		/* read year and co2 concentration for each simyear */
 		for (i=0 ; ok && i<ctrl->simyears ; i++)
 		{
-			if (fscanf(msc_file.ptr,"%*lf%lf", &(epc->msc_array[i]))==EOF)
+			if (fscanf(msc_file.ptr,"%*i%lf", &(epc->msc_array[i]))==EOF)
 			{
 				printf("Error reading annual MSC array, epc_init()\n");
 				printf("Note: file must contain a pair of values for each\n");
@@ -575,15 +585,12 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 	}	
 	else /* if no changing data constant EPC parameter are used */
 	{
-		if (!ctrl->spinup)
+ 		if (!ctrl->spinup)
 		{
 			printf("conductance.txt not found, constant MSC is used\n"); 
 		}
 		
-		for (i=0 ; ok && i<ctrl->simyears ; i++)
-		{
-			epc->msc_array[i]=DATA_GAP;
-		}
+		epc->msc_array = 0;
 	}	
 	
 	/* ------------------------------------------------------ */
@@ -597,42 +604,35 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading gl_bl, epc_init()\n");
 		ok=0;
 	}
-    /******************************************************************-/
-	/* Hidy 2012: - multiplier for conductance limitation*/
+    /******************************************************************/
+	/* Hidy 2012: - multiplier for conductance limitation */
 	
-	if (ok && scan_value(temp, &epc->vwc_ratio_open, 'd'))
+	if (ok && scan_value(temp, &epc->relVWC_crit1, 'd'))
 	{
-		printf("Error reading vwc_ratio_open, epc_init()\n");
+		printf("Error reading relVWC_crit1, epc_init()\n");
 		ok=0;
 	}
 	
-    if (ok && scan_value(temp, &epc->vwc_ratio_close, 'd'))
+    if (ok && scan_value(temp, &epc->relVWC_crit2, 'd'))
 	{
-		printf("Error reading vwc_ratio_close, epc_init()\n");
+		printf("Error reading relVWC_crit2, epc_init()\n");
 		ok=0;
 	}
 
 	/* -------------------------------------------*/
 	/* multiplier for PSI */
-	if (ok && scan_value(temp, &epc->psi_open, 'd'))
+	if (ok && scan_value(temp, &epc->relPSI_crit1, 'd'))
 	{
-		printf("Error reading psi_open, epc_init()\n");
+		printf("Error reading relPSI_crit1, epc_init()\n");
 		ok=0;
 	}
 	
-    if (ok && scan_value(temp, &epc->psi_close, 'd'))
+    if (ok && scan_value(temp, &epc->relPSI_crit2, 'd'))
 	{
-		printf("Error reading psi_close, epc_init()\n");
+		printf("Error reading relPSI_crit2, epc_init()\n");
 		ok=0;
 	}
-	/* -------------------------------------------*/
-	/* control: using vwc_ratio OR psi to calculate conductance limitation */
-	if ((epc->vwc_ratio_open != DATA_GAP || epc->vwc_ratio_close != DATA_GAP) && (epc->psi_open != DATA_GAP || epc->psi_close != DATA_GAP) )
-	{
-		printf("Warning: if any VWC_ratio data is available, VWC_ratio is used to calculate conductance limitation()\n");
-		printf("Check epc file, set PSI_close and PSI_open data to 999.9 and try again.\n");
-		ok=0;
-	}
+
 
 	/******************************************************************/
 
@@ -702,9 +702,10 @@ int epc_init(file init, const siteconst_struct* sitec, epconst_struct* epc, cont
 		printf("Error reading maturity_coeff: epc_init()\n");
 		ok=0;
 	}
+
 	
 	/* -------------------------------------------*/
-	fclose(temp.ptr);
+	if (dofileclose) fclose(temp.ptr);
 		
 	return (!ok);
 }

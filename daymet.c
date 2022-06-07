@@ -3,11 +3,9 @@ daymet.c
 transfer one day of meteorological data from metarr struct to metv struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -87,19 +85,20 @@ int daymet(const control_struct* ctrl, const metarr_struct* metarr, const siteco
 		
 	
 		/* on the first day the temperature of the soil layers are calculated based on the temperature of top and bottom layer */
-		temp_grad = (metv->tsoil[N_SOILLAYERS-1] - metv->tsoil[0]) / sitec->soillayer_depths[N_SOILLAYERS-2];
+		temp_grad = (metv->tsoil[N_SOILLAYERS-1] - metv->tsoil[0]) / sitec->soillayer_depth[N_SOILLAYERS-2];
 		
 		for (layer = 1; layer < N_SOILLAYERS-1; layer++)
 		{
-			depth_top	 = sitec->soillayer_depths[layer-1];
-			depth_bottom = sitec->soillayer_depths[layer];
+			depth_top	 = sitec->soillayer_depth[layer-1];
+			depth_bottom = sitec->soillayer_depth[layer];
 				
 			tsoil_top	   	   = metv->tsoil[0] + temp_grad * depth_top;
 			tsoil_bottom	   = metv->tsoil[0] + temp_grad * depth_bottom;
 			
 			metv->tsoil[layer] = (tsoil_top + tsoil_bottom)/2.;	
 
-			tsoil_avg		   += metv->tsoil[layer] * sitec->rel_soillayer_thickness[layer];
+			/* average value regarding to soil without bottom layer */
+			tsoil_avg		   += metv->tsoil[layer] * (sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-2]);
 		}
 			
 		metv->tsoil_avg = tsoil_avg;

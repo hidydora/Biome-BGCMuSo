@@ -3,11 +3,8 @@ smooth.c
 functions that perform smoothing on vectors
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -28,7 +25,7 @@ int run_avg(const double *input, double *output, int n, int w, int w_flag)
 
     register int i,j;
     int ok = 1;
-    int *wt;
+    int *wt = 0;
     double total, sum;
 
     if (w>n)
@@ -37,10 +34,14 @@ int run_avg(const double *input, double *output, int n, int w, int w_flag)
         ok=0;
     }
 
-    if (ok && (!(wt = (int*) malloc(w * sizeof(int)))))
+    if (ok)
     {
-    	printf("Allocation error in boxcar_smooth... Exiting\n");
-    	ok=0;
+		wt = (int*) malloc(w * sizeof(int));
+		if (!wt)
+		{
+    		printf("Allocation error in boxcar_smooth... Exiting\n");
+    		ok=0;
+		}
     }
 
     if (ok)
@@ -89,8 +90,9 @@ w = windowing width, w_flag (0=flat boxcar, 1=ramped boxcar, e.g. [1 2 3 2 1])
 int boxcar_smooth(double* input, double* output, int n, int w, int w_flag)
 {
 	int ok=1;
-    int tail,i,j;
-    int* wt;
+    int tail = 0;
+	int i,j;
+    int* wt = 0;
     double total,sum;
 
     if (ok && (w > n/2))
@@ -108,11 +110,16 @@ int boxcar_smooth(double* input, double* output, int n, int w, int w_flag)
 	    tail = w/2;
 	}
 	
-    if (ok && (!(wt = (int*) malloc(w * sizeof(int)))))
+	 if (ok)
     {
-    	printf("Allocation error in boxcar_smooth... Exiting\n");
-    	ok=0;
+		wt = (int*) malloc(w * sizeof(int));
+		if (!wt)
+		{
+    		printf("Allocation error in boxcar_smooth... Exiting\n");
+    		ok=0;
+		}
     }
+
     
     /* when w_flag != 0, use linear ramp to weight tails, 
     otherwise use constant weight */

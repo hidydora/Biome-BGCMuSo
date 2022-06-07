@@ -3,8 +3,8 @@ fertilizing.c
 do fertilization  - increase the mineral soil nitrogen (sminn)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
-Copyright 2008, Hidy
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -27,7 +27,6 @@ int fertilizing(const control_struct* ctrl, fertilizing_struct* FRZ,
 	/* fertilizing parameters .*/
 	int ok=1;
 	int ny, mgmd;
-	double fertilizer;
 	
 	double FRZ_to_sminn_act = 0;
 	double FRZ_to_litrn_act = 0;
@@ -51,7 +50,6 @@ int fertilizing(const control_struct* ctrl, fertilizing_struct* FRZ,
 
 	if (mgmd >=0) 
 	{
-		fertilizer        = FRZ->fertilizer_array[mgmd][ny] / 10000.;	
 		FRZ->FRZ_pool_act += FRZ->fertilizer_array[mgmd][ny]  / 10000.;		/* kgN/ha -> kgN/m2 */
 
 		FRZ->Ncont_act   = FRZ->Ncontent_array[mgmd][ny] / 100.;			/* from % to number */

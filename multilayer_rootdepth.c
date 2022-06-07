@@ -2,7 +2,8 @@
 multilayer_rootdepth.c
 Hidy 2011 - calculation of changing rooting depth based on empirical function and state update of rootzone sminn content (sminn_RZ)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version vHD2
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -23,10 +24,11 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	int ok=1;
 
 	double plant_day, matur_day;
-
+	
 	/* initalizing internal variables */
 	double maturity_coeff = epc->maturity_coeff;
-	double soillayer_RZportion_ctrl = 0;
+	double RLprop_sum1 = 0;
+	double RLprop_sum2 = 0;
 
 	/* soil mineral N in changing rooting zone */
 	double sminn_RZ = 0;
@@ -36,6 +38,7 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	int yday   = ctrl->yday;
 	double onday  = phen->onday;
 	double offday = phen->offday;
+	
 	
 	/* ***************************************************************************************************** */	
 	/* 1. Calculating planting date and maturity date (Campbell and Diaz) based on empirical function */
@@ -65,15 +68,29 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	
 	if (epv->rooting_depth > 0)
 	{
-		if (epv->rooting_depth > sitec->soillayer_depths[0])
+		if (epv->rooting_depth > sitec->soillayer_depth[0])
 		{
-			if (epv->rooting_depth > sitec->soillayer_depths[1])
+			if (epv->rooting_depth > sitec->soillayer_depth[1])
 			{	
-				if (epv->rooting_depth > sitec->soillayer_depths[2])
+				if (epv->rooting_depth > sitec->soillayer_depth[2])
 				{
-					if (epv->rooting_depth > sitec->soillayer_depths[3])
+					if (epv->rooting_depth > sitec->soillayer_depth[3])
 					{
-						epv->n_rootlayers = 5;
+						if (epv->rooting_depth > sitec->soillayer_depth[4])
+						{
+							if (epv->rooting_depth > sitec->soillayer_depth[5])
+							{
+								epv->n_rootlayers = 7;
+							}
+							else 
+							{
+								epv->n_rootlayers = 6;
+							}
+						}
+						else 
+						{
+							epv->n_rootlayers = 5;
+						}
 					}
 					else
 					{
@@ -103,50 +120,36 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	}
 
 	/* ***************************************************************************************************** */	
-	/* 4. Calculating the relative soillayer thickness: ratio of actual thickness and active soil depth */
+	/* 4. Calculating the distribution of the root in the soil layers based on empirical function (Jarvis, 1989)*/
 	
+	/* initalization */
+	for (layer =0; layer < N_SOILLAYERS; layer++) epv->rootlength_prop[layer]     = 0;   
 	
-	if (epv->n_rootlayers == 1)
+	/* calculation in active soil layer from 2 active soil layers */
+	for (layer =0; layer < epv->n_rootlayers; layer++)
 	{
-		epv->soillayer_RZportion[0] = 1;
-		for (layer = 1; layer < N_SOILLAYERS; layer++)
-		{
-			epv->soillayer_RZportion[layer] = 0;
-		}
-	}
-	else
-	{
-		for (layer =0; layer < N_SOILLAYERS; layer++)
-		{
-			if (layer < epv->n_rootlayers)
-			{
-				if (layer == epv->n_rootlayers-1)
-				{
-					epv->soillayer_RZportion[layer] = (epv->rooting_depth - sitec->soillayer_depths[layer-1]) / epv->rooting_depth;
-				}
-				else 
-				{
-					epv->soillayer_RZportion[layer] = sitec->soillayer_thickness[layer] / epv->rooting_depth;
-				}
-			}
-			else 
-			{
-				epv->soillayer_RZportion[layer] = 0.;
-			}
-		}
+		epv->rootlength_prop[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rooting_depth) * 
+ 											  exp(-epc->rootdistrib_param * (sitec->soillayer_midpoint[layer] / epv->rooting_depth));
+		RLprop_sum1 += epv->rootlength_prop[layer];
 	}
 
-	/* control */
+	/* correction */
 	for (layer =0; layer < N_SOILLAYERS; layer++)
 	{
-		soillayer_RZportion_ctrl += epv->soillayer_RZportion[layer];
+		if (RLprop_sum1 > 0)
+			epv->rootlength_prop[layer] = epv->rootlength_prop[layer] / RLprop_sum1;
+		else 
+            epv->rootlength_prop[0] = 1;
+
+		RLprop_sum2                 += epv->rootlength_prop[layer];
+
 	}
 	
 	/* control */
-	if (1. - soillayer_RZportion_ctrl > 1e-8)
+	if ((1. - RLprop_sum2 > 1e-8))
 	{
 		printf("Error in multilayer_rootdepth: sum of soillayer_RZportion is not equal to 1.0\n");
-		ok=0;
+	    ok=0;
 	}
 
 
@@ -165,7 +168,7 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 		{
 			sminn_RZ	+= ns->sminn[layer];
 		}	
-		sminn_RZ	+= ns->sminn[epv->n_rootlayers-1] * (epv->rooting_depth - sitec->soillayer_depths[layer-1]) / sitec->soillayer_thickness[layer];
+		sminn_RZ	+= ns->sminn[epv->n_rootlayers-1] * (epv->rooting_depth - sitec->soillayer_depth[layer-1]) / sitec->soillayer_thickness[layer];
 	}
 	ns->sminn_RZ	  = sminn_RZ;
 

@@ -8,11 +8,9 @@ mineral N is added at each time step to satisfy the total demand of
 plant and microbe.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -34,7 +32,7 @@ int spinup_daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	double day_mresp;   /* daily total maintenance respiration */
 	double avail_c;     /* total C available for new production */
 	double f1;          /* RATIO   new fine root C : new leaf C     */
-        double f2;          /* RATIO   new fruit C : new leaf C - fruit simulation (Hidy 2013.) */
+    double f2;          /* RATIO   new fruit C : new leaf C - fruit simulation (Hidy 2013.) */
 	double f3;          /* RATIO   new coarse root C : new stem C   */
 	double f4;          /* RATIO   new stem C : new leaf C          */
 	double f5;          /* RATIO   new live wood C : new wood C     */
@@ -54,7 +52,6 @@ int spinup_daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	double actual_immob;
 	double sum_plant_nsupply;
 	double plant_nalloc, plant_calloc;
-	double fpi;
 	double plant_remaining_ndemand;
 	double excess_c;
 	int nlimit;
@@ -62,6 +59,7 @@ int spinup_daily_allocation(int yday, cflux_struct* cf, cstate_struct* cs,
 	double rfl1s1, rfl2s2, rfl4s3, rfs1s2, rfs2s3, rfs3s4;
 	double daily_net_nmin;
 	double dif;
+	double fpi = 0;
 	int allocfruit = 0;         /* fruit simulation Hidy 2013.*/
 
 	cn_l1 = cn_l2 = cn_l4 = cn_s1 = cn_s2 = cn_s3 = cn_s4 = 0;

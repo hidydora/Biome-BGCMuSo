@@ -3,11 +3,9 @@ prephenology.c
 Initialize phenology arrays, called prior to annual loop in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGC version 4.1.1
+BBGC MuSo 2.3
 Copyright 2000, Peter E. Thornton
-Numerical Terradynamics Simulation Group (NTSG)
-School of Forestry, University of Montana
-Missoula, MT 59812
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -43,7 +41,8 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 	int remdays_litfall[365];
 	int predays_litfall[365];
 	/* phenology model variables */
-	int *onday_arr, *offday_arr;
+	int *onday_arr = 0;
+	int *offday_arr = 0;
 	int fall_tavg_count;
 	int onset_day, offset_day;
 	double mean_tavg,fall_tavg;
@@ -79,55 +78,97 @@ const siteconst_struct* sitec, const metarr_struct* metarr, phenarray_struct* ph
 	ndays = n_yday * nyears;
 	
 	/* allocate space for phenology arrays */
-	if (ok && !(phenarr->remdays_curgrowth = (int*) malloc(ndays*sizeof(int))))
+	if (ok)
 	{
-		printf("Error allocating for phenarr->curgrowth, prephenology()\n");
-		ok=0;
-	}
-	if (ok && !(phenarr->remdays_transfer = (int*) malloc(ndays*sizeof(int))))
-	{
-		printf("Error allocating for phenarr->remdays_transfer, prephenology()\n");
-		ok=0;
-	}
-	if (ok && !(phenarr->remdays_litfall = (int*) malloc(ndays*sizeof(int))))
-	{
-		printf("Error allocating for phenarr->remdays_litfall, prephenology()\n");
-		ok=0;
-	}
-	if (ok && !(phenarr->predays_transfer = (int*) malloc(ndays*sizeof(int))))
-	{
-		printf("Error allocating for phenarr->predays_transfer, prephenology()\n");
-		ok=0;
-	}
-	if (ok && !(phenarr->predays_litfall = (int*) malloc(ndays*sizeof(int))))
-	{
-		printf("Error allocating for phenarr->predays_litfall, prephenology()\n");
-		ok=0;
+		phenarr->remdays_curgrowth = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->remdays_curgrowth)
+		{
+			printf("Error allocating for phenarr->curgrowth, prephenology()\n");
+			ok=0;
+		}
 	}
 
-	if (ok && !(onday_arr = (int*) malloc((nyears+1) * sizeof(int))))
+	if (ok)
 	{
-		printf("Error allocating for onday_arr, prephenology()\n");
-		ok=0;
+		phenarr->remdays_transfer = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->remdays_transfer)
+		{
+			printf("Error allocating for phenarr->remdays_transfer, prephenology()\n");
+			ok=0;
+		}
 	}
-	if (ok && !(offday_arr = (int*) malloc((nyears+1) * sizeof(int))))
+
+
+	if (ok)
 	{
-		printf("Error allocating for offday_arr, prephenology()\n");
-		ok=0;
+		phenarr->remdays_litfall = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->remdays_litfall)
+		{
+			printf("Error allocating for phenarr->remdays_litfall, prephenology()\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		phenarr->predays_transfer = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->predays_transfer)
+		{
+			printf("Error allocating for phenarr->predays_transfer, prephenology()\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		phenarr->predays_litfall = (int*) malloc(ndays*sizeof(int));
+		if (!phenarr->predays_litfall)
+		{
+			printf("Error allocating for phenarr->predays_litfall, prephenology()\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		onday_arr = (int*) malloc((nyears+1) * sizeof(int));
+		if (!onday_arr)
+		{
+			printf("Error allocating for onday_arr, prephenology()\n");
+			ok=0;
+		}
+	}
+
+	if (ok)
+	{
+		offday_arr = (int*) malloc((nyears+1) * sizeof(int));
+		if (!offday_arr)
+		{
+			printf("Error allocating for offday_arr, prephenology()\n");
+			ok=0;
+		}
 	}
 	
 	/* Hidy 2012 */	
 	if (!ctrl->GSI_flag)
 	{
-		if (ok && !(phenarr->onday_arr = (int*) malloc((nyears+1) * sizeof(int))))
+		if (ok)
 		{
-			printf("Error allocating for onday_arr, prephenology()\n");
-			ok=0;
+			phenarr->onday_arr = (int*) malloc((nyears+1) * sizeof(int));
+			if (!phenarr->onday_arr)
+			{
+				printf("Error allocating for onday_arr, prephenology()\n");
+				ok=0;
+			}
 		}
-		if (ok && !(phenarr->offday_arr = (int*) malloc((nyears+1) * sizeof(int))))
+		if (ok)
 		{
-			printf("Error allocating for offday_arr, prephenology()\n");
-			ok=0;
+			phenarr->offday_arr = (int*) malloc((nyears+1) * sizeof(int));
+			if (!phenarr->offday_arr)
+			{
+				printf("Error allocating for offday_arr, prephenology()\n");
+				ok=0;
+			}
 		}
 	}
 	

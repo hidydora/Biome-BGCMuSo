@@ -1,7 +1,9 @@
 /* 
 conduct_calc.c
 Calculation of conductance values based on limitation factors (in original BBGC this subroutine is partly included in canopy_et.c)
-Hidy 2011.
+*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+BBGC MuSo 2.3
+Copyright 2014, D. Hidy
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -21,9 +23,7 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	double gl_bl, gl_c, gl_s_sun, gl_s_shade;
 	double gl_e_wv, gl_t_wv_sun, gl_t_wv_shade, gl_sh;
 	double gc_e_wv, gc_sh;
-	double tday;
 	double tmin;
-	double dayl;
 	double vpd,vpd_open,vpd_close;
 	double m_ppfd_sun, m_ppfd_shade;
 	double m_tmin, m_co2, m_vpd, m_final_sun, m_final_shade;
@@ -37,7 +37,8 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	int layer;
 	double m_vwcR_layer; 
 	double vwc_ratio;	
-	double m_soilprop_avg = 0;
+	double m_soilstress_avg = 0;
+
 
 	/* Hidy 2013 - changing MSC value */
 	max_conduct=epc->gl_smax;
@@ -46,19 +47,12 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 		max_conduct=epc->msc_array[simyr];
 	}
 	
-	
 	/* assign variables that are used more than once */
-	tday =      metv->tday;
 	tmin =      metv->tmin;
 	vpd =       metv->vpd;
-	dayl =      metv->dayl;
 	proj_lai =  epv->proj_lai;
 
-	
-	
-
-	/******************************************************************-/
-	
+	/******************************************************************/
 	/* multiplier for vpd */
 	vpd_open =  epc->vpd_open;
 	vpd_close = epc->vpd_close;
@@ -97,35 +91,36 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 
 	
 	/* ***************************************************************************/
-	/* Hidy 2010 - calculate the multipiers for soil properties (soil water content) in multilayer soil */
+	/* Hidy 2014 - calculate the multipiers for soil properties (soil water content ratio) in multilayer soil  - Jarvis (1989)*/
 	
 	/* set the maximum and minimum values for water potential limits (MPa) */
-
 	for (layer = 0; layer < epv->n_rootlayers; layer++)
 	{
-		vwc_ratio  = epv->vwc[layer] / sitec->vwc_fc;
 
-	
-		/* Hidy 2010 - soil water content multiplier (ratio) */
-		if (vwc_ratio > epv->vwc_ratio_open)    /* no water stress */
+		if (epv->vwc[layer] > sitec->vwc_wp)
+			vwc_ratio  = (epv->vwc[layer] - sitec->vwc_wp)/(sitec->vwc_sat - sitec->vwc_wp);
+		else
+			vwc_ratio  = 0;
+
+		if (vwc_ratio < epv->vwc_ratio_crit1)    /* water stress due to drought */
 		{
-			m_vwcR_layer = 1.0;       
+			m_vwcR_layer = vwc_ratio / epv->vwc_ratio_crit1;
 		}
 		else
 		{
-			if (vwc_ratio <= epv->vwc_ratio_close)   /* full water stress */
+			if (epv->vwc_ratio_crit1 <= vwc_ratio && vwc_ratio <= epv->vwc_ratio_crit2)    /* no water stress */
 			{
-				m_vwcR_layer = 0.0;      
-			} 
-			else   /* partial water stress */
-            {
-				m_vwcR_layer = (vwc_ratio - epv->vwc_ratio_close) / (epv->vwc_ratio_open - epv->vwc_ratio_close);
+				m_vwcR_layer = 1;
+			}	
+			else
+			{
+			   m_vwcR_layer = (1 - vwc_ratio) / (1 - epv->vwc_ratio_crit2);
 			}
 		}
 	
-		epv->m_soilprop_layer[layer] =  m_vwcR_layer;
+		epv->m_soilstress_layer[layer] =  m_vwcR_layer;
 
-		m_soilprop_avg	 += epv->m_soilprop_layer[layer] * epv->soillayer_RZportion[layer];
+		m_soilstress_avg	 += epv->m_soilstress_layer[layer] * epv->rootlength_prop[layer];
 
 	}
 
@@ -154,8 +149,8 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	
 	/* apply all multipliers to the maximum stomatal conductance */
 
-	m_final_sun = m_ppfd_sun * m_soilprop_avg * m_co2 * m_tmin * m_vpd;
-	m_final_shade = m_ppfd_shade * m_soilprop_avg * m_co2 * m_tmin * m_vpd;
+	m_final_sun = m_ppfd_sun * m_soilstress_avg * m_co2 * m_tmin * m_vpd;
+	m_final_shade = m_ppfd_shade * m_soilstress_avg * m_co2 * m_tmin * m_vpd;
 	gl_s_sun = max_conduct * m_final_sun * gcorr;
 	gl_s_shade = max_conduct * m_final_shade * gcorr;
 	
@@ -190,7 +185,7 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	/* assign output variables */
 	epv->m_ppfd_sun     = m_ppfd_sun;
 	epv->m_ppfd_shade   = m_ppfd_shade;
-    epv->m_soilprop     = m_soilprop_avg;
+    epv->m_soilstress     = m_soilstress_avg;
 	epv->m_co2			= m_co2;
 	epv->m_tmin			= m_tmin;
 	epv->m_vpd			= m_vpd;

@@ -86,7 +86,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			nf->ndep_to_sminNO3[layer] = 0;
 		}
 		
-		nf->nfix_to_sminNH4[layer] = nf->nfix_to_sminnTOTAL * epv->rootlength_prop[layer];
+		nf->nfix_to_sminNH4[layer] = nf->nfix_to_sminnTOTAL * epv->rootlengthProp[layer];
 
 		ndep_to_sminnCTRL += nf->ndep_to_sminNH4[layer] + nf->ndep_to_sminNO3[layer];
 		nfix_to_sminnCTRL += nf->nfix_to_sminNH4[layer];

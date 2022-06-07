@@ -303,15 +303,15 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		{
 			for (layer=0; layer < N_SOILLAYERS; layer++)
 			{
-				cs->litr1c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flab  * epv->rootlength_prop[layer];
-				cs->litr2c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fucel * epv->rootlength_prop[layer];
-				cs->litr3c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fscel * epv->rootlength_prop[layer];
-				cs->litr4c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flig  * epv->rootlength_prop[layer];
+				cs->litr1c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flab  * epv->rootlengthProp[layer];
+				cs->litr2c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fucel * epv->rootlengthProp[layer];
+				cs->litr3c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_fscel * epv->rootlengthProp[layer];
+				cs->litr4c[layer]  += cf->STDBc_froot_to_PLT * epc->frootlitr_flig  * epv->rootlengthProp[layer];
 
-				ns->litr1n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flab  * epv->rootlength_prop[layer];
-				ns->litr2n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fucel * epv->rootlength_prop[layer];
-				ns->litr3n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fscel * epv->rootlength_prop[layer];
-				ns->litr4n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flig  * epv->rootlength_prop[layer];
+				ns->litr1n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flab  * epv->rootlengthProp[layer];
+				ns->litr2n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fucel * epv->rootlengthProp[layer];
+				ns->litr3n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_fscel * epv->rootlengthProp[layer];
+				ns->litr4n[layer]  += nf->STDBn_froot_to_PLT * epc->frootlitr_flig  * epv->rootlengthProp[layer];
 			}
 		}
 		else

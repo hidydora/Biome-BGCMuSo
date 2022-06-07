@@ -43,6 +43,7 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 are set to 0.0 to control rounding and overflow errors */
 #define CRIT_PREC 1e-12
 #define CRIT_PREC_RIG 1e-14
+#define CRIT_PRECwater 1e-8
 
 /* spinup control */
 /* maximum allowable trend in slow soil carbon at steady-state (kgC/m2/yr) 0.005 */

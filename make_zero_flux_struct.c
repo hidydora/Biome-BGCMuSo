@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
+int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_struct* cf, nflux_struct* nf, GWcalc_struct* gwc)
 {
 	int errorCode=0;
 	int layer;
@@ -35,15 +35,15 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	wf->pondw_to_runoff = 0;
 	wf->canopyw_evap = 0;
 	wf->canopyw_to_soilw = 0;
-	wf->pondw_evap = 0;
+	wf->pondwEvap = 0;
 	wf->snoww_subl = 0;
 	wf->snoww_to_soilw = 0;
-	wf->soilw_evap = 0;
-	wf->soilw_evapPOT = 0;
-	wf->soilw_transPOT = 0;
+	wf->soilwEvap = 0;
+	wf->soilwEvap_POT = 0;
+	wf->soilwTransp_POT = 0;
 
-	wf->soilw_transp_SUM = 0;
-	wf->soilw_transpDEMAND_SUM = 0;
+	wf->soilwTransp_SUM = 0;
+	wf->soilwTranspDemand_SUM = 0;
 	wf->evapotransp = 0;
 	wf->PET = 0;
 	wf->pondw_to_soilw = 0;
@@ -52,7 +52,7 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	wf->infilt_to_soilw = 0;
 	wf->infilt_to_pondw = 0;
 	wf->GW_to_pondw = 0;
-	wf->soilw_leachRZ = 0;
+	wf->soilwLeach_RZ = 0;
 	wf->canopyw_to_THN = 0;
 	wf->canopyw_to_MOW = 0;
 	wf->canopyw_to_HRV = 0;
@@ -211,7 +211,7 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	cf->livecroot_mr = 0;
 	cf->psnsun_to_cpool = 0;
 	cf->psnshade_to_cpool = 0;
-	cf->DOC_leached_RZ = 0;
+	cf->DOC_leachRZ = 0;
 	cf->cpool_to_leafc = 0;
 	cf->cpool_to_leafc_storage = 0;
 	cf->cpool_to_frootc = 0;
@@ -608,8 +608,8 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	nf->sminNH4_to_npoolTOTAL = 0;
 	nf->sminNO3_to_npoolTOTAL = 0;
 	nf->sminn_to_npoolTOTAL = 0;
-	nf->sminN_leached_RZ = 0;
-	nf->DON_leached_RZ = 0;
+	nf->sminN_leachRZ = 0;
+	nf->DON_leachRZ = 0;
 	nf->retransn_to_npoolTOTAL = 0;
 	nf->npool_to_leafn = 0;
 	nf->npool_to_leafn_storage = 0;
@@ -796,12 +796,11 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	nf->sminn_to_soil4n_s3_total = 0;
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		wf->soilw_transp[layer] = 0;
-		wf->soilw_transpDEMAND[layer] = 0;
-		wf->soilw_percolated[layer] = 0;
-		wf->soilw_diffused[layer] = 0;
-		wf->soilw_from_GW[layer] = 0;
-		wf->GW_recharge[layer] = 0;
+		wf->soilwTransp[layer] = 0;
+		wf->soilwTranspDemand[layer] = 0;
+		wf->soilwFlux[layer] = 0;
+		wf->GWdischarge[layer] = 0;
+		wf->GWrecharge[layer] = 0;
 		cf->cwdc_to_litr2c[layer] = 0;
 		cf->cwdc_to_litr3c[layer] = 0;
 		cf->cwdc_to_litr4c[layer] = 0;
@@ -819,14 +818,11 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 		cf->soil3_hr[layer] = 0;
 		cf->soil3c_to_soil4c[layer] = 0;
 		cf->soil4_hr[layer] = 0;
-		cf->soil1_DOC_percol[layer] = 0;
-		cf->soil2_DOC_percol[layer] = 0;
-		cf->soil3_DOC_percol[layer] = 0;
-		cf->soil4_DOC_percol[layer] = 0;
-		cf->soil1_DOC_diffus[layer] = 0;
-		cf->soil2_DOC_diffus[layer] = 0;
-		cf->soil3_DOC_diffus[layer] = 0;
-		cf->soil4_DOC_diffus[layer] = 0;
+		cf->soil1DOC_leach[layer] = 0;
+		cf->soil2DOC_leach[layer] = 0;
+		cf->soil3DOC_leach[layer] = 0;
+		cf->soil4DOC_leach[layer] = 0;
+
 		cf->m_litr1c_to_fire[layer] = 0;  
 		cf->m_litr2c_to_fire[layer] = 0;              
 		cf->m_litr3c_to_fire[layer] = 0;             
@@ -865,24 +861,24 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 		nf->sminNH4_to_npool[layer] = 0;
 		nf->sminNO3_to_npool[layer] = 0;
 		nf->sminn_to_npool[layer] = 0;
-		nf->sminNH4_percol[layer] = 0;
-		nf->sminNH4_diffus[layer] = 0;
-		nf->sminNO3_percol[layer] = 0;
-		nf->sminNO3_diffus[layer] = 0;
-		nf->soil1_DON_percol[layer] = 0;
-		nf->soil2_DON_percol[layer] = 0;
-		nf->soil3_DON_percol[layer] = 0;
-		nf->soil4_DON_percol[layer] = 0;
-		nf->soil1_DON_diffus[layer] = 0;
-		nf->soil2_DON_diffus[layer] = 0;
-		nf->soil3_DON_diffus[layer] = 0;
-		nf->soil4_DON_diffus[layer] = 0;
-	    nf->sminNH4_leach[layer] = 0;
+		nf->sminNH4_leach[layer] = 0;
 		nf->sminNO3_leach[layer] = 0;
+		nf->soil1DON_leach[layer] = 0;
+		nf->soil2DON_leach[layer] = 0;
+		nf->soil3DON_leach[layer] = 0;
+		nf->soil4DON_leach[layer] = 0;
 		nf->retransn_to_npool[layer] = 0;
 		nf->ndep_to_sminNH4[layer] = 0;
 		nf->ndep_to_sminNO3[layer] = 0;
 		nf->nfix_to_sminNH4[layer] = 0;
+	}
+
+	for (layer = 0; layer < N_SOILLAYERS; layer++)
+	{
+		gwc->soilwFlux_GWC[layer] = 0;
+		gwc->soilwTransp_GWC[layer] = 0;
+		gwc->soilwTranspDemand_GWC[layer] = 0;
+		gwc->GWrecharge_GWC[layer] = 0;
 	}
 
 

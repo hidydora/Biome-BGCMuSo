@@ -436,36 +436,36 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 			ns->cwdn[layer] = 0.0;
 		}	
 
-		if ((cs->soil1_DOC[layer] != 0 && fabs(cs->soil1_DOC[layer]) < CRIT_PREC) || (ns->soil1_DON[layer] != 0 && fabs(ns->soil1_DON[layer])  < CRIT_PREC))
+		if ((cs->soil1DOC[layer] != 0 && fabs(cs->soil1DOC[layer]) < CRIT_PREC) || (ns->soil1DON[layer] != 0 && fabs(ns->soil1DON[layer])  < CRIT_PREC))
 		{
-			cs->soil1_hr_snk += cs->soil1_DOC[layer];
-			ns->Nprec_snk += ns->soil1_DON[layer];
-			cs->soil1_DOC[layer] = 0.0;
-			ns->soil1_DON[layer] = 0.0;
+			cs->soil1_hr_snk += cs->soil1DOC[layer];
+			ns->Nprec_snk += ns->soil1DON[layer];
+			cs->soil1DOC[layer] = 0.0;
+			ns->soil1DON[layer] = 0.0;
 		}
 
-		if ((cs->soil2_DOC[layer] != 0 && fabs(cs->soil2_DOC[layer]) < CRIT_PREC) || (ns->soil2_DON[layer] != 0 && fabs(ns->soil2_DON[layer])  < CRIT_PREC))
+		if ((cs->soil2DOC[layer] != 0 && fabs(cs->soil2DOC[layer]) < CRIT_PREC) || (ns->soil2DON[layer] != 0 && fabs(ns->soil2DON[layer])  < CRIT_PREC))
 		{
-			cs->soil2_hr_snk += cs->soil2_DOC[layer];
-			ns->Nprec_snk += ns->soil2_DON[layer];
-			cs->soil2_DOC[layer] = 0.0;
-			ns->soil2_DON[layer] = 0.0;
+			cs->soil2_hr_snk += cs->soil2DOC[layer];
+			ns->Nprec_snk += ns->soil2DON[layer];
+			cs->soil2DOC[layer] = 0.0;
+			ns->soil2DON[layer] = 0.0;
 		}
 
-		if ((cs->soil3_DOC[layer] != 0 && fabs(cs->soil3_DOC[layer]) < CRIT_PREC) || (ns->soil3_DON[layer] != 0 && fabs(ns->soil3_DON[layer])  < CRIT_PREC))
+		if ((cs->soil3DOC[layer] != 0 && fabs(cs->soil3DOC[layer]) < CRIT_PREC) || (ns->soil3DON[layer] != 0 && fabs(ns->soil3DON[layer])  < CRIT_PREC))
 		{
-			cs->soil3_hr_snk += cs->soil3_DOC[layer];
-			ns->Nprec_snk += ns->soil3_DON[layer];
-			cs->soil3_DOC[layer] = 0.0;
-			ns->soil3_DON[layer] = 0.0;
+			cs->soil3_hr_snk += cs->soil3DOC[layer];
+			ns->Nprec_snk += ns->soil3DON[layer];
+			cs->soil3DOC[layer] = 0.0;
+			ns->soil3DON[layer] = 0.0;
 		}
 
-		if ((cs->soil4_DOC[layer] != 0 && fabs(cs->soil4_DOC[layer]) < CRIT_PREC) || (ns->soil4_DON[layer] != 0 && fabs(ns->soil4_DON[layer])  < CRIT_PREC))
+		if ((cs->soil4DOC[layer] != 0 && fabs(cs->soil4DOC[layer]) < CRIT_PREC) || (ns->soil4DON[layer] != 0 && fabs(ns->soil4DON[layer])  < CRIT_PREC))
 		{
-			cs->soil4_hr_snk += cs->soil4_DOC[layer];
-			ns->Nprec_snk += ns->soil4_DON[layer];
-			cs->soil4_DOC[layer] = 0.0;
-			ns->soil4_DON[layer] = 0.0;
+			cs->soil4_hr_snk += cs->soil4DOC[layer];
+			ns->Nprec_snk += ns->soil4DON[layer];
+			cs->soil4DOC[layer] = 0.0;
+			ns->soil4DON[layer] = 0.0;
 		}
 		
 	}

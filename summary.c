@@ -82,8 +82,7 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 		summary->cum_evap  = 0;
 		summary->cum_transp  = 0;
 		summary->cum_ET  = 0;
-		epv->cumNstress = 0;
-		epv->cumSWCstress = 0;
+	
 	}
 	
 	/*******************************************************************************/
@@ -95,8 +94,8 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 
 		
 	summary->cum_runoff += wf->prcp_to_runoff + wf->pondw_to_runoff;
-	summary->cum_WleachRZ += wf->soilw_leachRZ;	
-	summary->cum_NleachRZ += nf->sminN_leached_RZ;
+	summary->cum_WleachRZ += wf->soilwLeach_RZ;	
+	summary->cum_NleachRZ += nf->sminN_leachRZ;
 
 	/*******************************************************************************/
 	/* 2. summarize carbon and nitrogen stocks */
@@ -368,8 +367,8 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 
 	summary->cum_n2o += nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
 
-	summary->cum_evap   += (wf->canopyw_evap + wf->soilw_evap);
-	summary->cum_transp += wf->soilw_transp_SUM;
+	summary->cum_evap   += (wf->canopyw_evap + wf->soilwEvap);
+	summary->cum_transp += wf->soilwTransp_SUM;
 	summary->cum_ET += wf->evapotransp;
 	
 	/*******************************************************************************/

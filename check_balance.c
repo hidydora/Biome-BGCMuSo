@@ -139,13 +139,13 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 		cs->soil4c_total	+= cs->soil4c[layer];
 		cs->soilC[layer]     = cs->soil1c[layer] + cs->soil2c[layer] + cs->soil3c[layer] + cs->soil4c[layer];
 
-		if (cs->soil1_DOC[layer] < 0.0  || cs->soil2_DOC[layer] < 0.0 || cs->soil3_DOC[layer] < 0.0 || cs->soil4_DOC[layer] < 0.0)
+		if (cs->soil1DOC[layer] < 0.0  || cs->soil2DOC[layer] < 0.0 || cs->soil3DOC[layer] < 0.0 || cs->soil4DOC[layer] < 0.0)
 		{			
 			printf("\n");
 			printf("ERROR: negative dissolved soil nitrogen pool\n");
 			errorCode=1;
 		}
-		cs->soil_DOC[layer]     = cs->soil1_DOC[layer] + cs->soil2_DOC[layer] + cs->soil3_DOC[layer] + cs->soil4_DOC[layer];
+		cs->soilDOC[layer]     = cs->soil1DOC[layer] + cs->soil2DOC[layer] + cs->soil3DOC[layer] + cs->soil4DOC[layer];
 	
 		if (cs->litr1c[layer] < 0.0 || cs->litr2c[layer] < 0.0 || cs->litr3c[layer] < 0.0 || cs-> litr4c[layer] < 0.0  || 
 			cs->cwdc[layer] < 0.0)
@@ -272,13 +272,13 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		ns->soil4n_total	+= ns->soil4n[layer];
 		ns->soilN[layer]     = ns->soil1n[layer] + ns->soil2n[layer] + ns->soil3n[layer] + ns->soil4n[layer];
 
-		if (ns->soil1_DON[layer] < 0.0  || ns->soil2_DON[layer] < 0.0 || ns->soil3_DON[layer] < 0.0 || ns->soil4_DON[layer] < 0.0)
+		if (ns->soil1DON[layer] < 0.0  || ns->soil2DON[layer] < 0.0 || ns->soil3DON[layer] < 0.0 || ns->soil4DON[layer] < 0.0)
 		{			
 			printf("\n");
 			printf("ERROR: negative dissolved soil nitrogen pool\n");
 			errorCode=1;
 		}
-		ns->soil_DON[layer]     = ns->soil1_DON[layer] + ns->soil2_DON[layer] + ns->soil3_DON[layer] + ns->soil4_DON[layer];
+		ns->soilDON[layer]     = ns->soil1DON[layer] + ns->soil2DON[layer] + ns->soil3DON[layer] + ns->soil4DON[layer];
 		
 
 		if (ns->litr1n[layer] < 0.0 || ns->litr2n[layer] < 0.0 || ns->litr3n[layer] < 0.0 || ns-> litr4n[layer] < 0.0 || ns->cwdn[layer] < 0.0)

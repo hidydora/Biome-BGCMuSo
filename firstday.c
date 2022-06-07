@@ -64,7 +64,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 
 	epv->plantCalloc = 0; 
 	epv->plantNalloc = 0;
-	epv->plantCalloc_CUM = 0; 
+        epv->plantCalloc_CUM = 0; 
 	epv->plantNalloc_CUM = 0;
 	epv->excess_c = 0;
 	epv->pnow = 0;
@@ -133,7 +133,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		epv->hydrDIFFUSact[layer]	    = sprop->hydrDIFFUSfc[layer];
 		epv->pF[layer]				    = log10(fabs(10000*sprop->PSIfc[layer]));	// dimension of PSI: MPa to cm (10000 MPa = 1 cm)
 		epv->m_SWCstress_layer[layer]  = 1;
-	    epv->rootlength_prop[layer]     = 0;
+	    epv->rootlengthProp[layer]     = 0;
 		epv->rootlengthLandD_prop[layer]= 0;
 		ns->sminNH4avail[layer]         = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;
 		ns->sminNO3avail[layer]         = ns->sminNH4[layer] * NO3_mobilen_prop;
@@ -143,7 +143,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	epv->rootdepth = 0;
 	if (epc->evergreen) 
 	{
-		epv->rootlength_prop[0] = 1;
+		epv->rootlengthProp[0] = 1;
 		epv->n_rootlayers = 1;
 		if (epc->woody) 
 			epv->rootdepth = epc->max_rootzone_depth;

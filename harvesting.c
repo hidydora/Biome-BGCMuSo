@@ -54,7 +54,8 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 			HRVcoeff_leaf  = 1.0;
 			HRVcoeff_fruit = 1.0;
 			HRVcoeff_softstem = HRV->snagprop_array[md] / 100;
-                        cs->frootC_HRV  = cs->frootc;
+
+			cs->frootC_HRV  = cs->frootc;
 		}
 	}
 		
@@ -394,9 +395,11 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		}
 
 		/* harvested fruit and leaf-stem carbon content */
+
 		fruitC_HRV      = cf->fruitc_to_HRV + cf->STDBc_fruit_to_HRV;
 		leafstemC_HRV   = cf->leafc_to_HRV + cf->STDBc_leaf_to_HRV + cf->softstemc_to_HRV + cf->STDBc_softstem_to_HRV;
 		
+
 		cs->fruitC_HRV += fruitC_HRV;
 		cs->vegC_HRV   += fruitC_HRV + leafstemC_HRV;
 

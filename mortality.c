@@ -379,17 +379,17 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		{
 			for (layer = 0; layer < N_SOILLAYERS; layer++)
 			{
-				cs->litr1c[layer]  += (cf->m_frootc_to_litr1c) * epv->rootlength_prop[layer];	
-				cs->litr2c[layer]  += (cf->m_frootc_to_litr2c) * epv->rootlength_prop[layer];	
-				cs->litr3c[layer]  += (cf->m_frootc_to_litr3c) * epv->rootlength_prop[layer];	
-				cs->litr4c[layer]  += (cf->m_frootc_to_litr4c) * epv->rootlength_prop[layer];
-				cs->cwdc[layer]    += (cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc) * epv->rootlength_prop[layer];
+				cs->litr1c[layer]  += (cf->m_frootc_to_litr1c) * epv->rootlengthProp[layer];	
+				cs->litr2c[layer]  += (cf->m_frootc_to_litr2c) * epv->rootlengthProp[layer];	
+				cs->litr3c[layer]  += (cf->m_frootc_to_litr3c) * epv->rootlengthProp[layer];	
+				cs->litr4c[layer]  += (cf->m_frootc_to_litr4c) * epv->rootlengthProp[layer];
+				cs->cwdc[layer]    += (cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc) * epv->rootlengthProp[layer];
 
-				ns->litr1n[layer]  += (nf->m_frootn_to_litr1n) * epv->rootlength_prop[layer];	
-				ns->litr2n[layer]  += (nf->m_frootn_to_litr2n) * epv->rootlength_prop[layer];	
-				ns->litr3n[layer]  += (nf->m_frootn_to_litr3n) * epv->rootlength_prop[layer];	
-				ns->litr4n[layer]  += (nf->m_frootn_to_litr4n) * epv->rootlength_prop[layer];
-				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlength_prop[layer];	
+				ns->litr1n[layer]  += (nf->m_frootn_to_litr1n) * epv->rootlengthProp[layer];	
+				ns->litr2n[layer]  += (nf->m_frootn_to_litr2n) * epv->rootlengthProp[layer];	
+				ns->litr3n[layer]  += (nf->m_frootn_to_litr3n) * epv->rootlengthProp[layer];	
+				ns->litr4n[layer]  += (nf->m_frootn_to_litr4n) * epv->rootlengthProp[layer];
+				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlengthProp[layer];	
 			}
 		}
 		else
@@ -400,13 +400,13 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 				cs->litr2c[layer]  += (cf->m_frootc_to_litr2c) * epv->rootlengthLandD_prop[layer];	
 				cs->litr3c[layer]  += (cf->m_frootc_to_litr3c) * epv->rootlengthLandD_prop[layer];	
 				cs->litr4c[layer]  += (cf->m_frootc_to_litr4c) * epv->rootlengthLandD_prop[layer];
-				cs->cwdc[layer]    += (cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc) * epv->rootlength_prop[layer];
+				cs->cwdc[layer]    += (cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc) * epv->rootlengthProp[layer];
 
 				ns->litr1n[layer]  += (nf->m_frootn_to_litr1n) * epv->rootlengthLandD_prop[layer];	
 				ns->litr2n[layer]  += (nf->m_frootn_to_litr2n) * epv->rootlengthLandD_prop[layer];	
 				ns->litr3n[layer]  += (nf->m_frootn_to_litr3n) * epv->rootlengthLandD_prop[layer];	
 				ns->litr4n[layer]  += (nf->m_frootn_to_litr4n) * epv->rootlengthLandD_prop[layer];
-				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlength_prop[layer];	
+				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlengthProp[layer];	
 			}
 		}
 		

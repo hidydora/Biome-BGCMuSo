@@ -161,7 +161,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	{
 		if (ctrl.GSI_flag)
 		{
-			file_open (&GSI.GSI_file, 'w');				/* file of GSI parameters - Hidy 2009.*/
+			file_open (&GSI.GSI_file, 'o');				/* file of GSI parameters - Hidy 2009.*/
 		}
 	
 		file_open (&bgcout->control_file, 'o');		/* file of BBGC variables to control the simulation - Hidy 2009.*/

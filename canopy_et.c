@@ -4,9 +4,11 @@ A single-function treatment of canopy evaporation and transpiration
 fluxes.  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -147,7 +149,7 @@ int canopy_et(const control_struct* ctrl, const epconst_struct* epc, const metva
 	else
 	{
 		wf->soilw_trans_SUM = (epv->m_soilstress / epc->m_soilstress_crit) * trans;
-		if (ctrl->onscreen && !ctrl->spinup) printf("Limited transpiration due to dry soil (canopy_et.c)\n");
+		if (ctrl->onscreen && !ctrl->spinup) printf("WARNING: Limited transpiration due to dry soil (canopy_et.c)\n");
 	}
 
 	wf->soilw_trans_SUM = epv->m_soilstress * trans;

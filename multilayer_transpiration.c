@@ -3,8 +3,9 @@ multilayer_transpiration.c
 Hidy 2011 - part-transpiration (regarding to the different layers of the soil) calculation based on the layer's soil water content
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -82,11 +83,12 @@ int multilayer_transpiration(const control_struct* ctrl, const siteconst_struct*
 		{
 			wf->soilw_trans[layer] += transp_diff;
 			transp_diff_SUM += transp_diff;
-			if (ctrl->onscreen) printf("Limited transpiration due to dry soil (multilayer_transpiration.c)\n");
+			if (ctrl->onscreen) printf("WARNING: Limited transpiration due to dry soil (multilayer_transpiration.c)\n");
 		}
 
 		ws->soilw[layer] -= wf->soilw_trans[layer];
 		soilw_trans_ctrl2 += wf->soilw_trans[layer];
+                epv->vwc[layer]  = ws->soilw[layer] / sitec->soillayer_thickness[layer] / water_density;
 	}
 
 	wf->soilw_trans_SUM += transp_diff_SUM;

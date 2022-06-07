@@ -3,9 +3,11 @@ prcp_route.c
 routing of daily precipitation to canopy, soil, snowpack
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

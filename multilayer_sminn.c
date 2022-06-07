@@ -4,8 +4,9 @@ Calculating the change in content of soil mineral nitrogen in multilayer soil (p
 depostion and fixing). State update of sminn_RZ (mineral N content of rootzone).
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v4
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -23,9 +24,11 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 {
 	int ok=1;
 	int layer=0;
-	double soilwater_nconc, wflux_downward, sminn_from_top;
+	double soilwater_nconc_downward, soilwater_nconc_upward, wflux_downward, wflux_upward, sminn0, sminn1;
 	double sminn_SOILPROC_SUM, sminn_RZ;
-	double sminn_to_soil_ctrl, diff;
+	double sminn_to_soil_ctrl, diff, boundary_effect;
+
+	double sminn_boundary=1e-4;
 
 	sminn_SOILPROC_SUM = sminn_to_soil_ctrl = sminn_RZ = 0;
 
@@ -88,6 +91,9 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 		/* 3. fixation: based on the quantity of the root mass in the given layer */
 		ns->sminn[layer] += nf->nfix_to_sminn * epv->rootlength_prop[layer];
+
+	
+
 	
 	}
 
@@ -103,30 +109,72 @@ int multilayer_sminn(const epconst_struct* epc, const siteconst_struct* sitec, c
 		  here. Leaching calculation based on the a function of the presumed proportion of the SMINN pool which is soluble (nitrates),
 		  the SWC and the percolation */
 
-	sminn_from_top = 0;
+
 	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
 	{
-		soilwater_nconc			= epc->mobilen_prop * ns->sminn[layer] / ws->soilw[layer];
- 
-		wflux_downward			= wf->soilw_percolated[layer];
-
-		nf->sminn_leached[layer]= soilwater_nconc * wflux_downward;
-		
-		ns->sminn[layer]        += sminn_from_top - nf->sminn_leached[layer];
-
-		
-		/* control */
-		if (ns->sminn[layer] < 0.0 && fabs(ns->sminn[layer]) > CRIT_PREC)       
+		if (wf->soilw_diffused[layer] > 0)
 		{
-			nf->sminn_leached[layer] += ns->sminn[layer];
-			ns->sminn[layer]  = 0;
- 			printf("Limited N leaching (multilayer_sminn.c)\n");	
+			wflux_downward = wf->soilw_percolated[layer] + wf->soilw_diffused[layer];
+			wflux_upward   = 0;
+
+			soilwater_nconc_downward = epc->mobilen_prop * ns->sminn[layer] / ws->soilw[layer];
+			soilwater_nconc_upward   = 0;
+		}
+		else
+		{
+			wflux_downward = wf->soilw_percolated[layer];
+			wflux_upward   = wf->soilw_diffused[layer];
+
+			soilwater_nconc_downward = epc->mobilen_prop * ns->sminn[layer]   / ws->soilw[layer];
+			soilwater_nconc_upward   = epc->mobilen_prop * ns->sminn[layer+1] / ws->soilw[layer+1];
 		}
 
-		sminn_from_top			= nf->sminn_leached[layer];
-	
+
+		nf->sminn_leached[layer]  = soilwater_nconc_downward * wflux_downward;
+		nf->sminn_diffused[layer] = soilwater_nconc_upward * wflux_upward;
+
 	}
+
+	/* STATE UPDATE */
+	for (layer = 0; layer < N_SOILLAYERS-1; layer++)
+	{
+		sminn0 = ns->sminn[layer]   - (nf->sminn_leached[layer] + nf->sminn_diffused[layer]); 
+		sminn1 = ns->sminn[layer+1] + (nf->sminn_leached[layer] + nf->sminn_diffused[layer]); 
+		if (sminn0 < 0)
+		{
+			nf->sminn_leached[layer] += sminn0;
+			printf("WARNING: limited N-leaching (multilayer_sminn.c)\n");
+		}
+
+		if (sminn1 < 0)
+		{
+			nf->sminn_diffused[layer] -= sminn1;
+			printf("WARNING: limited N-diffusion (multilayer_sminn.c)\n");
+		}
+
+		ns->sminn[layer]   -= (nf->sminn_leached[layer] + nf->sminn_diffused[layer]); 
+		ns->sminn[layer+1] += (nf->sminn_leached[layer] + nf->sminn_diffused[layer]); 
+
+		/* CONTROL */
+		if(ns->sminn[layer] < 0|| ns->sminn[layer]  < 0)
+		{
+			printf("FATAL ERROR: negative sminn popol (multilayer_sminn.c)\n");
+			ok=0;
+		}
+	}
+	
+	/* BOUNDARY LAYER IS SPECIAL: constant N-content */
 	ns->nleached_snk	+= nf->sminn_leached[N_SOILLAYERS-2];
+	ns->ndiffused_snk	+= nf->sminn_diffused[N_SOILLAYERS-2];
+
+	if (layer == N_SOILLAYERS-1)
+	{
+		boundary_effect  = sminn_boundary - ns->sminn[layer];
+		ns->sminn[layer] = sminn_boundary;
+		ns->BNDRYsrc     += boundary_effect;
+	}
+
+
 	
 	/* ***************************************************************************************************** */	
 	/* 4. Calculating the soil mineral N content of rooting zone taking into account changing rooting depth 

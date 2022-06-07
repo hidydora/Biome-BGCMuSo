@@ -6,8 +6,9 @@ method: Vuichard et al, 2007
 NOTE: LSU: livestock unit = unit used to compare or aggregate different species and it is equivalnet to 500 kg live weight (1 adult cattle = 1 LSU)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -101,7 +102,10 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 			GRZcoeff  = 0.0;
 			daily_excr_prod = 0;
 			prop_excr2litter = 0;
-			if (ctrl->onscreen) printf("not enough grass for grazing\n");
+			if (ctrl->onscreen) 
+			{	
+				printf("not enough grass for grazing\n");
+			}
 		}			
 	}
 	else 
@@ -146,9 +150,9 @@ int grazing(const control_struct* ctrl, const epconst_struct* epc, grazing_struc
 	wf->canopyw_to_GRZ = ws->canopyw * GRZcoeff;
 
 	/* if grazing manure production is taken account (plant material goes into the litter pool)
-	   - surplus to ecosystem is loss for "atmosphere" - negatice sign*/	
+	   - gain to ecosystem is loss for "atmosphere" - negatice sign*/	
 
-	/* if grazing manure production is taken account (plant material goes into the litter pool) - surplus to ecosystem is loss for "atmosphere" - negatice sign*/	
+	/* if grazing manure production is taken account (plant material goes into the litter pool) - gain to ecosystem is loss for "atmosphere" - negatice sign*/	
 	cf->GRZ_to_litr1c = (Cplus_from_excrement) * epc->leaflitr_flab * prop_excr2litter;
 	cf->GRZ_to_litr2c = (Cplus_from_excrement) * epc->leaflitr_fucel * prop_excr2litter;
 	cf->GRZ_to_litr3c = (Cplus_from_excrement) * epc->leaflitr_fscel * prop_excr2litter;

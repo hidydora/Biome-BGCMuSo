@@ -3,9 +3,11 @@ bgc_func.h
 header file for function prototypes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2013, PD. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -129,7 +131,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 /* calculating rooting depth in the multilayer soil  */
 int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, 
-						 const phenology_struct* phen, epvar_struct* epv, nstate_struct* ns);
+						 phenology_struct* phen, planting_struct* PLT, ploughing_struct* PLG, epvar_struct* epv, nstate_struct* ns);
 
 /* planting - Hidy 2012 */
 int planting(const control_struct* ctrl,const epconst_struct* epc, 
@@ -173,5 +175,8 @@ int management(const control_struct* ctrl, fertilizing_struct* FRZ, grazing_stru
 int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* epc, epvar_struct* epv);
 
 /* senescence mortality calculation */
-int senescence(const epconst_struct* epc, const metvar_struct* metv, const siteconst_struct* sitec,
-			   cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, epvar_struct* epv);
+int senescence(const epconst_struct* epc,cstate_struct* cs, cflux_struct* cf, nstate_struct* ns, nflux_struct* nf, epvar_struct* epv);
+
+int richards(const siteconst_struct* sitec, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+
+int soilb_estimation(double sand, double silt, double* soil_b, double* vwc_sat, double* BD, double* RCN);

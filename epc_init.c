@@ -3,9 +3,11 @@ epc_init.c
 read epc file for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 20.03.01 Galina Churkina added variable "sum" substituting  t1+t2+t3 in IF statement,
 which gave an error.
@@ -169,7 +171,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl)
 
 	if (ok && ctrl->varWPM_flag) 
 	{
-		printf("conductance.txt is found, changing  WPM is used\n");
+		printf("mortality.txt is found, changing  WPM is used\n");
 		
 		/* allocate space for the annual WPM array */
 		epc->wpm_array = (double*) malloc(ctrl->simyears * sizeof(double));

@@ -5,8 +5,9 @@ based on literure (Jolly et al, 2005) and own method. The goal is to replace pre
 of the model-defined onset and offset day does not work correctly
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -110,7 +111,7 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 		
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
-	if (ctrl->onscreen)
+	if (ctrl->onscreen && !ctrl->spinup)
 	{
 		fprintf(GSI->GSI_file.ptr, "year yday tavg prcp tmin heatsum tmin_index heatsum_index snowcover GSI_index_avg GSI_index_total\n");
 	}
@@ -300,7 +301,12 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 		
 			/* if vegetation period does not end until the last day of year, the offday is equal to the last day of year */
 			if (yday == NDAY_OF_YEAR-1 && offday == 0)
-			{
+			{       /* if vegetation period has not began */
+				if (onday_flag == 0) 
+				{	
+					onday_arr[ny] = yday-2;
+					if (ctrl->onscreen) printf("WARNING: no real vegetation period - check meteorological data");
+				}
 				onday_flag     = 0;
 				offday_flag    = 1;
 				offday         = yday;
@@ -309,7 +315,7 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 			}
 			/* ******************************************************************* */
 			/* 4. writing out the enviromental parameters and GSI indexes */
-			if (ctrl->onscreen)
+			if (ctrl->onscreen && !ctrl->spinup)
 			{
 				fprintf(GSI->GSI_file.ptr, "%i %i %4.2f %4.2f %4.2f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\n", ctrl->simstartyear+ny, yday, 
 									tavg_act, prcp_act, tmin_act, heatsum_act, tmin_index, heatsum_index, snowcover,
@@ -322,7 +328,7 @@ int GSI_calculation(const metarr_struct* metarr, const control_struct* ctrl, con
 	} /* endfor - simyears */
 
 	/* writing out the date of onday and offday for every simulation year */
-	if (ctrl->onscreen)
+	if (ctrl->onscreen && !ctrl->spinup)
 	{
 		for (ny=0 ; ny<nyears ; ny++)
 		{

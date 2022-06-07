@@ -3,17 +3,19 @@ bgc_struct.h
 header file for structure definitions
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2013, D. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 4/17/2000 (PET): Added new nf structure element (sminn_to_denitrif). This is
 part of a larger modification that increases denitrification in the presence
 of excess soil mineral N.
 Modified:
-13/07/2000: Added input of Ndep from file => added new ramp_ndep structure
-element ndep_array (array). Changes are made by Galina Churkina.
+13/07/2000: Added input of Ndep from file => added new ndep structure
+element ndep_array (array). Changes are made by Galina Churkina adn Dora Hidy (2014)
 */
 
 #define N_POOLS 3			/* Hidy 2010 - number of type of pools: water, carbon, nitrogen */
@@ -62,20 +64,20 @@ typedef struct
 	int GWD_flag;			 /* Hidy 2012 - using gorundwater depth */
 } control_struct;
 
-/* a structure to hold information about ramped N-deposition scenario */
+/* a structure to hold information about varied N-deposition scenario */
 typedef struct
 {
-	int doramp;         	/* (flag) 1=ramped Ndep, 0=constant Ndep */
+	int varndep;         	/* (flag) 1=use file Ndep, 0=constant Ndep */
 	int ind_year;          	/* (int)  reference year for indust. Ndep */
 	double preind_ndep;    	/* (double)  (kgN/m2/yr) preindustrial Ndep (at first metyear) */
 	double ind_ndep;       	/* (double)  (kgN/m2/yr) industrial Ndep at ref yr */
 	double* ndep_array;	/* (kgN/m2/yr) annual Ndep array*/
-} ramp_ndep_struct;
+} ndep_control_struct;
 
 /* a structure to hold information on the annual co2 concentration */
 typedef struct
 {
-	int varco2;             /* (flag) 0=const 1=use file 2=const,file for Ndep */
+	int varco2;             /* (flag) 0=const 1=use file  */
     double co2ppm;          /* (ppm)     constant CO2 concentration */
 	double* co2ppm_array;   /* (ppm)     annual CO2 concentration array */
 } co2control_struct;	
@@ -642,6 +644,7 @@ typedef struct
     double nfix_src;					/* (kgN/m2) SUM of biological N fixation */
     double ndep_src;					/* (kgN/m2) SUM of N deposition inputs */
     double nleached_snk;				/* (kgN/m2) SUM of N leached */
+	double ndiffused_snk;				/* (kgN/m2) SUM of N leached */
     double nvol_snk;					/* (kgN/m2) SUM of N lost to volatilization */
 	double fire_snk;					/* (kgN/m2) SUM of N lost to fire */	
 	/* sensescence simulation - Hidy 2011 */
@@ -682,6 +685,7 @@ typedef struct
 	/* grazing - by Hidy 2009. */
 	double GRZsnk;              /* (kgN/m2) grazed leaf N */
 	double GRZsrc;          /* (kgN/m2) leaf N from fertilizer*/
+	double BNDRYsrc;
 } nstate_struct;
 
 /* daily nitrogen flux variables */
@@ -826,6 +830,7 @@ typedef struct
 	double sminn_to_soil_SUM;
 	double sminn_to_soil[N_SOILLAYERS];    /* (kgN/m2/d) */
 	double sminn_leached[N_SOILLAYERS];    /* (kgN/m2/d) */
+	double sminn_diffused[N_SOILLAYERS];    /* (kgN/m2/d) */
 	/* daily allocation fluxes */
 	double retransn_to_npool;             /* (kgN/m2/d) */
 	double sminn_to_npool;                /* (kgN/m2/d) */
@@ -1092,6 +1097,7 @@ typedef struct
 	double soillayer_thickness[N_SOILLAYERS];		/*  (m) Hidy 2010 - array contains the soil layer thicknesses (positive values) */
 	double soillayer_midpoint[N_SOILLAYERS];					/*  (m) Hidy 2010 - array contains the depths of the middle layers (positive values)*/
     double soil_b;										/* (DIM) Clapp-Hornberger "b" parameter */
+	double RCN;							  		/* (m) runoff curve number */
     double vwc_sat;										/* (DIM) volumetric water content at saturation */
     double vwc_fc;								/* (DIM) VWC at field capacity ( = -0.033 MPa) */
 	double vwc_wp;								/* (DIM) VWC at wilting point ( = pF 4.2) */
@@ -1110,7 +1116,7 @@ typedef struct
     double sw_alb;								/* (DIM) surface shortwave albedo */
     double ndep;								/* (kgN/m2/yr) wet+dry atmospheric deposition of N */
     double nfix;								/* (kgN/m2/yr) symbiotic+asymbiotic fixation of N */
-	double runoff_param;						/* (m) runoff parameter - Campbell and Diaz, 1988 */
+	double RCN_mes;								/* (m) user-defined runoff curve number */
 	double vwc_sat_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at saturation*/
 	double vwc_fc_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at field capacity*/
 	double vwc_wp_mes;							/* (m3/m3) Hidy 2010 - measured soil water content at wilting point*/
@@ -1239,6 +1245,7 @@ typedef struct
 	int PLG_flag;								/* (flag) 1=do plough , 0=no plough */
 	int mgmd;									/* (flag) 1=do management , 0=no management on actual day */
 	double** PLGdays_array;						/* (array) contains the plough days in 1 year*/
+        int afterPLG;	
 	double PLG_pool_litr1c;						/* (value) actual ploughing pool */
 	double PLG_pool_litr2c;						/* (value) actual ploughing pool */
 	double PLG_pool_litr3c;						/* (value) actual ploughing pool */
@@ -1273,6 +1280,7 @@ typedef struct
 {
 	int PLT_flag;								/* (flag) 1=do planting , 0=no planting */	
 	int mgmd;									/* (flag) 1=do management , 0=no management on actual day */
+        int afterPLT;
     double** PLTdays_array;						/* (array) contains the planting days in 1 year*/
 	double** seed_quantity_array;				/* (array) quantity of seed*/
 	double** seed_carbon_array;					/* (array) carbon content of seed*/
@@ -1348,6 +1356,7 @@ typedef struct
 
 typedef struct
 {
+	double daily_nep;      /* kgC/m2/day = NPP - Rheretotrop */
 	double daily_npp;      /* kgC/m2/day = GPP - Rmaint - Rgrowth */
 	double daily_nee;      /* kgC/m2/day = GPP - Rmaint - Rgrowth - Rheretotrop - fire losses */
 	double daily_nbp;      /* kgC/m2/day = GPP - Rmaint - Rgrowth - Rheretotrop - disturb_emission - fire losses*/

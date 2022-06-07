@@ -2,8 +2,9 @@
 conduct_limit_factors.c
 calculate the limitation factors of conductance
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -25,8 +26,8 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 
 	/* -------------------------------------------*/
 	/* control: using vwc_ratio OR psi to calculate conductance limitation */
-	if ((epc->relVWC_crit1  != (double) DATA_GAP && epc->relPSI_crit1  != (double) DATA_GAP) ||
-		(epc->relVWC_crit2 != (double) DATA_GAP && epc->relPSI_crit2 != (double) DATA_GAP))
+	if ((epc->relVWC_crit1  < (double) DATA_GAP && epc->relPSI_crit1  < (double) DATA_GAP) ||
+		(epc->relVWC_crit2 < (double) DATA_GAP && epc->relPSI_crit2 < (double) DATA_GAP))
 	{
 		printf("Warning: if relSWC and relPSI data are set simultaneously in EPC file, relSWC data are used\n");
 	
@@ -36,9 +37,9 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 	/* if no relSWC data are available: the crit1 and crit2 VWC value is calculated from relPSI
 	   if no relPSI data are available: the crit1 and crit2 VWC value is calculated from relSWC  */
 	
-	if (epc->relVWC_crit1 == (double) DATA_GAP)
+	if (epc->relVWC_crit1 >= (double) DATA_GAP)
 	{
-		if (epc->relPSI_crit1 == (double) DATA_GAP)
+		if (epc->relPSI_crit1 >= (double) DATA_GAP)
 		{
 			epv->psi_crit1 = sitec->psi_fc;  
 			epv->vwc_crit1 = sitec->vwc_fc;
@@ -57,9 +58,9 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 	
 
 
-	if (epc->relVWC_crit2 == (double) DATA_GAP)
+	if (epc->relVWC_crit2 >= (double) DATA_GAP)
 	{
-		if (epc->relPSI_crit2 == (double) DATA_GAP)
+		if (epc->relPSI_crit2 >= (double) DATA_GAP)
 		{
 			epv->psi_crit2 = sitec->psi_sat;  
 			epv->vwc_crit2 = sitec->vwc_sat;
@@ -71,13 +72,13 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 			{
 				 if (epv->psi_crit2/sitec->psi_sat < 1)
 				 {
-					 printf("Error: relPSI_crit2 in EPC file MUST less than 1 (saturation value)\n");
+					 printf("ERROR: relPSI_crit2 in EPC file MUST less than 1 (saturation value)\n");
 					 ok=0;
 				 }
 				 else
 				 {
 					 epv->vwc_crit2 = sitec->vwc_sat;
-					 printf("Warning: relPSI_crit2 in EPC file MUST less than a soil-dependent value -> saturation values used to calculate soil moisture limitation factors: conduct_limit_factors()\n");
+					 printf("WARNING: relPSI_crit2 in EPC file MUST less than a soil-dependent value -> saturation values used to calculate soil moisture limitation factors: conduct_limit_factors()\n");
 				 }
 			}
 			else
@@ -98,7 +99,7 @@ int conduct_limit_factors(const siteconst_struct* sitec, const epconst_struct* e
 	{
 		 epv->psi_crit2 = sitec->psi_sat;
 		 epv->vwc_crit2 = sitec->vwc_sat;
-		 printf("Error: VWC_crit2 in EPC file MUST GREATER than VWC_crit1 value, please check EPC file (relVWC_crit or relPSI_crit values) \n");
+		 printf("ERROR: VWC_crit2 in EPC file MUST GREATER than VWC_crit1 value, please check EPC file (relVWC_crit or relPSI_crit values) \n");
 		 ok=0;
 	}
 		

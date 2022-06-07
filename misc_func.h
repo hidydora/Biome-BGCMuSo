@@ -1,12 +1,12 @@
 /*
 misc_func.h
 function prototypes for miscellaneous functions used in bgc routines
-for use with pointbgc front-end to BIOME-BGC library v4.1
+for use with pointbgc front-end to BBGC MuSo v3.0.6 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2013, D. Hidy
+Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 /* function prototypes for smoothing functions */

@@ -5,9 +5,11 @@ leaf area for sun and shade canopy fractions, then calculate
 canopy radiation interception and transmission 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

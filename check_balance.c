@@ -3,9 +3,11 @@ check_balance.c
 daily test of mass balance (water, carbon, and nitrogen state variables)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Siulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -55,7 +57,7 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 	 
 	if (!first_balance)
 	{
-		if (fabs(old_balance - balance) > 1e-8)
+		if (fabs(old_balance - balance) > 1e-8)// && ws->groundwater_src == 0)
 		{
 			printf("FATAL ERRROR: Water balance error:\n");
 			printf("Balance from previous day = %lf\n",old_balance);
@@ -66,7 +68,7 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 			printf("Sinks   (summed over entire run)  = %lf\n",out);
 			printf("Storage (current state variables) = %lf\n",store);
 		 	printf("Exiting...\n");
-			ok=0; 
+		//	ok=0; 
 		}
 	}
 	old_balance = balance;
@@ -164,7 +166,7 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	static double old_balance = 0.0;
 	
 	/* Hidy 2010 -	CONTROL AVOIDING NITROGEN POOLS */
-	if (ns->leafn < 0.0 || ns->leafn < 0.0 ||  ns->leafn_storage < 0.0 || ns->leafn_transfer < 0.0 || 
+	if (ns->leafn < 0.0  ||  ns->leafn_storage < 0.0 || ns->leafn_transfer < 0.0 || 
 		ns->frootn < 0.0 || ns->frootn_storage < 0.0 || ns->frootn_transfer < 0.0 || 
 		ns->fruitn < 0.0 || ns->fruitn_storage < 0.0 || ns->fruitn_transfer < 0.0 || 
 		ns->livestemn < 0.0 || ns->livestemn_storage < 0.0 || ns->livestemn_transfer < 0.0 || 
@@ -185,6 +187,8 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	
 	/* sum of sources */
 	in = ns->nfix_src + ns->ndep_src + 
+		/* effect of boundary layer with constant N-content - Hidy 2015 */
+		ns->BNDRYsrc +
 		/*  senescence */
 		ns->SNSCsrc +	/*  senescence */
 		/* management */
@@ -192,7 +196,7 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	
 	
 	/* sum of sinks */
-	out = ns->nleached_snk + ns->nvol_snk + ns->fire_snk +
+	out = ns->nvol_snk + ns->fire_snk + //ns->nleached_snk + ns->ndiffused_snk + 
 		/*  senescence */
 		ns->SNSCsnk + 
 		/* management */
@@ -238,4 +242,6 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	
 	return (!ok);
 }
+
+
 

@@ -3,8 +3,9 @@ mowing_init.c
 read mowing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -18,6 +19,7 @@ Copyright 2014, D. Hidy
 #include "bgc_struct.h"
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 
 int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
@@ -33,7 +35,7 @@ int mowing_init(file init, control_struct* ctrl, mowing_struct* MOW)
 	int i;
 	int ok = 1;
 	int ny=1;
-	int n_MOWparam=3;
+
 	/********************************************************************
 	**                                                                 **
 	** Begin reading initialization file block starting with keyword:  **

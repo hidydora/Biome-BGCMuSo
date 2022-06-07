@@ -4,9 +4,11 @@ header file to hold the structures used to communicate with bgc()
 also contains the function prototype for bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2013, PD. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -15,9 +17,9 @@ Copyright 2013, PD. Hidy
 typedef struct
 {
 	restart_data_struct restart_input;  /* input restart data */
-	control_struct ctrl;    /* bgc control variables */
-	ramp_ndep_struct ramp_ndep;  /* ramped Ndep information */
-	co2control_struct co2;  /* CO2 concentration information */
+	control_struct ctrl;		/* bgc control variables */
+	ndep_control_struct ndep;	/* Ndep information */
+	co2control_struct co2;		/* CO2 concentration information */
 	metarr_struct metarr;   /* meteorological data array */
 	wstate_struct ws;       /* water state variables */
 	cinit_struct cinit;     /* first-year values for leafc and stemc */
@@ -53,3 +55,5 @@ typedef struct
 /* function prototypes for calling bgc */
 int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout);
 int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout);
+/* Hidy 2014 - transient run */
+int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout);

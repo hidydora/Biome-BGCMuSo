@@ -2,8 +2,9 @@
 multilayer_rootdepth.c
 Hidy 2011 - calculation of changing rooting depth based on empirical function and state update of rootzone sminn content (sminn_RZ)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v4
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -16,34 +17,89 @@ Copyright 2014, D. Hidy
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, const phenology_struct* phen, 
-						 epvar_struct* epv, nstate_struct* ns)
+int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, 
+						 phenology_struct* phen, planting_struct* PLT, ploughing_struct* PLG, epvar_struct* epv, nstate_struct* ns)
 {
 
 
 	int ok=1;
+	int layer, yday, ny;
 
-	double plant_day, matur_day;
-	
+	double onday, offday, plant_day, matur_day, rootdepthmin, RLprop_sum1, RLprop_sum2, sminn_RZ, maturity_coeff;
+
+
 	/* initalizing internal variables */
-	double maturity_coeff = epc->maturity_coeff;
-	double RLprop_sum1 = 0;
-	double RLprop_sum2 = 0;
+	onday=offday=plant_day=matur_day=rootdepthmin=RLprop_sum1=RLprop_sum2=sminn_RZ=maturity_coeff=0;
 
-	/* soil mineral N in changing rooting zone */
-	double sminn_RZ = 0;
-	int layer;
+	maturity_coeff = epc->maturity_coeff;
+	yday           = ctrl->yday;
+	onday          = phen->onday;
+	offday         = phen->offday;
+	rootdepthmin   = CRIT_PREC;
 
-	/* important dayw of year */
-	int yday   = ctrl->yday;
-	double onday  = phen->onday;
-	double offday = phen->offday;
+	if(PLT->PLT_flag == 2)
+	{
+		ny = ctrl->simyr;
+	}
+	else ny=0;
+	
 	
 	
 	/* ***************************************************************************************************** */	
-	/* 1. Calculating planting date and maturity date (Campbell and Diaz) based on empirical function */
+	/* 1. Calculating planting date and maturity date (Campbell and Diaz) based on empirical function 
+	      and taking into consideration the day of planting and ploughing */
 
-	plant_day = onday;
+	/* after ploughing - effect of ploughing, no effect of planting */
+	if (PLG->mgmd >= 0)
+	{
+		PLG->afterPLG = 1;
+		PLT->afterPLT = 0;
+	}
+	/* after planting - effect of planting, no effect of ploughing */
+	if (PLT->mgmd >= 0) 
+	{
+		PLG->afterPLG = 0;
+		PLT->afterPLT = 1;
+	}
+
+	/* no management in spinup - management setting in spinup INI files refers to transient run */
+	if (ctrl->spinup)
+	{
+		PLG->afterPLG = 0;
+		PLT->afterPLT = 0;
+	}
+
+	/* after planting, but before ploughing the onday is the day of the last planting day */
+	if (PLT->afterPLT == 1)
+	{
+		if (yday >= PLT->PLTdays_array[0][ny] || PLT->PLTdays_array[0][ny] != DATA_GAP) 
+		{
+			if (yday >= PLT->PLTdays_array[1][ny] || PLT->PLTdays_array[1][ny] != DATA_GAP) 
+			{
+				if (yday >= PLT->PLTdays_array[2][ny] || PLT->PLTdays_array[2][ny] != DATA_GAP)	
+				{
+					plant_day = PLT->PLTdays_array[2][ny];
+				}
+				else
+				{
+					plant_day = PLT->PLTdays_array[1][ny];
+				}
+			}
+			else
+			{
+				plant_day = PLT->PLTdays_array[0][ny];
+			}
+		}
+		else
+		{
+			printf("Error in multilayer_rootdepth: incorrect planting date\n");
+			ok=0;
+		}
+
+	}
+	else
+		plant_day = onday;
+			
 	matur_day = onday + maturity_coeff * (offday - onday);
 	
 	/* ***************************************************************************************************** */	
@@ -54,11 +110,19 @@ int multilayer_rootdepth(const control_struct* ctrl, const epconst_struct* epc, 
 	{
 		if (yday < offday) 
 		{
- 			epv->rooting_depth = sitec->max_rootzone_depth * (1./(1 + 44.2 * exp(-8.5*((yday - plant_day)/(matur_day - plant_day)))));
+			if (yday < plant_day || PLG->afterPLG == 1) 
+				epv->rooting_depth = rootdepthmin;
+			
+			else
+				epv->rooting_depth = sitec->max_rootzone_depth * (1./(1 + 44.2 * exp(-8.5*((yday - plant_day)/(matur_day - plant_day)))));
 		}
 		else 
 		{
-			epv->rooting_depth = sitec->max_rootzone_depth - (yday - offday)/(NDAY_OF_YEAR - offday) * sitec->max_rootzone_depth;
+			if (PLG->afterPLG == 0) 
+				epv->rooting_depth = sitec->max_rootzone_depth - (yday - offday)/(NDAY_OF_YEAR - offday) * sitec->max_rootzone_depth;
+			
+			else
+				epv->rooting_depth = rootdepthmin;
 		}
 	}
 	else epv->rooting_depth = sitec->max_rootzone_depth;

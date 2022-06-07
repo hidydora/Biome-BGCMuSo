@@ -1,10 +1,11 @@
 /* 
 ploughing.c
-do harvesting  - decrease the plant material (leafc, leafn, canopy water)
+do ploughing  - decrease the plant material (leafc, leafn, canopy water)
 
-  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+ *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -18,6 +19,7 @@ Copyright 2014, D. Hidy
 #include "pointbgc_struct.h"
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 int ploughing(const epconst_struct* epc, ploughing_struct* PLG, 
 			cflux_struct* cf, nflux_struct* nf, wflux_struct* wf,  cstate_struct* cs, nstate_struct* ns, wstate_struct* ws)

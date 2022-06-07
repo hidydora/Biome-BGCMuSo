@@ -3,8 +3,9 @@ fertilizing_init.c
 read fertilizing information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -18,6 +19,7 @@ Copyright 2014, D. Hidy
 #include "bgc_struct.h"
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 
 int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
@@ -32,7 +34,6 @@ int fertilizing_init(file init, control_struct* ctrl, fertilizing_struct* FRZ)
 	int i;
 	int ok = 1;
 	int ny=1;
-	int n_FRZparam=11;
 
 	/********************************************************************
 	**                                                                 **

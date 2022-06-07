@@ -4,9 +4,11 @@ defines an array of pointers to doubles that map to all the intermediate
 variables in bgc
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -57,19 +59,21 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[19] = &metv->dayl;
 		
 		/* water state variables */
-		output_map[21] = &ws->soilw_SUM;	 /* Hidy 2010 - multilayer soil */
-		output_map[22] = &ws->snoww;
-		output_map[23] = &ws->canopyw;
-		output_map[24] = &ws->prcp_src;
+		output_map[20] = &ws->soilw_SUM;	 /* Hidy 2010 - multilayer soil */
+		output_map[21] = &ws->snoww;
+		output_map[22] = &ws->canopyw;
+		output_map[23] = &ws->prcp_src;
+	    output_map[24] = &ws->runoff_snk;			/* old varialbe in BBGC v4.1.1 - Hidy 2010. */
 		output_map[25] = &ws->soilevap_snk;
 		output_map[26] = &ws->snowsubl_snk;
 		output_map[27] = &ws->canopyevap_snk;
-		output_map[28] = &ws->trans_snk;
-		output_map[29] = &ws->runoff_snk;			/* soilwater submodel - Hidy 2010. */
-		output_map[30] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
-		output_map[31] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
-		output_map[32] = &ws->deeptrans_src;		/* soilwater submodel - Hidy 2013. */
-		output_map[33] = &ws->groundwater_src;		/* soilwater submodel - Hidy 2013. */
+		output_map[28] = &ws->trans_snk;			/* soilwater submodel - Hidy 2010. */
+		output_map[29] = &ws->deeppercolation_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[30] = &ws->deepdiffusion_snk;	/* soilwater submodel - Hidy 2010. */
+		output_map[31] = &ws->deeptrans_src;		/* soilwater submodel - Hidy 2013. */
+		output_map[32] = &ws->groundwater_src;		/* soilwater submodel - Hidy 2013. */
+
+
 		
 		/* water flux variables */
 		output_map[34] = &wf->evapotransp;			/* Hidy 2013 - merging output data */
@@ -561,10 +565,10 @@ psn_struct* psn_sun, psn_struct* psn_shade, summary_struct* summary)
 		output_map[607] = &psn_shade->Av;
 		output_map[608] = &psn_shade->Aj;
 		output_map[609] = &psn_shade->A;
-		
-		/* carbon budget summary output variables */
+
+		output_map[619] = &summary->daily_nbp;	/* Hidy 2009 (instead of nep = nee + fire). */
 		output_map[620] = &summary->daily_npp;
-		output_map[621] = &summary->daily_nbp; 	/* Hidy 2009 (instead of nep = nee + fire). */
+		output_map[621] = &summary->daily_nep; 	
 		output_map[622] = &summary->daily_nee;
 		output_map[623] = &summary->daily_gpp;
 		output_map[624] = &summary->daily_mr;

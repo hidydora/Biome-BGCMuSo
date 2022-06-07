@@ -1,11 +1,12 @@
  /* 
 multilayer_tsoil.c
-Hidy 2010 - calculation of soil temperature in the different soil layers based on the change of air temperature (direct connection)
+calculation of soil temperature in the different soil layers based on the change of air temperature (direct connection)
 to top soil layer and based on empirical function of temperature gradient in soil (Zheng et al.1993)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -57,7 +58,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 		else effect_of_vegetation = 1.0;
 		
 		/* empirical function for the effect of tair changing */
-		tsoil_top_change = (metv->tday_pre - metv->tsoil_top_pre) * heating_coefficient * effect_of_vegetation;	
+		tsoil_top_change = (tday_act - metv->tsoil_top_pre) * heating_coefficient * effect_of_vegetation;	
 	}
 	else 	/* dormant period */
 	{

@@ -1,16 +1,18 @@
 /*
 pointbgc_func.h
 function prototypes for pointbgc
-for use with pointbgc front-end to BIOME-BGC library v4.1
+for use with pointbgc front-end to BBGC MuSo v3.0.8 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2013, D. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 13/07/2000: Added input of Ndep from file=> added simyears function to
-ramp_ndep_init function. Changes are made by Galina Churkina.
+ndep_init function. Changes are made by Galina Churkina.
 */
 
 int met_init(file init, point_struct* point);
@@ -19,7 +21,7 @@ int time_init(file init, control_struct *ctrl);
 int scc_init(file init, climchange_struct* scc);
 int co2_init(file init, co2control_struct* co2, int simyears);
 int sitec_init(file init, siteconst_struct* sitec);
-int ramp_ndep_init(file init, ramp_ndep_struct* ramp_ndep, int simyears);
+int ndep_init(file init, ndep_control_struct* ndep, int simyears);
 /* Hidy 2011: new parameter of epc_init function sitec to contol new EPC parameters */
 int epc_init(file init, epconst_struct* epc, control_struct* ctrl);
 int wstate_init(file init, const siteconst_struct* sitec, wstate_struct* ws);

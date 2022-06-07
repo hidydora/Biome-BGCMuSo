@@ -3,8 +3,9 @@ planting_init.c
 read planting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 */
@@ -18,6 +19,7 @@ Copyright 2014, D. Hidy
 #include "bgc_struct.h"
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
+#include "bgc_constants.h"
 
 
 int planting_init(file init, control_struct* ctrl, planting_struct* PLT)
@@ -35,7 +37,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT)
 	int i;
 	int ok = 1;
 	int ny=1;
-	int n_PLTparam=4;
+
 
 	/********************************************************************
 	**                                                                 **

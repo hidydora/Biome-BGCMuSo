@@ -7,9 +7,11 @@ output files. This is the only library module that has external
 I/O connections, and so it is the only module that includes bgc_io.h.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Modified:
 4/17/2000 (PET): Added annual average temperature and annual total precipitation
@@ -47,10 +49,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	control_struct     ctrl;
 
 	/* meteorological variables */
-	metarr_struct      metarr;
-	metvar_struct      metv;
-	co2control_struct  co2;
-	ramp_ndep_struct ramp_ndep;
+	metarr_struct			metarr;
+	metvar_struct			metv;
+	co2control_struct		co2;
+	ndep_control_struct		ndep;
 
 	
 	/* state and flux variables for water, carbon, and nitrogen */
@@ -143,7 +145,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	double annmaxlai,annet,anndeeppercol,annnpp, annnee, annnbp, annprcp,anntavg, 
 		ann_Cchange_SNSC, ann_Cchange_THN,  ann_Cchange_MOW,  ann_Cchange_HRV,ann_Cchange_PLG, ann_Cchange_GRZ, 
 		ann_Cchange_FRZ, ann_Cchange_PLT, ann_Nplus_GRZ, ann_Nplus_FRZ;
-	
+
+	/* N-deposition calculation - not used Hidy 2014 */
+//	double ndep_diff, ndep_scalar, ndep_value;
+//	int ind_simyr;
 
 	/* copy the input structures into local structures */
 	ws = bgcin->ws;
@@ -170,7 +175,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	ctrl = bgcin->ctrl;
 	metarr = bgcin->metarr;
 	co2 = bgcin->co2;
-	ramp_ndep = bgcin->ramp_ndep;
+	ndep = bgcin->ndep;
 	
 
 #ifdef DEBUG
@@ -186,7 +191,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	
 		file_open (&bgcout->control_file, 'w');		/* file of BBGC variables to control the simulation - Hidy 2009.*/
-		fprintf(bgcout->control_file.ptr, "yday vwc0 vwc1 vwc2 m_soilstress leafc frootc leafc_storage leafc_transfer cpool_to_leafc SNSCsnk SNSCsrc GRZsnk GRZsrc MOWsnk MOWsrc litr1c soil1c sminn0 sminn1 sminn2 gpp ter evap transp0 transp1 transp2\n");
+		fprintf(bgcout->control_file.ptr, "simyr yday tsoil0 tsoil1 tsoil2 tsoil3 tsoil4 tsoil5 tsoil6 vwc0 vwc1 vwc2 sminn0 sminn1 soilc litrc leafc frootc fruitc GPP TER evapotransp\n");
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -297,17 +302,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 
-	/* Hidy 2012. - calculate conductance limitation factors 	*/	
-	if (ok && conduct_limit_factors(&sitec, &epc, &epv))
-	{
-		printf("Error in call to conduct_limit_factors(), from bgc()\n");
-		ok=0;
-	}
-
-#ifdef DEBUG
-	printf("done conduct_limit_factors\n");
-#endif
-
+	
 	if (ctrl.GSI_flag)
 	{
 		/* Hidy 2009. - calculate GSI to deterime onday and offday 	*/	
@@ -443,15 +438,14 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		{
 			/* constant CO2, constant Ndep */
 			metv.co2 = co2.co2ppm;
-			daily_ndep = sitec.ndep / NDAY_OF_YEAR;
 		}
 		else 
 		{
-			if (co2.varco2 == 1) metv.co2 = co2.co2ppm_array[simyr];
+			metv.co2 = co2.co2ppm_array[simyr];
 		}
 		
 		/* atmospheric Ndep handling */
-		if (!(ramp_ndep.doramp))
+		if (!(ndep.varndep))
 		{
 			/*constant Ndep */
 			daily_ndep = sitec.ndep / NDAY_OF_YEAR;
@@ -459,7 +453,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		else
 		{	
 			/* Ndep from file */
-			daily_ndep = ramp_ndep.ndep_array[simyr] / NDAY_OF_YEAR;
+			daily_ndep = ndep.ndep_array[simyr] / NDAY_OF_YEAR;
+		
 		}
 		
 		/* begin the daily model loop */
@@ -492,6 +487,14 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			cf = zero_cf;
 			nf = zero_nf;
 
+			/* MANAGEMENT DAYS - Hidy 2013. */
+			if (ok && management(&ctrl, &FRZ, &GRZ, &HRV, &MOW, &PLT, &PLG, &THN))
+			{
+				printf("Error in management days() from bgc()\n");
+				ok=0;
+			}
+
+
 
 			/* daily meteorological variables from metarrays */
 			if (ok && daymet(&ctrl, &metarr, &sitec, &ws, &metv, &tair_annavg, metday))
@@ -504,6 +507,15 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone daymet\n",simyr,yday);
 #endif
 			
+			/* soil temperature calculations */
+			if (ok && multilayer_tsoil(&epc, &sitec, &ws, &metv, &epv))
+			{
+				printf("Error in multilayer_tsoil() from bgc()\n");
+				ok=0;
+			}
+#ifdef DEBUG
+			printf("%d\t%d\tdone multilayer_tsoil\n",simyr,yday);
+#endif
 			/* daily phenological variables from phenarrays */
 			if (ok && dayphen(&phenarr, &phen, metday, metyr))
 			{
@@ -536,7 +548,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Hidy 2011 - MULTILAYER SOIL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
 			/* rooting depth */
- 			 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &epv, &ns))
+ 			 if (ok && multilayer_rootdepth(&ctrl, &epc, &sitec, &phen, &PLT, &PLG, &epv, &ns))
 			 {
 				printf("Error in multilayer_rootdepth() from bgc()\n");
 				ok=0;
@@ -545,15 +557,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone multilayer_rootdepth\n",simyr,yday);
 #endif
 
-			/* soil temperature calculations */
-			if (ok && multilayer_tsoil(&epc, &sitec, &ws, &metv, &epv))
-			{
-				printf("Error in multilayer_tsoil() from bgc()\n");
-				ok=0;
-			}
-#ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_tsoil\n",simyr,yday);
-#endif
+
 
 			/* soil hydrological parameters: psi, vwc, conductivity  */
  			if (ok && multilayer_hydrolparams(&sitec, &ws, &epv))
@@ -565,6 +569,18 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone multilayer_hydrolparams\n",simyr,yday);
 #endif
 			
+/* Hidy 2012. - calculate conductance limitation factors 	*/	
+	if (ok && conduct_limit_factors(&sitec, &epc, &epv))
+	{
+		printf("Error in call to conduct_limit_factors(), from bgc()\n");
+		ok=0;
+	}
+
+#ifdef DEBUG
+	printf("done conduct_limit_factors\n");
+#endif
+
+
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 			/* calculate leaf area index, sun and shade fractions, and specific
 			leaf area for sun and shade canopy fractions, then calculate
@@ -620,6 +636,16 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone bare_soil evap\n",simyr,yday);
 #endif
 
+		       /* conductance - Hidy 2011 */
+			if (ok && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
+			{
+				printf("Error in conduct_calc() from bgc()\n");
+				ok=0;
+			}
+			
+#ifdef DEBUG
+			printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
+#endif
 		
 			
 			/* daily maintenance respiration */
@@ -634,16 +660,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 		
 
-			/* conductance - Hidy 2011 */
-			if (ok && conduct_calc(&ctrl, &metv, &epc, &sitec, &epv, simyr))
-			{
-				printf("Error in conduct_calc() from bgc()\n");
-				ok=0;
-			}
-			
-#ifdef DEBUG
-			printf("%d\t%d\tdone conduct_calc\n",simyr,yday);
-#endif
+	
 
 		
 			/* begin canopy bio-physical process simulation */
@@ -854,6 +871,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone multilayer_hydrolprocess\n",simyr,yday);
 #endif	
 		
+/* ground water calculation */
 			if (ok && groundwater(&ctrl, &sitec, &epv, &ws, &wf))
 			{
 				printf("Error in groundwater() from bgc()\n");
@@ -904,12 +922,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  MANAGEMENT SUBMODULES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 
-			/* MANAGEMENT DAYS - Hidy 2013. */
-			if (ok && management(&ctrl, &FRZ, &GRZ, &HRV, &MOW, &PLT, &PLG, &THN))
-			{
-				printf("Error in management days() from bgc()\n");
-				ok=0;
-		   }
+
 			
 			/* PLANTING - Hidy 2009. */
            if (ok && planting(&ctrl, &epc, &PLT, &cf, &nf, &cs, &ns))
@@ -980,7 +993,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* Hidy 2013 - calculate daily senescence mortality fluxes and update state variables */
-			if (ok && senescence(&epc, &metv, &sitec, &cs, &cf, &ns, &nf, &epv))
+			if (ok && senescence(&epc, &cs, &cf, &ns, &nf, &epv))
 			{
 				printf("Error in senescence() from bgc()\n");
 				ok=0;
@@ -1072,17 +1085,16 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
  		
 			/* INTERNAL VARIALBE CONTROL - Hidy 2013 */
-			if (ctrl.onscreen && ctrl.simyr < 100)
+			if (ctrl.onscreen && ctrl.simyears < 10)
 			{
 				
-				fprintf(bgcout->control_file.ptr, "%i %5.3f %5.3f %5.3f %5.3f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f %5.2f\n",
-		        yday, epv.vwc[0], epv.vwc[1], epv.vwc[2], epv.m_soilstress, 
-				cs.leafc*1000, cs.frootc*1000, cs.leafc_storage*1000, cs.leafc_transfer*1000, cf.cpool_to_leafc*1000, 
-				cs.SNSCsnk*1000, cs.SNSCsrc*1000, cs.GRZsnk*1000, cs.GRZsrc*1000, cs.MOWsnk*1000, cs.MOWsrc*1000, 
-				cs.litr1c*1000, cs.soil1c*1000, 
-				ns.sminn[0]*1000, ns.sminn[1]*1000, ns.sminn[2]*1000,
-				summary.daily_gpp*1000, summary.daily_tr*1000, wf.evapotransp,
-				wf.soilw_trans[0], wf.soilw_trans[1], wf.soilw_trans[2]); 
+				fprintf(bgcout->control_file.ptr, "%i %i %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f %14.8f\n",
+		        ctrl.simyr, yday, metv.tsoil[0], metv.tsoil[1], metv.tsoil[2],metv.tsoil[3],metv.tsoil[4],metv.tsoil[5],metv.tsoil[6],
+							epv.vwc[0], epv.vwc[1], epv.vwc[2], 
+							ns.sminn[0]*1000, ns.sminn[1]*1000,
+				         	summary.soilc, summary.litrc,
+							cs.leafc, cs.frootc, cs.fruitc, summary.daily_gpp, summary.daily_tr, wf.evapotransp);
+
 			}
 
 			/* DAILY OUTPUT HANDLING */
@@ -1203,7 +1215,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (epv.proj_lai > annmaxlai) annmaxlai = epv.proj_lai;
 		
 			annet += wf.evapotransp;			
-			anndeeppercol += wf.soilw_percolated[N_SOILLAYERS-2];
+			anndeeppercol += wf.soilw_percolated[N_SOILLAYERS-2] + wf.soilw_diffused[N_SOILLAYERS-2];
 			annnpp += summary.daily_npp * 1000.0;		/* (kgC/m2 -> gC/m2) */
 			annnee += summary.daily_nee * 1000.0;		/* (kgC/m2 -> gC/m2) */
 			annnbp += summary.daily_nbp * 1000.0;
@@ -1250,7 +1262,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 		}
 		/* write the simple annual text output - Hidy 2008. */
-		fprintf(bgcout->anntext.ptr,"%i %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f %5.3f %5.3f %6.1f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f %5.3f\n",
+		fprintf(bgcout->anntext.ptr,"%i %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f %10.2f\n",
 			ctrl.simstartyear+simyr,annprcp,anntavg,annmaxlai,annet,anndeeppercol,annnee,annnbp,
 			ann_Cchange_SNSC, ann_Cchange_PLT, ann_Cchange_THN, ann_Cchange_MOW, ann_Cchange_GRZ, ann_Cchange_HRV,ann_Cchange_PLG, ann_Cchange_FRZ,  
 			ann_Nplus_GRZ, ann_Nplus_FRZ);

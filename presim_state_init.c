@@ -4,9 +4,11 @@ Initialize water, carbon, and nitrogen state variables to 0.0 before
 each simulation.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.7
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -204,6 +206,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->nfix_src = 0.0;
 	ns->ndep_src = 0.0;
 	ns->nleached_snk = 0.0;
+	ns->ndiffused_snk = 0.0;
+	ns->BNDRYsrc = 0.0;
 	ns->nvol_snk = 0.0;
 	ns->fire_snk = 0.0;
 	/* planting - Hidy 2012. */

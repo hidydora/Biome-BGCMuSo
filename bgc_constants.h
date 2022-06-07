@@ -3,9 +3,11 @@ bgc_constants.h
 Holds macro definitions for constants used in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2013, PD. Hidy
+Numerical Terradynamics Simulation Group
+Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -55,9 +57,9 @@ are set to 0.0 to control rounding and overflow errors */
 #define HC_water			4200000		/* (J/m3/K) heat capacity of water */
 #define HC_soil				1260000		/* (J/m3/K) heat capacity of soil */
 #define HC_air				1004		/* (J/m3/K) heat capacity of air */
-#define n_sec_in_hour		3600		/* (s/hour)  calculation of hourly value from second values */
-#define n_sec_in_min		60			/* (s/min)  calculation of hourly value from second values */
-#define n_hour_in_day		24			/* (hour/day)  calculation of daily value from hourly values */
+#define n_sec_in_day		86400		/* (s/day)  calculation of daily value from second values */
+#define n_hour_in_day		24.			/* (hour/day)  calculation of daily value from hourly values */
+
 #define water_density		1000		/* (kg/m3)  mean value of water density */
 #define pF_hygroscopw		6.2			/* (dimless)  pF value at hygroscopic water point (dry air) */
 #define pF_wiltingpoint		4.2			/* (dimless)  pF value at wilting point */
@@ -71,5 +73,13 @@ are set to 0.0 to control rounding and overflow errors */
 
 
 #define NDAY_OF_YEAR	    365	
-#define DATA_GAP			999.9	
+#define DATA_GAP			999.9
 #define CAMPBELL_PARAM		200    /* (dimless) based on Cambell and Diaz 1988: Simplifiled soil-water balance model (runoff calc. in mm) */
+/* Hidy 2015 - number of parameter arrays regarding to management sections */
+#define n_FRZparam			11
+#define n_GRZparam			9
+#define n_HRVparam			3
+#define n_MOWparam			3
+#define n_PLTparam			4
+#define n_PLGparam			1
+#define n_THNparam			4

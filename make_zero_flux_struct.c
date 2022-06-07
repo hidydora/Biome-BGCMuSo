@@ -4,9 +4,11 @@ create structures initialized with zero for forcing fluxes to zero
 between simulation days
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -422,6 +424,7 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf)
 	for (layer = 0; layer < N_SOILLAYERS; layer ++)
 	{
 		nf->sminn_leached[layer]      = 0.0;
+		nf->sminn_diffused[layer]      = 0.0;
 		nf->sminn_to_soil[layer]  = 0.0; 
 	}
 	nf->retransn_to_npool = 0.0;  

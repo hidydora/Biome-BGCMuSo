@@ -1,12 +1,12 @@
 /*
 ini.h
 header file for file I/O handling and initialization file reading
-for use with BIOME-BGC library v4.1
+for use with BBGC MuSo v3.0.8 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.2
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2013, D. Hidy
+Numerical Terradynamics Simulation Group
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

@@ -1,11 +1,12 @@
 /* 
 multilayer_hydrolparams.c
-Hidy 2010 - soil water potential, hydr. conductivity and hydr. diffusivity as a function of volumetric water content and
+calcultion of soil water potential, hydr. conductivity and hydr. diffusivity as a function of volumetric water content and
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v4
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -56,111 +57,61 @@ int multilayer_hydrolparams(const siteconst_struct* sitec,  wstate_struct* ws, e
 	*/
 
 	int ok=1;
-
-	/* day since water sress, end of water stress */
-	double psi_act;
-	double hydr_conduct_act;
-	double hydr_diffus_act;
-	double vwc_act;
-	double pF_act;
-
-	/* multilayer soil */
-	double vwc_avg = 0.0;
-	double psi_avg = 0.0;
-	double hydr_conduct_avg = 0.0;
-	double hydr_diffus_avg = 0.0;
 	int layer;
+	double vwc_avg=0;
+	double psi_avg=0;
 
-	/* sitec parameters */
-	double soil_b = sitec->soil_b;
-	double vwc_sat = sitec->vwc_sat;
-	double psi_sat = sitec->psi_sat;
-	
 
 	/* ***************************************************************************************************** */
 	/* calculating vwc psi and hydr. cond. to every layer */
 
 
-	for (layer=0 ; layer < N_SOILLAYERS-1; layer++)
+	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
-
+		
 		/* convert kg/m2 --> m3/m2 --> m3/m3 */
-		vwc_act = ws->soilw[layer] / (1000.0 * sitec->soillayer_thickness[layer]);
+		epv->vwc[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 
-	    /* PRECISION CONTROL - avoid unrealistic VWC content (higher than saturation value) */
-		if (vwc_act > sitec->vwc_sat)       
+	   
+		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
+		epv->psi[layer]  = sitec->psi_sat * pow( (epv->vwc[layer] /sitec->vwc_sat), -1* sitec->soil_b);
+		
+	
+		/* pF from psi: cm from MPa */
+		epv->pF[layer] =log10(fabs(10000*epv->psi[layer] ));
+	
+       
+
+		/* CONTROL - unrealistic VWC content (higher than saturation value) */
+		if (epv->vwc[layer] > sitec->vwc_sat)       
 		{
-			if (vwc_act- sitec->vwc_sat > CRIT_PREC)       
+			if (epv->vwc[layer] - sitec->vwc_sat > 0.001)       
 			{
 				printf("Fatal error: soil water content is higher than saturation value (multilayer_hydrolprocess.c)\n");
 				ok=0;	
 			}
 			else
 			{
-				ws->deeppercolation_snk += vwc_act - sitec->vwc_sat;
-				vwc_act = sitec->vwc_sat;
-				ws->soilw[layer] = vwc_act * sitec->soillayer_thickness[layer] * water_density;
+				ws->deeppercolation_snk += epv->vwc[layer] - sitec->vwc_sat;
+				epv->vwc[layer]         = sitec->vwc_sat;
+				ws->soilw[layer]        = epv->vwc[layer] * sitec->soillayer_thickness[layer] * water_density;
 			}
 		}
 
-		/* psi, hydr_conduct and hydr_diffus ( Cosby et al.) from vwc ([1MPa=100m] [m/s] [m2/s] */
-		psi_act = psi_sat * pow( (vwc_act/vwc_sat), -1*soil_b);
-		
-		hydr_conduct_act = sitec->hydr_conduct_sat * pow(vwc_act/vwc_sat, 2*soil_b+3);
-		
-		hydr_diffus_act = (((soil_b * sitec->hydr_conduct_sat * (-100*psi_sat))) / vwc_sat) * 
-							pow(vwc_act/vwc_sat, soil_b+2);
-
-	
-		/* pF from psi: cm from MPa */
-		pF_act=log10(fabs(10000*psi_act));
-	
-		/* assign arrays in ecophsiological variable struct */
-		epv->vwc[layer] = vwc_act;
-		epv->psi[layer] = psi_act;
-		epv->pF[layer] = pF_act;
-        epv->hydr_conduct[layer] = hydr_conduct_act;
-		epv->hydr_diffus[layer] = hydr_diffus_act;
-
 		/* average values regarding to soil without bottom layer */
-		vwc_avg		     +=	vwc_act			* epv->rootlength_prop[layer];
-		psi_avg			 +=	psi_act			* epv->rootlength_prop[layer];
-		hydr_conduct_avg += hydr_conduct_act* epv->rootlength_prop[layer];
-		hydr_diffus_avg  += hydr_diffus_act * epv->rootlength_prop[layer];
+		vwc_avg		     +=	epv->vwc[layer] * epv->rootlength_prop[layer];
+		psi_avg			 +=	epv->psi[layer] * epv->rootlength_prop[layer];
+
+	
 
 	}
 
-	/* PRECISION CONTROL */
-	if (vwc_avg - sitec->vwc_sat > 0)
-	{
-		if (vwc_avg - sitec->vwc_sat < CRIT_PREC)
-		{
-			vwc_avg = sitec->vwc_sat;
-			psi_avg=sitec->psi_sat;
-			hydr_conduct_avg = sitec->hydr_conduct_sat;
-			hydr_diffus_avg = sitec->hydr_diffus_sat;
-		}
-		else
-		{	
-			printf("Error in vwc_avg calculation in multilayer_hydrolparams.c\n");
-			ok=0;
-		}
-	}
 
 	epv->vwc_avg			= vwc_avg;
 	epv->psi_avg			= psi_avg;
-	epv->hydr_conduct_avg   = hydr_conduct_avg;
-	epv->hydr_diffus_avg    = hydr_diffus_avg;
 
-	/* BOTTOM LAYER - special: always field capacity */
-	if (epv->vwc[N_SOILLAYERS-1] == 0)
-	{
-		epv->vwc[N_SOILLAYERS-1]			= sitec->vwc_fc;
-		epv->psi[N_SOILLAYERS-1]			= sitec->psi_fc;
-		epv->pF[N_SOILLAYERS-1]				= log10(fabs(10000*sitec->psi_fc));
-		epv->hydr_conduct[N_SOILLAYERS-1]	= sitec->hydr_conduct_fc;
-		epv->hydr_diffus[N_SOILLAYERS-1]	= sitec->hydr_diffus_fc;
-	}
+
+
 
 
 

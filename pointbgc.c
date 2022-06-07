@@ -1,12 +1,13 @@
 	/*
 pointbgc.c
 front-end to BIOME-BGC for single-point, single-biome simulations
-Uses BIOME-BGC function library v4.1
+Uses BBGC MuSo v3.0.8 library function
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
-Copyright 2014, D. Hidy
+Numerical Terradynamics Simulation Group
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -128,10 +129,10 @@ void main(int argc, char *argv[])
 		exit(1);
 	}
 	
-	/* read ramped nitrogen deposition block */
-	if (ramp_ndep_init(init, &bgcin.ramp_ndep, bgcin.ctrl.simyears))
+	/* read varied nitrogen deposition block */
+	if (ndep_init(init, &bgcin.ndep, bgcin.ctrl.simyears))
 	{
-		printf("Error in call to ramp_ndep_init() from pointbgc.c... Exiting\n");
+		printf("Error in call to ndep_init() from pointbgc.c... Exiting\n");
 		exit(1);
 	}
 	
@@ -145,7 +146,7 @@ void main(int argc, char *argv[])
 	/* read groundwater depth if it is available */
 	if (groundwater_init(&bgcin.sitec, &bgcin.ctrl))
 	{
-		printf("Error in call to groundwater_init() from pointbgc.c... Exiting\n");
+		printf("Error in call to groundwater_init() from pointbgc.c.\n");
 		exit(1);
 	}
 	
@@ -297,7 +298,7 @@ void main(int argc, char *argv[])
 	/* Hidy 2014 - temporaty parameter initalizing */
 	bgcin.epc.belowbiom_MGMmort=0.1;
 	bgcin.epc.m_soilstress_crit=0.5;
-	bgcin.epc.n_stressdays_crit=30;
+	bgcin.epc.n_stressdays_crit=10;
 	bgcin.epc.rootdistrib_param=3.67;
 	
 	/* copy the output file structures into bgcout */
@@ -309,10 +310,10 @@ void main(int argc, char *argv[])
 	bgcout.control_file = output.control_file;
 	
 	
-	/* if using ramped Ndep, copy preindustrial Ndep into ramp_ndep struct */
-	if (bgcin.ramp_ndep.doramp)
+	/* if using varied Ndep, copy preindustrial Ndep into ndep struct */
+	if (bgcin.ndep.varndep)
 	{
-		bgcin.ramp_ndep.preind_ndep = bgcin.sitec.ndep;
+		bgcin.ndep.preind_ndep = bgcin.sitec.ndep;
 	}
 	
 	/* if using an input restart file, read a record */
@@ -383,5 +384,5 @@ void main(int argc, char *argv[])
 	if (output.doannual) fclose(output.annout.ptr);
 	fclose(output.anntext.ptr);
 	
-} /* end of main */
+ } /* end of main */
 	

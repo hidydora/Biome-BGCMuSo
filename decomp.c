@@ -6,9 +6,11 @@ end of the daily allocation function, in order to allow competition
 between microbes and plants for available N.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 
@@ -87,6 +89,9 @@ nstate_struct* ns, nflux_struct* nf, ntemp_struct* nt)
 		/* decreasing decomp near to total saturation*/
 		if (vwc > optvwc) 
 		{
+                    if (maxvwc == optvwc) 
+			w_scalar=1;
+		    else
 			w_scalar = (maxvwc - vwc) / (maxvwc - optvwc);
 		}
 		else w_scalar = (vwc - minvwc) / (maxvwc - minvwc);		

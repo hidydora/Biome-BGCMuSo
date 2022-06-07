@@ -3,9 +3,11 @@ photosynthesis.c
 C3/C4 photosynthesis model
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-BBGC MuSo 2.3
+BBGC MuSo v3.0.8
 Copyright 2000, Peter E. Thornton
+Numerical Terradynamics Simulation Group
 Copyright 2014, D. Hidy
+Hungarian Academy of Sciences
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
 Updated1:
@@ -165,7 +167,7 @@ int photosynthesis(psn_struct* psn)
 		in C3 plants - A retrospective analysis of the A/Ci curves from
 		109 species. Journal of Experimental Botany, 44:907-920.
 	*/
-	psn->Jmax = Jmax = 2.1*Vmax;
+	psn->Jmax = Jmax = 1.97*Vmax;
 	
 	/* calculate J = f(Jmax, ppfd), reference:
 	de Pury and Farquhar 1997

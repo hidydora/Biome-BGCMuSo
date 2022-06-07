@@ -182,7 +182,7 @@ int firstday(const control_struct* ctrl, const siteconst_struct* sitec, const so
 	phen->GDD_emergSTART = 0;
 	phen->GDD_emergEND   = 0;
 	phen->GDD_limit      = 0;
-	phen->yday_phen      = 0;
+	phen->yday_total     = 0;
 	phen->onday          = -1;
 	phen->offday         = -1;
 

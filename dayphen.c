@@ -49,24 +49,14 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 	{
 		ctrl->plantyr += 1;
 		
-		phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]);
-		phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1]);
+		phen->onday         = (double)(phenarr->onday_arr[ctrl->plantyr][1]) + NDAYS_OF_YEAR * (phenarr->onday_arr[ctrl->plantyr][0] - ctrl->simstartyear);
+		phen->offday        = (double)(phenarr->offday_arr[ctrl->plantyr][1] + NDAYS_OF_YEAR * (phenarr->offday_arr[ctrl->plantyr][0] - ctrl->simstartyear));
 
 		if (phen->offday <= phen->onday && (phen->offday != DATA_GAP && phen->onday != DATA_GAP))
 		{
-			if (PLT->PLT_num)
-			{
-				phen->offday = NDAYS_OF_YEAR + phen->offday;
-				if (ctrl->onscreen) printf("INFORMATION: autumn sowing\n");
-			}
-			else
-			{
-				printf("FATAL ERROR: onday is greater or equal than offday (dayphen.c)\n");
-				errflag=1;
-			}
+			printf("FATAL ERROR: onday is greater or equal than offday (dayphen.c)\n");
+			errflag=1;
 		}
-		else
-			phen->yday_phen     = ctrl->yday;
 
 	}
 

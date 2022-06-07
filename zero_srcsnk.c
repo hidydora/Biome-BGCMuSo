@@ -132,7 +132,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->cum_transp  = 0;
 	summary->cum_ET  = 0;	
 	summary->cum_ET	= 0.0;
-	summary->cum_fire = 0.0;
+	summary->cum_tr = 0.0;
 	summary->cum_n2o = 0.0;
 	summary->cum_Closs_MGM  = 0;
 	summary->cum_Cplus_MGM  = 0;

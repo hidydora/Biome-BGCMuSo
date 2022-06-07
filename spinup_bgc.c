@@ -1112,13 +1112,14 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdoneoutput_handling\n",simyr,yday); 
 #endif
-				
-				/* if no dormant period: last day is the dormant day */
-				if (phen.offday == 364 && phen.onday == 0 && ctrl.yday == 364) epv.n_actphen = 0;
-				
-				/* yday_phen is the counter for simulation days of year for crops */
-				if (epv.n_actphen) phen.yday_phen += 1;
-				
+			/*  if no dormant period (e.g. evergreen): last day is the dormant day */
+			if (phen.offday - phen.onday == 364 && phen.offday == phen.yday_total) 
+			{
+				epv.n_actphen = 0;
+				phen.onday = -1;
+				phen.offday = -1;
+				phen.remdays_litfall =-1;
+			}
 				/* if this is the last day of the current month: increment current month counter */
 				if (yday == endday[curmonth]) curmonth++;	
 				

@@ -110,7 +110,7 @@ int output_init(file init, output_struct* output)
 		if (output->dodaily == 2)
 			strcat(output->dayout.name, ".dayout.txt");
 		else
-			strcat(output->dayout.name, ".dayout.");
+			strcat(output->dayout.name, ".dayout");
 		
 		/* flag = 1 -> binary; flag = 2 -> ascii */
 		if (output->dodaily == 1)

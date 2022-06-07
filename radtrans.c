@@ -76,7 +76,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 		/* SLA calculation problem if leafc > 0, but no SLA - except of th first simulation day in case of evergreen biomes */
 		if (cs->leafc > 0 && sla_avg == 0)
 		{
-			if ((ctrl->simyr == 0 && ctrl->yday == 0) || (phen->onday == 0 && phen->offday == 364 && ctrl->yday == 0))
+			if ((ctrl->simyr == 0 && ctrl->yday == 0) || (phen->offday - phen->onday == 364 && ctrl->yday == 0))
 				sla_avg = epc->avg_proj_sla[0];
 			else
 			{

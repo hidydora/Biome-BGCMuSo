@@ -69,13 +69,13 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 	double tmin_annavg;
 
 	int onday_min, onday_max, offday_min, offday_max;
-	int PLTyday, HRVyday, PLTyear;
+	int PLTyday, HRVyday, PLTyear, HRVyear;
 	int yrcount = 0;
 	int year = 0;
 
 
 
-	onday = offday = PLTyday = HRVyday = PLTyear = 0;
+	onday = offday = PLTyday = HRVyday = PLTyear = HRVyear = 0;
 
 	/* in case of natural ecosystem, nyears = number of meteorological year, in case agricultural system: nyears = number of plantings (plus fallow years) */
 	if (!PLT->PLT_num)
@@ -153,41 +153,20 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 			
 			for (py=0 ; py<PLT->PLT_num; py++)
 			{
-				PLTyear = PLT->PLTyear_array[countONOFFDAY_PLT];
+				PLTyear = PLT->PLTyear_array[countONOFFDAY];
+				HRVyear = HRV->HRVyear_array[countONOFFDAY];
 				
-				if (PLTyear == ctrl->simstartyear+yrcount)
-				{
-					PLTyday = date_to_doy(PLT->PLTmonth_array[countONOFFDAY_PLT], PLT->PLTday_array[countONOFFDAY_PLT]);
-					HRVyday = date_to_doy(HRV->HRVmonth_array[countONOFFDAY_PLT], HRV->HRVday_array[countONOFFDAY_PLT]);
-					year = PLTyear;
-
-					if (PLT->PLTyear_array[countONOFFDAY_PLT+1] != PLT->PLTyear_array[countONOFFDAY_PLT])
-					{
-						yrcount+=1;
-					}
-
-					countONOFFDAY_PLT += 1;
+				PLTyday = date_to_doy(PLT->PLTmonth_array[countONOFFDAY], PLT->PLTday_array[countONOFFDAY]);
+				HRVyday = date_to_doy(HRV->HRVmonth_array[countONOFFDAY], HRV->HRVday_array[countONOFFDAY]);
 					
-				}
-				else
-				{
-					PLTyday = DATA_GAP;
-					HRVyday = DATA_GAP;
-					PLT->PLT_num += 1;
-					HRV->HRV_num += 1;
-
-					yrcount+=1;
-					year = ctrl->simstartyear+py;
-				}
-
 				
 				onday_arr[countONOFFDAY] = PLTyday;
 				offday_arr[countONOFFDAY] = HRVyday;
 						
-				phenarr->onday_arr[countONOFFDAY][0] = year;
+				phenarr->onday_arr[countONOFFDAY][0] = PLTyear;
 				phenarr->onday_arr[countONOFFDAY][1] = onday_arr[countONOFFDAY];
 
-				phenarr->offday_arr[countONOFFDAY][0] = year;
+				phenarr->offday_arr[countONOFFDAY][0] = HRVyear;
 				phenarr->offday_arr[countONOFFDAY][1] = offday_arr[countONOFFDAY];
 
 				if (onday_arr[countONOFFDAY]  < onday_min)  onday_min  = onday_arr[countONOFFDAY];
@@ -229,8 +208,8 @@ int prephenology(file logfile, const epconst_struct* epc, const siteconst_struct
 				if(onday == DATA_GAP && offday == DATA_GAP) ctrl->bareground_flag = 1;
 
 
-				phenarr->onday_arr[py][0]  = py;
-				phenarr->offday_arr[py][0] = py;
+				phenarr->onday_arr[py][0]  = ctrl->simstartyear+py;
+				phenarr->offday_arr[py][0] = ctrl->simstartyear+py;
 				
 				phenarr->onday_arr[py][1]  = onday;
 				phenarr->offday_arr[py][1] = offday;

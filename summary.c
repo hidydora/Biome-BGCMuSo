@@ -52,7 +52,7 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 		summary->cum_mr  = 0;
 		summary->cum_gr  = 0;
 		summary->cum_hr  = 0;
-		summary->cum_fire  = 0;
+		summary->cum_tr  = 0;
 		summary->cum_n2o  = 0;
 		summary->cum_Closs_MGM  = 0;
 		summary->cum_Cplus_MGM  = 0;
@@ -234,12 +234,13 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 			cf->m_fruitc_to_fire +  cf->m_fruitc_storage_to_fire + cf->m_fruitc_transfer_to_fire +
 			/* softstem simulation */
 			cf->m_softstemc_to_fire +  cf->m_softstemc_storage_to_fire + cf->m_softstemc_transfer_to_fire;
-	nee = nep - fire;
+	/* NEE is positive if ecosystem is net source and negative if it is net sink */
+	nee = -1* (nep - fire);
 	
 
 	summary->daily_nep = nep;
 	summary->daily_npp = npp;
-	summary->daily_nee = -1 * nee;	// Hidy: NEE is positive if ecosystem is net source and negative if it is net sink
+	summary->daily_nee = nee;	
 	summary->daily_gpp = gpp;
 	summary->daily_mr = mr;
 	summary->daily_gr = gr;
@@ -249,12 +250,12 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 	summary->daily_fire = fire;
 	summary->cum_npp += npp;
 	summary->cum_nep += nep;
-	summary->cum_nee += -1*nee;
+	summary->cum_nee += nee;
 	summary->cum_gpp += gpp;
 	summary->cum_mr += mr;
 	summary->cum_gr += gr;
 	summary->cum_hr += hr;
-	summary->cum_fire += fire;
+	summary->cum_tr += (mr+gr+hr);
 
 	summary->cum_n2o += nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
 

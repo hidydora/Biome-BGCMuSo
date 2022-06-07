@@ -650,6 +650,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			nf.ndep_to_sminn = daily_ndep;
 			nf.nfix_to_sminn = epc.nfix / NDAYS_OF_YEAR;
 
+	
 
 			/* calculating actual onday and offday */
 			if (!errflag && dayphen(&ctrl, &epc, &phenarr, &PLT, &epv, &phen))
@@ -1174,11 +1175,15 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdoneoutput_handling\n",simyr,yday); 
 #endif
-			/* if no dormant period: last day is the dormant day */
-			if (phen.offday == 364 && phen.onday == 0 && ctrl.yday == 364) epv.n_actphen = 0;
+			/*  if no dormant period (e.g. evergreen): last day is the dormant day */
+			if (phen.offday - phen.onday == 364 && phen.offday == phen.yday_total) 
+			{
+				epv.n_actphen = 0;
+				phen.onday = -1;
+				phen.offday = -1;
+				phen.remdays_litfall =-1;
+			}
 
-			/* yday_phen is the counter for simulation days of year for crops */
-			if (epv.n_actphen) phen.yday_phen += 1;
 		
 			/* at the end of first day of simulation, turn off the first_balance switch */
 			if (first_balance) first_balance = 0;

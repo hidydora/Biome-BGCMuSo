@@ -106,17 +106,15 @@ typedef struct
 /* OUT phen: daily phenological data  */
 typedef struct
 {  
-	double onday;					/* (doy) first day of vegetation period */
-	double offday;					/* (doy) last day of vegetation period */
 	double remdays_curgrowth;		/* (n) days left in current growth season */
 	double remdays_transfer;		/* (n) number of transfer days remaining */
 	double remdays_litfall;			/* (n) number of litfall days remaining */
-	double predays_transfer;		/* (n)  number of transfer days previous */
+	double predays_transfer;		/* (n) number of transfer days previous */
 	double predays_litfall;			/* (n) number of litfall days previous */
 	double n_growthday;				/* (n) number of growing days in actual simulation year */
 	double n_transferday;			/* (n) number of transfer days in actual simulation year */
 	double n_litfallday;			/* (n) number of litterfall days in actual simulation year */
-	double yday_phen;				/* (flag) for counter for simulation days of year for crops */
+	double yday_total;				/* (n) counter for simdays of the whole simulation */
 	double phpsl_dev_rate;			/* (dimless) relative development rate of photoslowing effect */
 	double vern_dev_rate;			/* (dimless) relative development rate of vernalization */
 	double vern_days;				/* (n) number of vernalization days */
@@ -124,7 +122,8 @@ typedef struct
 	double GDD_crit[N_PHENPHASES];	/* (Celsius) critical GDD at the beginning of phen.phases */
 	double GDD_emergSTART;	        /* (Celsius) start of emergence period */
 	double GDD_emergEND;	        /* (Celsius) end of emergence period */
-
+	double onday;					/* (doy) first day of vegetation period */
+	double offday;					/* (doy) last day of vegetation period */
 } phenology_struct;
 /* endOUT  */
 /* VAR metarr: meteorological variable arrays */
@@ -1312,9 +1311,9 @@ typedef struct
 	int n_maxrootlayers;						/* (n) maximum number of soil layers in which root can be found  */
 	int germ_layer;								/* (n) number of germination layer */
 	double germ_depth;                          /* (m) actual germination depth*/
-	double thermal_timeSUM[NDAYS_OF_YEAR];		/* (Celsius) sum of thermal time */
-	double cpool_to_leafcARRAY[NDAYS_OF_YEAR];  /* (kgC/m2/day) array of carbon from cpool to leafC */                 
-	double npool_to_leafnARRAY[NDAYS_OF_YEAR];  /* (kgN/m2/day) array of nitrogen from npool to leafN */  
+	double thermal_timeSUM[NDAYS_OF_YEAR*2];		/* (Celsius) sum of thermal time */
+	double cpool_to_leafcARRAY[NDAYS_OF_YEAR*2];   /* (kgC/m2/day) array of carbon from cpool to leafC */                 
+	double npool_to_leafnARRAY[NDAYS_OF_YEAR*2];   /* (kgN/m2/day) array of nitrogen from npool to leafN */  
 	double leafdayARRAY[2];                     /* (n) counter array for days and phenpase of year when leaves are on*/
 	double thermal_time;			            /* (Celsius) difference between tavg and base temperature */
 	double leafday_lastmort;                    /* (n) counter for last genetical mortality day */
@@ -1867,7 +1866,7 @@ typedef struct
 	double cum_mr;						/* (kgC/m2)  cumulative SUM of MR */
 	double cum_gr;						/* (kgC/m2)  cumulative SUM of GR */
 	double cum_hr;						/* (kgC/m2)  cumulative SUM of HR */
-	double cum_fire;					/* (kgC/m2)  cumulative SUM of fire mortality */
+	double cum_tr;					    /* (kgC/m2)  cumulative SUM of total ecosystem respiration */
 	double cum_n2o;						/* (kgN/m2)  cumulative SUM N2O flux */
 	double cum_Closs_MGM;				/* (kgC/m2)  cumulative SUM of management carbon loss  */
 	double cum_Cplus_MGM;				/* (kgC/m2)  cumulative SUM of management carbon plus  */

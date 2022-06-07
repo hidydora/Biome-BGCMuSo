@@ -34,7 +34,7 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 	double befgrass_LAI;						/* value of LAI before mowing */
 	double MOWcoeff;							/* coefficient determining the decrease of plant material caused by mowing */
 	int errorCode=0;
-	int md, year,ap;
+	int md, year,ap, condMOW_flag, condMOW_startyr;
 
 	year = ctrl->simstartyear + ctrl->simyr;
 	md = MOW->mgmdMOW-1;
@@ -42,9 +42,8 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 	/* actual phenological phase */
 	ap = (int) epv->n_actphen-1; 
 
-	LAI_limit=MOW_to_transpC=MOW_to_transpN=outc=outn=inc=inn=0;
-	
-	MOWcoeff  = 0.0;
+	LAI_limit=MOW_to_transpC=MOW_to_transpN=outc=outn=inc=inn=MOWcoeff=0;
+	condMOW_flag=condMOW_startyr=0;
 
 	/**********************************************************************************************/
 	/* I. CALCULATING: MOWcoeff */
@@ -72,8 +71,16 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 	}
 	else
 	{
+		/* type of conditional mowing: 0 -no, 1: - based on LAIratio, 12002 - based on LAIratio but only after 2002 */
+		if (MOW->condMOW_flag == 1) condMOW_flag = 1;
+		if (MOW->condMOW_flag > 10000 && MOW->condMOW_flag < 20000) 
+		{
+			condMOW_flag = 1;
+			condMOW_startyr = MOW->condMOW_flag - 10000;
+		}
+
 		/* mowing if LAI greater than a given value (fixLAIbef_condMOW) */
-		if (cs->leafc * epc->avg_proj_sla[ap] > MOW->fixLAIbef_condMOW)
+		if (ctrl->simstartyear + ctrl->simyr >= condMOW_startyr && cs->leafc * epc->avg_proj_sla[ap] > MOW->fixLAIbef_condMOW)
 		{
 			remained_prop = (100 - MOW->transpCOEFF_condMOW)/100.;
 			LAI_limit = MOW->fixLAIaft_condMOW;

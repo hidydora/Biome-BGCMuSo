@@ -148,6 +148,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->soil3_hr_snk = 0;
 	cs->soil4_hr_snk = 0;
 	cs->Cdeepleach_snk = 0;
+	cs->flowHSsnk_C = 0;
 	cs->FIREsnk_C = 0;
 	cs->SNSCsnk_C = 0;
 	cs->PLTsrc_C = 0;
@@ -158,6 +159,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->GRZsrc_C = 0;
 	cs->FRZsrc_C = 0;
 	cs->fruitC_HRV = 0.0;
+         cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
 	cs->CbalanceERR = 0;
 	cs->CNratioERR = 0.0;

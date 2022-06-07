@@ -78,6 +78,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->soil3_hr_snk = 0.0;
 	cs->soil4_hr_snk = 0.0;
 	cs->Cdeepleach_snk = 0;
+	cs->Cdeepleach_snk = 0;
 	cs->FIREsnk_C = 0.0;
 	cs->SNSCsnk_C = 0.0;
 	cs->PLTsrc_C = 0.0; 
@@ -89,6 +90,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->HRV_transportC = 0.0;
 	cs->FRZsrc_C = 0.0;
 	cs->fruitC_HRV = 0.0;
+        cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
 	cs->fruit_mr_snk = 0.0;
 	cs->fruit_gr_snk = 0.0;
@@ -222,8 +224,9 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->fruitc_LandD = 0.0;
 	summary->softstemc_LandD = 0.0;
 	summary->lateral_Cflux = 0.0;
-	summary->harvest_index = 0;
+	summary->harvestIndex = 0;
+	summary->rootIndex = 0;
+	summary->belowground_ratio = 0;
 
-	
 	return (errorCode);
 }

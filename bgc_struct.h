@@ -41,6 +41,7 @@ typedef struct
 	int GSI_flag;				/* (flag) for using GSI index to calculate growing season */
 	int condMOW_flag;			/* (flag) for conditional mowing management option */
 	int condIRG_flag;			/* (flag) for conditional irrigating management option */
+
 	int simyr;					/* (n) counter for simulation years */
 	int plantyr;                /* (n) counter for planting years (natur.veg=simyr; agroecosys=PLT_num */
 	int yday;					/* (n) counter for simulation days of year  */
@@ -52,7 +53,7 @@ typedef struct
 	int varMSC_flag;			/* (flag) for changing MSC value */
 	int varSGS_flag;			/* (flag) for changing WPM value */
 	int varEGS_flag;			/* (flag) for changing WPM value */
-
+	
 	int limitevap_flag;         /* (flag) for warnings into logfile */	
 	int limittransp_flag;       /* (flag) for warnings into logfile */	
 	int limitMR_flag;           /* (flag) for warnings into logfile */	
@@ -71,6 +72,7 @@ typedef struct
 	int GW_flag;                /* (flag) for GW-method*/
 	int oldSOIfile_flag;          /* (flag) for extraSOI parameters */
 	int vegper_flag;            /* (flag) for warnings into logfile */	
+	int allocControl_flag;       /* (flag) for warnings into logfile */	
 	int south_shift;            /* (int) shifting of meteo data for southern hemisphere */
 	char* planttypeName;        /* (string) name of the plant tpye in the header of EPC file */
 	int NaddSPINUP_flag;        /* (flag) for using artificial N-addition during spinup phase */
@@ -268,11 +270,12 @@ typedef struct
 	double snoww_subl;								/* sublimation from snowpack */
     double snoww_to_soilw;							/* melt from snowpack  */
     double soilw_evap;								/* evaporation from soil */
+	double soilw_evapPOT;                           /* potential evaporation (soilw, canopyw and pondw) */
 	double soilw_transPOT;					        /* potential transpiration (no SWC-limit) */
-	double soilw_transpDEMAND[N_SOILLAYERS];			/* transpiration demand from the soil layers */
+	double soilw_transpDEMAND[N_SOILLAYERS];		/* transpiration demand from the soil layers */
 	double soilw_transpDEMAND_SUM;					/* sum of transpiration demand */
     double soilw_transp[N_SOILLAYERS];				/* transpiration from the soil layers */
-    double soilw_transp_SUM;	                        /* SUM of transpiration from the soil layers */
+    double soilw_transp_SUM;	                       /* SUM of transpiration from the soil layers */
 	double evapotransp;								/* evapotranspiration (evap+trans+subl) */
 	double PET;								        /* potential evapotranspiration (evap+trans) */
 	double pondw_to_soilw;                          /* water flux from pond to soil */
@@ -285,7 +288,7 @@ typedef struct
 	double soilw_diffused[N_SOILLAYERS];			/* diffusion flux between the soil layers */
 	double soilw_from_GW[N_SOILLAYERS];				/* soil water plus from groundwater */
 	double GW_recharge[N_SOILLAYERS];			    /* recharge: soil water to groundwater */
-	double soilw_leached_RZ;				     	/* soil water leached from rootzone (percol+diffus) */
+	double soilw_leachRZ;				     	/* soil water leached from rootzone (percol+diffus) */
 	double canopyw_to_THN;							/* water stored on canopy is disappered because of thinning */
 	double canopyw_to_MOW;							/* water stored on canopy is disappered because of mowing */
 	double canopyw_to_HRV;							/* water stored on canopy is disappered because of harvesting */
@@ -293,7 +296,6 @@ typedef struct
 	double canopyw_to_GRZ;							/* water stored on canopy is disappered because of grazing */
 	double IRG_to_prcp;								/* irrigatied water amount */	
 	double FRZ_to_soilw;                            /* water flux from fertilization */
-	double soilw_evapPOT;                           /* potential evaporation to calcualte pond evaporation */
 	double infiltPOT;                               /* infiltrated water: prcp_to_soilw+snoww_to_soilw+canopyw_to_soilw+IRG_to_prcp+pondw */
 	double soilw_from_GW0;                          /* water from GW to top soil layer to evaporation limitation calculation (value from previous day) */
 } wflux_struct;
@@ -415,6 +417,7 @@ typedef struct
     double soil2_hr_snk;				/* SUM of fast SOM respiration */
     double soil3_hr_snk;				/* SUM of slow SOM respiration */
     double soil4_hr_snk;				/* SUM of stable SOM respiration */
+	double flowHSsnk_C;                 /* SUM of C loss due to flower heat stress */
 	double FIREsnk_C;					/* SUM of fire losses */
 	double SNSCsnk_C;					/* SUM of senescence losses */
     double PLTsrc_C;					/* SUM of C content of planted plant material */
@@ -426,6 +429,7 @@ typedef struct
 	double GRZsrc_C;					/* SUM of added carbon from fertilizer */
 	double FRZsrc_C;					/* SUM of carbon content of fertilizer return to the litter pool */
 	double fruitC_HRV;                  /* SUM of carbon content of havested fruit */
+	double frootC_HRV;                  /* SUM of carbon content of fine root at harvest */
 	double vegC_HRV;                    /* SUM of carbon content of havested leaf, stem and fruit */
 	double CbalanceERR;					/* SUM of carbon balance error */
 	double CNratioERR;                  /* SUM of carbon-nitrogen ratio error */
@@ -1220,6 +1224,10 @@ typedef struct
 	double soil3_DON_diffus[N_SOILLAYERS]; 
 	double soil4_DON_diffus[N_SOILLAYERS]; 
 	double DON_leached_RZ;
+	double sminNH4_leach[N_SOILLAYERS];    
+	double sminNO3_leach[N_SOILLAYERS];    
+	double sminNH4_leachCUM[N_SOILLAYERS];    
+	double sminNO3_leachCUM[N_SOILLAYERS]; 
 	/* group: daily allocation fluxes */
 	double retransn_to_npool[N_SOILLAYERS];   
 	double retransn_to_npoolTOTAL; 
@@ -1554,8 +1562,10 @@ typedef struct
 	double annmax_rootDepth;						/* (m2/m2) year-to-date maximum projected rooting depth */
 	double annmax_plantHeight;	                    /* (m2/m2) year-to-date maximum projected plant height */
 	double IMMOBratio[N_SOILLAYERS];				/* (prop) ratio of actual and potential immobilization layer by layer */
-	double plant_calloc;							/* (kgC/m2) amount of C allocated */
-	double plant_nalloc;							/* (kgN/m2) amount of N allocated */
+	double plantCalloc;							    /* (kgC/m2) amount of C allocated */
+	double plantNalloc;							    /* (kgN/m2) amount of N allocated */
+	double plantCalloc_CUM;							/* (kgC/m2) amount of C allocated */
+	double plantNalloc_CUM;							/* (kgN/m2) amount of N allocated */
 	double excess_c;								/* (kgC/m2) difference between available and allocated C */
 	double pnow;									/* (prop) proportion of growth displayed on current day */ 
 	double MRdeficit_nw;							/* (flag) of maint.resp.calculation deficit for nw-biomass */
@@ -1687,9 +1697,9 @@ typedef struct
 	double mrpern;                  /* (kgC/kgN/d) maintenance respiration in kgC/day per kg of tissue N */
 	double NSC_SC_prop;             /* (prop) theoretical maximum prop. of non-structural and structural carbohydrates */
 	double NSC_avail_prop;		    /* (prop) ratio of non-structural carbohydrates available for maintanance respiration */
-	double SNSCmort_abovebiom_max;	/* (prop) maximum mortality of senescence of aboveground biomass */
-	double SNSCmort_belowbiom_max;	/* (prop) maximum mortality of senescence of belowground biomass */
-	double SNSCmort_nsc_max;        /* (prop) ratio of the non-stuctured plant materail senescence mortality  */
+	double maxSNSCmort_leaf;	    /* (prop) maximum mortality of senescence of leaf */
+	double maxSNSCmort_other;	    /* (prop) maximum mortality of senescence of other plant pool (softstem, froot) */
+	double m_nscSNSCmort;           /* (prop) multiplier for senescence calculation of non-structured pools */
 	double SNSC_extremT1;           /* (Ceslius) lower limit extreme high temperature effect on senesncene mortality */
 	double SNSC_extremT2;           /* (Ceslius) upper limit extreme high temperature effect on senesncene mortality */
     double mort_SNSC_to_litter;		/*  (prop) turnover rate of wilted standing biomass to litter*/
@@ -1835,8 +1845,10 @@ typedef struct
 	double conduct_sat_mes[N_SOILLAYERS];				/* (m/s)  measured saturated conductivity */
 	double PSIhw;										/* (MPa) soil matric potential at hygroscopic water point */
 	double RCN;								            /* (m) runoff curve number */
-	double CapillFringe;								/* (m) Thickness of capillarity fringe (default value) */
-	double CapillFringe_act;						    /* (m) Thickness of capillarity fringe (actual value - based on potEVAP) */
+	double CapillFringe[N_SOILLAYERS];					/* (m) Thickness of capillarity fringe (from PSIsat) */
+	double CapillFringe_mes;						    /* (m) Thickness of capillarity fringe (user-defined value) */
+	double CapillFringe_act;						    /* (m) Actual thickness of capillarity fringe (based on GWdepth) */
+	double CFflag[N_SOILLAYERS];	                    /* (flag) for defining capillary zone */
     double soilB[N_SOILLAYERS];							/* (dimless) Clapp-Hornberger "b" parameter */
 	double BD[N_SOILLAYERS];							/* (g/cm3) bulk density */
     double VWCsat[N_SOILLAYERS];						/* (m3/m3) volumetric water content at saturation */
@@ -2006,9 +2018,9 @@ typedef struct
 	int* IRGmonth_array;						/* (int) ARRAY of the irrigating month */
 	int* IRGday_array;							/* (int) ARRAY of irrigating days */
 	double* IRGquantity_array;					/* (kgH2O/m2/d) ARRAY of quantity of water*/
-	int condIRG_flag;							/* (flag) for conditional irrigating management option */
-	double befSMSI_condIRG;                     /* (prop) SMSI before cond. IRRIGATING (-9999: crit. VWCratio is used)  */
-	double befVWCratio_condIRG;                 /* (prop) VWC ratio before cond. IRRIGATING (-9999: crit. SMSI is used)  */
+	int condIRG_flag;							/* (flag) for conditional irrigating management option(0:no, 1:SMSI, 2:SWCratio */
+	double nLayer_condIRG;                      /* (n) SMSI before cond. IRRIGATING (-9999: crit. VWCratio is used)  */
+	double startPoint_condIRG;                  /* (prop) starting point of condIRG (if flag=1:SMSI, flag=2:SWCratio) */
 	double aftVWCratio_condIRG;                 /* (ratio) VWC ratio after conditional IRRIGATING  */
 	double maxAMOUNT_condIRG;                   /* (kgH2O/m2) maximum amount of irrigated water */
 	
@@ -2170,7 +2182,9 @@ typedef struct
 	double sminNO3_ppm[N_SOILLAYERS];	/* (ppm)  soil nitrate content in ppm */
 	double CH4_flux_TOTAL;              /* (kgC/m2/d) total ecosystem CH4 flux */
 	double lateral_Cflux;               /* (kgC/m2/d) lateral carbon flux */
-	double harvest_index;               /* (prop) ratio of harvested fruit C content and harvested aboveground C content */
+	double harvestIndex;                /* (prop) ratio of harvested fruit C content and harvested aboveground C content */
+	double rootIndex;                   /* (prop) ratio of fine root C content and vegetation C content on harvest day */
+	double belowground_ratio;           /* (prop) ratio fine root to total vegetation C content */
 	double CNlitr_total;		        /* (prop) C:N ratio of litter pool  */
 	double CNsoil_total;				/* (prop) C:N ratio of soil pool  */
 	double litr1HR_total;				/* (kgC/m2/d) Heterotroph respiration of labile litter in soil */

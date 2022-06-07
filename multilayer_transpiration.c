@@ -73,8 +73,8 @@ int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec
 		if (transp_lack > 0)
 		{
 			/* theoretical limit */
-			if (ws->soilw[layer] - soilw_wp > CRIT_PREC)
-				wf->soilw_transp[layer] = ws->soilw[layer] - soilw_wp;
+			if (ws->soilw_avail[layer] > CRIT_PREC)
+				wf->soilw_transp[layer] = ws->soilw_avail[layer];
 			else
 				wf->soilw_transp[layer] = 0;
 

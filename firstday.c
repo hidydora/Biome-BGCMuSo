@@ -62,8 +62,10 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	epv->dlmr_area_sun = 0;
 	epv->dlmr_area_shade = 0;
 
-	epv->plant_calloc = 0; 
-	epv->plant_nalloc = 0;
+	epv->plantCalloc = 0; 
+	epv->plantNalloc = 0;
+	epv->plantCalloc_CUM = 0; 
+	epv->plantNalloc_CUM = 0;
 	epv->excess_c = 0;
 	epv->pnow = 0;
 	epv->MRdeficit_nw = 0;

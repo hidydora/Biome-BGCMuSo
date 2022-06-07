@@ -62,11 +62,35 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 					printf("%d\t%d\tdone richards\n",simyr,yday);
 		#endif	
 
-		if (ws->pondw > 0)
+	
+
+		/* groundwater calculation */
+		if (!errorCode && groundwater(ctrl, sitec, sprop, epv, ws, wf, gws))
 		{
-			/* pond_flag: flag of WARNING writing (only at first time) */
-			if (!ctrl->pond_flag ) ctrl->pond_flag = 1;
+			printf("ERROR in groundwater() from bgc.c\n");
+			errorCode=523;
 		}
+
+		#ifdef DEBUG
+					printf("%d\t%d\tdone groundwater\n",simyr,yday);
+		#endif	
+						/* water from GW to top soil layer to evaporation limitation calculation (value from previous day) */
+		wf->soilw_from_GW0 = wf->soilw_from_GW[0];
+
+		/* -----------------------------*/
+		/*  6. POND WATER from soil */
+		if (ws->pondw + wf->soilw_to_pondw + wf->GW_to_pondw  > sprop->pondmax)
+		{
+			wf->prcp_to_runoff += ws->pondw + wf->GW_to_pondw + wf->soilw_to_pondw  - sprop->pondmax;
+			ws->pondw = sprop->pondmax;
+			wf->soilw_to_pondw = sprop->pondmax - ws->pondw;
+		}
+		else
+			ws->pondw += wf->soilw_to_pondw + wf->GW_to_pondw;
+
+		/* pond_flag: flag of WARNING writing (only at first time) */
+		if (ws->pondw > 0) if (!ctrl->pond_flag ) ctrl->pond_flag = 1;
+
 	}
 	else
 	{
@@ -154,7 +178,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 	/* evaportanspiration calculation */	
 	
 	wf->evapotransp = wf->canopyw_evap + wf->soilw_evap + wf->soilw_transp_SUM + wf->snoww_subl + wf->pondw_evap;
-	wf->PET         = wf->soilw_evapPOT + wf->soilw_transPOT;
+	wf->PET         = wf->soilw_evapPOT + wf->soilw_transPOT + wf->canopyw_evap;
 
 
 	
@@ -196,7 +220,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 	} 
 
 	/* ********************************/
-	/* 8. CONTROL and calculating averages - unrealistic VWC content (higher than saturation value or less then hygroscopic) */
+	/* 8. CONTROL and calculating averages - unrealistic VWC content (higher than saturation value or less then hygroscopic) - GWtest */
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -204,7 +228,7 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 		{
 			if (sprop->VWChw[layer] - epv->VWC[layer] < 1e-3)
 			{
-				wf->soilw_percolated[layer] -= (sprop->VWChw[layer] - epv->VWC[layer]);
+				wf->soilw_diffused[N_SOILLAYERS-1] -= (sprop->VWChw[layer] - epv->VWC[layer])* water_density * sitec->soillayer_thickness[layer];
 				epv->VWC[layer] = sprop->VWChw[layer];
 				ws->soilw[layer] = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
 			}
@@ -221,15 +245,15 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 		{
 			if (sprop->GWlayer == layer)
 			{
-				wf->GW_recharge[layer] = epv->VWC[layer] - sprop->VWCsat[layer];
+				wf->GW_recharge[layer] = (epv->VWC[layer] - sprop->VWCsat[layer]) * water_density * sitec->soillayer_thickness[layer];
 				epv->VWC[layer] = sprop->VWCsat[layer];
 				ws->soilw[layer] = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
 			}
 			else
 			{
-				if (epv->VWC[layer] - sprop->VWCsat[layer] < 1e-2)
+				if (epv->VWC[layer] - sprop->VWCsat[layer] < 1e-3)
 				{
-					wf->soilw_percolated[layer] += (epv->VWC[layer] - sprop->VWCsat[layer]);
+					wf->soilw_percolated[N_SOILLAYERS-1] += (epv->VWC[layer] - sprop->VWCsat[layer])/(water_density * sitec->soillayer_thickness[layer]);
 					epv->VWC[layer] = sprop->VWCsat[layer];
 					ws->soilw[layer] = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
 				}

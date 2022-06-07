@@ -885,8 +885,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone decomp\n",simyr,yday);
 #endif
 
-		
-
+	
 			/* Daily allocation gets called whether or not this is a current growth day, because the competition between decomp immobilization fluxes 
 			and plant growth N demand is resolved here.  On days with no growth, no allocation occurs, but immobilization fluxes are updated normally */
 
@@ -900,10 +899,11 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
 #endif
 		
+			
 			/* heat stress during flowering can affect daily allocation of fruit */
 			if (epc.n_flowHS_phenophase > 0)
 			{
-				if (!errorCode && flowering_heatstress(&epc, &metv, &epv, &cf, &nf))
+				if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))
 				{
 					printf("ERROR in flowering_heatstress() from bgc.c\n");
 					errorCode=519;
@@ -949,13 +949,14 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* 3. WATER CALCULATIONS WITH STATE UPDATE */
 
 			/* IRRIGATING separately from other management routines*/
-			if (!errorCode && irrigating(&ctrl, &IRG, &epv, &ws, &wf))
+			if (!errorCode && irrigating(&ctrl, &IRG, &sitec, &sprop, &epv, &ws, &wf))
 			{
 				printf("ERROR in irrigating() from bgc.c\n");
 				errorCode=522;
 			}
 
-			
+
+
 	    	/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANSP */
 			if (!errorCode && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc,  &epv, &ws, &wf, &gws))
 			{
@@ -985,7 +986,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 		
-			
 
 			/* daily update of carbon and nitrogen state variables */
 			if (!errorCode && daily_CN_state_update(&sitec, &epc, &ctrl, &epv, &cf, &nf, &cs, &ns, annual_alloc, epc.evergreen))
@@ -1003,7 +1003,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* 5. MORTALITY AND NITROGEN FLUXES CALCULATION WITH OWN STATE UPDATE: 
 			to insure that pools don't go negative due to mortality/leaching fluxes conflicting with other proportional fluxes */
 
-		
+			
 			/* calculate daily senescence mortality fluxes and update state variables */
 			if (!errorCode && senescence(&sitec, &epc, &GRZ, &metv, &ctrl, &cs, &cf, &ns, &nf, &epv))
 			{
@@ -1267,7 +1267,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (!ctrl.limittransp_flag && !ctrl.limitevap_flag && !ctrl.limitleach_flag && !ctrl.limitleach_flag && !ctrl.limitdiffus_flag &&
 		!ctrl.limitSNSC_flag && !ctrl.limitMR_flag && !ctrl.notransp_flag && !ctrl.noMR_flag && !ctrl.pond_flag && !ctrl.grazingW_flag && 
 		!ctrl.condMOWerr_flag && !ctrl.condIRGerr_flag && !ctrl.condIRGerr_flag && !ctrl.prephen1_flag && !ctrl.prephen2_flag && 
-		!ctrl.bareground_flag && !ctrl.vegper_flag)
+		!ctrl.bareground_flag && !ctrl.vegper_flag && !ctrl.allocControl_flag)
 	{
 		fprintf(bgcout->log_file.ptr, "no WARNINGS\n");
 	}
@@ -1370,6 +1370,12 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		{
 			fprintf(bgcout->log_file.ptr, "Vegetation period has not ended until the last day of year, the offday is equal to the last day of year\n");
 			ctrl.vegper_flag = -1;
+		}
+
+		if (ctrl.allocControl_flag)
+		{
+			fprintf(bgcout->log_file.ptr, "Adjustment of allocation parameters due to small error (<10-4) in the setting of allocation parameters\n");
+			ctrl.allocControl_flag = -1;
 		}
 	
 	}

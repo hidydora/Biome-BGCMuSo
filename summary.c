@@ -95,8 +95,8 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 
 		
 	summary->cum_runoff += wf->prcp_to_runoff + wf->pondw_to_runoff;
-	summary->cum_WleachRZ += wf->soilw_leached_RZ;	
-	summary->cum_NleachRZ += nf->sminN_leached_RZ * 1000000;
+	summary->cum_WleachRZ += wf->soilw_leachRZ;	
+	summary->cum_NleachRZ += nf->sminN_leached_RZ;
 
 	/*******************************************************************************/
 	/* 2. summarize carbon and nitrogen stocks */
@@ -491,9 +491,31 @@ int cnw_summary(int yday, const epconst_struct* epc, const siteconst_struct* sit
 	summary->cum_Nplus_FRZ    += Nplus_FRZ;  
 
 	if (cs->vegC_HRV)
-		summary->harvest_index = cs->fruitC_HRV/cs->vegC_HRV;
+	{
+		summary->harvestIndex = cs->fruitC_HRV/cs->vegC_HRV;
+		summary->rootIndex    = cs->frootC_HRV/(cs->frootC_HRV+cs->vegC_HRV);
+
+	}
 	else
-		summary->harvest_index = 0;
+	{
+		summary->harvestIndex = 0;
+		summary->rootIndex    = 0;
+	}
+
+	if (epc->woody)
+	{
+		if (summary->frootc_LandD + summary->leafc_LandD + summary->fruitc_LandD + cs->livecrootc + cs->deadcrootc + cs->livestemc + cs->deadstemc)
+			summary->belowground_ratio = (summary->frootc_LandD + cs->livecrootc + cs->deadcrootc) / (summary->frootc_LandD + summary->leafc_LandD + summary->fruitc_LandD + cs->livecrootc + cs->deadcrootc + cs->livestemc + cs->deadstemc);
+		else
+			summary->belowground_ratio = 0;
+	}
+	else
+	{
+		if (summary->frootc_LandD + summary->leafc_LandD + summary->fruitc_LandD + summary->softstemc_LandD)
+			summary->belowground_ratio = summary->frootc_LandD / (summary->frootc_LandD + summary->leafc_LandD + summary->fruitc_LandD + summary->softstemc_LandD);
+		else
+			summary->belowground_ratio = 0;
+	}
 
 	/* senescence effect  */
 	Closs_SNSC = cf->m_leafc_storage_to_SNSC + cf->m_leafc_transfer_to_SNSC + cf->m_leafc_to_SNSC +

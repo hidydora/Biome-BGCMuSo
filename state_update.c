@@ -557,7 +557,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		
 		ns->npool          -= nf->npool_to_fruitn;
 		ns->fruitn          = cs->fruitc / epc->fruit_cn;
-
+			
 		cs->fruitc         -= cf->fruitc_to_flowHS;
 		cs->STDBc_fruit    += cf->fruitc_to_flowHS;
 

@@ -11,12 +11,17 @@
 *.sln.docstates
 *.dsp
 *.dsw
-*.manifest
-*.res
-*.lastbuildstate
-*.rc
-*.idb
 *.tlog
+*.exe
+*.res
+*.manifest
+*.rc
+*.lastbuildstate
+*.idb
+*.unsuccessfulbuild
+test/*
+GWtest/*
+
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

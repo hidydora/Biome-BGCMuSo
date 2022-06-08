@@ -553,9 +553,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 
-	if (!errorCode && scan_value(epc_file, &epc->fruit_cn, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->yield_cn, 'd'))
 	{
-		printf("ERROR reading initial fruit C:N, epc_init()\n");
+		printf("ERROR reading initial yield C:N, epc_init()\n");
 		errorCode=20917;
 	}
 
@@ -586,9 +586,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		errorCode=2091701;
 	}
 
-	if (!errorCode && epc->fruit_cn > 0 && epc->fruit_cn < epc->leaf_cn)
+	if (!errorCode && epc->yield_cn > 0 && epc->yield_cn < epc->leaf_cn)
 	{
-		printf("ERROR: fruit C:N must be >= leaf C:N\n");
+		printf("ERROR: yield C:N must be >= leaf C:N\n");
 		printf("change the values in EPC file\n");
 		errorCode=2091701;
 	}
@@ -634,9 +634,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		printf("ERROR reading dry matter carbon content of fine root, epc_init()\n");
 		errorCode=20918;
 	}
-	if (!errorCode && scan_value(epc_file, &epc->fruitC_DM, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->yield_DM, 'd'))
 	{
-		printf("ERROR reading dry matter carbon content of fruit, epc_init()\n");
+		printf("ERROR reading dry matter carbon content of yield, epc_init()\n");
 		errorCode=20918;
 	}
 	if (!errorCode && scan_value(epc_file, &epc->softstemC_DM, 'd'))
@@ -758,16 +758,16 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 
-	/* FRUIT LITTER PROPORTION */
+	/* yield LITTER PROPORTION */
 	if (!errorCode && scan_value(epc_file, &t1, 'd'))
 	{
-		printf("ERROR reading fruit litter labile proportion, epc_init()\n");
+		printf("ERROR reading yield litter labile proportion, epc_init()\n");
 		errorCode=20921;
 	}
-	epc->fruitlitr_flab = t1;
+	epc->yieldlitr_flab = t1;
 	if (!errorCode && scan_value(epc_file, &t2, 'd'))
 	{
-		printf("ERROR reading fruit litter cellulose proportion, epc_init()\n");
+		printf("ERROR reading yield litter cellulose proportion, epc_init()\n");
 		errorCode=20921;
 	}
 			
@@ -785,7 +785,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 
-	if (!errorCode) epc->fruitlitr_flig = t3;
+	if (!errorCode) epc->yieldlitr_flig = t3;
 
 	/* calculate shielded and unshielded cellulose fraction */
 	if (!errorCode)
@@ -793,19 +793,19 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		r1 = t3/t2;
 		if (r1 <= 0.45)
 		{
-			epc->fruitlitr_fscel = 0.0;
-			epc->fruitlitr_fucel = t2;
+			epc->yieldlitr_fscel = 0.0;
+			epc->yieldlitr_fucel = t2;
 		}
 		else if (r1 > 0.45 && r1 < 0.7)
 		{
 			t4 = (r1 - 0.45)*3.2;
-			epc->fruitlitr_fscel = t4*t2;
-			epc->fruitlitr_fucel = (1.0 - t4)*t2;
+			epc->yieldlitr_fscel = t4*t2;
+			epc->yieldlitr_fucel = (1.0 - t4)*t2;
 		}
 		else
 		{
-			epc->fruitlitr_fscel = 0.8*t2;
-			epc->fruitlitr_fucel = 0.2*t2;
+			epc->yieldlitr_fscel = 0.8*t2;
+			epc->yieldlitr_fucel = 0.2*t2;
 		}
 	}
 
@@ -1612,9 +1612,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
 		if (phenphase==N_PHENPHASES-1) scanflag=1;
-		if (!errorCode && scan_array(epc_file, &(epc->alloc_fruitc[phenphase]), 'd', scanflag, 1))
+		if (!errorCode && scan_array(epc_file, &(epc->alloc_yield[phenphase]), 'd', scanflag, 1))
 		{
-			printf("ERROR reading alloc_fruitc in phenophase %i, epc_init()\n", phenphase+1);
+			printf("ERROR reading alloc_yield in phenophase %i, epc_init()\n", phenphase+1);
 			errorCode=20984;
 		}
 	}
@@ -1678,14 +1678,14 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 
 	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		sum = epc->alloc_leafc[phenphase] + epc->alloc_frootc[phenphase] + epc->alloc_fruitc[phenphase] + epc->alloc_softstemc[phenphase] +
+		sum = epc->alloc_leafc[phenphase] + epc->alloc_frootc[phenphase] + epc->alloc_yield[phenphase] + epc->alloc_softstemc[phenphase] +
 			  epc->alloc_livestemc[phenphase]   + epc->alloc_deadstemc[phenphase] + 
 			  epc->alloc_livecrootc[phenphase]  + epc->alloc_deadcrootc[phenphase];
 
 		/* control of allocation parameter settings */
 		if (epc->alloc_leafc[phenphase]      < 1e-04)  epc->alloc_leafc[phenphase]      = 0;
 		if (epc->alloc_frootc[phenphase]     < 1e-04)  epc->alloc_frootc[phenphase]     = 0;
-		if (epc->alloc_fruitc[phenphase]     < 1e-04)  epc->alloc_fruitc[phenphase]     = 0;
+		if (epc->alloc_yield[phenphase]     < 1e-04)  epc->alloc_yield[phenphase]     = 0;
 		if (epc->alloc_softstemc[phenphase]  < 1e-04)  epc->alloc_softstemc[phenphase]  = 0;
 		if (epc->alloc_livestemc[phenphase]  < 1e-04)  epc->alloc_livestemc[phenphase]  = 0;
 		if (epc->alloc_deadstemc[phenphase]  < 1e-04)  epc->alloc_deadstemc[phenphase]  = 0;
@@ -1695,7 +1695,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		/*  searching of the maximal allocation */
 		if (epc->alloc_leafc[phenphase]      > maxIND) maxIND=1;
 		if (epc->alloc_frootc[phenphase]     > maxIND) maxIND=2;
-		if (epc->alloc_fruitc[phenphase]     > maxIND) maxIND=3;
+		if (epc->alloc_yield[phenphase]     > maxIND) maxIND=3;
 		if (epc->alloc_softstemc[phenphase]  > maxIND) maxIND=4;
 		if (epc->alloc_livestemc[phenphase]  > maxIND) maxIND=5;
 		if (epc->alloc_deadstemc[phenphase]  > maxIND) maxIND=6;
@@ -1709,7 +1709,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 			{
 				if (maxIND == 1) epc->alloc_leafc[phenphase]      -= diff;
 				if (maxIND == 2) epc->alloc_frootc[phenphase]     -= diff;
-				if (maxIND == 3) epc->alloc_fruitc[phenphase]     -= diff;
+				if (maxIND == 3) epc->alloc_yield[phenphase]     -= diff;
 				if (maxIND == 4) epc->alloc_softstemc[phenphase]  -= diff;
 				if (maxIND == 5) epc->alloc_livestemc[phenphase]  -= diff;
 				if (maxIND == 6) epc->alloc_deadstemc[phenphase]  -= diff;

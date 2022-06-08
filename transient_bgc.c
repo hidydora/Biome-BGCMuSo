@@ -660,7 +660,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
 #endif
 
-                        /* heat stress during flowering can affect daily allocation of fruit */
+                        /* heat stress during flowering can affect daily allocation of yield */
 			if (epc.n_flowHS_phenophase != DATA_GAP)
 			{
 				if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))

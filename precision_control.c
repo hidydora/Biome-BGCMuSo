@@ -88,28 +88,28 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 	}
 
 	/************************/
-	if ((fabs(cs->fruitc) < CRIT_PREC && fabs(cs->fruitc) != 0) || (fabs(ns->fruitn) < CRIT_PREC && fabs(ns->fruitn) != 0))
+	if ((fabs(cs->yield) < CRIT_PREC && fabs(cs->yield) != 0) || (fabs(ns->yieldn) < CRIT_PREC && fabs(ns->yieldn) != 0))
 	{
-		cs->litr1c[0] += cs->fruitc;
-		ns->litr1n[0] += ns->fruitn;
-		cs->fruitc = 0.0;
-		ns->fruitn = 0.0;
+		cs->litr1c[0] += cs->yield;
+		ns->litr1n[0] += ns->yieldn;
+		cs->yield = 0.0;
+		ns->yieldn = 0.0;
 	}
 
-    if ((cs->fruitc_storage != 0 && fabs(cs->fruitc_storage) < CRIT_PREC_RIG) || (ns->fruitn_storage != 0 && fabs(ns->fruitn_storage) < CRIT_PREC_RIG) )
+    if ((cs->yield_storage != 0 && fabs(cs->yield_storage) < CRIT_PREC_RIG) || (ns->yieldn_storage != 0 && fabs(ns->yieldn_storage) < CRIT_PREC_RIG) )
 	{
-		cs->litr1c[0] += cs->fruitc_storage;
-		ns->litr1n[0] += ns->fruitn_storage;
-		cs->fruitc_storage = 0.0;
-		ns->fruitn_storage = 0.0;
+		cs->litr1c[0] += cs->yield_storage;
+		ns->litr1n[0] += ns->yieldn_storage;
+		cs->yield_storage = 0.0;
+		ns->yieldn_storage = 0.0;
 	}
 
-	if ((cs->fruitc_transfer != 0 && fabs(cs->fruitc_transfer) < CRIT_PREC_RIG) || (ns->fruitn_transfer < 0 && fabs(ns->fruitn_transfer) < CRIT_PREC_RIG) )
+	if ((cs->yield_transfer != 0 && fabs(cs->yield_transfer) < CRIT_PREC_RIG) || (ns->yieldn_transfer < 0 && fabs(ns->yieldn_transfer) < CRIT_PREC_RIG) )
 	{
-		cs->litr1c[0] += cs->fruitc_transfer;
-		ns->litr1n[0] += ns->fruitn_transfer;
-		cs->fruitc_transfer = 0.0;
-		ns->fruitn_transfer = 0.0;
+		cs->litr1c[0] += cs->yield_transfer;
+		ns->litr1n[0] += ns->yieldn_transfer;
+		cs->yield_transfer = 0.0;
+		ns->yieldn_transfer = 0.0;
 	}
 
 	/************************/
@@ -306,12 +306,12 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->STDBn_softstem = 0.0;
 	}
 
-	if ((fabs(cs->STDBc_fruit) < CRIT_PREC && fabs(cs->STDBc_fruit) != 0) || (fabs(ns->STDBn_fruit) < CRIT_PREC && fabs(ns->STDBn_fruit) != 0))
+	if ((fabs(cs->STDBc_yield) < CRIT_PREC && fabs(cs->STDBc_yield) != 0) || (fabs(ns->STDBn_yield) < CRIT_PREC && fabs(ns->STDBn_yield) != 0))
 	{
-		cs->litr1c[0] += cs->STDBc_fruit;
-		ns->litr1n[0] += ns->STDBn_fruit;
-		cs->STDBc_fruit = 0.0;
-		ns->STDBn_fruit = 0.0;
+		cs->litr1c[0] += cs->STDBc_yield;
+		ns->litr1n[0] += ns->STDBn_yield;
+		cs->STDBc_yield = 0.0;
+		ns->STDBn_yield = 0.0;
 	}
 
 	if ((fabs(cs->STDBc_nsc) < CRIT_PREC && fabs(cs->STDBc_nsc) != 0) || (fabs(ns->STDBn_nsc) < CRIT_PREC && fabs(ns->STDBn_nsc) != 0))
@@ -347,12 +347,12 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->CTDBn_softstem = 0.0;
 	}
 
-	if ((fabs(cs->CTDBc_fruit) < CRIT_PREC && fabs(cs->CTDBc_fruit) != 0) || (fabs(ns->CTDBn_fruit) < CRIT_PREC && fabs(ns->CTDBn_fruit) != 0))
+	if ((fabs(cs->CTDBc_yield) < CRIT_PREC && fabs(cs->CTDBc_yield) != 0) || (fabs(ns->CTDBn_yield) < CRIT_PREC && fabs(ns->CTDBn_yield) != 0))
 	{
-		cs->litr1c[0] += cs->CTDBc_fruit;
-		ns->litr1n[0] += ns->CTDBn_fruit;
-		cs->CTDBc_fruit = 0.0;
-		ns->CTDBn_fruit = 0.0;
+		cs->litr1c[0] += cs->CTDBc_yield;
+		ns->litr1n[0] += ns->CTDBn_yield;
+		cs->CTDBc_yield = 0.0;
+		ns->CTDBn_yield = 0.0;
 	}
 
 	if ((fabs(cs->CTDBc_nsc) < CRIT_PREC && fabs(cs->CTDBc_nsc) != 0) || (fabs(ns->CTDBn_nsc) < CRIT_PREC && fabs(ns->CTDBn_nsc) != 0))

@@ -52,18 +52,18 @@ int flowering_heatstress(const epconst_struct* epc, const metvar_struct *metv, c
 	}
 	else
 		epv->flowHS_mort = 0;
-		/* in phenophase of yield filling the heat stress affects the material flow to fruit (parameter: flowHS_mort)
-		if (n_actphen == n_flowHS_phenophase+1 && epc->fruit_cn) 
+		/* in phenophase of yield filling the heat stress affects the material flow to yield (parameter: flowHS_mort)
+		if (n_actphen == n_flowHS_phenophase+1 && epc->yield_cn) 
 		{
-			cf->fruitc_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->fruitc;
-			nf->fruitn_to_flowHS = cf->fruitc_to_flowHS / epc->fruit_cn;
+			cf->yield_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->yield;
+			nf->yieldn_to_flowHS = cf->yield_to_flowHS / epc->yield_cn;
 		}
 		else */
 			
 
-	cf->fruitc_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->fruitc;
-	nf->fruitn_to_flowHS = cf->fruitc_to_flowHS / epc->fruit_cn;
-	cs->flowHSsnk_C += cf->fruitc_to_flowHS;
+	cf->yield_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->yield;
+	nf->yieldn_to_flowHS = cf->yield_to_flowHS / epc->yield_cn;
+	cs->flowHSsnk_C += cf->yield_to_flowHS;
 
 
 

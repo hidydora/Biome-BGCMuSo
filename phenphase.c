@@ -74,7 +74,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 
 	if (ctrl->yday == 0)
 	{
-		cs->fruitC_HRV        = 0;
+		cs->yield_HRV        = 0;
 		cs->vegC_HRV          = 0;
 		cs->frootC_HRV        = 0;
 	    epv->cumSWCstress     = 0;

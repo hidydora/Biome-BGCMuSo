@@ -897,7 +897,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 		
 			
-			/* heat stress during flowering can affect daily allocation of fruit */
+			/* heat stress during flowering can affect daily allocation of yield */
 			if (epc.n_flowHS_phenophase > 0)
 			{
 				if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))

@@ -75,7 +75,7 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phe
 	
 
 	
-	cs->fruitC_HRV        = 0;
+	cs->yield_HRV        = 0;
 	cs->vegC_HRV          = 0;
 	cs->frootC_HRV        = 0;
 	epv->cumSWCstress     = 0;
@@ -88,7 +88,7 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phe
 
 	epv->annmax_leafc = 0;
 	epv->annmax_frootc = 0;
-	epv->annmax_fruitc = 0;
+	epv->annmax_yield = 0;
 	epv->annmax_softstemc = 0;
 	epv->annmax_livestemc = 0;
 	epv->annmax_livecrootc = 0;

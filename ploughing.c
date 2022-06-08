@@ -156,7 +156,7 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		/* III. CALCULATING FLUXES */
 	
 	
-		/* 1. leaf, froot, fruit, sofstem, gresp*/
+		/* 1. leaf, froot, yield, sofstem, gresp*/
 
 		if (epc->leaf_cn)
 		{
@@ -180,15 +180,15 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 			nf->frootn_transfer_to_PLG		= ns->frootn_transfer * PLGcoeff;
 		}
 
-		if (epc->fruit_cn)
+		if (epc->yield_cn)
 		{
-			cf->fruitc_to_PLG				= cs->fruitc * PLGcoeff;
-			cf->fruitc_storage_to_PLG		= cs->fruitc_storage * PLGcoeff;
-			cf->fruitc_transfer_to_PLG		= cs->fruitc_transfer * PLGcoeff;
+			cf->yield_to_PLG				= cs->yield * PLGcoeff;
+			cf->yield_storage_to_PLG		= cs->yield_storage * PLGcoeff;
+			cf->yield_transfer_to_PLG		= cs->yield_transfer * PLGcoeff;
 
-			nf->fruitn_to_PLG			    = ns->fruitn * PLGcoeff;
-			nf->fruitn_storage_to_PLG		= ns->fruitn_storage * PLGcoeff;
-			nf->fruitn_transfer_to_PLG		= ns->fruitn_transfer * PLGcoeff;
+			nf->yieldn_to_PLG			    = ns->yieldn * PLGcoeff;
+			nf->yieldn_storage_to_PLG		= ns->yieldn_storage * PLGcoeff;
+			nf->yieldn_transfer_to_PLG		= ns->yieldn_transfer * PLGcoeff;
 		}
 
 		if (epc->softstem_cn)
@@ -211,23 +211,23 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 
 		cf->STDBc_leaf_to_PLG	         = cs->STDBc_leaf     * PLGcoeff;
 		cf->STDBc_froot_to_PLG	         = cs->STDBc_froot    * PLGcoeff;
-		cf->STDBc_fruit_to_PLG	         = cs->STDBc_fruit    * PLGcoeff;
+		cf->STDBc_yield_to_PLG	         = cs->STDBc_yield    * PLGcoeff;
 		cf->STDBc_softstem_to_PLG        = cs->STDBc_softstem * PLGcoeff;
 		cf->STDBc_nsc_to_PLG             = cs->STDBc_nsc      * PLGcoeff;
 
 		nf->STDBn_leaf_to_PLG	         = ns->STDBn_leaf     * PLGcoeff;
 		nf->STDBn_froot_to_PLG	         = ns->STDBn_froot    * PLGcoeff;
-		nf->STDBn_fruit_to_PLG	         = ns->STDBn_fruit    * PLGcoeff;
+		nf->STDBn_yield_to_PLG	         = ns->STDBn_yield    * PLGcoeff;
 		nf->STDBn_softstem_to_PLG        = ns->STDBn_softstem * PLGcoeff;
 		nf->STDBn_nsc_to_PLG             = ns->STDBn_nsc * PLGcoeff;
 
 		 /* 3. cut-down dead biome: abovegound to belowground  */
 		cf->CTDBc_leaf_to_PLG	         = cs->CTDBc_leaf     * PLGcoeff;
-		cf->CTDBc_fruit_to_PLG	         = cs->CTDBc_fruit    * PLGcoeff;
+		cf->CTDBc_yield_to_PLG	         = cs->CTDBc_yield    * PLGcoeff;
 		cf->CTDBc_softstem_to_PLG        = cs->CTDBc_softstem * PLGcoeff;
 
 		nf->CTDBn_leaf_to_PLG	         = ns->CTDBn_leaf     * PLGcoeff;
-		nf->CTDBn_fruit_to_PLG	         = ns->CTDBn_fruit    * PLGcoeff;
+		nf->CTDBn_yield_to_PLG	         = ns->CTDBn_yield    * PLGcoeff;
 		nf->CTDBn_softstem_to_PLG        = ns->CTDBn_softstem * PLGcoeff;
 
 		/* 4. WATER */ 
@@ -238,7 +238,7 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		/* III. STATE UPDATE */
 
 		/* 1. OUT */
-		/* 1.1. leaf, froot, fruit, sofstem, gresp*/
+		/* 1.1. leaf, froot, yield, sofstem, gresp*/
 		cs->leafc				-= cf->leafc_to_PLG;
 		cs->leafc_transfer		-= cf->leafc_transfer_to_PLG;
 		cs->leafc_storage		-= cf->leafc_storage_to_PLG;
@@ -247,9 +247,9 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		cs->frootc				-= cf->frootc_to_PLG;
 		cs->frootc_transfer		-= cf->frootc_transfer_to_PLG;
 		cs->frootc_storage		-= cf->frootc_storage_to_PLG;
-		cs->fruitc				-= cf->fruitc_to_PLG;
-		cs->fruitc_transfer		-= cf->fruitc_transfer_to_PLG;
-		cs->fruitc_storage		-= cf->fruitc_storage_to_PLG;
+		cs->yield				-= cf->yield_to_PLG;
+		cs->yield_transfer		-= cf->yield_transfer_to_PLG;
+		cs->yield_storage		-= cf->yield_storage_to_PLG;
 		cs->softstemc			-= cf->softstemc_to_PLG;
 		cs->softstemc_transfer  -= cf->softstemc_transfer_to_PLG;
 		cs->softstemc_storage   -= cf->softstemc_storage_to_PLG;
@@ -260,9 +260,9 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		ns->frootn				-= nf->frootn_to_PLG;
 		ns->frootn_transfer		-= nf->frootn_transfer_to_PLG;
 		ns->frootn_storage		-= nf->frootn_storage_to_PLG;
-		ns->fruitn				-= nf->fruitn_to_PLG;
-		ns->fruitn_transfer		-= nf->fruitn_transfer_to_PLG;
-		ns->fruitn_storage		-= nf->fruitn_storage_to_PLG;
+		ns->yieldn				-= nf->yieldn_to_PLG;
+		ns->yieldn_transfer		-= nf->yieldn_transfer_to_PLG;
+		ns->yieldn_storage		-= nf->yieldn_storage_to_PLG;
 		ns->softstemn			-= nf->softstemn_to_PLG;
 		ns->softstemn_transfer  -= nf->softstemn_transfer_to_PLG;
 		ns->softstemn_storage	-= nf->softstemn_storage_to_PLG;
@@ -272,23 +272,23 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		/* 1.2. standing dead biome */
 		cs->STDBc_leaf     -= cf->STDBc_leaf_to_PLG;
 		cs->STDBc_froot    -= cf->STDBc_froot_to_PLG;
-		cs->STDBc_fruit    -= cf->STDBc_fruit_to_PLG;
+		cs->STDBc_yield    -= cf->STDBc_yield_to_PLG;
 		cs->STDBc_softstem -= cf->STDBc_softstem_to_PLG;
 		cs->STDBc_nsc      -= cf->STDBc_nsc_to_PLG;
 
 		ns->STDBn_leaf     -= nf->STDBn_leaf_to_PLG;
 		ns->STDBn_froot    -= nf->STDBn_froot_to_PLG;
-		ns->STDBn_fruit    -= nf->STDBn_fruit_to_PLG;
+		ns->STDBn_yield    -= nf->STDBn_yield_to_PLG;
 		ns->STDBn_softstem -= nf->STDBn_softstem_to_PLG;
 		ns->STDBn_nsc      -= nf->STDBn_nsc_to_PLG;
 
 		/* 1.3. cut-down dead biome: aboveground to belowground */
 		cs->CTDBc_leaf     -= cf->CTDBc_leaf_to_PLG;
-		cs->CTDBc_fruit    -= cf->CTDBc_fruit_to_PLG;
+		cs->CTDBc_yield    -= cf->CTDBc_yield_to_PLG;
 		cs->CTDBc_softstem -= cf->CTDBc_softstem_to_PLG;
 
 		ns->CTDBn_leaf     -= nf->CTDBn_leaf_to_PLG;
-		ns->CTDBn_fruit    -= nf->CTDBn_fruit_to_PLG;
+		ns->CTDBn_yield    -= nf->CTDBn_yield_to_PLG;
 		ns->CTDBn_softstem -= nf->CTDBn_softstem_to_PLG;
 	
 	
@@ -299,18 +299,18 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		/* 2. IN: fluxes to belowground cut-down biomass */
 	 
 		cs->CTDBc_froot += cf->leafc_to_PLG     + cf->STDBc_leaf_to_PLG     + cf->CTDBc_leaf_to_PLG +    
-						   cf->fruitc_to_PLG    + cf->STDBc_fruit_to_PLG    + cf->CTDBc_fruit_to_PLG +   
+						   cf->yield_to_PLG    + cf->STDBc_yield_to_PLG    + cf->CTDBc_yield_to_PLG +   
 						   cf->softstemc_to_PLG + cf->STDBc_softstem_to_PLG + cf->CTDBc_softstem_to_PLG +
 						   cf->frootc_to_PLG    + cf->STDBc_froot_to_PLG;
 
 		ns->CTDBn_froot += nf->leafn_to_PLG     + nf->STDBn_leaf_to_PLG     + nf->CTDBn_leaf_to_PLG + 
-						      nf->fruitn_to_PLG    + nf->STDBn_fruit_to_PLG    + nf->CTDBn_fruit_to_PLG + 
+						      nf->yieldn_to_PLG    + nf->STDBn_yield_to_PLG    + nf->CTDBn_yield_to_PLG + 
 						      nf->softstemn_to_PLG + nf->STDBn_softstem_to_PLG + nf->CTDBn_softstem_to_PLG +
 							  nf->frootn_to_PLG    + nf->STDBn_froot_to_PLG;
 
 		cs->CTDBc_nsc   += cf->leafc_storage_to_PLG     + cf->leafc_transfer_to_PLG  + 
 			                  cf->frootc_storage_to_PLG    + cf->frootc_transfer_to_PLG +
-						      cf->fruitc_storage_to_PLG    + cf->fruitc_transfer_to_PLG + 
+						      cf->yield_storage_to_PLG    + cf->yield_transfer_to_PLG + 
 							  cf->softstemc_storage_to_PLG + cf->softstemc_transfer_to_PLG +
 						      cf->gresp_storage_to_PLG     + cf->gresp_transfer_to_PLG +
 							  cf->STDBc_nsc_to_PLG;
@@ -318,7 +318,7 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 
 		ns->CTDBn_nsc   += nf->leafn_storage_to_PLG     + nf->leafn_transfer_to_PLG  + 
 			                  nf->frootn_storage_to_PLG    + nf->frootn_transfer_to_PLG +
-						      nf->fruitn_storage_to_PLG    + nf->fruitn_transfer_to_PLG + 
+						      nf->yieldn_storage_to_PLG    + nf->yieldn_transfer_to_PLG + 
 							  nf->softstemn_storage_to_PLG + nf->softstemn_transfer_to_PLG +
 						      nf->retransn_to_PLG +
 							  nf->STDBn_nsc_to_PLG;

@@ -89,11 +89,11 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->GRZsrc_C = 0.0;
 	cs->HRV_transportC = 0.0;
 	cs->FRZsrc_C = 0.0;
-	cs->fruitC_HRV = 0.0;
+	cs->yield_HRV = 0.0;
 	cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
-	cs->fruit_mr_snk = 0.0;
-	cs->fruit_gr_snk = 0.0;
+	cs->yield_mr_snk = 0.0;
+	cs->yield_gr_snk = 0.0;
 	cs->softstem_mr_snk = 0.0;
 	cs->softstem_gr_snk = 0.0;
 	cs->CbalanceERR = 0.0;
@@ -188,7 +188,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->leafDM = 0.0;
 	summary->leaflitrDM = 0.0;
     summary->frootDM = 0.0;
-	summary->fruitDM = 0.0;
+	summary->yieldDM = 0.0;
 	summary->yieldDM_HRV = 0.0;
     summary->softstemDM = 0.0;
     summary->livewoodDM = 0.0;
@@ -212,7 +212,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->leafCN = 0.0;
 	summary->frootCN = 0.0;
 	summary->softstemCN = 0.0;
-	summary->fruitCN = 0.0;
+	summary->yieldN = 0.0;
 
 	summary->NH4_top30avail = 0.0; 
 	summary->NO3_top30avail = 0.0;
@@ -222,7 +222,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->stableSOC_top30 = 0.0;
 	summary->leafc_LandD = 0.0;
 	summary->frootc_LandD = 0.0;
-	summary->fruitc_LandD = 0.0;
+	summary->yield_LandD = 0.0;
 	summary->softstemc_LandD = 0.0;
 	summary->lateral_Cflux = 0.0;
 	summary->harvestIndex = 0;

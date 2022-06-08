@@ -927,7 +927,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
 #endif
             
-				/* heat stress during flowering can affect daily allocation of fruit */
+				/* heat stress during flowering can affect daily allocation of yield */
 				if (epc.n_flowHS_phenophase > 0)
 				{
 					if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))
@@ -1501,7 +1501,7 @@ if (ctrl.onscreen)
 		
 		bgcin->cinit.max_leafc      = epv.annmax_leafc;
 		bgcin->cinit.max_frootc     = epv.annmax_frootc;
-		bgcin->cinit.max_fruitc     = epv.annmax_fruitc;
+		bgcin->cinit.max_yield     = epv.annmax_yield;
 		bgcin->cinit.max_softstemc  = epv.annmax_softstemc;
 		bgcin->cinit.max_livestemc  = epv.annmax_livestemc;
 		bgcin->cinit.max_livecrootc = epv.annmax_livecrootc;

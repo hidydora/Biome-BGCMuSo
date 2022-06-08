@@ -100,7 +100,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	double avail_c;     /* total C available for new production */
 	double f1;          /* RATIO   new leaf C      : new total C   */
 	double f2;          /* RATIO   new fine root C : new total C   */
-	double f3;          /* RATIO   new fruit C     : new total C  */
+	double f3;          /* RATIO   new yield C     : new total C  */
 	double f4;          /* RATIO   new softstem C  : new total C */
 	double f5;          /* RATIO   new live woody stem C: new total C */
 	double f6;          /* RATIO   new dead woody stem C: new total C */
@@ -144,7 +144,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	/* 1. Assess the carbon availability on the basis of this day's gross production and maintenance respiration costs */
 	day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
 	
-	day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->fruit_mr + cf->softstem_mr +
+	day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->yield_mr + cf->softstem_mr +
 			         cf->livestem_mr + cf->livecroot_mr;
 	avail_c = day_gpp - day_mresp;
 
@@ -168,7 +168,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	{
 		f1 = epc->alloc_leafc[ap];
 		f2 = epc->alloc_frootc[ap];
-		f3 = epc->alloc_fruitc[ap];
+		f3 = epc->alloc_yield[ap];
 		f4 = epc->alloc_softstemc[ap];
 		f5 = epc->alloc_livestemc[ap];
 		f6 = epc->alloc_deadstemc[ap];
@@ -219,7 +219,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	c_allometry = (1.0+g1);
 	n_allometry = (f1/epc->leaf_cn + f2/epc->froot_cn);
     
-	if (epc->fruit_cn > 0)    n_allometry +=  f3/epc->fruit_cn;
+	if (epc->yield_cn > 0)    n_allometry +=  f3/epc->yield_cn;
 	if (epc->softstem_cn > 0) n_allometry +=  f4/epc->softstem_cn;
 	
 	if (woody) n_allometry += (f5/epc->livewood_cn + f6/epc->deadwood_cn + f7/epc->livewood_cn + f8/epc->deadwood_cn);
@@ -380,7 +380,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		nf->npool_to_softstemn_storage  = f4 * (1.0-pnow) * (1./epc->softstem_cn) * (plantCalloc/c_allometry);
 
 		/* for total flower stress - no grain allocation after */
-		if (cs->fruitc+cs->flowHSsnk_C) flowHSratio = cs->fruitc/(cs->fruitc+cs->flowHSsnk_C);
+		if (cs->yield+cs->flowHSsnk_C) flowHSratio = cs->yield/(cs->yield+cs->flowHSsnk_C);
 		if (flowHSratio > 1 || flowHSratio < 0)
 		{
 			printf("\n");
@@ -388,10 +388,10 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 			errorCode=1;
 		}
 
-		cf->cpool_to_fruitc             = flowHSratio * f3 * pnow       * (plantCalloc/c_allometry);
-		cf->cpool_to_fruitc_storage     = flowHSratio * f3 * (1.0-pnow) * (plantCalloc/c_allometry);
-		nf->npool_to_fruitn             = flowHSratio * f3 * pnow       * (1./epc->fruit_cn)    * (plantCalloc/c_allometry);
-		nf->npool_to_fruitn_storage     = flowHSratio * f3 * (1.0-pnow) * (1./epc->fruit_cn)    * (plantCalloc/c_allometry);
+		cf->cpool_to_yield             = flowHSratio * f3 * pnow       * (plantCalloc/c_allometry);
+		cf->cpool_to_yield_storage     = flowHSratio * f3 * (1.0-pnow) * (plantCalloc/c_allometry);
+		nf->npool_to_yieldn             = flowHSratio * f3 * pnow       * (1./epc->yield_cn)    * (plantCalloc/c_allometry);
+		nf->npool_to_yieldn_storage     = flowHSratio * f3 * (1.0-pnow) * (1./epc->yield_cn)    * (plantCalloc/c_allometry);
 
 		if (epc->woody)
 		{
@@ -421,8 +421,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		cf->cpool_to_leafc_storage      = 0;
 		cf->cpool_to_frootc             = 0;
 		cf->cpool_to_frootc_storage     = 0;
-		cf->cpool_to_fruitc             = 0;
-		cf->cpool_to_fruitc_storage     = 0;
+		cf->cpool_to_yield             = 0;
+		cf->cpool_to_yield_storage     = 0;
 		cf->cpool_to_softstemc          = 0;
 		cf->cpool_to_softstemc_storage  = 0;
 		cf->cpool_to_livestemc          = 0;
@@ -438,8 +438,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		nf->npool_to_leafn_storage      = 0;
 		nf->npool_to_frootn             = 0;
 		nf->npool_to_frootn_storage     = 0;
-		nf->npool_to_fruitn             = 0;
-		nf->npool_to_fruitn_storage     = 0;
+		nf->npool_to_yieldn             = 0;
+		nf->npool_to_yieldn_storage     = 0;
 		nf->npool_to_softstemn          = 0;
 		nf->npool_to_softstemn_storage  = 0;
 		nf->npool_to_livestemn          = 0;
@@ -462,7 +462,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	fluxes that get released on a given day are calculated in growth_resp(), but that the storage of C for growth resp during display of 
 	transferred growth is assigned here. (GRPNOW: proportion of growth resp to release at fixation ) */
 	
-	cf->cpool_to_gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage + cf->cpool_to_fruitc_storage + cf->cpool_to_softstemc_storage +
+	cf->cpool_to_gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage + cf->cpool_to_yield_storage + cf->cpool_to_softstemc_storage +
                                   cf->cpool_to_livestemc_storage + cf->cpool_to_deadstemc_storage +
 						          cf->cpool_to_livecrootc_storage + cf->cpool_to_deadcrootc_storage) * g1 * (1.0-GRPNOW);
 	

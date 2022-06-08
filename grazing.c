@@ -142,15 +142,15 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 			nf->leafn_storage_to_GRZ      = 0; //cf->leafc_storage_to_GRZ  / epc->leaf_cn;
 		}
 	
-		if (epc->fruit_cn)
+		if (epc->yield_cn)
 		{
-			cf->fruitc_to_GRZ              = cs->fruitc * GRZcoeff;
-			cf->fruitc_transfer_to_GRZ     = 0; //cs->fruitc_transfer * GRZcoeff;
-			cf->fruitc_storage_to_GRZ      = 0; //cs->fruitc_storage * GRZcoeff;
+			cf->yield_to_GRZ              = cs->yield * GRZcoeff;
+			cf->yield_transfer_to_GRZ     = 0; //cs->yield_transfer * GRZcoeff;
+			cf->yield_storage_to_GRZ      = 0; //cs->yield_storage * GRZcoeff;
 
-			nf->fruitn_to_GRZ              = cf->fruitc_to_GRZ          / epc->fruit_cn;
-			nf->fruitn_transfer_to_GRZ     = 0; //cf->fruitc_transfer_to_GRZ / epc->fruit_cn;
-			nf->fruitn_storage_to_GRZ      = 0; //cf->fruitc_storage_to_GRZ  / epc->fruit_cn;
+			nf->yieldn_to_GRZ              = cf->yield_to_GRZ          / epc->yield_cn;
+			nf->yieldn_transfer_to_GRZ     = 0; //cf->yield_transfer_to_GRZ / epc->yield_cn;
+			nf->yieldn_storage_to_GRZ      = 0; //cf->yield_storage_to_GRZ  / epc->yield_cn;
 		}
 
 		if (epc->softstem_cn)
@@ -172,12 +172,12 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 	
 		/* 1.2.  standing dead biome */
 		cf->STDBc_leaf_to_GRZ     = cs->STDBc_leaf     * GRZcoeff;
-		cf->STDBc_fruit_to_GRZ    = cs->STDBc_fruit    * GRZcoeff;
+		cf->STDBc_yield_to_GRZ    = cs->STDBc_yield    * GRZcoeff;
 		cf->STDBc_softstem_to_GRZ = cs->STDBc_softstem * GRZcoeff;
 		cf->STDBc_nsc_to_GRZ = cs->STDBc_nsc      * GRZcoeff;
 
 		nf->STDBn_leaf_to_GRZ     = ns->STDBn_leaf     * GRZcoeff;
-		nf->STDBn_fruit_to_GRZ    = ns->STDBn_fruit    * GRZcoeff;
+		nf->STDBn_yield_to_GRZ    = ns->STDBn_yield    * GRZcoeff;
 		nf->STDBn_softstem_to_GRZ = ns->STDBn_softstem * GRZcoeff;
 		nf->STDBn_nsc_to_GRZ      = ns->STDBn_nsc      * GRZcoeff;
 
@@ -221,58 +221,58 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 		/* 1.actual and transfer plant pools */	
 
 		cs->leafc				-= cf->leafc_to_GRZ;
-		cs->fruitc				-= cf->fruitc_to_GRZ;
+		cs->yield				-= cf->yield_to_GRZ;
 		cs->softstemc			-= cf->softstemc_to_GRZ;
 
 		cs->leafc_storage		-= cf->leafc_storage_to_GRZ;
-		cs->fruitc_storage		-= cf->fruitc_storage_to_GRZ;
+		cs->yield_storage		-= cf->yield_storage_to_GRZ;
 		cs->softstemc_storage	-= cf->softstemc_storage_to_GRZ;
 
 		cs->leafc_transfer		-= cf->leafc_transfer_to_GRZ;
-		cs->fruitc_transfer		-= cf->fruitc_transfer_to_GRZ;
+		cs->yield_transfer		-= cf->yield_transfer_to_GRZ;
 		cs->softstemc_transfer	-= cf->softstemc_transfer_to_GRZ;
 
 		cs->gresp_transfer      -= cf->gresp_transfer_to_GRZ;
 		cs->gresp_storage       -= cf->gresp_storage_to_GRZ;
 
-		cs->GRZsnk_C			+= cf->leafc_to_GRZ          + cf->fruitc_to_GRZ          + cf->softstemc_to_GRZ +
-									cf->leafc_storage_to_GRZ  + cf->fruitc_storage_to_GRZ  + cf->softstemc_storage_to_GRZ +
-									cf->leafc_transfer_to_GRZ + cf->fruitc_transfer_to_GRZ + cf->softstemc_transfer_to_GRZ +
+		cs->GRZsnk_C			+= cf->leafc_to_GRZ          + cf->yield_to_GRZ          + cf->softstemc_to_GRZ +
+									cf->leafc_storage_to_GRZ  + cf->yield_storage_to_GRZ  + cf->softstemc_storage_to_GRZ +
+									cf->leafc_transfer_to_GRZ + cf->yield_transfer_to_GRZ + cf->softstemc_transfer_to_GRZ +
 									cf->gresp_transfer_to_GRZ + cf->gresp_storage_to_GRZ;
 
 		ns->leafn				-= nf->leafn_to_GRZ;
-		ns->fruitn				-= nf->fruitn_to_GRZ;
+		ns->yieldn				-= nf->yieldn_to_GRZ;
 		ns->softstemn			-= nf->softstemn_to_GRZ;
 
 		ns->leafn_storage		-= nf->leafn_storage_to_GRZ;
-		ns->fruitn_storage		-= nf->fruitn_storage_to_GRZ;
+		ns->yieldn_storage		-= nf->yieldn_storage_to_GRZ;
 		ns->softstemn_storage	-= nf->softstemn_storage_to_GRZ;
 
 		ns->leafn_transfer		-= nf->leafn_transfer_to_GRZ;
-		ns->fruitn_transfer		-= nf->fruitn_transfer_to_GRZ;
+		ns->yieldn_transfer		-= nf->yieldn_transfer_to_GRZ;
 		ns->softstemn_transfer	-= nf->softstemn_transfer_to_GRZ;
 
 		ns->retransn            -= nf->retransn_to_GRZ;
 
-		ns->GRZsnk_N			+= nf->leafn_to_GRZ          + nf->fruitn_to_GRZ          + nf->softstemn_to_GRZ +
-									nf->leafn_storage_to_GRZ  + nf->fruitn_storage_to_GRZ  + nf->softstemn_storage_to_GRZ +
-									nf->leafn_transfer_to_GRZ + nf->fruitn_transfer_to_GRZ + nf->softstemn_transfer_to_GRZ +
+		ns->GRZsnk_N			+= nf->leafn_to_GRZ          + nf->yieldn_to_GRZ          + nf->softstemn_to_GRZ +
+									nf->leafn_storage_to_GRZ  + nf->yieldn_storage_to_GRZ  + nf->softstemn_storage_to_GRZ +
+									nf->leafn_transfer_to_GRZ + nf->yieldn_transfer_to_GRZ + nf->softstemn_transfer_to_GRZ +
 									nf->retransn_to_GRZ;
 
 		/* 2. dead standing biomass */
 		cs->STDBc_leaf     -= cf->STDBc_leaf_to_GRZ;
-		cs->STDBc_fruit    -= cf->STDBc_fruit_to_GRZ;
+		cs->STDBc_yield    -= cf->STDBc_yield_to_GRZ;
 		cs->STDBc_softstem -= cf->STDBc_softstem_to_GRZ;
 		cs->STDBc_nsc -= cf->STDBc_nsc_to_GRZ;
 
-		cs->GRZsnk_C       += (cf->STDBc_leaf_to_GRZ + cf->STDBc_fruit_to_GRZ + cf->STDBc_softstem_to_GRZ + cf->STDBc_nsc_to_GRZ);
+		cs->GRZsnk_C       += (cf->STDBc_leaf_to_GRZ + cf->STDBc_yield_to_GRZ + cf->STDBc_softstem_to_GRZ + cf->STDBc_nsc_to_GRZ);
 
 		ns->STDBn_leaf     -= nf->STDBn_leaf_to_GRZ;
-		ns->STDBn_fruit    -= nf->STDBn_fruit_to_GRZ;
+		ns->STDBn_yield    -= nf->STDBn_yield_to_GRZ;
 		ns->STDBn_softstem -= nf->STDBn_softstem_to_GRZ;
 		ns->STDBn_nsc      -= nf->STDBn_nsc_to_GRZ;
 
-		ns->GRZsnk_N       += (nf->STDBn_leaf_to_GRZ + nf->STDBn_fruit_to_GRZ + nf->STDBn_softstem_to_GRZ + nf->STDBn_nsc_to_GRZ);
+		ns->GRZsnk_N       += (nf->STDBn_leaf_to_GRZ + nf->STDBn_yield_to_GRZ + nf->STDBn_softstem_to_GRZ + nf->STDBn_nsc_to_GRZ);
 	
 	
 		/* 3. water */

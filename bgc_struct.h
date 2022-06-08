@@ -304,7 +304,7 @@ typedef struct
 {
 	double max_leafc;			/* (kgC/m2) first-year displayed + stored leafc */
 	double max_frootc;			/* (kgC/m2) first-year displayed + stored froot */
-	double max_fruitc;			/* (kgC/m2) first-year displayed + stored fruit */
+	double max_yield;			/* (kgC/m2) first-year displayed + stored yield */
 	double max_softstemc;		/* (kgC/m2) first-year displayed + stored softstem */
 	double max_livestemc;		/* (kgC/m2) first-year displayed + stored live woody stem */
 	double max_livecrootc;		/* (kgC/m2) first-year displayed + stored live coarse root */
@@ -322,9 +322,9 @@ typedef struct
     double frootc;								/* fine root C actual pool*/
     double frootc_storage;						/* fine root C storage */
     double frootc_transfer;						/* fine root C transfer */
-	double fruitc;             					/* fruitc actual pool */
-    double fruitc_storage;     					/* fruitc storage pool */
-    double fruitc_transfer;    					/* fruitc transfer pool */
+	double yield;             					/* yield actual pool */
+    double yield_storage;     					/* yield storage pool */
+    double yield_transfer;    					/* yield transfer pool */
 	double softstemc;          					/* softstemc actual poo */
     double softstemc_storage;  					/* softstemc storage pool */
     double softstemc_transfer; 					/* softstemc transfer pool */
@@ -361,14 +361,14 @@ typedef struct
 	double litrc_above;              			/* aboveground litter C */
 	double STDBc_leaf;							/*  wilted leaf biomass  */
 	double STDBc_froot;							/*  wilted froot biomass  */
-	double STDBc_fruit;							/*  wilted fruit biomass  */
+	double STDBc_yield;							/*  wilted yield biomass  */
 	double STDBc_softstem;						/*  wilted sofstem biomass  */
 	double STDBc_nsc;						    /*  wilted non-stuctured carbohydrate biomass  */
 	double STDBc_above;             			/*  wilted aboveground plant biomass  */
 	double STDBc_below;             			/*  wilted belowground plant biomass  */
 	double CTDBc_leaf;							/*  cut-down leaf biomass  */
 	double CTDBc_froot;							/*  cut-down froot biomass  */
-	double CTDBc_fruit;							/*  cut-down fruit biomass  */
+	double CTDBc_yield;							/*  cut-down yield biomass  */
 	double CTDBc_softstem;						/*  cut-down sofstem biomass  */
 	double CTDBc_nsc;						    /*  cut-down non-stuctured biomass  */
 	double CTDBc_cstem;			    			/*  cut-down coarse stem biomass  */
@@ -396,13 +396,13 @@ typedef struct
 	double actC_mr_snk;                 /* SUM of actual pool's MR loss */
     double leaf_mr_snk;					/* SUM of leaf maint resp */
     double froot_mr_snk;				/* SUM of fine root maint resp */
-	double fruit_mr_snk;				/* SUM of fruit maint resp.*/
+	double yield_mr_snk;				/* SUM of yield maint resp.*/
 	double softstem_mr_snk;				/* SUM of softstem maint resp.*/
 	double livestem_mr_snk;				/* SUM of live stem maint resp */
 	double livecroot_mr_snk;			/* SUM of live coarse root maint resp */
 	double leaf_gr_snk;					/* SUM of leaf growth resp */
     double froot_gr_snk;				/* SUM of fine root growth resp */
-	double fruit_gr_snk;				/* SUM of fruit growth resp. */
+	double yield_gr_snk;				/* SUM of yield growth resp. */
 	double softstem_gr_snk;				/* SUM of softstem growth resp. */
     double livestem_gr_snk;				/* SUM of live stem growth resp */
 	double livecroot_gr_snk;			/* SUM of live coarse root growth resp */
@@ -426,9 +426,9 @@ typedef struct
 	double GRZsnk_C;					/* SUM of C content of grazed leaf */
 	double GRZsrc_C;					/* SUM of added carbon from fertilizer */
 	double FRZsrc_C;					/* SUM of carbon content of fertilizer return to the litter pool */
-	double fruitC_HRV;                  /* SUM of carbon content of havested fruit */
+	double yield_HRV;                  /* SUM of carbon content of havested yield */
 	double frootC_HRV;                  /* SUM of carbon content of fine root at harvest */
-	double vegC_HRV;                    /* SUM of carbon content of havested leaf, stem and fruit */
+	double vegC_HRV;                    /* SUM of carbon content of havested leaf, stem and yield */
 	double CbalanceERR;					/* SUM of carbon balance error */
 	double CNratioERR;                  /* SUM of carbon-nitrogen ratio error */
 	double inC;							/* SUM of carbon input */
@@ -450,10 +450,10 @@ typedef struct
 	double m_frootc_to_litr2c;             
 	double m_frootc_to_litr3c;             
 	double m_frootc_to_litr4c;  
-	double m_fruitc_to_litr1c;             
-	double m_fruitc_to_litr2c;             
-	double m_fruitc_to_litr3c;             
-	double m_fruitc_to_litr4c;       
+	double m_yield_to_litr1c;             
+	double m_yield_to_litr2c;             
+	double m_yield_to_litr3c;             
+	double m_yield_to_litr4c;       
 	double m_softstemc_to_litr1c;            
 	double m_softstemc_to_litr2c;            
 	double m_softstemc_to_litr3c;            
@@ -461,14 +461,14 @@ typedef struct
 	double m_leafc_storage_to_litr1c;      
 	double m_frootc_storage_to_litr1c;
 	double m_softstemc_storage_to_litr1c;   
-	double m_fruitc_storage_to_litr1c;     
+	double m_yield_storage_to_litr1c;     
 	double m_livestemc_storage_to_litr1c;  
 	double m_deadstemc_storage_to_litr1c;  
 	double m_livecrootc_storage_to_litr1c; 
 	double m_deadcrootc_storage_to_litr1c; 
 	double m_leafc_transfer_to_litr1c;     
 	double m_frootc_transfer_to_litr1c;
-	double m_fruitc_transfer_to_litr1c;  
+	double m_yield_transfer_to_litr1c;  
 	double m_softstemc_transfer_to_litr1c;   
 	double m_livestemc_transfer_to_litr1c; 
 	double m_deadstemc_transfer_to_litr1c; 
@@ -483,13 +483,13 @@ typedef struct
 	/* group: fire fluxes */
 	double m_leafc_to_fire;                
 	double m_frootc_to_fire;               
-	double m_fruitc_to_fire;               
+	double m_yield_to_fire;               
 	double m_softstemc_to_fire; 
 	double m_STDBc_to_fire;
 	double m_CTDBc_to_fire;
 	double m_leafc_storage_to_fire;        
 	double m_frootc_storage_to_fire;       
-	double m_fruitc_storage_to_fire;       
+	double m_yield_storage_to_fire;       
 	double m_softstemc_storage_to_fire;    
 	double m_livestemc_storage_to_fire;    
 	double m_deadstemc_storage_to_fire;    
@@ -497,7 +497,7 @@ typedef struct
 	double m_deadcrootc_storage_to_fire;   
 	double m_leafc_transfer_to_fire;       
 	double m_frootc_transfer_to_fire;      
-	double m_fruitc_transfer_to_fire;      
+	double m_yield_transfer_to_fire;      
 	double m_softstemc_transfer_to_fire;   
 	double m_livestemc_transfer_to_fire;   
 	double m_deadstemc_transfer_to_fire;   
@@ -524,14 +524,14 @@ typedef struct
 	double m_leafc_to_SNSC; 
 	double m_leafc_to_SNSCgenprog;
 	double m_frootc_to_SNSC;               
-	double m_fruitc_to_SNSC;                
+	double m_yield_to_SNSC;                
 	double m_softstemc_to_SNSC;                
 	double m_leafc_storage_to_SNSC;                
 	double m_frootc_storage_to_SNSC;               
 	double m_leafc_transfer_to_SNSC;                
 	double m_frootc_transfer_to_SNSC;               
-	double m_fruitc_storage_to_SNSC;        
-	double m_fruitc_transfer_to_SNSC;       
+	double m_yield_storage_to_SNSC;        
+	double m_yield_transfer_to_SNSC;       
 	double m_softstemc_storage_to_SNSC;        
 	double m_softstemc_transfer_to_SNSC;       
 	double m_gresp_storage_to_SNSC;
@@ -539,8 +539,8 @@ typedef struct
 	/* group: harvesting senescence fluxes */
 	double HRV_leafc_storage_to_SNSC;               
 	double HRV_leafc_transfer_to_SNSC;    
-	double HRV_fruitc_storage_to_SNSC;               
-	double HRV_fruitc_transfer_to_SNSC;    
+	double HRV_yield_storage_to_SNSC;               
+	double HRV_yield_transfer_to_SNSC;    
 	double HRV_frootc_to_SNSC;                           
 	double HRV_softstemc_to_SNSC;                 
 	double HRV_frootc_storage_to_SNSC;               
@@ -550,18 +550,18 @@ typedef struct
 	double HRV_gresp_storage_to_SNSC;
 	double HRV_gresp_transfer_to_SNSC;
 	/* group: flowering heat stress  */
-	double fruitc_to_flowHS;
+	double yield_to_flowHS;
 	/* group: standing dead biomass to litter fluxes */
 	double STDBc_leaf_to_litr;
 	double STDBc_froot_to_litr;
-	double STDBc_fruit_to_litr;
+	double STDBc_yield_to_litr;
 	double STDBc_softstem_to_litr;	
 	double STDBc_nsc_to_litr;
 	double STDBc_to_litr;
 	/* group: cut-dowc dead biomass to litter pool */
 	double CTDBc_leaf_to_litr;
 	double CTDBc_froot_to_litr;
-	double CTDBc_fruit_to_litr;
+	double CTDBc_yield_to_litr;
 	double CTDBc_softstem_to_litr;	
 	double CTDBc_nsc_to_litr;
 	double CTDBc_cstem_to_cwd;			   
@@ -570,7 +570,7 @@ typedef struct
 	/* group: phenology fluxes from transfer pool */
 	double leafc_transfer_to_leafc;          
 	double frootc_transfer_to_frootc;        
-	double fruitc_transfer_to_fruitc;
+	double yield_transfer_to_yield;
 	double softstemc_transfer_to_softstemc;
 	double livestemc_transfer_to_livestemc;  
 	double deadstemc_transfer_to_deadstemc;  
@@ -585,10 +585,10 @@ typedef struct
 	double frootc_to_litr2c;             
 	double frootc_to_litr3c;             
 	double frootc_to_litr4c;             
-	double fruitc_to_litr1c;
-	double fruitc_to_litr2c;
-	double fruitc_to_litr3c;
-	double fruitc_to_litr4c;
+	double yield_to_litr1c;
+	double yield_to_litr2c;
+	double yield_to_litr3c;
+	double yield_to_litr4c;
 	double softstemc_to_litr1c;
 	double softstemc_to_litr2c;
 	double softstemc_to_litr3c;
@@ -597,7 +597,7 @@ typedef struct
 	double leaf_day_mr;                  
 	double leaf_night_mr;                
 	double froot_mr;
-	double fruit_mr;   	
+	double yield_mr;   	
 	double softstem_mr;
 	double livestem_mr;                  
 	double livecroot_mr;                 
@@ -648,8 +648,8 @@ typedef struct
 	double cpool_to_leafc_storage;       
 	double cpool_to_frootc;              
 	double cpool_to_frootc_storage;    
-	double cpool_to_fruitc;                
-	double cpool_to_fruitc_storage;        
+	double cpool_to_yield;                
+	double cpool_to_yield_storage;        
 	double cpool_to_softstemc;           
 	double cpool_to_softstemc_storage; 
 	double cpool_to_livestemc;           
@@ -668,9 +668,9 @@ typedef struct
 	double cpool_froot_gr;               
 	double cpool_froot_storage_gr;       
 	double transfer_froot_gr;   
-	double cpool_fruit_gr;                 
-	double cpool_fruit_storage_gr;         
-	double transfer_fruit_gr;             
+	double cpool_yield_gr;                 
+	double cpool_yield_storage_gr;         
+	double transfer_yield_gr;             
 	double cpool_softstem_gr;                 
 	double cpool_softstem_storage_gr;         
 	double transfer_softstem_gr;             
@@ -689,7 +689,7 @@ typedef struct
 	/* group: daily maintanance respiration ensuring fluxes */
 	double leafc_storage_to_maintresp;
 	double frootc_storage_to_maintresp;
-	double fruitc_storage_to_maintresp;
+	double yield_storage_to_maintresp;
 	double softstemc_storage_to_maintresp;
 	double livestemc_storage_to_maintresp;
 	double livecrootc_storage_to_maintresp;
@@ -697,7 +697,7 @@ typedef struct
 	double deadcrootc_storage_to_maintresp;
 	double leafc_transfer_to_maintresp;
 	double frootc_transfer_to_maintresp;
-	double fruitc_transfer_to_maintresp;
+	double yield_transfer_to_maintresp;
 	double softstemc_transfer_to_maintresp;
 	double livestemc_transfer_to_maintresp;
 	double livecrootc_transfer_to_maintresp;
@@ -705,7 +705,7 @@ typedef struct
 	double deadcrootc_transfer_to_maintresp;
 	double leafc_to_maintresp;
 	double frootc_to_maintresp;
-	double fruitc_to_maintresp;
+	double yield_to_maintresp;
 	double softstemc_to_maintresp;
 	double livestemc_to_maintresp;
 	double livecrootc_to_maintresp;
@@ -716,7 +716,7 @@ typedef struct
 	/* group: annual turnover of storage to transfer pools */
 	double leafc_storage_to_leafc_transfer;           
 	double frootc_storage_to_frootc_transfer;     
-    double fruitc_storage_to_fruitc_transfer;   
+    double yield_storage_to_yield_transfer;   
 	double softstemc_storage_to_softstemc_transfer;   
 	double livestemc_storage_to_livestemc_transfer;    
 	double deadstemc_storage_to_deadstemc_transfer;    
@@ -729,10 +729,10 @@ typedef struct
 	/* group: planting fluxes */
 	double leafc_transfer_from_PLT;		
 	double frootc_transfer_from_PLT;	
-	double fruitc_transfer_from_PLT;		
+	double yield_transfer_from_PLT;		
 	double softstemc_transfer_from_PLT;		
 	double STDBc_leaf_to_PLT;				 			 
-	double STDBc_fruit_to_PLT;
+	double STDBc_yield_to_PLT;
 	double STDBc_froot_to_PLT;
 	double STDBc_softstem_to_PLT;	
 	/* group: thinning fluxes */
@@ -742,9 +742,9 @@ typedef struct
 	double frootc_to_THN;				    
 	double frootc_storage_to_THN;            
 	double frootc_transfer_to_THN;  
-	double fruitc_to_THN;				 
-	double fruitc_storage_to_THN;         
-	double fruitc_transfer_to_THN;        
+	double yield_to_THN;				 
+	double yield_storage_to_THN;         
+	double yield_transfer_to_THN;        
 	double livestemc_to_THN;				 
 	double livestemc_storage_to_THN;         
 	double livestemc_transfer_to_THN;        
@@ -761,52 +761,52 @@ typedef struct
 	double gresp_transfer_to_THN;        
 	double THN_to_CTDBc_leaf;		
 	double THN_to_CTDBc_froot;	
-	double THN_to_CTDBc_fruit;				 
+	double THN_to_CTDBc_yield;				 
 	double THN_to_CTDBc_nsc;				 
 	double THN_to_CTDBc_cstem;		
 	double THN_to_CTDBc_croot;	
 	double STDBc_leaf_to_THN;	
 	double STDBc_froot_to_THN;
-	double STDBc_fruit_to_THN;				 
+	double STDBc_yield_to_THN;				 
 	double STDBc_nsc_to_THN;	
 	/* group: mowing fluxes */
 	double leafc_to_MOW;				 
 	double leafc_storage_to_MOW;         
 	double leafc_transfer_to_MOW;        
-	double fruitc_to_MOW;				 
-	double fruitc_storage_to_MOW;         
-	double fruitc_transfer_to_MOW;        
+	double yield_to_MOW;				 
+	double yield_storage_to_MOW;         
+	double yield_transfer_to_MOW;        
 	double softstemc_to_MOW;				 
 	double softstemc_storage_to_MOW;         
 	double softstemc_transfer_to_MOW;        
 	double gresp_storage_to_MOW;         
 	double gresp_transfer_to_MOW;        
 	double MOW_to_CTDBc_leaf;				 		 
-	double MOW_to_CTDBc_fruit;
+	double MOW_to_CTDBc_yield;
 	double MOW_to_CTDBc_softstem;	
 	double MOW_to_CTDBc_nsc;				 		 			    	 
 	double STDBc_leaf_to_MOW;				 			 
-	double STDBc_fruit_to_MOW;	
+	double STDBc_yield_to_MOW;	
 	double STDBc_softstem_to_MOW;	
 	double STDBc_nsc_to_MOW;	
 	/* group: harvesting fluxes */
 	double leafc_to_HRV;				 
 	double leafc_storage_to_HRV;         
 	double leafc_transfer_to_HRV;        
-	double fruitc_to_HRV;				 
-	double fruitc_storage_to_HRV;         
-	double fruitc_transfer_to_HRV;        
+	double yield_to_HRV;				 
+	double yield_storage_to_HRV;         
+	double yield_transfer_to_HRV;        
 	double softstemc_to_HRV;				 
 	double softstemc_storage_to_HRV;         
 	double softstemc_transfer_to_HRV;        
 	double gresp_storage_to_HRV;         
 	double gresp_transfer_to_HRV;        
 	double HRV_to_CTDBc_leaf;				 			 
-	double HRV_to_CTDBc_fruit;
+	double HRV_to_CTDBc_yield;
 	double HRV_to_CTDBc_softstem;	
 	double HRV_to_CTDBc_nsc;				 		 			    	 
 	double STDBc_leaf_to_HRV;				 			 
-	double STDBc_fruit_to_HRV;	
+	double STDBc_yield_to_HRV;	
 	double STDBc_softstem_to_HRV;	
 	double STDBc_nsc_to_HRV;	
 	/* group: ploughing fluxes */		 
@@ -816,9 +816,9 @@ typedef struct
 	double frootc_to_PLG;					
 	double frootc_storage_to_PLG;         
 	double frootc_transfer_to_PLG;  
-	double fruitc_to_PLG;					
-	double fruitc_storage_to_PLG;			
-	double fruitc_transfer_to_PLG;			
+	double yield_to_PLG;					
+	double yield_storage_to_PLG;			
+	double yield_transfer_to_PLG;			
 	double softstemc_to_PLG;				 
 	double softstemc_storage_to_PLG;         
 	double softstemc_transfer_to_PLG;        
@@ -826,26 +826,26 @@ typedef struct
 	double gresp_transfer_to_PLG;         
 	double STDBc_leaf_to_PLG;
 	double STDBc_froot_to_PLG;
-	double STDBc_fruit_to_PLG;
+	double STDBc_yield_to_PLG;
 	double STDBc_softstem_to_PLG;
 	double STDBc_nsc_to_PLG;
 	double CTDBc_leaf_to_PLG;
-	double CTDBc_fruit_to_PLG;
+	double CTDBc_yield_to_PLG;
 	double CTDBc_softstem_to_PLG;
 	/* group: grazing fluxes */	
 	double leafc_to_GRZ;					
 	double leafc_storage_to_GRZ;         
 	double leafc_transfer_to_GRZ;      
-	double fruitc_to_GRZ;				 
-	double fruitc_storage_to_GRZ;         
-	double fruitc_transfer_to_GRZ;        
+	double yield_to_GRZ;				 
+	double yield_storage_to_GRZ;         
+	double yield_transfer_to_GRZ;        
 	double softstemc_to_GRZ;				 
 	double softstemc_storage_to_GRZ;         
 	double softstemc_transfer_to_GRZ;        
 	double gresp_storage_to_GRZ;         
 	double gresp_transfer_to_GRZ;        
 	double STDBc_leaf_to_GRZ;
-	double STDBc_fruit_to_GRZ;
+	double STDBc_yield_to_GRZ;
 	double STDBc_softstem_to_GRZ;
 	double STDBc_nsc_to_GRZ;
 	double GRZ_to_litr1c;				 
@@ -875,9 +875,9 @@ typedef struct
     double frootn;					/* fine root N actual pool */ 
     double frootn_storage;			/* fine root N storage pool */ 
     double frootn_transfer;			/* fine root N transfer pool */ 
-	double fruitn;					/* fruit N actual pool */
-    double fruitn_storage;			/* fruit N storage pool */
-    double fruitn_transfer;			/* fruit N transfer pool */
+	double yieldn;					/* yield N actual pool */
+    double yieldn_storage;			/* yield N storage pool */
+    double yieldn_transfer;			/* yield N transfer pool */
 	double softstemn;				/* softstem N actual pool */
     double softstemn_storage;		/* softstem N storage pool */
     double softstemn_transfer;		/* softstem N transfer pool */
@@ -907,14 +907,14 @@ typedef struct
 	double cwdn_total;				/* coarse woody debris N */
 	double STDBn_leaf;				/*  wilted leaf biomass  */
 	double STDBn_froot;				/*  wilted froot biomass  */
-	double STDBn_fruit;				/*  wilted fruit biomass  */
+	double STDBn_yield;				/*  wilted yield biomass  */
 	double STDBn_softstem;			/*  wilted sofstem biomass  */
 	double STDBn_nsc;			    /*  wilted non-structured carbohydrate biomass  */
 	double STDBn_above;             /*  wilted aboveground plant biomass  */
 	double STDBn_below;             /*  wilted belowground plant biomass  */
 	double CTDBn_leaf;				/*  cut-down leaf biomass  */
 	double CTDBn_froot;				/*  cut-down froot biomass  */
-	double CTDBn_fruit;				/*  cut-down fruit biomass  */
+	double CTDBn_yield;				/*  cut-down yield biomass  */
 	double CTDBn_softstem;			/*  cut-down sofstem biomass  */
 	double CTDBn_nsc;			    /*  cut-down non-structured biomass  */
 	double CTDBn_cstem;			    /*  cut-down coarse stem biomass  */
@@ -980,18 +980,18 @@ typedef struct
 	double m_frootn_to_litr2n;             
 	double m_frootn_to_litr3n;             
 	double m_frootn_to_litr4n; 		
-	double m_fruitn_to_litr1n;              
-	double m_fruitn_to_litr2n;              
-	double m_fruitn_to_litr3n;              
-	double m_fruitn_to_litr4n;              
+	double m_yieldn_to_litr1n;              
+	double m_yieldn_to_litr2n;              
+	double m_yieldn_to_litr3n;              
+	double m_yieldn_to_litr4n;              
 	double m_softstemn_to_litr1n;          
 	double m_softstemn_to_litr2n;          
 	double m_softstemn_to_litr3n;          
 	double m_softstemn_to_litr4n;      
 	double m_leafn_storage_to_litr1n;      
 	double m_frootn_storage_to_litr1n; 
-    double m_fruitn_storage_to_litr1n;      
-	double m_fruitn_transfer_to_litr1n;      
+    double m_yieldn_storage_to_litr1n;      
+	double m_yieldn_transfer_to_litr1n;      
 	double m_softstemn_storage_to_litr1n;      
 	double m_softstemn_transfer_to_litr1n;
 	double m_livestemn_storage_to_litr1n;  
@@ -1020,9 +1020,9 @@ typedef struct
 	double m_frootn_storage_to_SNSC;       
 	double m_leafn_transfer_to_SNSC;       
 	double m_frootn_transfer_to_SNSC;     
-	double m_fruitn_to_SNSC;                
-	double m_fruitn_storage_to_SNSC;		   
-	double m_fruitn_transfer_to_SNSC;       
+	double m_yieldn_to_SNSC;                
+	double m_yieldn_storage_to_SNSC;		   
+	double m_yieldn_transfer_to_SNSC;       
 	double m_softstemn_to_SNSC;                
 	double m_softstemn_storage_to_SNSC;		   
 	double m_softstemn_transfer_to_SNSC; 
@@ -1031,21 +1031,21 @@ typedef struct
 	double leafSNSCgenprog_to_retrans;
 	double leafSNSC_to_retrans;
 	double frootSNSC_to_retrans;
-	double fruitSNSC_to_retrans;
+	double yieldSNSC_to_retrans;
 	double softstemSNSC_to_retrans;
 	double leaf_transferSNSC_to_retrans;
 	double froot_transferSNSC_to_retrans;
-	double fruit_transferSNSC_to_retrans;
+	double yield_transferSNSC_to_retrans;
 	double softstem_transferSNSC_to_retrans;
 	double leaf_storageSNSC_to_retrans;
 	double froot_storageSNSC_to_retrans;
-	double fruit_storageSNSC_to_retrans;
+	double yield_storageSNSC_to_retrans;
 	double softstem_storageSNSC_to_retrans;
 	/* group: harvesting senescence fluxes */
 	double HRV_leafn_storage_to_SNSC;               
 	double HRV_leafn_transfer_to_SNSC;    
-	double HRV_fruitn_storage_to_SNSC;               
-	double HRV_fruitn_transfer_to_SNSC;    
+	double HRV_yieldn_storage_to_SNSC;               
+	double HRV_yieldn_transfer_to_SNSC;    
 	double HRV_frootn_to_SNSC;                           
 	double HRV_softstemn_to_SNSC;                 
 	double HRV_frootn_storage_to_SNSC;               
@@ -1054,18 +1054,18 @@ typedef struct
 	double HRV_softstemn_transfer_to_SNSC;       
 	double HRV_retransn_to_SNSC;
 	/* group: flowering heat stress  */
-	double fruitn_to_flowHS;
+	double yieldn_to_flowHS;
 	/* group: standing dead biomass to litter pool */
 	double STDBn_leaf_to_litr;
 	double STDBn_froot_to_litr;
-	double STDBn_fruit_to_litr;
+	double STDBn_yield_to_litr;
 	double STDBn_softstem_to_litr;	
 	double STDBn_nsc_to_litr;
 	double STDBn_to_litr;
 	/* group: cut-down dead biomass to litter pool */
 	double CTDBn_leaf_to_litr;
 	double CTDBn_froot_to_litr;
-	double CTDBn_fruit_to_litr;
+	double CTDBn_yield_to_litr;
 	double CTDBn_softstem_to_litr;	
 	double CTDBn_nsc_to_litr;
 	double CTDBn_cstem_to_cwd;			   
@@ -1074,14 +1074,14 @@ typedef struct
 	/* group: fire fluxes */
 	double m_leafn_to_fire;                
 	double m_frootn_to_fire;    
-	double m_fruitn_to_fire;    
+	double m_yieldn_to_fire;    
 	double m_softstemn_to_fire; 
 	double m_STDBn_to_fire;
 	double m_CTDBn_to_fire;
 	double m_leafn_storage_to_fire;        
 	double m_frootn_storage_to_fire; 
-	double m_fruitn_storage_to_fire;		   
-	double m_fruitn_transfer_to_fire;              
+	double m_yieldn_storage_to_fire;		   
+	double m_yieldn_transfer_to_fire;              
 	double m_softstemn_storage_to_fire;		   
 	double m_softstemn_transfer_to_fire; 
 	double m_livestemn_storage_to_fire;    
@@ -1112,7 +1112,7 @@ typedef struct
 	/* group: phenology fluxes from transfer pool */
 	double leafn_transfer_to_leafn;           
 	double frootn_transfer_to_frootn;    
-	double fruitn_transfer_to_fruitn;         
+	double yieldn_transfer_to_yieldn;         
 	double softstemn_transfer_to_softstemn; 
 	double livestemn_transfer_to_livestemn;   
 	double deadstemn_transfer_to_deadstemn;   
@@ -1128,10 +1128,10 @@ typedef struct
 	double frootn_to_litr2n;              
 	double frootn_to_litr3n;              
 	double frootn_to_litr4n;              
-	double fruitn_to_litr1n;               
-	double fruitn_to_litr2n;                
-	double fruitn_to_litr3n;               
-	double fruitn_to_litr4n;               
+	double yieldn_to_litr1n;               
+	double yieldn_to_litr2n;                
+	double yieldn_to_litr3n;               
+	double yieldn_to_litr4n;               
 	double softstemn_to_litr1n;               
 	double softstemn_to_litr2n;                
 	double softstemn_to_litr3n;               
@@ -1234,8 +1234,8 @@ typedef struct
 	double npool_to_leafn_storage;  
 	double npool_to_frootn;               
 	double npool_to_frootn_storage;   
-	double npool_to_fruitn;                
-	double npool_to_fruitn_storage;        
+	double npool_to_yieldn;                
+	double npool_to_yieldn_storage;        
 	double npool_to_softstemn;                
 	double npool_to_softstemn_storage;        
 	double npool_to_livestemn;            
@@ -1249,7 +1249,7 @@ typedef struct
 	/* group: daily maintanance respiration ensuring fluxes - retranslocation */
 	double leafn_storage_to_maintresp;
 	double frootn_storage_to_maintresp;
-	double fruitn_storage_to_maintresp;
+	double yieldn_storage_to_maintresp;
 	double softstemn_storage_to_maintresp;
 	double livestemn_storage_to_maintresp;
 	double livecrootn_storage_to_maintresp;
@@ -1257,7 +1257,7 @@ typedef struct
 	double deadcrootn_storage_to_maintresp;
 	double leafn_transfer_to_maintresp;
 	double frootn_transfer_to_maintresp;
-	double fruitn_transfer_to_maintresp;
+	double yieldn_transfer_to_maintresp;
 	double softstemn_transfer_to_maintresp;
 	double livestemn_transfer_to_maintresp;
 	double livecrootn_transfer_to_maintresp;
@@ -1265,7 +1265,7 @@ typedef struct
 	double deadcrootn_transfer_to_maintresp;
 	double leafn_to_maintresp;
 	double frootn_to_maintresp;
-	double fruitn_to_maintresp;
+	double yieldn_to_maintresp;
 	double softstemn_to_maintresp;
 	double livestemn_to_maintresp;
 	double livecrootn_to_maintresp;
@@ -1280,7 +1280,7 @@ typedef struct
 	double deadstemn_storage_to_deadstemn_transfer;   
 	double livecrootn_storage_to_livecrootn_transfer; 
 	double deadcrootn_storage_to_deadcrootn_transfer; 
-	double fruitn_storage_to_fruitn_transfer;           
+	double yieldn_storage_to_yieldn_transfer;           
 	double softstemn_storage_to_softstemn_transfer;           
 	/* group: turnover of live wood to dead wood, with retranslocation */
 	double livestemn_to_deadstemn;        
@@ -1290,10 +1290,10 @@ typedef struct
 	/* group: planting fluxes */
 	double leafn_transfer_from_PLT;		
 	double frootn_transfer_from_PLT;		
-	double fruitn_transfer_from_PLT;		
+	double yieldn_transfer_from_PLT;		
 	double softstemn_transfer_from_PLT;	
 	double STDBn_leaf_to_PLT;				 			 
-	double STDBn_fruit_to_PLT;	
+	double STDBn_yield_to_PLT;	
 	double STDBn_froot_to_PLT;	
 	double STDBn_softstem_to_PLT;	
 	/* group: thinning fluxes */
@@ -1303,9 +1303,9 @@ typedef struct
 	double frootn_to_THN;				 
 	double frootn_storage_to_THN;         
 	double frootn_transfer_to_THN;      
-	double fruitn_to_THN;				 
-	double fruitn_storage_to_THN;         
-	double fruitn_transfer_to_THN;  
+	double yieldn_to_THN;				 
+	double yieldn_storage_to_THN;         
+	double yieldn_transfer_to_THN;  
 	double livestemn_to_THN;				 
 	double livestemn_storage_to_THN;         
 	double livestemn_transfer_to_THN;        
@@ -1321,50 +1321,50 @@ typedef struct
 	double retransn_to_THN;
 	double THN_to_CTDBn_leaf;
 	double THN_to_CTDBn_froot;
-	double THN_to_CTDBn_fruit;				 
+	double THN_to_CTDBn_yield;				 
 	double THN_to_CTDBn_nsc;				 
 	double THN_to_CTDBn_cstem;		
 	double THN_to_CTDBn_croot;	
 	double STDBn_leaf_to_THN;	
 	double STDBn_froot_to_THN;	
-	double STDBn_fruit_to_THN;				 
+	double STDBn_yield_to_THN;				 
 	double STDBn_nsc_to_THN;	
 	/* group: mowing fluxes */
 	double leafn_to_MOW;                 
 	double leafn_storage_to_MOW;         
 	double leafn_transfer_to_MOW;
-	double fruitn_to_MOW;				 
-	double fruitn_storage_to_MOW;         
-	double fruitn_transfer_to_MOW;        
+	double yieldn_to_MOW;				 
+	double yieldn_storage_to_MOW;         
+	double yieldn_transfer_to_MOW;        
 	double softstemn_to_MOW;				 
 	double softstemn_storage_to_MOW;         
 	double softstemn_transfer_to_MOW; 
 	double retransn_to_MOW;
 	double MOW_to_CTDBn_leaf;				 			 
-	double MOW_to_CTDBn_fruit;
+	double MOW_to_CTDBn_yield;
 	double MOW_to_CTDBn_softstem;	
 	double MOW_to_CTDBn_nsc;				 		 			    	 
 	double STDBn_leaf_to_MOW;				 			 
-	double STDBn_fruit_to_MOW;	
+	double STDBn_yield_to_MOW;	
 	double STDBn_softstem_to_MOW;	
 	double STDBn_nsc_to_MOW;	
 	/* group: harvesting fluxes */
 	double leafn_to_HRV;                 
 	double leafn_storage_to_HRV;         
 	double leafn_transfer_to_HRV;  
-	double fruitn_to_HRV;				 
-	double fruitn_storage_to_HRV;         
-	double fruitn_transfer_to_HRV;        
+	double yieldn_to_HRV;				 
+	double yieldn_storage_to_HRV;         
+	double yieldn_transfer_to_HRV;        
 	double softstemn_to_HRV;				 
 	double softstemn_storage_to_HRV;         
 	double softstemn_transfer_to_HRV;   
 	double retransn_to_HRV;
 	double HRV_to_CTDBn_leaf;				 
-	double HRV_to_CTDBn_fruit;
+	double HRV_to_CTDBn_yield;
 	double HRV_to_CTDBn_softstem;	
 	double HRV_to_CTDBn_nsc;				 		 			    	 
 	double STDBn_leaf_to_HRV;				 	 
-	double STDBn_fruit_to_HRV;	
+	double STDBn_yield_to_HRV;	
 	double STDBn_softstem_to_HRV;	
 	double STDBn_nsc_to_HRV;		  
 	/* group: ploughing fluxes  */
@@ -1374,33 +1374,33 @@ typedef struct
 	double frootn_to_PLG;					
 	double frootn_storage_to_PLG;         
 	double frootn_transfer_to_PLG;  
-	double fruitn_to_PLG;					
-	double fruitn_storage_to_PLG;			
-	double fruitn_transfer_to_PLG;			
+	double yieldn_to_PLG;					
+	double yieldn_storage_to_PLG;			
+	double yieldn_transfer_to_PLG;			
 	double softstemn_to_PLG;				 
 	double softstemn_storage_to_PLG;         
 	double softstemn_transfer_to_PLG;        
 	double retransn_to_PLG;                 
 	double STDBn_leaf_to_PLG;
 	double STDBn_froot_to_PLG;
-	double STDBn_fruit_to_PLG;
+	double STDBn_yield_to_PLG;
 	double STDBn_softstem_to_PLG;
 	double STDBn_nsc_to_PLG;
 	double CTDBn_leaf_to_PLG;
-	double CTDBn_fruit_to_PLG;
+	double CTDBn_yield_to_PLG;
 	double CTDBn_softstem_to_PLG;
 	/* group: grazing fluxes */
 	double leafn_to_GRZ;                 
 	double leafn_storage_to_GRZ;         
 	double leafn_transfer_to_GRZ; 
-	double fruitn_to_GRZ;				 
-	double fruitn_storage_to_GRZ;         
-	double fruitn_transfer_to_GRZ;        
+	double yieldn_to_GRZ;				 
+	double yieldn_storage_to_GRZ;         
+	double yieldn_transfer_to_GRZ;        
 	double softstemn_to_GRZ;				 
 	double softstemn_storage_to_GRZ;         
 	double softstemn_transfer_to_GRZ;  
 	double STDBn_leaf_to_GRZ;
-	double STDBn_fruit_to_GRZ;
+	double STDBn_yield_to_GRZ;
 	double STDBn_softstem_to_GRZ;
 	double STDBn_nsc_to_GRZ;
 	double retransn_to_GRZ;
@@ -1466,13 +1466,13 @@ typedef struct
 	double flowHS_mort;                         /* (prop.) mortality coefficient of flwoering heat stress */
 	double transfer_ratio;                      /* (prop) transfer proportion on actual day  */ 
 	double day_leafc_litfall_increment;			/* (kgC/m2/d) rate leaf litfall */
-	double day_fruitc_litfall_increment;		/* (kgC/m2/d) rate fruit litfall  */
+	double day_yield_litfall_increment;		/* (kgC/m2/d) rate yield litfall  */
 	double day_softstemc_litfall_increment;		/* (kgC/m2/d) rate softstem litfall  */
 	double day_frootc_litfall_increment;		/* (kgC/m2/d) rate froot litfall */
 	double day_livestemc_turnover_increment;	/* (kgC/m2/d) rate livestem turnover */
 	double day_livecrootc_turnover_increment;	/* (kgC/m2/d) rate livecroot turnover */
 	double annmax_leafc;						/* (kgC/m2) annual maximum daily leaf C */
-	double annmax_fruitc;						/* (kgC/m2) annual maximum daily fruit C  */
+	double annmax_yield;						/* (kgC/m2) annual maximum daily yield C  */
 	double annmax_softstemc;					/* (kgC/m2) annual maximum daily softstem C */
 	double annmax_frootc;						/* (kgC/m2) annual maximum daily froot C */
 	double annmax_livestemc;					/* (kgC/m2) annual maximum daily livestem C */
@@ -1635,14 +1635,14 @@ typedef struct
 	double leaf_cn;        /* (kgC/kgN)  C:N for leaves */
 	double leaflitr_cn;    /* (kgC/kgN)  C:N for leaf litter */
     double froot_cn;       /* (kgC/kgN)  C:N for fine roots */
-	double fruit_cn;       /* (kgC/kgN)  C:N for fruits */
+	double yield_cn;       /* (kgC/kgN)  C:N for yields */
     double softstem_cn;    /* (kgC/kgN)  C:N for softstems */
     double livewood_cn;    /* (kgC/kgN)  C:N for live wood */
 	double deadwood_cn;    /* (kgC/kgN)  C:N for dead wood */
 	double leafC_DM;       /* (kgC/kgDM) carbon content of leaf dry matter */
 	double leaflitrC_DM;   /* (kgC/kgDM) carbon content of leaf litter dry matter */
     double frootC_DM;      /* (kgC/kgDM) carbon content of fine roots dry matter */
-	double fruitC_DM;      /* (kgC/kgDM) carbon content of fruits dry matter */
+	double yield_DM;      /* (kgC/kgDM) carbon content of yields dry matter */
     double softstemC_DM;   /* (kgC/kgDM) carbon content of softstems dry matter */
     double livewoodC_DM;   /* (kgC/kgDM) carbon content of live wood dry matter  */
 	double deadwoodC_DM;   /* (kgC/kgDM) carbon content of dead wood dry matter  */
@@ -1654,10 +1654,10 @@ typedef struct
     double frootlitr_fucel;  /* (prop) froot litter unshielded cellulose fract */
     double frootlitr_fscel;  /* (prop) froot litter shielded cellulose fract */
     double frootlitr_flig;   /* (prop) froot litter lignin fraction */
-	double fruitlitr_flab;          /* (prop) fruit litter labile fraction */
-    double fruitlitr_fucel;         /* (prop) fruit litter unshielded cellulose fract. */
-    double fruitlitr_fscel;         /* (prop) fruit litter shielded cellulose fract. */
-    double fruitlitr_flig;          /* (prop) fruit litter lignin fraction */
+	double yieldlitr_flab;          /* (prop) yield litter labile fraction */
+    double yieldlitr_fucel;         /* (prop) yield litter unshielded cellulose fract. */
+    double yieldlitr_fscel;         /* (prop) yield litter shielded cellulose fract. */
+    double yieldlitr_flig;          /* (prop) yield litter lignin fraction */
 	double softstemlitr_flab;       /* (prop) softstem litter labile fraction */
     double softstemlitr_fucel;      /* (prop) softstem litter unshielded cellulose fract. */
     double softstemlitr_fscel;      /* (prop) softstem litter shielded cellulose fract. */
@@ -1743,7 +1743,7 @@ typedef struct
 	double phenophase_length[N_PHENPHASES];				/* (Celsius) length of phenphase (critical heatsums) */
     double alloc_leafc[N_PHENPHASES];					/* (ratio) new leaf C to new C */
 	double alloc_frootc[N_PHENPHASES];					/* (ratio) new fine root C to new C */
-	double alloc_fruitc[N_PHENPHASES];					/* (ratio) new fruit C to new C */
+	double alloc_yield[N_PHENPHASES];					/* (ratio) new yield C to new C */
 	double alloc_softstemc[N_PHENPHASES];				/* (ratio) new softstem c to new  C */
 	double alloc_livestemc[N_PHENPHASES];				/* (ratio) new live stem C to new C */
 	double alloc_deadstemc[N_PHENPHASES];				/* (ratio) new dead stem C to new C */
@@ -2156,12 +2156,12 @@ typedef struct
 	double cum_ET;						/* (kgH2O/m2) cumulative SUM of evapotranspiration over a year */
 	double leafCN;						/* (kgC/kgN) CN ratio of leaves (live+standing dead) */
     double frootCN;						/* (kgC/kgN)) CN ratio of fine roots (live+standing dead) */
-	double fruitCN;						/* (kgC/kgN)) CN ratio of fruits (live+standing dead) */
+	double yieldN;						/* (kgC/kgN)) CN ratio of yields (live+standing dead) */
     double softstemCN;					/* (kgC/kgN)) CN ratio of softstems (live+standing dead) */
 	double leafDM;						/* (kgDM/m2) dry matter carbon content of leaves */
 	double leaflitrDM;					/* (kgDM/m2)  dry matter carbon content of  for leaf litter */
     double frootDM;						/* (kgDM/m2) dry matter content of fine roots */
-	double fruitDM;						/* (kgDM/m2) dry matter content of fruits */
+	double yieldDM;						/* (kgDM/m2) dry matter content of yields */
     double softstemDM;					/* (kgDM/m2) dry matter content of softstems */
     double livewoodDM;					/* (kgDM/m2) dry matter content of live wood */
 	double deadwoodDM;					/* (kgDM/m2) dry matter content of dead wood */
@@ -2203,13 +2203,13 @@ typedef struct
 	double SOM_C[N_SOILLAYERS];	        /* (%)  soil organic matter C content [carbon/soil] */
 	double leafc_LandD;                 /* (kgC/m2)  live and dead leaf carbon content */
 	double frootc_LandD;                /* (kgC/m2)  live and dead froot carbon content */
-	double fruitc_LandD;                /* (kgC/m2)  live and dead fruit carbon content */
+	double yield_LandD;                /* (kgC/m2)  live and dead yield carbon content */
 	double softstemc_LandD;             /* (kgC/m2)  live and dead sofstem carbon content */
 	double sminNH4_ppm[N_SOILLAYERS];	/* (ppm)  soil ammonium content in ppm */
 	double sminNO3_ppm[N_SOILLAYERS];	/* (ppm)  soil nitrate content in ppm */
 	double CH4_fluxTOTAL;              /* (kgC/m2/d) total ecosystem CH4 flux */
 	double lateral_Cflux;               /* (kgC/m2/d) lateral carbon flux */
-	double harvestIndex;                /* (prop) ratio of harvested fruit C content and harvested aboveground C content */
+	double harvestIndex;                /* (prop) ratio of harvested yield C content and harvested aboveground C content */
 	double rootIndex;           /* (prop) ratio of fine root C content and vegetation C content on harvest day */
 	double belowground_ratio;           /* (prop) ratio fine root to total vegetation C content */
 	double CNlitr_total;		        /* (prop) C:N ratio of litter pool  */
@@ -2250,9 +2250,9 @@ typedef struct
 	double frootc;					/* (kgC/m2) froot carbon actual pool  */
 	double frootc_storage;			/* (kgC/m2) froot carbon storage pool  */
 	double frootc_transfer;			/* (kgC/m2) froot carbon transfer pool  */
-	double fruitc;					/* (kgC/m2) fruit carbon actual pool  */
-	double fruitc_storage;			/* (kgC/m2) fruit carbon storage pool  */
-	double fruitc_transfer;			/* (kgC/m2) fruit carbon transfer pool  */
+	double yield;					/* (kgC/m2) yield carbon actual pool  */
+	double yield_storage;			/* (kgC/m2) yield carbon storage pool  */
+	double yield_transfer;			/* (kgC/m2) yield carbon transfer pool  */
 	double softstemc;				/* (kgC/m2) softstem carbon actual pool  */
 	double softstemc_storage;		/* (kgC/m2) softstem carbon storage pool  */
 	double softstemc_transfer;		/* (kgC/m2) softstem carbon transfer pool  */
@@ -2277,12 +2277,12 @@ typedef struct
 	double litr4c[N_SOILLAYERS];	/* (kgC/m2) litter lignin carbon pool  */
 	double STDBc_leaf;				/*  wilted leaf biomass  */
 	double STDBc_froot;				/*  wilted froot biomass  */
-	double STDBc_fruit;				/*  wilted fruit biomass  */
+	double STDBc_yield;				/*  wilted yield biomass  */
 	double STDBc_softstem;			/*  wilted sofstem biomass  */
 	double STDBc_nsc;			    /*  wilted non-stuctured carbohydrate biomass  */
 	double CTDBc_leaf;				/*  cut-down leaf biomass  */
 	double CTDBc_froot;				/*  cut-down froot biomass  */
-	double CTDBc_fruit;				/*  cut-down fruit biomass  */
+	double CTDBc_yield;				/*  cut-down yield biomass  */
 	double CTDBc_softstem;			/*  cut-down sofstem biomass  */
 	double CTDBc_nsc;			    /*  cut-down non-stuctured biomass  */
 	double CTDBc_cstem;			    /*  cut-down coarse stem biomass  */
@@ -2298,9 +2298,9 @@ typedef struct
 	double frootn;					/* (kgN/m2) froot carbon actual pool  */
 	double frootn_storage;			/* (kgN/m2) froot carbon storage pool  */
 	double frootn_transfer;			/* (kgN/m2) froot carbon transfer pool  */
-	double fruitn;					/* (kgN/m2) fruit carbon actual pool  */
-	double fruitn_storage;			/* (kgN/m2) fruit carbon storage pool  */
-	double fruitn_transfer;			/* (kgN/m2) fruit carbon transfer pool  */
+	double yieldn;					/* (kgN/m2) yield carbon actual pool  */
+	double yieldn_storage;			/* (kgN/m2) yield carbon storage pool  */
+	double yieldn_transfer;			/* (kgN/m2) yield carbon transfer pool  */
 	double softstemn;				/* (kgN/m2) softstem carbon actual pool  */
 	double softstemn_storage;		/* (kgN/m2) softstem carbon actual pool  */
 	double softstemn_transfer;		/* (kgN/m2) softstem carbon actual pool  */
@@ -2323,12 +2323,12 @@ typedef struct
 	double litr4n[N_SOILLAYERS];	/* (kgN/m2) litter lignin carbon pool  */
 	double STDBn_leaf;				/*  wilted leaf biomass  */
 	double STDBn_froot;				/*  wilted froot biomass  */
-	double STDBn_fruit;				/*  wilted fruit biomass  */
+	double STDBn_yield;				/*  wilted yield biomass  */
 	double STDBn_softstem;			/*  wilted sofstem biomass  */
 	double STDBn_nsc;			    /*  wilted non-structured biomass  */
 	double CTDBn_leaf;				/*  cut-down leaf biomass  */
 	double CTDBn_froot;				/*  cut-down froot biomass  */
-	double CTDBn_fruit;				/*  cut-down fruit biomass  */
+	double CTDBn_yield;				/*  cut-down yield biomass  */
 	double CTDBn_softstem;			/*  cut-down sofstem biomass  */
 	double CTDBn_nsc;			    /*  cut-down non-structured biomass  */
 	double CTDBn_cstem;			    /*  cut-down coarse stem biomass  */
@@ -2343,7 +2343,7 @@ typedef struct
 	double sminNO3[N_SOILLAYERS];	/* (kgN/m2) mineralized NO3 pool */
 	double annmax_leafc;			/* (kgC/m2) annual maximum daily leaf carbon */
 	double annmax_frootc;			/* (kgC/m2) annual maximum daily froot carbon */
-	double annmax_fruitc;			/* (kgC/m2) annual maximum daily fruit carbon  */
+	double annmax_yield;			/* (kgC/m2) annual maximum daily yield carbon  */
 	double annmax_softstemc;		/* (kgC/m2) annual maximum daily softstem carbon  */
 	double annmax_livestemc;		/* (kgC/m2) annual maximum daily livestem carbon */
 	double annmax_livecrootc;		/* (kgC/m2) annual maximum daily livecroot carbon */

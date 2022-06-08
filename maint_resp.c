@@ -127,16 +127,16 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 	cf->froot_mr = froot_mr;
 
 	/* ********************************************************* */
-	/* 3. Fruit simulation maintenance respiration when fruits on */
+	/* 3. yield simulation maintenance respiration when yields on */
    
-	if (cs->fruitc && PLT->PLT_num == 0)
+	if (cs->yield && PLT->PLT_num == 0)
 	{
 		exponent = (metv->tavg - 20.0) / 10.0;
 		t1 = pow(q10, exponent);
-		cf->fruit_mr = ns->fruitn * mrpern * t1;
+		cf->yield_mr = ns->yieldn * mrpern * t1;
 	}
-	/* no fruits on */
-	else cf->fruit_mr = 0.0;
+	/* no yields on */
+	else cf->yield_mr = 0.0;
 		
 
 	/* ********************************************************* */
@@ -189,7 +189,7 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 		cf->leaf_day_mr   = cf->leaf_day_mr   * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
 		cf->leaf_night_mr = cf->leaf_night_mr * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
 		cf->froot_mr      = cf->froot_mr      * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
-		cf->fruit_mr      = cf->fruit_mr      * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
+		cf->yield_mr      = cf->yield_mr      * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
 		cf->livestem_mr   = cf->livestem_mr   * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
 		cf->livecroot_mr  = cf->livecroot_mr  * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
 		cf->softstem_mr   = cf->softstem_mr   * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));

@@ -24,7 +24,7 @@ int co2_init(file init, co2control_struct* co2, control_struct *ctrl);
 int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl);
 int ndep_init(file init, ndep_control_struct* ndep, control_struct *ctrl);
 int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromINI);
-int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl);
+int sprop_init(file init, siteconst_struct* sitec, soilprop_struct* sprop, control_struct* ctrl);
 int mgm_init(file init, control_struct *ctrl, epconst_struct* epc, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, mowing_struct* MOW, 
 	         planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN, irrigating_struct* IRG);
 int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_struct* PLT);

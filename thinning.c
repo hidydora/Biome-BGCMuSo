@@ -66,8 +66,8 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 	if (THNcoeff_w || THNcoeff_nw)
 	{
 
-		/* 1. OUT: as results of the thinning the carbon, nitrogen and water content of the leaf/root/stem decreases - harvested yield is transported from the site  */
-		/* 1.1: leaf, root, yield, stem */
+		/* 1. OUT: as results of the thinning the carbon, nitrogen and water content of the leaf/root/stem decreases - harvested fruit is transported from the site  */
+		/* 1.1: leaf, root, fruit, stem */
 		if (epc->leaf_cn)
 		{
 			cf->leafc_to_THN          = cs->leafc * THNcoeff_nw;
@@ -90,15 +90,15 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 			nf->frootn_storage_to_THN   = 0; //cf->frootc_storage_to_THN  / epc->froot_cn;  
 		}
 
-		if (epc->yield_cn)
+		if (epc->fruit_cn)
 		{
-			cf->yield_to_THN          = cs->yield * THNcoeff_nw;
-			cf->yield_transfer_to_THN = 0; //cs->yield_transfer * THNcoeff_nw; 
-			cf->yield_storage_to_THN  = 0; //cs->yield_storage * THNcoeff_nw; 
+			cf->fruitc_to_THN          = cs->fruitc * THNcoeff_nw;
+			cf->fruitc_transfer_to_THN = 0; //cs->fruitc_transfer * THNcoeff_nw; 
+			cf->fruitc_storage_to_THN  = 0; //cs->fruitc_storage * THNcoeff_nw; 
 
-			nf->yieldn_to_THN           = cf->yield_to_THN          / epc->yield_cn;
-			nf->yieldn_transfer_to_THN  = 0; //cf->yield_transfer_to_THN / epc->yield_cn; 
-			nf->yieldn_storage_to_THN   = 0; //cf->yield_storage_to_THN  / epc->yield_cn;  
+			nf->fruitn_to_THN           = cf->fruitc_to_THN          / epc->fruit_cn;
+			nf->fruitn_transfer_to_THN  = 0; //cf->fruitc_transfer_to_THN / epc->fruit_cn; 
+			nf->fruitn_storage_to_THN   = 0; //cf->fruitc_storage_to_THN  / epc->fruit_cn;  
 		}
 
 		if (epc->livewood_cn)
@@ -148,17 +148,17 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 
 		cf->STDBc_leaf_to_THN     = cs->STDBc_leaf     * THNcoeff_nw; 
 		cf->STDBc_froot_to_THN    = cs->STDBc_froot    * THNcoeff_nw; 
-		cf->STDBc_yield_to_THN    = cs->STDBc_yield    * THNcoeff_nw; 
+		cf->STDBc_fruit_to_THN    = cs->STDBc_fruit    * THNcoeff_nw; 
 		cf->STDBc_nsc_to_THN      = cs->STDBc_nsc      * THNcoeff_nw;
 
-		STDBc_to_THN = cf->STDBc_leaf_to_THN + cf->STDBc_froot_to_THN + cf->STDBc_yield_to_THN + cf->STDBc_nsc_to_THN;
+		STDBc_to_THN = cf->STDBc_leaf_to_THN + cf->STDBc_froot_to_THN + cf->STDBc_fruit_to_THN + cf->STDBc_nsc_to_THN;
 
 		nf->STDBn_leaf_to_THN     = ns->STDBn_leaf     * THNcoeff_nw; 
 		nf->STDBn_froot_to_THN    = ns->STDBn_froot     * THNcoeff_nw; 
-		nf->STDBn_yield_to_THN    = ns->STDBn_yield    * THNcoeff_nw; 
+		nf->STDBn_fruit_to_THN    = ns->STDBn_fruit    * THNcoeff_nw; 
 		nf->STDBn_nsc_to_THN      = ns->STDBn_nsc * THNcoeff_nw;
 
-		STDBn_to_THN = nf->STDBn_leaf_to_THN + nf->STDBn_froot_to_THN + nf->STDBn_yield_to_THN + nf->STDBn_nsc_to_THN;
+		STDBn_to_THN = nf->STDBn_leaf_to_THN + nf->STDBn_froot_to_THN + nf->STDBn_fruit_to_THN + nf->STDBn_nsc_to_THN;
 
 
 		/*-----------------------------------------*/
@@ -169,13 +169,13 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 
 
 		/*-----------------------------------------------------------------------------------*/
-		/* 2. TRANSPORT: part of the plant material is transported  (transp_coeff part of leaf, yield and stem, but no transfer pools!)*/	
+		/* 2. TRANSPORT: part of the plant material is transported  (transp_coeff part of leaf, fruit and stem, but no transfer pools!)*/	
 	
 
-		THN_to_transpC = (cf->leafc_to_THN      + cf->yield_to_THN  + cf->STDBc_leaf_to_THN + cf->STDBc_yield_to_THN) * (1-remprop_nw) +
+		THN_to_transpC = (cf->leafc_to_THN      + cf->fruitc_to_THN  + cf->STDBc_leaf_to_THN + cf->STDBc_fruit_to_THN) * (1-remprop_nw) +
 						 (cf->livestemc_to_THN  + cf->deadstemc_to_THN)                                                * (1-remprop_w);
 
-		THN_to_transpN = (nf->leafn_to_THN      + nf->yieldn_to_THN  + nf->STDBn_leaf_to_THN + nf->STDBn_yield_to_THN) * (1-remprop_nw) +
+		THN_to_transpN = (nf->leafn_to_THN      + nf->fruitn_to_THN  + nf->STDBn_leaf_to_THN + nf->STDBn_fruit_to_THN) * (1-remprop_nw) +
 						 (nf->livestemn_to_THN  + nf->deadstemn_to_THN)                                                * (1-remprop_w);
 	
 
@@ -186,11 +186,11 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 
 		cf->THN_to_CTDBc_froot    = cf->frootc_to_THN + cf->STDBc_froot_to_THN;
 
-		cf->THN_to_CTDBc_yield    = (cf->yield_to_THN + cf->STDBc_yield_to_THN) * remprop_nw;
+		cf->THN_to_CTDBc_fruit    = (cf->fruitc_to_THN + cf->STDBc_fruit_to_THN) * remprop_nw;
 
 		cf->THN_to_CTDBc_nsc      = cf->leafc_transfer_to_THN     + cf->leafc_storage_to_THN + 
 			                        cf->frootc_transfer_to_THN     + cf->frootc_storage_to_THN + 
-									cf->yield_transfer_to_THN    + cf->yield_storage_to_THN + 
+									cf->fruitc_transfer_to_THN    + cf->fruitc_storage_to_THN + 
 									cf->gresp_storage_to_THN      + cf->gresp_transfer_to_THN  + 
 									cf->STDBc_nsc_to_THN     +
 									cf->livestemc_transfer_to_THN + cf->livestemc_storage_to_THN + 
@@ -209,12 +209,12 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 		
 		nf->THN_to_CTDBn_froot    = nf->frootn_to_THN + nf->STDBn_froot_to_THN;
 
-		nf->THN_to_CTDBn_yield    = (nf->yieldn_to_THN + nf->STDBn_yield_to_THN) * remprop_nw;
+		nf->THN_to_CTDBn_fruit    = (nf->fruitn_to_THN + nf->STDBn_fruit_to_THN) * remprop_nw;
 
 
 		nf->THN_to_CTDBn_nsc      = nf->leafn_transfer_to_THN     + nf->leafn_storage_to_THN + 
 			                        nf->frootn_transfer_to_THN     + nf->frootn_storage_to_THN + 
-									nf->yieldn_transfer_to_THN    + nf->yieldn_storage_to_THN + 
+									nf->fruitn_transfer_to_THN    + nf->fruitn_storage_to_THN + 
 									nf->retransn_to_THN +
 									nf->STDBn_nsc_to_THN     +
 									nf->livestemn_transfer_to_THN + nf->livestemn_storage_to_THN + 
@@ -229,7 +229,7 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 		/* III. STATE UPDATE */
 
 		/* OUT */
-		/* 1.1. leaf, root, yield, stem */
+		/* 1.1. leaf, root, fruit, stem */
 		cs->leafc          -= cf->leafc_to_THN;
 		cs->leafc_transfer -= cf->leafc_transfer_to_THN;
 		cs->leafc_storage  -= cf->leafc_storage_to_THN;
@@ -238,9 +238,9 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 		cs->frootc_transfer -= cf->frootc_transfer_to_THN;
 		cs->frootc_storage  -= cf->frootc_storage_to_THN;
 
-		cs->yield          -= cf->yield_to_THN;
-		cs->yield_transfer -= cf->yield_transfer_to_THN;
-		cs->yield_storage  -= cf->yield_storage_to_THN;
+		cs->fruitc          -= cf->fruitc_to_THN;
+		cs->fruitc_transfer -= cf->fruitc_transfer_to_THN;
+		cs->fruitc_storage  -= cf->fruitc_storage_to_THN;
 	
 		cs->gresp_storage   -= cf->gresp_storage_to_THN;
 		cs->gresp_transfer  -= cf->gresp_transfer_to_THN;
@@ -267,9 +267,9 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 		ns->frootn_transfer		-= nf->frootn_transfer_to_THN;
 		ns->frootn_storage		-= nf->frootn_storage_to_THN;	
 
-		ns->yieldn				-= nf->yieldn_to_THN;
-		ns->yieldn_transfer		-= nf->yieldn_transfer_to_THN;
-		ns->yieldn_storage		-= nf->yieldn_storage_to_THN;	
+		ns->fruitn				-= nf->fruitn_to_THN;
+		ns->fruitn_transfer		-= nf->fruitn_transfer_to_THN;
+		ns->fruitn_storage		-= nf->fruitn_storage_to_THN;	
 	
 		ns->retransn        -= nf->retransn_to_THN;
 	
@@ -293,12 +293,12 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 	
 		cs->STDBc_leaf     -= cf->STDBc_leaf_to_THN; 
 		cs->STDBc_froot    -= cf->STDBc_froot_to_THN; 
-		cs->STDBc_yield    -= cf->STDBc_yield_to_THN; 
+		cs->STDBc_fruit    -= cf->STDBc_fruit_to_THN; 
 		cs->STDBc_nsc      -= cf->STDBc_nsc_to_THN;
 	
 		ns->STDBn_leaf     -= nf->STDBn_leaf_to_THN;
 		ns->STDBn_froot    -= nf->STDBn_froot_to_THN; 
-		ns->STDBn_yield    -= nf->STDBn_yield_to_THN; 
+		ns->STDBn_fruit    -= nf->STDBn_fruit_to_THN; 
 		ns->STDBn_nsc      -= nf->STDBn_nsc_to_THN;
 
 
@@ -314,14 +314,14 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 		/* 3. IN: cut-down biome */
 		cs->CTDBc_leaf     += cf->THN_to_CTDBc_leaf;
 		cs->CTDBc_froot    += cf->THN_to_CTDBc_froot;
-		cs->CTDBc_yield    += cf->THN_to_CTDBc_yield;
+		cs->CTDBc_fruit    += cf->THN_to_CTDBc_fruit;
 		cs->CTDBc_nsc      += cf->THN_to_CTDBc_nsc;
 		cs->CTDBc_cstem    += cf->THN_to_CTDBc_cstem;
 		cs->CTDBc_croot    += cf->THN_to_CTDBc_croot;
 
 		ns->CTDBn_leaf     += nf->THN_to_CTDBn_leaf;
 		ns->CTDBn_froot    += nf->THN_to_CTDBn_froot;
-		ns->CTDBn_yield    += nf->THN_to_CTDBn_yield;
+		ns->CTDBn_fruit    += nf->THN_to_CTDBn_fruit;
 		ns->CTDBn_nsc      += nf->THN_to_CTDBn_nsc;
 		ns->CTDBn_cstem    += nf->THN_to_CTDBn_cstem;
 	    ns->CTDBn_croot    += nf->THN_to_CTDBn_croot;
@@ -331,7 +331,7 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 
 		outc =  cf->leafc_to_THN + cf->leafc_transfer_to_THN + cf->leafc_storage_to_THN +
 			    cf->frootc_to_THN + cf->frootc_transfer_to_THN + cf->frootc_storage_to_THN +
-				cf->yield_to_THN + cf->yield_transfer_to_THN + cf->yield_storage_to_THN +
+				cf->fruitc_to_THN + cf->fruitc_transfer_to_THN + cf->fruitc_storage_to_THN +
 				cf->livestemc_to_THN + cf->livestemc_transfer_to_THN + cf->livestemc_storage_to_THN +
 				cf->deadstemc_to_THN + cf->deadstemc_transfer_to_THN + cf->deadstemc_storage_to_THN +
 				cf->livecrootc_to_THN + cf->livecrootc_transfer_to_THN + cf->livecrootc_storage_to_THN +
@@ -341,7 +341,7 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 
 		outn =  nf->leafn_to_THN + nf->leafn_transfer_to_THN + nf->leafn_storage_to_THN +
 			    nf->frootn_to_THN + nf->frootn_transfer_to_THN + nf->frootn_storage_to_THN +
-				nf->yieldn_to_THN + nf->yieldn_transfer_to_THN + nf->yieldn_storage_to_THN +
+				nf->fruitn_to_THN + nf->fruitn_transfer_to_THN + nf->fruitn_storage_to_THN +
 				nf->livestemn_to_THN + nf->livestemn_transfer_to_THN + nf->livestemn_storage_to_THN +
 				nf->deadstemn_to_THN + nf->deadstemn_transfer_to_THN + nf->deadstemn_storage_to_THN +
 				nf->livecrootn_to_THN + nf->livecrootn_transfer_to_THN + nf->livecrootn_storage_to_THN +
@@ -349,8 +349,8 @@ int thinning(const control_struct* ctrl, const epconst_struct* epc, const thinni
 				nf->retransn_to_THN + 
 				STDBn_to_THN;
 
-		inc = cf->THN_to_CTDBc_leaf + cf->THN_to_CTDBc_froot + cf->THN_to_CTDBc_yield  + cf->THN_to_CTDBc_nsc + cf->THN_to_CTDBc_cstem + cf->THN_to_CTDBc_croot;
-		inn = nf->THN_to_CTDBn_leaf + nf->THN_to_CTDBn_froot + nf->THN_to_CTDBn_yield  + nf->THN_to_CTDBn_nsc + nf->THN_to_CTDBn_cstem + nf->THN_to_CTDBn_croot;
+		inc = cf->THN_to_CTDBc_leaf + cf->THN_to_CTDBc_froot + cf->THN_to_CTDBc_fruit  + cf->THN_to_CTDBc_nsc + cf->THN_to_CTDBc_cstem + cf->THN_to_CTDBc_croot;
+		inn = nf->THN_to_CTDBn_leaf + nf->THN_to_CTDBn_froot + nf->THN_to_CTDBn_fruit  + nf->THN_to_CTDBn_nsc + nf->THN_to_CTDBn_cstem + nf->THN_to_CTDBn_croot;
 
 		if (fabs(inc + THN_to_transpC - outc) > CRIT_PREC || fabs(inn + THN_to_transpN - outn) > CRIT_PREC )
 		{

@@ -40,11 +40,11 @@ int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec
 
 	/* internal variables */
 	int layer;
-	double soilwTransp_SUM, soilw_wp, transp_lack;
+	double soilw_transp_SUM, soilw_wp, transp_lack;
 	
 	int errorCode=0;
 
-	soilwTransp_SUM=soilw_wp=0;
+	soilw_transp_SUM=soilw_wp=0;
 
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
@@ -63,38 +63,38 @@ int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec
 	{		
 		
 		/* transpiration based on rootlenght proportion */
-		wf->soilwTranspDemand[layer] = wf->soilwTranspDemand_SUM * epv->rootlengthProp[layer]; 
+		wf->soilw_transpDEMAND[layer] = wf->soilw_transpDEMAND_SUM * epv->rootlength_prop[layer]; 
 
 
 		/* transp_lack: control parameter to avoid negative soil water content (due to overestimated transpiration + dry soil) */
-		transp_lack = wf->soilwTranspDemand[layer] - ws->soilw_avail[layer];
+		transp_lack = wf->soilw_transpDEMAND[layer] - ws->soilw_avail[layer];
 
 		/* if transpiration demand is greater than theoretical lower limit of water content: wilting point -> limited transpiration flux)  */
 		if (transp_lack > 0)
 		{
 			/* theoretical limit */
-			if (ws->soilw_avail[layer]  > CRIT_PREC)
-				wf->soilwTransp[layer] = ws->soilw_avail[layer];
+			if (ws->soilw[layer] - soilw_wp > CRIT_PREC)
+				wf->soilw_transp[layer] = ws->soilw[layer] - soilw_wp;
 			else
-				wf->soilwTransp[layer] = 0;
+				wf->soilw_transp[layer] = 0;
 
 	
 			/* limittransp_flag: writing in log file (only at first time) */
 			if (transp_lack > CRIT_PREC && !ctrl->limittransp_flag) ctrl->limittransp_flag = 1;
 		}
 		else
-			wf->soilwTransp[layer] = wf->soilwTranspDemand[layer];
+			wf->soilw_transp[layer] = wf->soilw_transpDEMAND[layer];
 
-		ws->soilw[layer] -= wf->soilwTransp[layer];
+		ws->soilw[layer] -= wf->soilw_transp[layer];
 		epv->VWC[layer]  = ws->soilw[layer] / sitec->soillayer_thickness[layer] / water_density;
 	
-		soilwTransp_SUM += wf->soilwTransp[layer];
+		soilw_transp_SUM += wf->soilw_transp[layer];
 	}
 
-	wf->soilwTransp_SUM = soilwTransp_SUM;
+	wf->soilw_transp_SUM = soilw_transp_SUM;
 
 	/* control */
-	if (wf->soilwTransp_SUM - wf->soilwTranspDemand_SUM > CRIT_PREC)
+	if (wf->soilw_transp_SUM - wf->soilw_transpDEMAND_SUM > CRIT_PREC)
 	{
 		printf("\n");
 		printf("ERROR: transpiration calculation error in multilayer_hydrolprocess.c:\n");
@@ -102,9 +102,9 @@ int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec
 	}
 
 	/* extreme dry soil - no transpiration occurs */
-	if (soilwTransp_SUM == 0 && wf->soilwTransp_SUM != 0)
+	if (soilw_transp_SUM == 0 && wf->soilw_transp_SUM != 0)
 	{
-		wf->soilwTransp_SUM = 0;
+		wf->soilw_transp_SUM = 0;
 		/* notransp_flag: flag of WARNING writing in log file (only at first time) */
 		if (!ctrl->notransp_flag) ctrl->notransp_flag = 1;
 	}

@@ -26,7 +26,7 @@ int potential_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflu
 {
 	int errorCode=0;
 	double rbl;					/* (m/s) boundary layer resistance */
-	double soilwEvap_POT;			/* (kg/m2/s) potential evaporation (daytime) */
+	double soilw_evapPOT;			/* (kg/m2/s) potential evaporation (daytime) */
 	double rcorr;				 /* correction factor for temp and pressure */
 	double lhvap, evap_limit; 
 	pmet_struct pmet_in;		/* input structure for penmon function */
@@ -51,29 +51,24 @@ int potential_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflu
 	pmet_in.rv = rbl;
 	pmet_in.rh = rbl;
 
-	/* calculate soilwEvap_POT in kg/m2/s */
-	penmon(&pmet_in, 0, &soilwEvap_POT);
+	/* calculate soilw_evapPOT in kg/m2/s */
+	penmon(&pmet_in, 0, &soilw_evapPOT);
 	
 
 	/* convert to daily total kg/m2 */
-	soilwEvap_POT *= metv->dayl;
+	soilw_evapPOT *= metv->dayl;
 
 	if (metv->tavg < 0)
-		wf->soilwEvap_POT=0;
+		wf->soilw_evapPOT=0;
 	else
-		wf->soilwEvap_POT=soilwEvap_POT;
-
-	if (sprop->aerodyn_resist == DATA_GAP)
-		wf->soilwEvap_POT = 0;
-	else
-		wf->soilwEvap_POT = wf->soilwEvap_POT;
+		wf->soilw_evapPOT=soilw_evapPOT;
 
 	/* ENERGETIC CONTROL - maximum energy */
     lhvap = 2.5023e6 - 2430.54 * pmet_in.ta;
 	evap_limit = (pmet_in.irad * metv->dayl)/lhvap;
-	if (wf->soilwEvap_POT > evap_limit)
+	if (wf->soilw_evapPOT > evap_limit)
 	{
-		wf->soilwEvap_POT = evap_limit;
+		wf->soilw_evapPOT = evap_limit;
 	}
 	
 		return(errorCode);

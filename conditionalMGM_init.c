@@ -100,19 +100,18 @@ int conditionalMGM_init(file init, control_struct* ctrl, irrigating_struct* IRG,
 	}
 
 
-	if (!errorCode && scan_value(init, &IRG->nLayer_condIRG, 'd'))
+	if (!errorCode && scan_value(init, &IRG->befVWCratio_condIRG, 'd'))
 	{
-		printf("ERROR reading nLayer_condIRG\n");
+		printf("ERROR reading befVWCratio_condIRG\n");
 		errorCode=21501;
 	}
 
 	
-	if (!errorCode && scan_value(init, &IRG->startPoint_condIRG, 'd'))
+	if (!errorCode && scan_value(init, &IRG->befSMSI_condIRG, 'd'))
 	{
-		printf("ERROR reading startPoint_condIRG\n");
+		printf("ERROR reading befSMSI_condIRG\n");
 		errorCode=21501;
 	}
-
 	
 	if (!errorCode && scan_value(init, &IRG->aftVWCratio_condIRG, 'd'))
 	{
@@ -130,13 +129,13 @@ int conditionalMGM_init(file init, control_struct* ctrl, irrigating_struct* IRG,
 	if (!errorCode && IRG->condIRG_flag)
 	{
 
-		if (IRG->condIRG_flag &&  IRG->condIRG_flag > 0 && IRG->maxAMOUNT_condIRG == 0)
+		if (IRG->condIRG_flag &&  (IRG->befSMSI_condIRG || IRG->aftVWCratio_condIRG) && IRG->maxAMOUNT_condIRG == 0)
 		{
 			printf("ERROR in conditional irrigating: maxAMOUNT_condIRG must greater than 0\n");
 			errorCode=2150001;
 		}
 
-		if (IRG->condIRG_flag == 2 && IRG->startPoint_condIRG > IRG->aftVWCratio_condIRG)
+		if (IRG->befVWCratio_condIRG > IRG->aftVWCratio_condIRG)
 		{
 			printf("ERROR in VWCratio values of conditional irrigating: befVWC_ratio must less then aftVWC_ratio\n");
 			errorCode=2150002;

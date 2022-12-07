@@ -88,8 +88,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* soil proportion variables */
 	soilprop_struct   sprop;
 
-	/* groundwater calcultaion */
-	GWcalc_struct gwc;
 		
 	/* ecophysiological constants */
 	epconst_struct     epc;
@@ -335,6 +333,11 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		}
 	}
 
+	if (ctrl.oldSOIfile_flag == 0) 
+		fprintf(bgcout->log_file.ptr, "SOI data - new SOI file (number of lines: 92)\n");
+	else
+		fprintf(bgcout->log_file.ptr, "SOI data - old SOI file  (number of lines: 64) and extraSOIparameters.txt\n");
+
 	if (ctrl.varWPM_flag == 0) 
 		fprintf(bgcout->log_file.ptr, "WPM data - constant \n");
 	else
@@ -471,7 +474,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	
 	/* initialize the output mapping array */
-	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary,&gwc))
+	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary))
 	{
 		printf("ERROR in call to output_map_init() from bgc.c\n");
 		errorCode=401;
@@ -648,7 +651,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 			
 			/* set fluxes to zero */
-			if (!errorCode && make_zero_flux_struct(&ctrl, &wf, &cf, &nf, &gwc))
+			if (!errorCode && make_zero_flux_struct(&ctrl, &wf, &cf, &nf))
 			{
 				printf("ERROR in call to make_zero_flux_struct() from bgc.c\n");
 				errorCode=501;
@@ -657,14 +660,15 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 	printf("done make_zero_flux\n");
 #endif
-			/* initalizing annmax and cumulative variables */
+			/* initalizing annmax variables */
 			if (yday == 0)
 			{
-				if (!errorCode && annVARinit(&summary, &epv, &phen, &cs, &cf, &nf))
-				{
-					printf("ERROR in call to make_zero_flux_struct() from bgc.c\n");
-					errorCode=501;
-				}
+				epv.annmax_leafc = 0;
+				epv.annmax_frootc = 0;
+				epv.annmax_fruitc = 0;
+				epv.annmax_softstemc = 0;
+				epv.annmax_livestemc = 0;
+				epv.annmax_livecrootc = 0;
 			}
 
 			/* set the day index for meteorological and phenological arrays */
@@ -672,8 +676,8 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 
 			/* nitrogen deposition and fixation */
-			nf.ndep_to_sminn_total = daily_ndep;
-			nf.nfix_to_sminn_total = epc.nfix / nDAYS_OF_YEAR;
+			nf.ndep_to_sminnTOTAL = daily_ndep;
+			nf.nfix_to_sminnTOTAL = epc.nfix / nDAYS_OF_YEAR;
 
 
 			/* calculating actual onday and offday */
@@ -715,7 +719,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 			printf("%d\t%d\tdone daymet\n",simyr,yday);
 #endif
-			
+
 
 			/* phenophases calculation */
 			if (!errorCode && phenphase(bgcout->log_file, &ctrl, &epc, &sprop, &PLT, &phen, &metv, &epv, &cs))
@@ -751,7 +755,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* phenology calculation */
-			if (!errorCode && phenology(&epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
+			if (!errorCode && phenology(&ctrl, &epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
 			{
 				printf("ERROR in phenology() from bgc.c\n");
 				errorCode=508;
@@ -869,7 +873,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone photosynthesis\n",simyr,yday);
 #endif
 			
-		
+			
 			/* daily litter and soil decomp and nitrogen fluxes */
 			if (!errorCode && decomp(&metv,&epc, &sprop, &sitec,&cs,&ns,&epv,&cf,&nf,&nt))
 			{
@@ -896,11 +900,10 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
 #endif
 		
-			
-			/* heat stress during flowering can affect daily allocation of yield */
+			/* heat stress during flowering can affect daily allocation of fruit */
 			if (epc.n_flowHS_phenophase > 0)
 			{
-				if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))
+				if (!errorCode && flowering_heatstress(&epc, &metv, &epv, &cf, &nf))
 				{
 					printf("ERROR in flowering_heatstress() from bgc.c\n");
 					errorCode=519;
@@ -946,16 +949,15 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* 3. WATER CALCULATIONS WITH STATE UPDATE */
 
 			/* IRRIGATING separately from other management routines*/
-			if (!errorCode && irrigating(&ctrl, &IRG, &sitec, &sprop, &epv, &ws, &wf))
+			if (!errorCode && irrigating(&ctrl, &IRG, &epv, &ws, &wf))
 			{
 				printf("ERROR in irrigating() from bgc.c\n");
 				errorCode=522;
 			}
 
-		
-
+			
 	    	/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANSP */
-			if (!errorCode && multilayer_hydrolprocess(bgcout->log_file, &ctrl, &sitec, &sprop, &epc,  &epv, &ws, &wf, &gws, &gwc))
+			if (!errorCode && multilayer_hydrolprocess(&ctrl, &sitec, &sprop, &epc,  &epv, &ws, &wf, &gws))
 			{
 				printf("ERROR in multilayer_hydrolprocess() from bgc.c\n");
 				errorCode=524;
@@ -983,6 +985,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif
 
 		
+			
 
 			/* daily update of carbon and nitrogen state variables */
 			if (!errorCode && daily_CN_state_update(&sitec, &epc, &ctrl, &epv, &cf, &nf, &cs, &ns, annual_alloc, epc.evergreen))
@@ -1000,7 +1003,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			/* 5. MORTALITY AND NITROGEN FLUXES CALCULATION WITH OWN STATE UPDATE: 
 			to insure that pools don't go negative due to mortality/leaching fluxes conflicting with other proportional fluxes */
 
-			
+		
 			/* calculate daily senescence mortality fluxes and update state variables */
 			if (!errorCode && senescence(&sitec, &epc, &GRZ, &metv, &ctrl, &cs, &cf, &ns, &nf, &epv))
 			{
@@ -1095,7 +1098,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 		 
 			/* FERTILIZING  */
-	    	if (!errorCode && fertilizing(&ctrl, &sitec, &sprop, &FRZ, &cs, &ns, &ws, &cf, &nf, &wf))
+	    	if (!errorCode && fertilizing(&ctrl, &sitec, &sprop, &FRZ, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in fertilizing() from bgc.c\n");
 				errorCode=537;
@@ -1109,7 +1112,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 
 
-			/* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlengthProp */
+			/* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlength_prop */
  			 if (!errorCode && multilayer_rootdepth(&epc, &sprop, &cs, &sitec, &epv))
 			 {
 				printf("ERROR in multilayer_rootdepth() from bgc.c\n");
@@ -1173,7 +1176,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 
 			/* calculate summary variables */
-			if (!errorCode && cnw_summary(&epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
+			if (!errorCode && cnw_summary(yday, &epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
 			{
 				printf("ERROR in cnw_summary() from bgc.c\n");
 				errorCode=545;
@@ -1264,7 +1267,7 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (!ctrl.limittransp_flag && !ctrl.limitevap_flag && !ctrl.limitleach_flag && !ctrl.limitleach_flag && !ctrl.limitdiffus_flag &&
 		!ctrl.limitSNSC_flag && !ctrl.limitMR_flag && !ctrl.notransp_flag && !ctrl.noMR_flag && !ctrl.pond_flag && !ctrl.grazingW_flag && 
 		!ctrl.condMOWerr_flag && !ctrl.condIRGerr_flag && !ctrl.condIRGerr_flag && !ctrl.prephen1_flag && !ctrl.prephen2_flag && 
-		!ctrl.bareground_flag && !ctrl.vegper_flag && !ctrl.allocControl_flag)
+		!ctrl.bareground_flag && !ctrl.vegper_flag)
 	{
 		fprintf(bgcout->log_file.ptr, "no WARNINGS\n");
 	}
@@ -1367,12 +1370,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		{
 			fprintf(bgcout->log_file.ptr, "Vegetation period has not ended until the last day of year, the offday is equal to the last day of year\n");
 			ctrl.vegper_flag = -1;
-		}
-
-		if (ctrl.allocControl_flag)
-		{
-			fprintf(bgcout->log_file.ptr, "Adjustment of allocation parameters due to small error (<10-4) in the setting of allocation parameters\n");
-			ctrl.allocControl_flag = -1;
 		}
 	
 	}

@@ -22,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, fertilizing_struct* FRZ,  
+int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, fertilizing_struct* FRZ, epvar_struct* epv, 
 				cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf)
 {
 
@@ -30,7 +30,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 	/* fertilizing parameters .*/
 	int errorCode=0;
 
-	int layer;
+	int layer, layerCTRL;
 
 	double FRZdepth;					    /* (m) actual  depth of fertilization */
 	double fertilizer_DM;                   /* (kg/m2) dry matter content of fertilizer  */
@@ -45,7 +45,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 	int FRZlayer;                               /* (DIM) number of fertilization layer */
 	
 		
-	double ratio, ratioSUM,ha_to_m2;
+	double ratio, ratioSUM,ha_to_m2,diff;
 
 	int md, year;
 
@@ -180,18 +180,39 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 				ns->sminNH4[layer]  += nf->FRZ_to_sminNH4 * ratio;
 				ns->sminNO3[layer]  += nf->FRZ_to_sminNO3 * ratio;
 
-		
-			}
+				ws->soilw[layer]  += wf->FRZ_to_soilw * ratio;
+				epv->VWC[layer]   = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 
-			/*water from fertilization -> pondw. If pond water is greatedr than a maximum height -> runoff */
-			ws->pondw         += wf->FRZ_to_soilw;
+				/* control to avoid VWC above saturation */
+				if (epv->VWC[layer] > sprop->VWCsat[layer])       
+				{
+					diff              = (epv->VWC[layer] - sprop->VWCsat[layer]) * (water_density * sitec->soillayer_thickness[layer]);
+					epv->VWC[layer]   = sprop->VWCsat[layer];
+					ws->soilw[layer] -= diff;
 			
-			if (ws->pondw  > sprop->pondmax)
-			{
-				wf->pondw_to_runoff  += ws->pondw - sprop->pondmax;
-				ws->runoff_snk	     += ws->pondw - sprop->pondmax;
-				ws->pondw            = sprop->pondmax;
+					layerCTRL = layer + 1;
+					
+					while (layerCTRL < N_SOILLAYERS && diff > 0)
+					{
+						ws->soilw[layerCTRL] += diff;
+						epv->VWC[layerCTRL]   = ws->soilw[layerCTRL] / (water_density * sitec->soillayer_thickness[layerCTRL]);
 
+						diff = (epv->VWC[layerCTRL] - sprop->VWCsat[layerCTRL]) * (water_density * sitec->soillayer_thickness[layerCTRL]);
+						if (diff > 0)
+						{
+							epv->VWC[layerCTRL]   = sprop->VWCsat[layerCTRL];
+							ws->soilw[layerCTRL] -= diff;
+						}
+
+						layerCTRL            -= 1;
+					}	
+					if (layerCTRL == N_SOILLAYERS && diff > 0)
+					{
+						printf("ERROR in water surplus calculation (fertilizing.c)\n");
+						errorCode=1;
+					}
+
+				}
 			}
 
 			/* control */

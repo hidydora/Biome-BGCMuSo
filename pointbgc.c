@@ -86,9 +86,10 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.prephen1_flag = 0;         
 	bgcin.ctrl.prephen2_flag = 0;          
 	bgcin.ctrl.bareground_flag = 0;
+	bgcin.ctrl.GW_flag = 0;
+	bgcin.ctrl.oldSOIfile_flag = 0;
 	bgcin.ctrl.vegper_flag = 0;
 	bgcin.ctrl.south_shift = 0;
-	bgcin.ctrl.allocControl_flag = 0;
 	bgcin.ctrl.NaddSPINUP_flag = 0;
 	bgcin.ctrl.soiltype = 0;
 
@@ -104,7 +105,7 @@ int main(int argc, char *argv[])
 	{
         if(!strcmp(argv[1],"-v"))
 		{
-           	printf("Model version: Biome-BGCMuSo6.4\n");
+           	printf("Model version: Biome-BGCMuSo6.2alfa (Biome-BGCMAg2.2alfa)\n");
 			exit(0);
         }
     }
@@ -192,7 +193,7 @@ int main(int argc, char *argv[])
 	}
 	
 	/* read soil properties */
-	errorCode = sprop_init(init, &bgcin.sprop, &bgcin.ctrl);
+	errorCode = sprop_init(init,  &bgcin.sitec, &bgcin.sprop, &bgcin.ctrl);
 	if (errorCode)
 	{
 		printf("ERROR in call to sprop_init() from pointbgc.c... Exiting\n");

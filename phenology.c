@@ -22,7 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_struct* ns, 
+int phenology(const control_struct* ctrl, const epconst_struct* epc, const cstate_struct* cs, const nstate_struct* ns, 
 	          phenology_struct* phen, metvar_struct* metv,epvar_struct* epv, cflux_struct* cf, nflux_struct* nf)
 
 {
@@ -33,7 +33,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 	double livecroottovrc, livecroottovrn;
 	double drate;
 
-	double yieldlitfallc=0;
+	double fruitlitfallc=0;
 	double softstemlitfallc=0;
 	
 
@@ -60,10 +60,10 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 				nf->frootn_transfer_to_frootn       = cf->frootc_transfer_to_frootc / epc->froot_cn;
 			}
 	        
-			if (epc->yield_cn)
+			if (epc->fruit_cn)
 			{
-				cf->yield_transfer_to_yield       = cs->yield_transfer / ndays;
-				nf->yieldn_transfer_to_yieldn       = cf->yield_transfer_to_yield       / epc->yield_cn;
+				cf->fruitc_transfer_to_fruitc       = cs->fruitc_transfer / ndays;
+				nf->fruitn_transfer_to_fruitn       = cf->fruitc_transfer_to_fruitc       / epc->fruit_cn;
 			}
 
 			if (epc->softstem_cn)
@@ -114,13 +114,13 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 			errorCode=1;
 		}
 
-		/* yield litterfall */
-		yieldlitfallc = epv->day_yield_litfall_increment;
-		if (yieldlitfallc > cs->yield) yieldlitfallc = cs->yield;
-		if (!errorCode && yield_litfall(epc,yieldlitfallc,cf,nf))
+		/* fruit litterfall */
+		fruitlitfallc = epv->day_fruitc_litfall_increment;
+		if (fruitlitfallc > cs->fruitc) fruitlitfallc = cs->fruitc;
+		if (!errorCode && fruit_litfall(epc,fruitlitfallc,cf,nf))
 		{
 			printf("\n");
-			printf("ERROR in call to yield_litfall() from phenology()\n");
+			printf("ERROR in call to fruit_litfall() from phenology()\n");
 			errorCode=1;
 		}
 		
@@ -203,10 +203,10 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 					nf->frootn_transfer_to_frootn       = cf->frootc_transfer_to_frootc / epc->froot_cn;
 				}
 	        
-				if (epc->yield_cn)
+				if (epc->fruit_cn)
 				{
-					cf->yield_transfer_to_yield       = 2*cs->yield_transfer / ndays;
-					nf->yieldn_transfer_to_yieldn       = cf->yield_transfer_to_yield       / epc->yield_cn;
+					cf->fruitc_transfer_to_fruitc       = 2*cs->fruitc_transfer / ndays;
+					nf->fruitn_transfer_to_fruitn       = cf->fruitc_transfer_to_fruitc       / epc->fruit_cn;
 				}
 
 				if (epc->softstem_cn)
@@ -233,7 +233,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 			
 				if (cf->leafc_transfer_to_leafc > cs->leafc_transfer)               cf->leafc_transfer_to_leafc = cs->leafc_transfer;
 				if (cf->frootc_transfer_to_frootc > cs->frootc_transfer)             cf->frootc_transfer_to_frootc = cs->frootc_transfer;
-				if (cf->yield_transfer_to_yield > cs->yield_transfer)             cf->yield_transfer_to_yield = cs->yield_transfer;
+				if (cf->fruitc_transfer_to_fruitc > cs->fruitc_transfer)             cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer;
 				if (cf->softstemc_transfer_to_softstemc > cs->softstemc_transfer)    cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer;
 				if (cf->livestemc_transfer_to_livestemc > cs->livestemc_transfer)    cf->livestemc_transfer_to_livestemc = cs->livestemc_transfer;
 				if (cf->deadstemc_transfer_to_deadstemc > cs->deadstemc_transfer)    cf->deadstemc_transfer_to_deadstemc = cs->deadstemc_transfer;
@@ -242,7 +242,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 
 				if (nf->leafn_transfer_to_leafn > ns->leafn_transfer)                nf->leafn_transfer_to_leafn = ns->leafn_transfer;
 				if (nf->frootn_transfer_to_frootn > ns->frootn_transfer)             nf->frootn_transfer_to_frootn = ns->frootn_transfer;
-				if (nf->yieldn_transfer_to_yieldn > ns->yieldn_transfer)             nf->yieldn_transfer_to_yieldn = ns->yieldn_transfer;
+				if (nf->fruitn_transfer_to_fruitn > ns->fruitn_transfer)             nf->fruitn_transfer_to_fruitn = ns->fruitn_transfer;
 				if (nf->softstemn_transfer_to_softstemn > ns->softstemn_transfer)    nf->softstemn_transfer_to_softstemn = ns->softstemn_transfer;
 				if (nf->livestemn_transfer_to_livestemn > ns->livestemn_transfer)    nf->livestemn_transfer_to_livestemn = ns->livestemn_transfer;
 				if (nf->deadstemn_transfer_to_deadstemn > ns->deadstemn_transfer)    nf->deadstemn_transfer_to_deadstemn = ns->deadstemn_transfer;
@@ -268,7 +268,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 				/* SPECIAL DAY AFTER litterfall, special case to gaurantee that pools go to 0.0 */
 				leaflitfallc     = cs->leafc;
 				frootlitfallc    = cs->frootc;
-				yieldlitfallc    = cs->yield;
+				fruitlitfallc    = cs->fruitc;
 				softstemlitfallc = cs->softstemc;
 			}
 			else
@@ -282,9 +282,9 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 				drate = 2.0*(cs->frootc - frootlitfallc*ndays)/(ndays*ndays);
 				epv->day_frootc_litfall_increment += drate;
 
-				yieldlitfallc = epv->day_yield_litfall_increment;
-				drate = 2.0*(cs->yield - yieldlitfallc*ndays)/(ndays*ndays);
-				epv->day_yield_litfall_increment += drate;
+				fruitlitfallc = epv->day_fruitc_litfall_increment;
+				drate = 2.0*(cs->fruitc - fruitlitfallc*ndays)/(ndays*ndays);
+				epv->day_fruitc_litfall_increment += drate;
 
 				softstemlitfallc = epv->day_softstemc_litfall_increment;
 				drate = 2.0*(cs->softstemc - softstemlitfallc*ndays)/(ndays*ndays);
@@ -310,12 +310,12 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 				errorCode=1;
 			}
 
-			/* yield litterfall */
-			if (yieldlitfallc > cs->yield) yieldlitfallc = cs->yield;
-			if (!errorCode && yieldlitfallc && yield_litfall(epc,yieldlitfallc,cf,nf))
+			/* fruit litterfall */
+			if (fruitlitfallc > cs->fruitc) fruitlitfallc = cs->fruitc;
+			if (!errorCode && fruitlitfallc && fruit_litfall(epc,fruitlitfallc,cf,nf))
 			{
 				printf("\n");
-				printf("ERROR in call to yield_litfall() from phenology()\n");
+				printf("ERROR in call to fruit_litfall() from phenology()\n");
 				errorCode=1;
 			}
 
@@ -367,7 +367,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 	/* for all types, find annual maximum leafc */
 	if (epv->annmax_leafc < cs->leafc)           epv->annmax_leafc = cs->leafc;
 	if (epv->annmax_frootc < cs->frootc)         epv->annmax_frootc = cs->frootc;
-	if (epv->annmax_yield < cs->yield)         epv->annmax_yield = cs->yield;
+	if (epv->annmax_fruitc < cs->fruitc)         epv->annmax_fruitc = cs->fruitc;
 	if (epv->annmax_softstemc < cs->softstemc)   epv->annmax_softstemc = cs->softstemc;
 	if (epv->annmax_livestemc < cs->livestemc)   epv->annmax_livestemc = cs->livestemc;
 	if (epv->annmax_livecrootc < cs->livecrootc) epv->annmax_livecrootc = cs->livecrootc;
@@ -415,35 +415,35 @@ int leaf_litfall(const epconst_struct* epc, double litfallc, cflux_struct* cf, n
 	return (errorCode);
 }
 
-int yield_litfall(const epconst_struct* epc, double litfallc, cflux_struct* cf, nflux_struct* nf)
+int fruit_litfall(const epconst_struct* epc, double litfallc, cflux_struct* cf, nflux_struct* nf)
 {
 	int errorCode=0;
 	double c1,c2,c3,c4;
 	double n1,n2,n3,n4;
 	double avg_cn;
 	
-	avg_cn = epc->yield_cn;
+	avg_cn = epc->fruit_cn;
 	
-	c1 = litfallc * epc->yieldlitr_flab;
+	c1 = litfallc * epc->fruitlitr_flab;
 	n1 = c1 / avg_cn;
-	c2 = litfallc * epc->yieldlitr_fucel;
+	c2 = litfallc * epc->fruitlitr_fucel;
 	n2 = c2 / avg_cn;
-	c3 = litfallc * epc->yieldlitr_fscel;
+	c3 = litfallc * epc->fruitlitr_fscel;
 	n3 = c3 / avg_cn;
-	c4 = litfallc * epc->yieldlitr_flig;
+	c4 = litfallc * epc->fruitlitr_flig;
 	n4 = c4 / avg_cn;
 	
 	if (!errorCode)
 	{
 		/* set fluxes in daily flux structure */
-		cf->yield_to_litr1c = c1;
-		cf->yield_to_litr2c = c2;
-		cf->yield_to_litr3c = c3;
-		cf->yield_to_litr4c = c4;
-		nf->yieldn_to_litr1n = n1;
-		nf->yieldn_to_litr2n = n2;
-		nf->yieldn_to_litr3n = n3;
-		nf->yieldn_to_litr4n = n4;
+		cf->fruitc_to_litr1c = c1;
+		cf->fruitc_to_litr2c = c2;
+		cf->fruitc_to_litr3c = c3;
+		cf->fruitc_to_litr4c = c4;
+		nf->fruitn_to_litr1n = n1;
+		nf->fruitn_to_litr2n = n2;
+		nf->fruitn_to_litr3n = n3;
+		nf->fruitn_to_litr4n = n4;
 	}
 	
 	return (errorCode);
@@ -564,8 +564,8 @@ int transfer_fromGDD(const epconst_struct* epc, const cstate_struct* cs, const n
 		cf->frootc_transfer_to_frootc = cs->frootc_transfer * epv->transfer_ratio;
 		nf->frootn_transfer_to_frootn = cf->frootc_transfer_to_frootc / epc->froot_cn;
 		
-		cf->yield_transfer_to_yield = cs->yield_transfer * epv->transfer_ratio;
-		nf->yieldn_transfer_to_yieldn = cf->yield_transfer_to_yield / epc->yield_cn;
+		cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer * epv->transfer_ratio;
+		nf->fruitn_transfer_to_fruitn = cf->fruitc_transfer_to_fruitc / epc->fruit_cn;
 
 		cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer * epv->transfer_ratio;
 		nf->softstemn_transfer_to_softstemn = cf->softstemc_transfer_to_softstemc / epc->softstem_cn;
@@ -574,8 +574,8 @@ int transfer_fromGDD(const epconst_struct* epc, const cstate_struct* cs, const n
 		if (nf->leafn_transfer_to_leafn > ns->leafn_transfer) nf->leafn_transfer_to_leafn = ns->leafn_transfer;
 		if (cf->frootc_transfer_to_frootc > cs->frootc_transfer) cf->frootc_transfer_to_frootc = cs->frootc_transfer;
 		if (nf->frootn_transfer_to_frootn > ns->frootn_transfer) nf->frootn_transfer_to_frootn = ns->frootn_transfer;
-		if (cf->yield_transfer_to_yield > cs->yield_transfer) cf->yield_transfer_to_yield = cs->yield_transfer;
-		if (nf->yieldn_transfer_to_yieldn > ns->yieldn_transfer) nf->yieldn_transfer_to_yieldn = ns->yieldn_transfer;
+		if (cf->fruitc_transfer_to_fruitc > cs->fruitc_transfer) cf->fruitc_transfer_to_fruitc = cs->fruitc_transfer;
+		if (nf->fruitn_transfer_to_fruitn > ns->fruitn_transfer) nf->fruitn_transfer_to_fruitn = ns->fruitn_transfer;
 		if (cf->softstemc_transfer_to_softstemc > cs->softstemc_transfer) cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer;
 		if (nf->softstemn_transfer_to_softstemn > ns->softstemn_transfer) nf->softstemn_transfer_to_softstemn = ns->softstemn_transfer;
 		

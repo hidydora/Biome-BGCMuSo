@@ -48,7 +48,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 	4. Denitrification and Nitrification */
 
 	/* if no root - no N-fixation */
-	if (epv->n_rootlayers == 0) nf->nfix_to_sminn_total = 0;
+	if (epv->n_rootlayers == 0) nf->nfix_to_sminnTOTAL = 0;
 
 	/* SOMrespTOTAL calculation - unit: kgC/ha */
 	SOMrespTOTAL = 0;
@@ -77,8 +77,8 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		if (layer < 2) 
 		{
  			weight = sitec->soillayer_thickness[layer]/sitec->soillayer_depth[1];
-			nf->ndep_to_sminNH4[layer] = (nf->ndep_to_sminn_total * weight) * sitec->NdepNH4_coeff;
-			nf->ndep_to_sminNO3[layer] = (nf->ndep_to_sminn_total * weight) * (1-sitec->NdepNH4_coeff);
+			nf->ndep_to_sminNH4[layer] = (nf->ndep_to_sminnTOTAL * weight) * sitec->NdepNH4_coeff;
+			nf->ndep_to_sminNO3[layer] = (nf->ndep_to_sminnTOTAL * weight) * (1-sitec->NdepNH4_coeff);
 		}
 		else
 		{
@@ -86,7 +86,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			nf->ndep_to_sminNO3[layer] = 0;
 		}
 		
-		nf->nfix_to_sminNH4[layer] = nf->nfix_to_sminn_total * epv->rootlengthProp[layer];
+		nf->nfix_to_sminNH4[layer] = nf->nfix_to_sminnTOTAL * epv->rootlength_prop[layer];
 
 		ndep_to_sminnCTRL += nf->ndep_to_sminNH4[layer] + nf->ndep_to_sminNO3[layer];
 		nfix_to_sminnCTRL += nf->nfix_to_sminNH4[layer];
@@ -110,9 +110,9 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		/* 4. Nitrification */
 		
 		if (nf->sminNH4_to_soil_SUM[layer] > 0)
-			net_miner    = nf->soil4n_to_sminn[layer];
+			net_miner    = nf->soil4n_to_sminNH4[layer];
 		else
-			net_miner    = nf->soil4n_to_sminn[layer] - nf->sminNH4_to_soil_SUM[layer];
+			net_miner    = nf->soil4n_to_sminNH4[layer] - nf->sminNH4_to_soil_SUM[layer];
 		
 	 	WFPS         = epv->WFPS[layer];
 		sminNH4avail = ns->sminNH4avail[layer];
@@ -161,7 +161,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		/*********************************************/
 		/* 7. STATE UPDATE */
 
-		sminNH4_change[layer] = (nf->nfix_to_sminNH4[layer] + nf->ndep_to_sminNH4[layer] + nf->soil4n_to_sminn[layer] - 
+		sminNH4_change[layer] = (nf->nfix_to_sminNH4[layer] + nf->ndep_to_sminNH4[layer] + nf->soil4n_to_sminNH4[layer] - 
 			                     nf->sminNH4_to_soil_SUM[layer] - nf->sminNH4_to_npool[layer] - nf->sminNH4_to_nitrif[layer]);
 		sminNO3_change[layer] = (nf->ndep_to_sminNO3[layer] + (nf->sminNH4_to_nitrif[layer]- nf->N2O_flux_NITRIF[layer]) -
 			                     nf->sminNO3_to_soil_SUM[layer] - nf->sminNO3_to_npool[layer] - nf->sminNO3_to_denitr[layer]);
@@ -175,7 +175,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		ns->soil1n[layer] += nf->sminn_to_soil1n_l1[layer];
 		ns->soil2n[layer] += nf->sminn_to_soil2n_l2[layer] + nf->sminn_to_soil2n_s1[layer];
 		ns->soil3n[layer] += nf->sminn_to_soil3n_l4[layer] + nf->sminn_to_soil3n_s2[layer];
-		ns->soil4n[layer] += nf->sminn_to_soil4n_s3[layer] - nf->soil4n_to_sminn[layer];
+		ns->soil4n[layer] += nf->sminn_to_soil4n_s3[layer] - nf->soil4n_to_sminNH4[layer];
 		
 		ns->npool         += (nf->sminNH4_to_npool[layer] + nf->sminNO3_to_npool[layer]);
 		ns->Nfix_src      += nf->nfix_to_sminNH4[layer];
@@ -195,8 +195,8 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		nf->sminNO3_to_soil_SUM_total	+= nf->sminNO3_to_soil_SUM[layer];          
 		nf->sminNO3_to_denitr_total		+= nf->sminNO3_to_denitr[layer];
 		nf->sminNH4_to_nitrif_total		+= nf->sminNH4_to_nitrif[layer];
-		nf->sminNH4_to_npool_total		+= nf->sminNH4_to_npool[layer];
-		nf->sminNO3_to_npool_total		+= nf->sminNO3_to_npool[layer];
+		nf->sminNH4_to_npoolTOTAL		+= nf->sminNH4_to_npool[layer];
+		nf->sminNO3_to_npoolTOTAL		+= nf->sminNO3_to_npool[layer];
 
 		/*********************************************/
 		/* 9. CONTROL */
@@ -205,7 +205,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			if (fabs(ns->sminNH4[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative NH4 pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative NH4 pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -220,7 +220,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			if (fabs(ns->sminNO3[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative NO3 pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative NO3 pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -235,7 +235,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			if (fabs (ns->soil1n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -250,7 +250,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			if (fabs (ns->soil2n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -265,7 +265,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			if (fabs (ns->soil3n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -280,7 +280,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			if (fabs (ns->soil4n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -291,8 +291,8 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		}
 	}
 
-	if (fabs(sminn_to_soilCTRL - nf->sminn_to_soil_SUM_total) > CRIT_PREC || fabs(sminn_to_npoolCTRL - nf->sminn_to_npool_total) > CRIT_PREC ||
-		fabs(ndep_to_sminnCTRL - nf->ndep_to_sminn_total) > CRIT_PREC || fabs(nfix_to_sminnCTRL - nf->nfix_to_sminn_total) > CRIT_PREC)
+	if (fabs(sminn_to_soilCTRL - nf->sminn_to_soil_SUM_total) > CRIT_PREC || fabs(sminn_to_npoolCTRL - nf->sminn_to_npoolTOTAL) > CRIT_PREC ||
+		fabs(ndep_to_sminnCTRL - nf->ndep_to_sminnTOTAL) > CRIT_PREC || fabs(nfix_to_sminnCTRL - nf->nfix_to_sminnTOTAL) > CRIT_PREC)
 	{
 		printf("\n");
 		printf("ERROR: in calculation of nitrogen state update (multilayer_sminn.c)\n");

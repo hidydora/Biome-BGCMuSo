@@ -51,9 +51,9 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	cs->frootc                            = restart->frootc;
 	cs->frootc_storage                    = restart->frootc_storage;
 	cs->frootc_transfer                   = restart->frootc_transfer;
-	cs->yield                            = restart->yield;
-	cs->yield_storage                    = restart->yield_storage;
-	cs->yield_transfer                   = restart->yield_transfer;
+	cs->fruitc                            = restart->fruitc;
+	cs->fruitc_storage                    = restart->fruitc_storage;
+	cs->fruitc_transfer                   = restart->fruitc_transfer;
 	cs->softstemc                         = restart->softstemc;
 	cs->softstemc_storage                 = restart->softstemc_storage;
 	cs->softstemc_transfer                = restart->softstemc_transfer;
@@ -106,17 +106,17 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 		ns->frootn_transfer               = 0;
 	}
 
-	if (epc->yield_cn > 0)
+	if (epc->fruit_cn > 0)
 	{
-		ns->yieldn                        = cs->yield          / epc->yield_cn;
-		ns->yieldn_storage                = cs->yield_storage  / epc->yield_cn;
-		ns->yieldn_transfer               = cs->yield_transfer / epc->yield_cn;
+		ns->fruitn                        = cs->fruitc          / epc->fruit_cn;
+		ns->fruitn_storage                = cs->fruitc_storage  / epc->fruit_cn;
+		ns->fruitn_transfer               = cs->fruitc_transfer / epc->fruit_cn;
 	}
 	else
 	{
-		ns->yieldn                        =	0;
-		ns->yieldn_storage                = 0;
-		ns->yieldn_transfer               = 0;
+		ns->fruitn                        =	0;
+		ns->fruitn_storage                = 0;
+		ns->fruitn_transfer               = 0;
 	}
 	
 	if (epc->softstem_cn)
@@ -175,12 +175,12 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	/* 3. standing dead biomass, cut-down dead biomass and litter pools */
 	cs->STDBc_leaf		= restart->STDBc_leaf;
 	cs->STDBc_froot		= restart->STDBc_froot;
-	cs->STDBc_yield		= restart->STDBc_yield;
+	cs->STDBc_fruit		= restart->STDBc_fruit;
 	cs->STDBc_softstem	= restart->STDBc_softstem;
 	cs->STDBc_nsc	    = restart->STDBc_nsc;
 	cs->CTDBc_leaf		= restart->CTDBc_leaf;
 	cs->CTDBc_froot		= restart->CTDBc_froot;
-	cs->CTDBc_yield		= restart->CTDBc_yield;
+	cs->CTDBc_fruit		= restart->CTDBc_fruit;
 	cs->CTDBc_softstem	= restart->CTDBc_softstem;
 	cs->CTDBc_nsc	    = restart->CTDBc_nsc;
 	cs->CTDBc_cstem		= restart->CTDBc_cstem;
@@ -188,12 +188,12 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	
 	ns->STDBn_leaf		= restart->STDBn_leaf;
 	ns->STDBn_froot		= restart->STDBn_froot;
-	ns->STDBn_yield		= restart->STDBn_yield;
+	ns->STDBn_fruit		= restart->STDBn_fruit;
 	ns->STDBn_softstem	= restart->STDBn_softstem;
 	ns->STDBn_nsc	    = restart->STDBn_nsc;
 	ns->CTDBn_leaf		= restart->CTDBn_leaf;
 	ns->CTDBn_froot		= restart->CTDBn_froot;
-	ns->CTDBn_yield		= restart->CTDBn_yield;
+	ns->CTDBn_fruit		= restart->CTDBn_fruit;
 	ns->CTDBn_softstem	= restart->CTDBn_softstem;
 	ns->CTDBn_nsc	    = restart->CTDBn_nsc;
 	ns->CTDBn_cstem		= restart->CTDBn_cstem;
@@ -230,7 +230,7 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	/* 4. ecophysiological variables */
 	epv->annmax_leafc                     = restart->annmax_leafc;
 	epv->annmax_frootc                    = restart->annmax_frootc;
-	epv->annmax_yield                    = restart->annmax_yield;
+	epv->annmax_fruitc                    = restart->annmax_fruitc;
 	epv->annmax_softstemc                 = restart->annmax_softstemc;
 	epv->annmax_livestemc                 = restart->annmax_livestemc;
 	epv->annmax_livecrootc                = restart->annmax_livecrootc;
@@ -262,9 +262,9 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->frootc 						  = cs->frootc;
 	restart->frootc_storage 				  = cs->frootc_storage;
 	restart->frootc_transfer				  = cs->frootc_transfer;
-	restart->yield 						  = cs->yield;
-	restart->yield_storage 				  = cs->yield_storage;
-	restart->yield_transfer				  = cs->yield_transfer;
+	restart->fruitc 						  = cs->fruitc;
+	restart->fruitc_storage 				  = cs->fruitc_storage;
+	restart->fruitc_transfer				  = cs->fruitc_transfer;
 	restart->softstemc 						  = cs->softstemc;
 	restart->softstemc_storage 				  = cs->softstemc_storage;
 	restart->softstemc_transfer				  = cs->softstemc_transfer;
@@ -290,9 +290,9 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->frootn 						  = ns->frootn;
 	restart->frootn_storage 				  = ns->frootn_storage;
 	restart->frootn_transfer				  = ns->frootn_transfer;
-	restart->yieldn  						  = ns->yieldn;
-	restart->yieldn_storage  				  = ns->yieldn_storage;
-	restart->yieldn_transfer 				  = ns->yieldn_transfer;
+	restart->fruitn  						  = ns->fruitn;
+	restart->fruitn_storage  				  = ns->fruitn_storage;
+	restart->fruitn_transfer 				  = ns->fruitn_transfer;
 	restart->softstemn  					  = ns->softstemn;
 	restart->softstemn_storage  			  = ns->softstemn_storage;
 	restart->softstemn_transfer 			  = ns->softstemn_transfer;
@@ -315,12 +315,12 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	/* 2. standing dead biomass, cut-down dead biomass*/
 	restart->STDBc_leaf			= cs->STDBc_leaf;
 	restart->STDBc_froot		= cs->STDBc_froot;
-	restart->STDBc_yield		= cs->STDBc_yield;
+	restart->STDBc_fruit		= cs->STDBc_fruit;
 	restart->STDBc_softstem		= cs->STDBc_softstem;
 	restart->STDBc_nsc		    = cs->STDBc_nsc;
 	restart->CTDBc_leaf			= cs->CTDBc_leaf;
 	restart->CTDBc_froot		= cs->CTDBc_froot;
-	restart->CTDBc_yield		= cs->CTDBc_yield;
+	restart->CTDBc_fruit		= cs->CTDBc_fruit;
 	restart->CTDBc_softstem		= cs->CTDBc_softstem;
 	restart->CTDBc_nsc		    = cs->CTDBc_nsc;
 	restart->CTDBc_cstem		= cs->CTDBc_cstem;
@@ -328,12 +328,12 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 
 	restart->STDBn_leaf			= ns->STDBn_leaf;
 	restart->STDBn_froot		= ns->STDBn_froot;
-	restart->STDBn_yield		= ns->STDBn_yield;
+	restart->STDBn_fruit		= ns->STDBn_fruit;
 	restart->STDBn_softstem		= ns->STDBn_softstem;
 	restart->STDBn_nsc		    = ns->STDBn_nsc;
 	restart->CTDBn_leaf			= ns->CTDBn_leaf;
 	restart->CTDBn_froot		= ns->CTDBn_froot;
-	restart->CTDBn_yield		= ns->CTDBn_yield;
+	restart->CTDBn_fruit		= ns->CTDBn_fruit;
 	restart->CTDBn_softstem		= ns->CTDBn_softstem;
 	restart->CTDBn_nsc		    = ns->CTDBn_nsc;
 	restart->CTDBn_cstem		= ns->CTDBn_cstem;
@@ -371,7 +371,7 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	
 	restart->annmax_leafc					  = epv->annmax_leafc;
 	restart->annmax_frootc  				  = epv->annmax_frootc;
-	restart->annmax_yield  				  = epv->annmax_yield;
+	restart->annmax_fruitc  				  = epv->annmax_fruitc;
 	restart->annmax_softstemc  				  = epv->annmax_softstemc;
 	restart->annmax_livestemc				  = epv->annmax_livestemc;
 	restart->annmax_livecrootc  			  = epv->annmax_livecrootc;

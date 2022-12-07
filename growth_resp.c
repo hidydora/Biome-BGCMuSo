@@ -34,7 +34,7 @@ int growth_resp(const epconst_struct* epc, cflux_struct* cf)
 	/* leaf and fine root growth respiration for both trees and grass */	
 	cf->cpool_leaf_gr          = cf->cpool_to_leafc      * g1;
 	cf->cpool_froot_gr         = cf->cpool_to_frootc     * g1;
-	cf->cpool_yield_gr         = cf->cpool_to_yield     * g1;
+	cf->cpool_fruit_gr         = cf->cpool_to_fruitc     * g1;
 	cf->cpool_softstem_gr      = cf->cpool_to_softstemc  * g1;
 	cf->cpool_livestem_gr      = cf->cpool_to_livestemc  * g1;
 	cf->cpool_deadstem_gr      = cf->cpool_to_deadstemc  * g1;
@@ -43,7 +43,7 @@ int growth_resp(const epconst_struct* epc, cflux_struct* cf)
 	
 	cf->cpool_leaf_storage_gr		= cf->cpool_to_leafc_storage      * g1 * g2;
 	cf->cpool_froot_storage_gr		= cf->cpool_to_frootc_storage     * g1 * g2; 
-	cf->cpool_yield_storage_gr		= cf->cpool_to_yield_storage     * g1 * g2;
+	cf->cpool_fruit_storage_gr		= cf->cpool_to_fruitc_storage     * g1 * g2;
 	cf->cpool_softstem_storage_gr   = cf->cpool_to_softstemc_storage  * g1 * g2;
 	cf->cpool_livestem_storage_gr   = cf->cpool_to_livestemc_storage  * g1 * g2;
 	cf->cpool_deadstem_storage_gr   = cf->cpool_to_deadstemc_storage  * g1 * g2;
@@ -52,7 +52,7 @@ int growth_resp(const epconst_struct* epc, cflux_struct* cf)
 
 	cf->transfer_leaf_gr      = cf->leafc_transfer_to_leafc           * g1 * (1.0-g2);
 	cf->transfer_froot_gr     = cf->frootc_transfer_to_frootc         * g1 * (1.0-g2);
-	cf->transfer_yield_gr     = cf->yield_transfer_to_yield         * g1 * (1.0-g2);
+	cf->transfer_fruit_gr     = cf->fruitc_transfer_to_fruitc         * g1 * (1.0-g2);
 	cf->transfer_softstem_gr  = cf->softstemc_transfer_to_softstemc   * g1 * (1.0-g2);
 	cf->transfer_livestem_gr  = cf->livestemc_transfer_to_livestemc   * g1 * (1.0-g2);
 	cf->transfer_deadstem_gr  = cf->deadstemc_transfer_to_deadstemc   * g1 * (1.0-g2);

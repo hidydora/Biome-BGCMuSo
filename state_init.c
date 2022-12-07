@@ -92,14 +92,14 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 {
 	int errorCode=0;
 	int layer, scanflag, pp;
-	int alloc_softstem, alloc_yield, alloc_livestem, alloc_livecroot; 
+	int alloc_softstem, alloc_fruit, alloc_livestem, alloc_livecroot; 
 	char key1[] = "CN_STATE";
 	char keyword[STRINGSIZE];
 	double trash;
 	double sminNH4_ppm[N_SOILLAYERS];
 	double sminNO3_ppm[N_SOILLAYERS];
 
-	alloc_softstem=alloc_yield=alloc_livestem=alloc_livecroot = 0;
+	alloc_softstem=alloc_fruit=alloc_livestem=alloc_livecroot = 0;
 
 	/* 1. read carbon state variable initial values from *.init */
 	if (!errorCode && scan_value(init, keyword, 's'))
@@ -122,9 +122,9 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		printf("ERROR reading first-year maximum fine root carbon, cstate_init()\n");
 		errorCode=21301;
 	}
-	if (!errorCode && scan_value(init, &cinit->max_yield, 'd'))
+	if (!errorCode && scan_value(init, &cinit->max_fruitc, 'd'))
 	{
-		printf("ERROR reading first-year max_yield, cstate_init()\n");
+		printf("ERROR reading first-year max_fruitc, cstate_init()\n");
 		errorCode=21301;
 	}
 	if (!errorCode && scan_value(init, &cinit->max_softstemc, 'd'))
@@ -146,13 +146,13 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 	/* control */
 	for (pp=0; pp<N_PHENPHASES; pp++)
 	{
-		if (epc->alloc_yield[pp] > 0)     alloc_yield=1;
+		if (epc->alloc_fruitc[pp] > 0)     alloc_fruit=1;
 		if (epc->alloc_softstemc[pp] > 0)  alloc_softstem=1;
 		if (epc->alloc_livestemc[pp] > 0)  alloc_livestem=1;
 		if (epc->alloc_livecrootc[pp] > 0) alloc_livecroot=1;
 	}
 
-	if (alloc_yield == 0)     cinit->max_yield = 0;
+	if (alloc_fruit == 0)     cinit->max_fruitc = 0;
 	if (alloc_softstem == 0)  cinit->max_softstemc = 0;
 	if (alloc_livestem == 0)  cinit->max_livestemc = 0;
 	if (alloc_livecroot == 0) cinit->max_livecrootc = 0;

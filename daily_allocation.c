@@ -100,7 +100,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	double avail_c;     /* total C available for new production */
 	double f1;          /* RATIO   new leaf C      : new total C   */
 	double f2;          /* RATIO   new fine root C : new total C   */
-	double f3;          /* RATIO   new yield C     : new total C  */
+	double f3;          /* RATIO   new fruit C     : new total C  */
 	double f4;          /* RATIO   new softstem C  : new total C */
 	double f5;          /* RATIO   new live woody stem C: new total C */
 	double f6;          /* RATIO   new dead woody stem C: new total C */
@@ -111,8 +111,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	int woody;
 	double c_allometry, n_allometry;
 	double retrans_layer, plantNsupply_layer, plantNdemand_layer, plant_remaining_ndemand,IMMOBratio;
-	double plantNalloc, plantCalloc;
-    double excess_c, pnow_Tcoeff, flowHSratio;
+	double plant_nalloc, plant_calloc;
+    double excess_c, pnow_Tcoeff;
 	int layer;
 	double cn_l1,cn_l2,cn_l4,cn_s1,cn_s2,cn_s3,cn_s4;
 	double rfl1s1, rfl2s2, rfl4s3, rfs1s2, rfs2s3, rfs3s4;
@@ -124,7 +124,6 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	int ap = (int) epv->n_actphen-1; 
 
 	IMMOBratio=Ndemand_total=excess_c=daily_net_nmin=daily_net_immob=f1=f2=f3=f4=f5=f6=f7=f8=0;
-	flowHSratio=1;
 	woody = epc->woody;
 
 	cn_l1=cn_l2=cn_l4=cn_s1=cn_s2=cn_s3=cn_s4=0;
@@ -144,7 +143,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	/* 1. Assess the carbon availability on the basis of this day's gross production and maintenance respiration costs */
 	day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
 	
-	day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->yield_mr + cf->softstem_mr +
+	day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->fruit_mr + cf->softstem_mr +
 			         cf->livestem_mr + cf->livecroot_mr;
 	avail_c = day_gpp - day_mresp;
 
@@ -168,7 +167,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	{
 		f1 = epc->alloc_leafc[ap];
 		f2 = epc->alloc_frootc[ap];
-		f3 = epc->alloc_yield[ap];
+		f3 = epc->alloc_fruitc[ap];
 		f4 = epc->alloc_softstemc[ap];
 		f5 = epc->alloc_livestemc[ap];
 		f6 = epc->alloc_deadstemc[ap];
@@ -219,7 +218,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	c_allometry = (1.0+g1);
 	n_allometry = (f1/epc->leaf_cn + f2/epc->froot_cn);
     
-	if (epc->yield_cn > 0)    n_allometry +=  f3/epc->yield_cn;
+	if (epc->fruit_cn > 0)    n_allometry +=  f3/epc->fruit_cn;
 	if (epc->softstem_cn > 0) n_allometry +=  f4/epc->softstem_cn;
 	
 	if (woody) n_allometry += (f5/epc->livewood_cn + f6/epc->deadwood_cn + f7/epc->livewood_cn + f8/epc->deadwood_cn);
@@ -232,16 +231,16 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	/*-----------------------------------------------------------------------------------------------------------------*/
 	/* 4. calculation of spinup N-add and sminnAVAIL and potIMMOB */
 
-	ns->sminNavail_RZ = nf->sminn_to_npool_total = nf->retransn_to_npool_total = plantNalloc = plantCalloc = 0;
+	ns->sminNavail_RZ = nf->sminn_to_npoolTOTAL = nf->retransn_to_npoolTOTAL = plant_nalloc = plant_calloc = 0;
 	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
 		ns->sminNH4avail[layer] = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;
 		ns->sminNO3avail[layer] = ns->sminNO3[layer] * NO3_mobilen_prop;
 		sminAVAIL				= (ns->sminNH4avail[layer] + ns->sminNO3avail[layer]);
 
-		plantNdemand_layer		= epv->plantNdemand * epv->rootlengthProp[layer];
+		plantNdemand_layer		= epv->plantNdemand * epv->rootlength_prop[layer];
 	
-		retrans_layer			= ns->retransn * epv->rootlengthProp[layer];
+		retrans_layer			= ns->retransn * epv->rootlength_prop[layer];
 		pot_immob				= nt->potential_immob[layer];
 		ndemand					= plantNdemand_layer + pot_immob;
 
@@ -284,8 +283,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 			
 			nf->sminn_to_npool[layer] = plantNdemand_layer- nf->retransn_to_npool[layer];
 
-			plantNalloc       += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];
-			plantCalloc       += avail_c * epv->rootlengthProp[layer];
+			plant_nalloc       += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];
+			plant_calloc       += avail_c * epv->rootlength_prop[layer];
 	
 		}
 		else
@@ -310,7 +309,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 			{
 				/* there is enough N available in retranslocation pool to satisfy the remaining plant N demand */
 				nf->retransn_to_npool[layer]   = plant_remaining_ndemand;
-				plantNalloc                  += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];
+				plant_nalloc                  += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];
 			}
 			else
 			{
@@ -318,25 +317,22 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 				unsatisfied N demand is translated back to a C excess, which is deducted proportionally from the sun and shade photosynthesis source terms */
 		
 				nf->retransn_to_npool[layer]    = retrans_layer;
-				plantNalloc                   += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];	
+				plant_nalloc                   += nf->retransn_to_npool[layer] + nf->sminn_to_npool[layer];	
 			}
 			if (n_allometry)
-				plantCalloc       = plantNalloc * (c_allometry / n_allometry);
+				plant_calloc       = plant_nalloc * (c_allometry / n_allometry);
 			else
-				plantCalloc       = 0;
+				plant_calloc       = 0;
 			
 		}
-		nf->retransn_to_npool_total += nf->retransn_to_npool[layer] ;
-		nf->sminn_to_npool_total    += nf->sminn_to_npool[layer];
+		nf->retransn_to_npoolTOTAL += nf->retransn_to_npool[layer] ;
+		nf->sminn_to_npoolTOTAL    += nf->sminn_to_npool[layer];
 	}
 	
-	epv->plantCalloc = plantCalloc; 
-	epv->plantNalloc = plantNalloc; 
-
-	epv->plantCalloc_CUM += epv->plantCalloc;
-	epv->plantNalloc_CUM += epv->plantNalloc;
+	epv->plant_calloc = plant_calloc; 
+	epv->plant_nalloc = plant_nalloc; 
 	
-	excess_c                 = avail_c - plantCalloc;
+	excess_c                 = avail_c - plant_calloc;
 	if (excess_c > 0)
 	{
 		if (day_gpp > 0)
@@ -360,58 +356,46 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	/* pnow is the proportion of this day's growth that is displayed now, the remainder going into storage for display next year through the transfer pools */
 	/* daily C fluxes out of cpool and into new growth or storage */
 	
-	if (plantCalloc)
+	if (plant_calloc)
 	{
-		cf->cpool_to_leafc              = f1 * pnow       * (plantCalloc/c_allometry);
-		cf->cpool_to_leafc_storage      = f1 * (1.0-pnow) * (plantCalloc/c_allometry);
-		cf->cpool_to_frootc             = f2 * pnow       * (plantCalloc/c_allometry);
-		cf->cpool_to_frootc_storage     = f2 * (1.0-pnow) * (plantCalloc/c_allometry);
-	
-		cf->cpool_to_softstemc          = f4 * pnow       * (plantCalloc/c_allometry);
-		cf->cpool_to_softstemc_storage  = f4 * (1.0-pnow) * (plantCalloc/c_allometry);
+		cf->cpool_to_leafc              = f1 * pnow       * (plant_calloc/c_allometry);
+		cf->cpool_to_leafc_storage      = f1 * (1.0-pnow) * (plant_calloc/c_allometry);
+		cf->cpool_to_frootc             = f2 * pnow       * (plant_calloc/c_allometry);
+		cf->cpool_to_frootc_storage     = f2 * (1.0-pnow) * (plant_calloc/c_allometry);
+		cf->cpool_to_fruitc             = f3 * pnow       * (plant_calloc/c_allometry);
+		cf->cpool_to_fruitc_storage     = f3 * (1.0-pnow) * (plant_calloc/c_allometry);
+		cf->cpool_to_softstemc          = f4 * pnow       * (plant_calloc/c_allometry);
+		cf->cpool_to_softstemc_storage  = f4 * (1.0-pnow) * (plant_calloc/c_allometry);
 
 		
-		
-		nf->npool_to_leafn              = f1 * pnow       * (1./epc->leaf_cn)     * (plantCalloc/c_allometry);
-		nf->npool_to_leafn_storage      = f1 * (1.0-pnow) * (1./epc->leaf_cn)     * (plantCalloc/c_allometry);
-		nf->npool_to_frootn             = f2 * pnow       * (1./epc->froot_cn)    * (plantCalloc/c_allometry);
-		nf->npool_to_frootn_storage     = f2 * (1.0-pnow) * (1./epc->froot_cn)    * (plantCalloc/c_allometry);
-		nf->npool_to_softstemn          = f4 * pnow       * (1./epc->softstem_cn) * (plantCalloc/c_allometry);
-		nf->npool_to_softstemn_storage  = f4 * (1.0-pnow) * (1./epc->softstem_cn) * (plantCalloc/c_allometry);
-
-		/* for total flower stress - no grain allocation after */
-		if (cs->yield+cs->flowHSsnk_C) flowHSratio = cs->yield/(cs->yield+cs->flowHSsnk_C);
-		if (flowHSratio > 1 || flowHSratio < 0)
-		{
-			printf("\n");
-			printf("ERROR in calculation of the effect of flowering heat stress (daily_allocation.c)\n");
-			errorCode=1;
-		}
-
-		cf->cpool_to_yield             = flowHSratio * f3 * pnow       * (plantCalloc/c_allometry);
-		cf->cpool_to_yield_storage     = flowHSratio * f3 * (1.0-pnow) * (plantCalloc/c_allometry);
-		nf->npool_to_yieldn             = flowHSratio * f3 * pnow       * (1./epc->yield_cn)    * (plantCalloc/c_allometry);
-		nf->npool_to_yieldn_storage     = flowHSratio * f3 * (1.0-pnow) * (1./epc->yield_cn)    * (plantCalloc/c_allometry);
+		nf->npool_to_leafn              = f1 * pnow       * (1./epc->leaf_cn)     * (plant_calloc/c_allometry);
+		nf->npool_to_leafn_storage      = f1 * (1.0-pnow) * (1./epc->leaf_cn)     * (plant_calloc/c_allometry);
+		nf->npool_to_frootn             = f2 * pnow       * (1./epc->froot_cn)    * (plant_calloc/c_allometry);
+		nf->npool_to_frootn_storage     = f2 * (1.0-pnow) * (1./epc->froot_cn)    * (plant_calloc/c_allometry);
+		nf->npool_to_fruitn             = f3 * pnow       * (1./epc->fruit_cn)    * (plant_calloc/c_allometry);
+		nf->npool_to_fruitn_storage     = f3 * (1.0-pnow) * (1./epc->fruit_cn)    * (plant_calloc/c_allometry);
+		nf->npool_to_softstemn          = f4 * pnow       * (1./epc->softstem_cn) * (plant_calloc/c_allometry);
+		nf->npool_to_softstemn_storage  = f4 * (1.0-pnow) * (1./epc->softstem_cn) * (plant_calloc/c_allometry);
 
 		if (epc->woody)
 		{
-			cf->cpool_to_livestemc          = f5 * pnow       * (plantCalloc/c_allometry);
-			cf->cpool_to_livestemc_storage  = f5 * (1.0-pnow) * (plantCalloc/c_allometry);
-			cf->cpool_to_deadstemc          = f6 * pnow       * (plantCalloc/c_allometry);
-			cf->cpool_to_deadstemc_storage  = f6 * (1.0-pnow) * (plantCalloc/c_allometry);
-			cf->cpool_to_livecrootc         = f7 * pnow       * (plantCalloc/c_allometry);
-			cf->cpool_to_livecrootc_storage = f7 * (1.0-pnow) * (plantCalloc/c_allometry);
-			cf->cpool_to_deadcrootc         = f8 * pnow       * (plantCalloc/c_allometry);
-			cf->cpool_to_deadcrootc_storage = f8 * (1.0-pnow) * (plantCalloc/c_allometry);
+			cf->cpool_to_livestemc          = f5 * pnow       * (plant_calloc/c_allometry);
+			cf->cpool_to_livestemc_storage  = f5 * (1.0-pnow) * (plant_calloc/c_allometry);
+			cf->cpool_to_deadstemc          = f6 * pnow       * (plant_calloc/c_allometry);
+			cf->cpool_to_deadstemc_storage  = f6 * (1.0-pnow) * (plant_calloc/c_allometry);
+			cf->cpool_to_livecrootc         = f7 * pnow       * (plant_calloc/c_allometry);
+			cf->cpool_to_livecrootc_storage = f7 * (1.0-pnow) * (plant_calloc/c_allometry);
+			cf->cpool_to_deadcrootc         = f8 * pnow       * (plant_calloc/c_allometry);
+			cf->cpool_to_deadcrootc_storage = f8 * (1.0-pnow) * (plant_calloc/c_allometry);
 
-			nf->npool_to_livestemn          = f5 * pnow       * (1./epc->livewood_cn) * (plantCalloc/c_allometry);
-			nf->npool_to_livestemn_storage  = f5 * (1.0-pnow) * (1./epc->livewood_cn) * (plantCalloc/c_allometry);
-			nf->npool_to_deadstemn          = f6 * pnow       * (1./epc->deadwood_cn) * (plantCalloc/c_allometry);
-			nf->npool_to_deadstemn_storage  = f6 * (1.0-pnow) * (1./epc->deadwood_cn) * (plantCalloc/c_allometry);
-			nf->npool_to_livecrootn         = f7 * pnow       * (1./epc->livewood_cn) * (plantCalloc/c_allometry);
-			nf->npool_to_livecrootn_storage = f7 * (1.0-pnow) * (1./epc->livewood_cn) * (plantCalloc/c_allometry);
-			nf->npool_to_deadcrootn         = f8 * pnow       * (1./epc->deadwood_cn) * (plantCalloc/c_allometry);
-			nf->npool_to_deadcrootn_storage = f8 * (1.0-pnow) * (1./epc->deadwood_cn) * (plantCalloc/c_allometry);
+			nf->npool_to_livestemn          = f5 * pnow       * (1./epc->livewood_cn) * (plant_calloc/c_allometry);
+			nf->npool_to_livestemn_storage  = f5 * (1.0-pnow) * (1./epc->livewood_cn) * (plant_calloc/c_allometry);
+			nf->npool_to_deadstemn          = f6 * pnow       * (1./epc->deadwood_cn) * (plant_calloc/c_allometry);
+			nf->npool_to_deadstemn_storage  = f6 * (1.0-pnow) * (1./epc->deadwood_cn) * (plant_calloc/c_allometry);
+			nf->npool_to_livecrootn         = f7 * pnow       * (1./epc->livewood_cn) * (plant_calloc/c_allometry);
+			nf->npool_to_livecrootn_storage = f7 * (1.0-pnow) * (1./epc->livewood_cn) * (plant_calloc/c_allometry);
+			nf->npool_to_deadcrootn         = f8 * pnow       * (1./epc->deadwood_cn) * (plant_calloc/c_allometry);
+			nf->npool_to_deadcrootn_storage = f8 * (1.0-pnow) * (1./epc->deadwood_cn) * (plant_calloc/c_allometry);
 		}
 
 	}
@@ -421,8 +405,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		cf->cpool_to_leafc_storage      = 0;
 		cf->cpool_to_frootc             = 0;
 		cf->cpool_to_frootc_storage     = 0;
-		cf->cpool_to_yield             = 0;
-		cf->cpool_to_yield_storage     = 0;
+		cf->cpool_to_fruitc             = 0;
+		cf->cpool_to_fruitc_storage     = 0;
 		cf->cpool_to_softstemc          = 0;
 		cf->cpool_to_softstemc_storage  = 0;
 		cf->cpool_to_livestemc          = 0;
@@ -438,8 +422,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		nf->npool_to_leafn_storage      = 0;
 		nf->npool_to_frootn             = 0;
 		nf->npool_to_frootn_storage     = 0;
-		nf->npool_to_yieldn             = 0;
-		nf->npool_to_yieldn_storage     = 0;
+		nf->npool_to_fruitn             = 0;
+		nf->npool_to_fruitn_storage     = 0;
 		nf->npool_to_softstemn          = 0;
 		nf->npool_to_softstemn_storage  = 0;
 		nf->npool_to_livestemn          = 0;
@@ -462,7 +446,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	fluxes that get released on a given day are calculated in growth_resp(), but that the storage of C for growth resp during display of 
 	transferred growth is assigned here. (GRPNOW: proportion of growth resp to release at fixation ) */
 	
-	cf->cpool_to_gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage + cf->cpool_to_yield_storage + cf->cpool_to_softstemc_storage +
+	cf->cpool_to_gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage + cf->cpool_to_fruitc_storage + cf->cpool_to_softstemc_storage +
                                   cf->cpool_to_livestemc_storage + cf->cpool_to_deadstemc_storage +
 						          cf->cpool_to_livecrootc_storage + cf->cpool_to_deadcrootc_storage) * g1 * (1.0-GRPNOW);
 	
@@ -480,7 +464,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	nf->soil1n_to_soil2n_total      = 0;             
 	nf->soil2n_to_soil3n_total      = 0;             
 	nf->soil3n_to_soil4n_total      = 0;  
-	nf->soil4n_to_sminn_total       = 0;
+	nf->soil4n_to_sminNH4_total     = 0;
 	nf->sminn_to_soil1n_l1_total    = 0;
 	nf->sminn_to_soil2n_l2_total    = 0;
 	nf->sminn_to_soil3n_l4_total    = 0;
@@ -635,7 +619,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 			cf->soil4_hr[layer]           = nt->psoil4c_loss[layer];
 			if (ns->soil4n[layer] > 0)
 			{
-				nf->soil4n_to_sminn[layer]  = -nt->pmnf_s4[layer];
+				nf->soil4n_to_sminNH4[layer]  = -nt->pmnf_s4[layer];
 			}
 		}
 		
@@ -663,7 +647,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		nf->soil1n_to_soil2n_total      += nf->soil1n_to_soil2n[layer];             
 		nf->soil2n_to_soil3n_total      += nf->soil2n_to_soil3n[layer];             
 		nf->soil3n_to_soil4n_total      += nf->soil3n_to_soil4n[layer];  
-		nf->soil4n_to_sminn_total       += nf->soil4n_to_sminn[layer];
+		nf->soil4n_to_sminNH4_total     += nf->soil4n_to_sminNH4[layer];
 		nf->sminn_to_soil1n_l1_total    += nf->sminn_to_soil1n_l1[layer];
 		nf->sminn_to_soil2n_l2_total    += nf->sminn_to_soil2n_l2[layer];
 		nf->sminn_to_soil3n_l4_total    += nf->sminn_to_soil3n_l4[layer];
@@ -680,17 +664,6 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 
 	}
-
-
-	nf->sminn_to_soil1n_l1_totalCUM += nf->sminn_to_soil1n_l1_total;
-	nf->sminn_to_soil2n_l2_totalCUM += nf->sminn_to_soil2n_l2_total;
-	nf->sminn_to_soil3n_l4_totalCUM += nf->sminn_to_soil3n_l4_total;
-	nf->sminn_to_soil2n_s1_totalCUM += nf->sminn_to_soil2n_s1_total;
-	nf->sminn_to_soil3n_s2_totalCUM += nf->sminn_to_soil3n_s2_total;
-	nf->sminn_to_soil4n_s3_totalCUM += nf->sminn_to_soil4n_s3_total;
-	nf->soil4n_to_sminn_totalCUM    += nf->soil4n_to_sminn_total;
-	nf->netMINER_totalCUM           += epv->netMINER_total;
-	nf->sminn_to_npool_totalCUM     += nf->sminn_to_npool_total;
 		
 	return (errorCode);
 }

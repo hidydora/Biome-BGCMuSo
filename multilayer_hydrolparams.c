@@ -81,6 +81,23 @@ int multilayer_hydrolparams(const siteconst_struct* sitec, const soilprop_struct
 	
 
 
+		/* CONTROL - unrealistic VWC content (higher than saturation value) */
+		if (epv->VWC[layer] > sprop->VWCsat[layer])       
+		{
+			if (epv->VWC[layer] - sprop->VWCsat[layer] > 0.001)       
+			{
+				printf("\n");
+				printf("ERROR: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
+				errorCode=1;	
+			}
+			else
+			{
+				ws->deeppercolation_snk += epv->VWC[layer] - sprop->VWCsat[layer];
+				epv->VWC[layer]         = sprop->VWCsat[layer];
+				ws->soilw[layer]        = epv->VWC[layer] * sitec->soillayer_thickness[layer] * water_density;
+			}
+		}
+
 
 	}
 

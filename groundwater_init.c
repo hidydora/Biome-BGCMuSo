@@ -108,12 +108,6 @@ int groundwater_init(groundwater_struct* gws, control_struct* ctrl)
 			gws->GWdepth_array[nmgm]  = GWdepth_array[nmgm];
 		}
 
-		if (nmgm > maxGWD_num)
-		{
-			printf("ERROR in groundwater data reading groundwater_init.c\n");
-			errorCode=0;
-		}
-
 		/* read year and GWD for each simday in each simyear */
 		
 		free(GWyear_array);	

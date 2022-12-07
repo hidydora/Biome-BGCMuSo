@@ -103,13 +103,13 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 		/* live root distribution for soil water calculation */
 		if (layer < epv->n_rootlayers && layer >= epv->germ_layer)
 		{
-			epv->rootlengthProp[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rootlength) * 
+			epv->rootlength_prop[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rootlength) * 
  												  exp(-epc->rootdistrib_param * (sitec->soillayer_midpoint[layer] / epv->rootlength));
-			RLprop_sum1 += epv->rootlengthProp[layer];
+			RLprop_sum1 += epv->rootlength_prop[layer];
 
 		}
 		else
-			epv->rootlengthProp[layer]   = 0;
+			epv->rootlength_prop[layer]   = 0;
 
 		/* dead root distribution for soil water calculation */
 		if (epv->n_maxrootlayers)
@@ -153,8 +153,8 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 	{
 		for (layer =0; layer < N_SOILLAYERS; layer++)
 		{	
-			epv->rootlengthProp[layer] = epv->rootlengthProp[layer] / RLprop_sum1;
-			RLprop_sum2                 += epv->rootlengthProp[layer];
+			epv->rootlength_prop[layer] = epv->rootlength_prop[layer] / RLprop_sum1;
+			RLprop_sum2                 += epv->rootlength_prop[layer];
 		}
 
 		if (fabs(1. - RLprop_sum2) > 1e-8)

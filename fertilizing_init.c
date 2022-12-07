@@ -151,7 +151,7 @@ int fertilizing_init(file init, const control_struct* ctrl, fertilizing_struct* 
 				errorCode=1;
 			}
 
-			if ((int) sizeof(ferttype) > maxlen)
+			if (sizeof(ferttype) > maxlen)
 			{
 				printf("ERROR reading ferttype in fertilizing file (lenght must be in the range 1-200)\n");
 				errorCode=1;

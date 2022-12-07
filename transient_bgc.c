@@ -82,9 +82,6 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	/* soil proportion variables */
 	soilprop_struct   sprop;
 
-	/* groundwater calcultaion */
-	GWcalc_struct gwc;
-
 	/* phenological data */
 	phenarray_struct   phenarr;
 	phenology_struct   phen;
@@ -264,7 +261,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	
 	/* initialize the output mapping array */
-	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary,&gwc))
+	if (!errorCode && output_map_init(output_map,&phen,&metv,&ws,&wf,&cs,&cf,&ns,&nf,&sprop,&epv,&psn_sun,&psn_shade,&summary))
 	{
 		printf("ERROR in call to output_map_init() from transient_bgc.c\n");
 		errorCode=4010;
@@ -424,7 +421,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			ctrl.metday	= simyr*nDAYS_OF_YEAR + yday;		
 
 			/* set fluxes to zero */
-			if (!errorCode && make_zero_flux_struct(&ctrl,&wf, &cf, &nf, &gwc))
+			if (!errorCode && make_zero_flux_struct(&ctrl,&wf, &cf, &nf))
 			{
 				printf("ERROR in call to make_zero_flux_struct() from transient_bgc.c\n");
 				errorCode=5010;
@@ -433,19 +430,20 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 	printf("done make_zero_flux\n");
 #endif
-			/* initalizing annmax and cumulative variables */
+			/* initalizing annmax variables */
 			if (yday == 0)
 			{
-				if (!errorCode && annVARinit(&summary, &epv, &phen, &cs, &cf, &nf))
-				{
-					printf("ERROR in call to make_zero_flux_struct() from bgc.c\n");
-					errorCode=501;
-				}
+				epv.annmax_leafc = 0;
+				epv.annmax_frootc = 0;
+				epv.annmax_fruitc = 0;
+				epv.annmax_softstemc = 0;
+				epv.annmax_livestemc = 0;
+				epv.annmax_livecrootc = 0;
 			}
 
 		    /* nitrogen deposition and fixation */
-			nf.ndep_to_sminn_total = daily_ndep;
-			nf.nfix_to_sminn_total = epc.nfix / nDAYS_OF_YEAR;
+			nf.ndep_to_sminnTOTAL = daily_ndep;
+			nf.nfix_to_sminnTOTAL = epc.nfix / nDAYS_OF_YEAR;
 
 
 			/* calculating actual onday and offday */
@@ -518,7 +516,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 
 
 			/* phenology calculation */
-			if (!errorCode && phenology(&epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
+			if (!errorCode && phenology(&ctrl, &epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
 			{
 				printf("ERROR in phenology() from transient_bgc.c\n");
 				errorCode=5090;
@@ -660,10 +658,10 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			printf("%d\t%d\tdone daily_allocation\n",simyr,yday);
 #endif
 
-                        /* heat stress during flowering can affect daily allocation of yield */
+                        /* heat stress during flowering can affect daily allocation of fruit */
 			if (epc.n_flowHS_phenophase != DATA_GAP)
 			{
-				if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))
+				if (!errorCode && flowering_heatstress(&epc, &metv, &epv, &cf, &nf))
 				{
 					printf("ERROR in flowering_heatstress() from transient_bgc.c\n");
 					errorCode=5190;
@@ -706,7 +704,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 
 	        /* IRRIGATING separately from other management routines */
-			if (!errorCode && irrigating(&ctrl, &IRG, &sitec, &sprop, &epv, &ws, &wf))
+			if (!errorCode && irrigating(&ctrl, &IRG, &epv, &ws, &wf))
 			{
 				printf("ERROR in irrigating() from transient_bgc.c\n");
 				errorCode=5220;
@@ -718,7 +716,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #endif	
          
 			/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVAP, TRANS */
-			if (!errorCode && multilayer_hydrolprocess(bgcout->log_file, &ctrl,  &sitec, &sprop, &epc, &epv, &ws, &wf, &gws, &gwc))
+			if (!errorCode && multilayer_hydrolprocess(&ctrl,  &sitec, &sprop, &epc, &epv, &ws, &wf, &gws))
 			{
 				printf("ERROR in multilayer_hydrolprocess() from transient_bgc.c\n");
 				errorCode=5240;
@@ -851,7 +849,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 		 
 			/* FERTILIZING  */
-	    	if (!errorCode && fertilizing(&ctrl, &sitec, &sprop, &FRZ, &cs, &ns, &ws, &cf, &nf, &wf))
+	    	if (!errorCode && fertilizing(&ctrl, &sitec, &sprop, &FRZ, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in fertilizing() from transient_bgc.c\n");
 				errorCode=5370;
@@ -864,7 +862,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				errorCode=5390;
 			}
 
-			/* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlengthProp */
+			/* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlength_prop */
  			 if (!errorCode && multilayer_rootdepth(&epc, &sprop, &cs, &sitec, &epv))
 			 {
 				printf("ERROR in multilayer_rootdepth() from transient_bgc.c\n");
@@ -926,7 +924,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		
 
 			/* calculate summary variables */
-			if (!errorCode && cnw_summary(&epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
+			if (!errorCode && cnw_summary(yday, &epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
 			{
 				printf("ERROR in cnw_summary() from transient_bgc.c\n");
 				errorCode=5450;
@@ -1017,7 +1015,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (!ctrl.limittransp_flag && !ctrl.limitevap_flag && !ctrl.limitleach_flag && !ctrl.limitleach_flag && !ctrl.limitdiffus_flag &&
 		!ctrl.limitSNSC_flag && !ctrl.limitMR_flag && !ctrl.notransp_flag && !ctrl.noMR_flag && !ctrl.pond_flag&& !ctrl.grazingW_flag &&
 		!ctrl.condMOWerr_flag && !ctrl.condIRGerr_flag && !ctrl.condIRGerr_flag && !ctrl.prephen1_flag && !ctrl.prephen2_flag && 
-		!ctrl.bareground_flag && !ctrl.vegper_flag && !ctrl.allocControl_flag)
+		!ctrl.bareground_flag && !ctrl.vegper_flag)
 	{
 		fprintf(bgcout->log_file.ptr, "no WARNINGS\n");
 	}
@@ -1120,11 +1118,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			ctrl.vegper_flag = -1;
 		}
 
-		if (ctrl.allocControl_flag)
-		{
-			fprintf(bgcout->log_file.ptr, "Adjustment of allocation parameters due to small error (<10-4) in the setting of allocation parameters (see EPC file, lines 129-136)\n");
-			ctrl.allocControl_flag = -1;
-		}
+
 		
 	}
 	/********************************************************************************************************* */

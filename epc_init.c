@@ -35,7 +35,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	double t2 = 0;
 	double t3 = 0;
 	double t4,r1;
-	double sum, maxIND, diff;
+	double sum;
 	int phenphase, scanflag;
 	file epc_file, WPM_file, MSC_file, SGS_file, EGS_file; 	
 	char key[] = "EPC_FILE";
@@ -49,7 +49,6 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	int dataread;
 	int ndata = 0;
 
-	sum=maxIND=diff=0;
 
 	ctrl->planttypeName = (char*) malloc(STRINGSIZE * sizeof(char));
 			
@@ -213,13 +212,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 
 				if (epc->SGS_array[ndata] < 0.0 && epc->SGS_array[ndata] != DATA_GAP)
 				{
-					printf("ERROR in using annual varying onday data, if user-defined bareground simulation is defined (offday=-9999), epc_init()\n");
-					errorCode=20906;
-				}
-
-				if (epc->SGS_array[ndata] > 364)
-				{
-					printf("ERROR in epc_init(): SGS must less than 365\n");
+					printf("ERROR in epc_init(): sgs must be positive\n");
 					errorCode=20906;
 				}
 			
@@ -264,12 +257,6 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	if (ctrl->varEGS_flag == 1 && epc->offday ==  DATA_GAP)
 	{
 		printf("ERROR in using annual varying offday data, if user-defined bareground simulation is defined (offday=-9999), epc_init()\n");
-		errorCode=20906;
-	}
-
-	if (ctrl->varEGS_flag > 364)
-	{
-		printf("ERROR in using annual varying offday data: EGS must less than 365\n");
 		errorCode=20906;
 	}
 
@@ -553,9 +540,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 
-	if (!errorCode && scan_value(epc_file, &epc->yield_cn, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->fruit_cn, 'd'))
 	{
-		printf("ERROR reading initial yield C:N, epc_init()\n");
+		printf("ERROR reading initial fruit C:N, epc_init()\n");
 		errorCode=20917;
 	}
 
@@ -586,9 +573,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		errorCode=2091701;
 	}
 
-	if (!errorCode && epc->yield_cn > 0 && epc->yield_cn < epc->leaf_cn)
+	if (!errorCode && epc->fruit_cn > 0 && epc->fruit_cn < epc->leaf_cn)
 	{
-		printf("ERROR: yield C:N must be >= leaf C:N\n");
+		printf("ERROR: fruit C:N must be >= leaf C:N\n");
 		printf("change the values in EPC file\n");
 		errorCode=2091701;
 	}
@@ -634,9 +621,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		printf("ERROR reading dry matter carbon content of fine root, epc_init()\n");
 		errorCode=20918;
 	}
-	if (!errorCode && scan_value(epc_file, &epc->yield_DM, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->fruitC_DM, 'd'))
 	{
-		printf("ERROR reading dry matter carbon content of yield, epc_init()\n");
+		printf("ERROR reading dry matter carbon content of fruit, epc_init()\n");
 		errorCode=20918;
 	}
 	if (!errorCode && scan_value(epc_file, &epc->softstemC_DM, 'd'))
@@ -758,16 +745,16 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 
-	/* yield LITTER PROPORTION */
+	/* FRUIT LITTER PROPORTION */
 	if (!errorCode && scan_value(epc_file, &t1, 'd'))
 	{
-		printf("ERROR reading yield litter labile proportion, epc_init()\n");
+		printf("ERROR reading fruit litter labile proportion, epc_init()\n");
 		errorCode=20921;
 	}
-	epc->yieldlitr_flab = t1;
+	epc->fruitlitr_flab = t1;
 	if (!errorCode && scan_value(epc_file, &t2, 'd'))
 	{
-		printf("ERROR reading yield litter cellulose proportion, epc_init()\n");
+		printf("ERROR reading fruit litter cellulose proportion, epc_init()\n");
 		errorCode=20921;
 	}
 			
@@ -785,7 +772,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	}
 
 
-	if (!errorCode) epc->yieldlitr_flig = t3;
+	if (!errorCode) epc->fruitlitr_flig = t3;
 
 	/* calculate shielded and unshielded cellulose fraction */
 	if (!errorCode)
@@ -793,19 +780,19 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		r1 = t3/t2;
 		if (r1 <= 0.45)
 		{
-			epc->yieldlitr_fscel = 0.0;
-			epc->yieldlitr_fucel = t2;
+			epc->fruitlitr_fscel = 0.0;
+			epc->fruitlitr_fucel = t2;
 		}
 		else if (r1 > 0.45 && r1 < 0.7)
 		{
 			t4 = (r1 - 0.45)*3.2;
-			epc->yieldlitr_fscel = t4*t2;
-			epc->yieldlitr_fucel = (1.0 - t4)*t2;
+			epc->fruitlitr_fscel = t4*t2;
+			epc->fruitlitr_fucel = (1.0 - t4)*t2;
 		}
 		else
 		{
-			epc->yieldlitr_fscel = 0.8*t2;
-			epc->yieldlitr_fucel = 0.2*t2;
+			epc->fruitlitr_fscel = 0.8*t2;
+			epc->fruitlitr_fucel = 0.2*t2;
 		}
 	}
 
@@ -1352,21 +1339,21 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		errorCode=20964;
 	}
 
-	if (!errorCode && scan_value(epc_file, &epc->maxSNSCmort_leaf, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->SNSCmort_abovebiom_max, 'd'))
 	{
-		printf("ERROR reading maximal senescence mortality parameter of leaf: epc_init()\n");
+		printf("ERROR reading senescence mortality parameter of aboveground biomass: epc_init()\n");
 		errorCode=20965;
 	}
 
-	if (!errorCode && scan_value(epc_file, &epc->maxSNSCmort_other, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->SNSCmort_belowbiom_max, 'd'))
 	{
-		printf("ERROR reading maximal senescence mortality of softstem and froot: epc_init()\n");
+		printf("ERROR reading senescence mortality parameter of belowground biomass: epc_init()\n");
 		errorCode=20965;
 	}
 
-	if (!errorCode && scan_value(epc_file, &epc->m_nscSNSCmort, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->SNSCmort_nsc_max, 'd'))
 	{
-		printf("ERROR reading multiplier of senescence mortality calculation of non-stuctured biomass: epc_init()\n");
+		printf("ERROR reading senescence mortality parameter of non-stuctured biomass: epc_init()\n");
 		errorCode=20965;
 	}
 
@@ -1612,9 +1599,9 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
 		if (phenphase==N_PHENPHASES-1) scanflag=1;
-		if (!errorCode && scan_array(epc_file, &(epc->alloc_yield[phenphase]), 'd', scanflag, 1))
+		if (!errorCode && scan_array(epc_file, &(epc->alloc_fruitc[phenphase]), 'd', scanflag, 1))
 		{
-			printf("ERROR reading alloc_yield in phenophase %i, epc_init()\n", phenphase+1);
+			printf("ERROR reading alloc_fruitc in phenophase %i, epc_init()\n", phenphase+1);
 			errorCode=20984;
 		}
 	}
@@ -1678,51 +1665,15 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 
 	for (phenphase=0; phenphase<N_PHENPHASES; phenphase++)
 	{
-		sum = epc->alloc_leafc[phenphase] + epc->alloc_frootc[phenphase] + epc->alloc_yield[phenphase] + epc->alloc_softstemc[phenphase] +
+		sum = epc->alloc_leafc[phenphase] + epc->alloc_frootc[phenphase] + epc->alloc_fruitc[phenphase] + epc->alloc_softstemc[phenphase] +
 			  epc->alloc_livestemc[phenphase]   + epc->alloc_deadstemc[phenphase] + 
 			  epc->alloc_livecrootc[phenphase]  + epc->alloc_deadcrootc[phenphase];
 
-		/* control of allocation parameter settings */
-		if (epc->alloc_leafc[phenphase]      < 1e-04)  epc->alloc_leafc[phenphase]      = 0;
-		if (epc->alloc_frootc[phenphase]     < 1e-04)  epc->alloc_frootc[phenphase]     = 0;
-		if (epc->alloc_yield[phenphase]     < 1e-04)  epc->alloc_yield[phenphase]     = 0;
-		if (epc->alloc_softstemc[phenphase]  < 1e-04)  epc->alloc_softstemc[phenphase]  = 0;
-		if (epc->alloc_livestemc[phenphase]  < 1e-04)  epc->alloc_livestemc[phenphase]  = 0;
-		if (epc->alloc_deadstemc[phenphase]  < 1e-04)  epc->alloc_deadstemc[phenphase]  = 0;
-		if (epc->alloc_livecrootc[phenphase] < 1e-04)  epc->alloc_livecrootc[phenphase] = 0;
-		if (epc->alloc_deadcrootc[phenphase] < 1e-04)  epc->alloc_deadcrootc[phenphase] = 0;
-
-		/*  searching of the maximal allocation */
-		if (epc->alloc_leafc[phenphase]      > maxIND) maxIND=1;
-		if (epc->alloc_frootc[phenphase]     > maxIND) maxIND=2;
-		if (epc->alloc_yield[phenphase]     > maxIND) maxIND=3;
-		if (epc->alloc_softstemc[phenphase]  > maxIND) maxIND=4;
-		if (epc->alloc_livestemc[phenphase]  > maxIND) maxIND=5;
-		if (epc->alloc_deadstemc[phenphase]  > maxIND) maxIND=6;
-		if (epc->alloc_livecrootc[phenphase] > maxIND) maxIND=7;
-		if (epc->alloc_deadcrootc[phenphase] > maxIND) maxIND=8;
-
-		diff=fabs(sum - 1.);
-		if (!errorCode && sum != 0 && diff > CRIT_PREC)
+		if (!errorCode && sum != 0 && fabs(sum - 1.) > CRIT_PREC)
 		{
-			if (diff < 1e-04)
-			{
-				if (maxIND == 1) epc->alloc_leafc[phenphase]      -= diff;
-				if (maxIND == 2) epc->alloc_frootc[phenphase]     -= diff;
-				if (maxIND == 3) epc->alloc_yield[phenphase]     -= diff;
-				if (maxIND == 4) epc->alloc_softstemc[phenphase]  -= diff;
-				if (maxIND == 5) epc->alloc_livestemc[phenphase]  -= diff;
-				if (maxIND == 6) epc->alloc_deadstemc[phenphase]  -= diff;
-				if (maxIND == 7) epc->alloc_livecrootc[phenphase] -= diff;
-				if (maxIND == 8) epc->alloc_deadcrootc[phenphase] -= diff;
-				ctrl->allocControl_flag = 1;
-			}
-			else
-			{
-				printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
-				printf("Allocation parameters must sum to 1.0 in every phenophase. Check EPC file and try again.\n");
-				errorCode=2098901;
-			}
+			printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
+			printf("Allocation parameters must sum to 1.0 in every phenophase. Check EPC file and try again.\n");
+			errorCode=2098901;
 		
 		}
 

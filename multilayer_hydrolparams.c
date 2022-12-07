@@ -4,8 +4,8 @@ calcultion of soil water potential, hydr. conductivity and hydr. diffusivity as 
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -80,23 +80,6 @@ int multilayer_hydrolparams(const siteconst_struct* sitec, const soilprop_struct
 		epv->pF[layer] =log10(fabs(10000*epv->PSI[layer] ));
 	
 
-
-		/* CONTROL - unrealistic VWC content (higher than saturation value) */
-		if (epv->VWC[layer] > sprop->VWCsat[layer])       
-		{
-			if (epv->VWC[layer] - sprop->VWCsat[layer] > 0.001)       
-			{
-				printf("\n");
-				printf("ERROR: soil water content is higher than saturation value (multilayer_hydrolparams.c)\n");
-				errorCode=1;	
-			}
-			else
-			{
-				ws->deeppercolation_snk += epv->VWC[layer] - sprop->VWCsat[layer];
-				epv->VWC[layer]         = sprop->VWCsat[layer];
-				ws->soilw[layer]        = epv->VWC[layer] * sitec->soillayer_thickness[layer] * water_density;
-			}
-		}
 
 
 	}

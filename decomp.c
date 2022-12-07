@@ -6,10 +6,10 @@ end of the daily allocation function, in order to allow competition
 between microbes and plants for available N.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -112,8 +112,15 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 				ts_decomp = sprop->Tp1_decomp/(1+pow(fabs((tsoil-sprop->Tp4_decomp)/sprop->Tp2_decomp),sprop->Tp3_decomp));
 			
 		}
-			
 
+		/* CONTROL - ts_decomp must be grater than 0 */
+		if (ts_decomp < 0)
+		{
+			printf("\n");
+ 			printf("ERROR in ts_decomp calculation in decomp.c\n");
+			errorCode=1;
+		}
+			
 		/* 1.2: calculate the rate constant scalar for soil water content.
 		Uses the log relationship with water potential given in Andren, O., and K. Paustian, 1987. Barley straw decomposition in the field:
 		a comparison of models. Ecology, 68(5):1190-1200. and supported by data in Orchard, V.A., and F.J. Cook, 1983. Relationship between soil respiration
@@ -122,8 +129,8 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 		minVWC = sprop->VWChw[layer];
 		maxVWC = sprop->VWCsat[layer];
-		opt1VWC = sprop->VWCfc[layer];
-		opt2VWC = epv->VWC_crit2[layer]; 
+		opt1VWC = sprop->VWChw[layer] + sprop->VWCratio_DCcrit1 * (sprop->VWCfc[layer]  - sprop->VWChw[layer]); 
+		opt2VWC = sprop->VWCfc[layer] + sprop->VWCratio_DCcrit2 * (sprop->VWCsat[layer] - sprop->VWCfc[layer]); 
 
 		VWC    = epv->VWC[layer];
 	
@@ -138,7 +145,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 			if (VWC < opt2VWC) 
 			{
 				/* unlimited decomp between optimal VWC values */
-				if (VWC < opt1VWC)
+				if (VWC < opt1VWC && opt1VWC > minVWC)
 					ws_decomp = (VWC - minVWC) / (opt1VWC - minVWC);	
 				else
 					ws_decomp = 1;	
@@ -146,7 +153,10 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 			else
 			{
 				/* decreasing decomp near to total saturation*/
-				ws_decomp = (maxVWC - VWC) / (maxVWC - opt2VWC);
+				if (maxVWC > opt2VWC)
+					ws_decomp = (maxVWC - VWC) / (maxVWC - opt2VWC);
+				else
+					ws_decomp = 1;
 
 				/* lower limit for saturation: m_fullstress2 */
 				if (ws_decomp < epc->m_fullstress2) ws_decomp = epc->m_fullstress2;}

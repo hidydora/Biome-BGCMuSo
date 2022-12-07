@@ -3,8 +3,8 @@ potEVAP_to_actEVAP.c
 calculation of actual soil evaporation from potential soil evaporation regarding to dry day limit (Joe Rictchie, 1970)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -86,18 +86,18 @@ int potEVAP_to_actEVAP(control_struct* ctrl, const siteconst_struct* sitec, soil
 			ws->soilEvapCUM2 -= infiltPOT;
 			epv->DSR = pow((ws->soilEvapCUM2/sprop->coeff_evapCUM),2); 
 			epv->DSR += 1;
-			wf->soilw_evap = sprop->coeff_evapCUM * pow(epv->DSR, 0.5) - ws->soilEvapCUM2;
+			wf->soilwEvap = sprop->coeff_evapCUM * pow(epv->DSR, 0.5) - ws->soilEvapCUM2;
 			
-			if (wf->soilw_evap > wf->soilw_evapPOT) wf->soilw_evap = wf->soilw_evapPOT;
+			if (wf->soilwEvap > wf->soilwEvap_POT) wf->soilwEvap = wf->soilwEvap_POT;
 		
-			ws->soilEvapCUM2 += wf->soilw_evap;
+			ws->soilEvapCUM2 += wf->soilwEvap;
 			epv->DSR = pow((ws->soilEvapCUM2/sprop->coeff_evapCUM),2); 
 		}
 	}
 
 
 	/* control */
-	if (wf->soilw_evap < 0 ||  epv->DSR < 0) 
+	if (wf->soilwEvap < 0 ||  epv->DSR < 0) 
 	{
 		printf("ERROR in soil evaporation calculation (potEVAP_to_actEVAP)\n");
 		errorCode=1;
@@ -108,18 +108,18 @@ int potEVAP_to_actEVAP(control_struct* ctrl, const siteconst_struct* sitec, soil
 	{
 		/* pond_flag: flag of WARNING writing (only at first time) */
 		if (!ctrl->pond_flag ) ctrl->pond_flag = 1;
-		if (wf->soilw_evapPOT < ws->pondw)
+		if (wf->soilwEvap_POT < ws->pondw)
 		{
-			wf->pondw_evap = wf->soilw_evapPOT;
-			wf->soilw_evap = 0;
+			wf->pondwEvap = wf->soilwEvap_POT;
+			wf->soilwEvap = 0;
 		}
 		else 
 		{
-			wf->pondw_evap =  ws->pondw;
-			if (wf->pondw_evap < wf->soilw_evap)
-				wf->soilw_evap -= wf->pondw_evap;
+			wf->pondwEvap =  ws->pondw;
+			if (wf->pondwEvap < wf->soilwEvap)
+				wf->soilwEvap -= wf->pondwEvap;
 			else
-				wf->soilw_evap = 0;
+				wf->soilwEvap = 0;
 		}
 
 	}
@@ -131,21 +131,21 @@ int potEVAP_to_actEVAP(control_struct* ctrl, const siteconst_struct* sitec, soil
 	soilw_hw0 = sprop->VWChw[0] * sitec->soillayer_thickness[0] * water_density;
 
 	/* evap_lack: control parameter to avoid negative soil water content (due to overestimated evaporation + dry soil) */
-	evap_lack = wf->soilw_evap - (ws->soilw[0] - soilw_hw0);
+	evap_lack = wf->soilwEvap - (ws->soilw[0] - soilw_hw0);
 
 	/* theoretical lower limit of water content: hygroscopic water content. */
 	if (evap_lack > 0)
 	{
 		if (ws->soilEvapCUM2 >= sprop->soilEvapLIM)
 		{
-			if (ws->soilEvapCUM2 > wf->soilw_evap)
+			if (ws->soilEvapCUM2 > wf->soilwEvap)
 			{
-				ws->soilEvapCUM2 = ws->soilEvapCUM2 - wf->soilw_evap + (ws->soilw[0] - soilw_hw0);
+				ws->soilEvapCUM2 = ws->soilEvapCUM2 - wf->soilwEvap + (ws->soilw[0] - soilw_hw0);
 				epv->DSR = pow((ws->soilEvapCUM2/sprop->coeff_evapCUM),2); 
 			}
 			else
 			{
-				ws->soilEvapCUM1 =  ws->soilEvapCUM1 - (wf->soilw_evap - ws->soilEvapCUM2);
+				ws->soilEvapCUM1 =  ws->soilEvapCUM1 - (wf->soilwEvap - ws->soilEvapCUM2);
 				
 				ws->soilEvapCUM2 = (ws->soilw[0] - soilw_hw0) - sprop->soilEvapLIM;
 				if (ws->soilEvapCUM2 < 0) ws->soilEvapCUM2 = 0;
@@ -158,17 +158,17 @@ int potEVAP_to_actEVAP(control_struct* ctrl, const siteconst_struct* sitec, soil
 		}
 		else
 		{
-			ws->soilEvapCUM1 =  ws->soilEvapCUM1 - wf->soilw_evap + (ws->soilw[0] - soilw_hw0);
+			ws->soilEvapCUM1 =  ws->soilEvapCUM1 - wf->soilwEvap + (ws->soilw[0] - soilw_hw0);
 		}
 
-		wf->soilw_evap = (ws->soilw[0] - soilw_hw0);
+		wf->soilwEvap = (ws->soilw[0] - soilw_hw0);
 		/* limitevap_flag: flag of WARNING writing in log file (only at first time) */
 		if (fabs(evap_lack) > CRIT_PREC && !ctrl->limitevap_flag) ctrl->limitevap_flag = 1;
 	}
 
 		
 
-	ws->soilw[0] -= (wf->soilw_evap);
+	ws->soilw[0] -= (wf->soilwEvap);
 	epv->VWC[0]  = ws->soilw[0] / water_density / sitec->soillayer_thickness[0];
 
 
@@ -181,22 +181,22 @@ int evapPHASE1toPHASE2(const soilprop_struct* sprop, epvar_struct* epv, wstate_s
 	/* internal variables */
 	int errorCode=0;
 
-	ws->soilEvapCUM1 += wf->soilw_evapPOT;
+	ws->soilEvapCUM1 += wf->soilwEvap_POT;
 	if (ws->soilEvapCUM1 > sprop->soilEvapLIM)
 	{
-		wf->soilw_evap = wf->soilw_evapPOT - sprop->coeff_evapLIM*(ws->soilEvapCUM1 - sprop->soilEvapLIM);
+		wf->soilwEvap = wf->soilwEvap_POT - sprop->coeff_evapLIM*(ws->soilEvapCUM1 - sprop->soilEvapLIM);
 		ws->soilEvapCUM2 = (1-sprop->coeff_evapLIM)*(ws->soilEvapCUM1 - sprop->soilEvapLIM);
 		epv->DSR = pow(ws->soilEvapCUM2/sprop->coeff_evapCUM,2);
 		ws->soilEvapCUM1 = sprop->soilEvapLIM;
 	}
 	else
 	{
-		wf->soilw_evap = wf->soilw_evapPOT; 
+		wf->soilwEvap = wf->soilwEvap_POT; 
 	}
 
 
 
-	wf->soilw_evap *= epv->evapREDmulch;
+	wf->soilwEvap *= epv->evapREDmulch;
 
 return (errorCode);
 }

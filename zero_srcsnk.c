@@ -3,10 +3,10 @@ zero_srcsnk.c
 fill the source and sink variables with 0.0 at the start of the simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -89,11 +89,11 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->GRZsrc_C = 0.0;
 	cs->HRV_transportC = 0.0;
 	cs->FRZsrc_C = 0.0;
-	cs->fruitC_HRV = 0.0;
-        cs->frootC_HRV = 0.0;
+	cs->yield_HRV = 0.0;
+	cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
-	cs->fruit_mr_snk = 0.0;
-	cs->fruit_gr_snk = 0.0;
+	cs->yield_mr_snk = 0.0;
+	cs->yield_gr_snk = 0.0;
 	cs->softstem_mr_snk = 0.0;
 	cs->softstem_gr_snk = 0.0;
 	cs->CbalanceERR = 0.0;
@@ -137,6 +137,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->cum_nee = 0.0;
 	summary->cum_gpp = 0.0;
 	summary->cum_ngb = 0.0;
+	summary->cum_nbp = 0.0;
 	summary->cum_mr = 0.0;
 	summary->cum_gr = 0.0;
 	summary->cum_hr = 0.0;
@@ -187,7 +188,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->leafDM = 0.0;
 	summary->leaflitrDM = 0.0;
     summary->frootDM = 0.0;
-	summary->fruitDM = 0.0;
+	summary->yieldDM = 0.0;
 	summary->yieldDM_HRV = 0.0;
     summary->softstemDM = 0.0;
     summary->livewoodDM = 0.0;
@@ -205,13 +206,29 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->DaboveC_w = 0.0;
 	summary->DaboveCnsc_nw = 0.0;
 	summary->DaboveCnsc_w = 0.0;
+summary->LDbelowC_nw = 0.0;
+	summary->LDbelowC_w = 0.0;
+	summary->LDbelowCnsc_nw = 0.0;
+	summary->LDbelowCnsc_w = 0.0;
+	summary->LbelowC_nw = 0.0;
+	summary->LbelowC_w = 0.0;
+	summary->LbelowCnsc_nw = 0.0;
+	summary->LbelowCnsc_w = 0.0;
+	summary->DbelowC_nw = 0.0;
+	summary->DbelowC_w = 0.0;
+	summary->DbelowCnsc_nw = 0.0;
+	summary->DbelowCnsc_w = 0.0;
+	summary->annmaxLaboveC = 0.0;
+	summary->annmaxLbelowC = 0.0;
+	summary->annmaxLDaboveC = 0.0;
+	summary->annmaxLDbelowC = 0.0;
 	summary->totalC = 0.0;
 	summary->CNlitr_total = 0.0;
 	summary->CNsoil_total = 0.0;
 	summary->leafCN = 0.0;
 	summary->frootCN = 0.0;
 	summary->softstemCN = 0.0;
-	summary->fruitCN = 0.0;
+	summary->yieldN = 0.0;
 
 	summary->NH4_top30avail = 0.0; 
 	summary->NO3_top30avail = 0.0;
@@ -221,12 +238,12 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	summary->stableSOC_top30 = 0.0;
 	summary->leafc_LandD = 0.0;
 	summary->frootc_LandD = 0.0;
-	summary->fruitc_LandD = 0.0;
+	summary->yield_LandD = 0.0;
 	summary->softstemc_LandD = 0.0;
 	summary->lateral_Cflux = 0.0;
 	summary->harvestIndex = 0;
 	summary->rootIndex = 0;
 	summary->belowground_ratio = 0;
-
+	
 	return (errorCode);
 }

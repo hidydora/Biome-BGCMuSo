@@ -3,8 +3,8 @@ management.c
 manages the management issues
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -40,7 +40,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == PLT->PLTyear_array[md] && ctrl->month == PLT->PLTmonth_array[md] && ctrl->day == PLT->PLTday_array[md])
 		{
 			PLT->mgmdPLT += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("PLANTING on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("PLANTING on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 
@@ -51,7 +51,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == THN->THNyear_array[md] && ctrl->month == THN->THNmonth_array[md]&& ctrl->day == THN->THNday_array[md])
 		{
 			THN->mgmdTHN += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("THINNING on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("THINNING on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 
@@ -63,7 +63,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == MOW->MOWyear_array[md] && ctrl->month == MOW->MOWmonth_array[md]&& ctrl->day == MOW->MOWday_array[md])
 		{
 			MOW->mgmdMOW += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("MOWING on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("MOWING on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 
@@ -99,7 +99,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == HRV->HRVyear_array[md] && ctrl->month == HRV->HRVmonth_array[md] && ctrl->day == HRV->HRVday_array[md])
 		{
 			HRV->mgmdHRV += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("HARVESTING on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("HARVESTING on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 
@@ -110,7 +110,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == PLG->PLGyear_array[md] && ctrl->month == PLG->PLGmonth_array[md]&& ctrl->day == PLG->PLGday_array[md])
 		{
 			PLG->mgmdPLG += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("PLOUGHING on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("PLOUGHING on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 
@@ -122,7 +122,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == FRZ->FRZyear_array[md] && ctrl->month == FRZ->FRZmonth_array[md]&& ctrl->day == FRZ->FRZday_array[md])
 		{
 			FRZ->mgmdFRZ += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("FERTILIZING on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("FERTILIZING on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 
@@ -133,7 +133,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == IRG->IRGyear_array[md] && ctrl->month == IRG->IRGmonth_array[md]&& ctrl->day == IRG->IRGday_array[md])
 		{
 			IRG->mgmdIRG += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("IRRIGATING on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("IRRIGATING on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 
@@ -144,7 +144,7 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 		if (year == gws->GWyear_array[md] && ctrl->month == gws->GWmonth_array[md] && ctrl->day == gws->GWday_array[md])
 		{
 			gws->mgmdGWD += 1;
-			if (ctrl->onscreen && (ctrl->spinup == 0 || ctrl->simyr == 0)) printf("GROUNDWATER on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("GROUNDWATER on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 

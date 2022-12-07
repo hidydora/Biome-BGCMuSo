@@ -3,8 +3,8 @@ phenphase.c
 calculation of n_actphen, GDD and GDDmod (based on vernalization and photoslow effect)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -49,9 +49,10 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		phen->GDD_emergSTART = 0;
 		phen->GDD_emergEND   = 0;
 		phen->GDD_limit = 0;
+		phen->remdays_litfall =-1;
 		epv->sla_avg = 0;
 		cs->flowHSsnk_C = 0;
-		
+
 		for (pp = 0; pp < N_PHENPHASES; pp++) 
 		{
 			phen->GDD_crit[pp] = 0;
@@ -66,8 +67,6 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		epv->m_SWCstress = 1;
 		epv->m_SWCstressLENGTH = 1;
 		epv->m_extremT = 1;
-
-	
 		
 		for (pp=0; pp<N_PHENPHASES; pp++) epv->phenphase_date[pp] = -1;
 		epv->flower_date = 0;
@@ -76,12 +75,11 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 
 	if (ctrl->yday == 0)
 	{
-		cs->fruitC_HRV        = 0;
+		cs->yield_HRV        = 0;
 		cs->vegC_HRV          = 0;
-        cs->frootC_HRV        = 0;
-		epv->cumSWCstress     = 0;
+		cs->frootC_HRV        = 0;
+	    epv->cumSWCstress     = 0;
 		epv->cumNstress       = 0;
-		epv->SWCstressLENGTH  = 0;
 		epv->plantCalloc_CUM  = 0;
 		epv->plantNalloc_CUM  = 0;
 	}
@@ -115,16 +113,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 	}
 
 
-	/* 2.2 last day of vegetation period */
-	if ((phen->yday_total == phen->offday+1) || (phen->onday == DATA_GAP && phen->offday == DATA_GAP))
-	{
-		epv->n_actphen = 0;
-		phen->onday = -1;
-		phen->offday = -1;
-		phen->remdays_litfall =-1;
-		lastday = 1;
-	}
-
+	
 	/* 2.3 first day of phenological phases and flowering phenophase (0: in 1th of January) */
 
 	pp = (int) epv->n_actphen; 
@@ -177,7 +166,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 			if (metv->tavg > epc->base_temp) 
 			{
 				metv->GDD       += (metv->tavg - epc->base_temp);
-				metv->GDD_wMOD  += (metv->tavg - epc->base_temp) * dev_rate;
+				metv-> GDD_wMOD  += (metv->tavg - epc->base_temp) * dev_rate;
 			}
 		}
 		else
@@ -280,7 +269,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 	if (epv->n_actphen)
 	{
 		/* calculation of remdays_transfer and predays_transfer */
-		counter = (int) phen->yday_total - (int) phen->onday +1;
+		counter = (int) phen->yday_total - (int) phen->onday;
 		if (counter >= 0 && phen->yday_total < phen->onday+phen->n_transferday) 
 		{
 			phen->remdays_transfer = phen->n_transferday - counter;
@@ -294,7 +283,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 
 	
 		/* calculation of remdays_litfall and predays_litfall */
-		counter=(int) phen->offday - (int) phen->yday_total;
+		counter=(int) phen->offday - (int) phen->yday_total + 1;
 		if (phen->yday_total > phen->offday-phen->n_litfallday && phen->yday_total <= phen->offday) 
 		{
 			phen->remdays_litfall = counter;
@@ -329,6 +318,23 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		for (pp=0; pp<N_PHENPHASES; pp++) epv->rootdepth_phen[pp] = -1;
 
 	}
+
+	/* fixing of onday/offday values for output (+1: output variables counts from 1, internal variables count from 0) */
+	phen->ondayANN = phen->onday + 1;
+	phen->offdayANN = phen->offday + 1;
+
+	/* 2.2 last day of vegetation period */ 
+	if ((phen->yday_total == phen->offday) || (phen->onday == DATA_GAP && phen->offday == DATA_GAP) ||(phen->offday-ctrl->simyr*365 == 364 && phen->yday_total == phen->offday))
+	{
+		epv->n_actphen = 0;
+
+		lastday = 1;
+
+		phen->onday = -1;
+		phen->offday = -1;
+
+	}
+
 	
 
 			

@@ -3,10 +3,10 @@ bgc_constants.h
 Holds macro definitions for constants used in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -43,6 +43,7 @@ Iribane, J.V., and W.L. Godson, 1981. Atmospheric Thermodynamics. 2nd
 are set to 0.0 to control rounding and overflow errors */
 #define CRIT_PREC 1e-12
 #define CRIT_PREC_RIG 1e-14
+#define CRIT_PRECwater 1e-8
 
 /* spinup control */
 /* maximum allowable trend in slow soil carbon at steady-state (kgC/m2/yr) 0.005 */

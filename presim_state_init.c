@@ -4,10 +4,10 @@ Initialize water, carbon, and nitrogen state variables to 0.0 before
 each simulation.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020 D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022 D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -31,7 +31,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 
 	cinit->max_leafc = 0.0;
 	cinit->max_frootc = 0.0;
-	cinit->max_fruitc = 0.0;
+	cinit->max_yield = 0.0;
 	cinit->max_softstemc = 0.0;
 	cinit->max_livestemc = 0.0;
 	cinit->max_livecrootc = 0.0;
@@ -74,9 +74,9 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->frootc = 0;
 	cs->frootc_storage = 0;
 	cs->frootc_transfer = 0;
-	cs->fruitc = 0;
-	cs->fruitc_storage = 0;
-	cs->fruitc_transfer = 0;
+	cs->yield = 0;
+	cs->yield_storage = 0;
+	cs->yield_transfer = 0;
 	cs->softstemc = 0;
 	cs->softstemc_storage = 0;
 	cs->softstemc_transfer = 0;
@@ -103,14 +103,14 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->litrc_above = 0;
 	cs->STDBc_leaf = 0;
 	cs->STDBc_froot = 0;
-	cs->STDBc_fruit = 0;
+	cs->STDBc_yield = 0;
 	cs->STDBc_softstem = 0;
 	cs->STDBc_nsc = 0;
 	cs->STDBc_above = 0;
 	cs->STDBc_below = 0;
 	cs->CTDBc_leaf = 0;
 	cs->CTDBc_froot = 0;
-	cs->CTDBc_fruit = 0;
+	cs->CTDBc_yield = 0;
 	cs->CTDBc_softstem = 0;
 	cs->CTDBc_nsc = 0;
 	cs->CTDBc_cstem = 0;
@@ -130,8 +130,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->leaf_gr_snk = 0;
 	cs->froot_mr_snk = 0;
 	cs->froot_gr_snk = 0;
-	cs->fruit_gr_snk = 0;
-	cs->fruit_mr_snk = 0;
+	cs->yield_gr_snk = 0;
+	cs->yield_mr_snk = 0;
 	cs->softstem_gr_snk = 0;
 	cs->softstem_mr_snk = 0;
 	cs->livestem_mr_snk = 0;
@@ -158,8 +158,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->GRZsnk_C = 0;
 	cs->GRZsrc_C = 0;
 	cs->FRZsrc_C = 0;
-	cs->fruitC_HRV = 0.0;
-         cs->frootC_HRV = 0.0;
+	cs->yield_HRV = 0.0;
+	cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
 	cs->CbalanceERR = 0;
 	cs->CNratioERR = 0.0;
@@ -172,9 +172,9 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->frootn = 0;
 	ns->frootn_storage = 0;
 	ns->frootn_transfer = 0;
-	ns->fruitn = 0;
-	ns->fruitn_storage = 0;
-	ns->fruitn_transfer = 0;
+	ns->yieldn = 0;
+	ns->yieldn_storage = 0;
+	ns->yieldn_transfer = 0;
 	ns->softstemn = 0;
 	ns->softstemn_storage = 0;
 	ns->softstemn_transfer = 0;
@@ -198,14 +198,14 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->cwdn_total = 0;
 	ns->STDBn_leaf = 0;
 	ns->STDBn_froot = 0;
-	ns->STDBn_fruit = 0;
+	ns->STDBn_yield = 0;
 	ns->STDBn_softstem = 0;
 	ns->STDBn_nsc = 0;
 	ns->STDBn_above = 0;
 	ns->STDBn_below = 0;
 	ns->CTDBn_leaf = 0;
 	ns->CTDBn_froot = 0;
-	ns->CTDBn_fruit = 0;
+	ns->CTDBn_yield = 0;
 	ns->CTDBn_softstem = 0;
 	ns->CTDBn_nsc = 0;
 	ns->CTDBn_cstem = 0;
@@ -256,11 +256,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 		cs->soil3c[layer] = 0;
 		cs->soil4c[layer] = 0;
 		cs->soilC[layer] = 0;
-		cs->soil1_DOC[layer] = 0;
-		cs->soil2_DOC[layer] = 0;
-		cs->soil3_DOC[layer] = 0;
-		cs->soil4_DOC[layer] = 0;
-		cs->soil_DOC[layer] = 0;
+		cs->soil1DOC[layer] = 0;
+		cs->soil2DOC[layer] = 0;
+		cs->soil3DOC[layer] = 0;
+		cs->soil4DOC[layer] = 0;
+		cs->soilDOC[layer] = 0;
 		ns->cwdn[layer] = 0;
 		ns->litr1n[layer] = 0;
 		ns->litr2n[layer] = 0;
@@ -272,11 +272,11 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 		ns->soil3n[layer] = 0;
 		ns->soil4n[layer] = 0;
 		ns->soilN[layer] = 0;
-		ns->soil1_DON[layer] = 0;
-		ns->soil2_DON[layer] = 0;
-		ns->soil3_DON[layer] = 0;
-		ns->soil4_DON[layer] = 0;
-		ns->soil_DON[layer] = 0;
+		ns->soil1DON[layer] = 0;
+		ns->soil2DON[layer] = 0;
+		ns->soil3DON[layer] = 0;
+		ns->soil4DON[layer] = 0;
+		ns->soilDON[layer] = 0;
 		ns->sminNH4[layer] = 0;
 		ns->sminNO3[layer] = 0;
 	}

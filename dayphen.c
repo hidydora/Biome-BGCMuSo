@@ -3,10 +3,10 @@ dayphen.c
 transfer one day of phenological data from phenarr struct to phen struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -68,9 +68,9 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 		
 
 
-		if (epc->onday == DATA_GAP)
+		if (epc->ondayUSER == DATA_GAP)
 		{
-			if (epc->offday != DATA_GAP)
+			if (epc->offdayUSER != DATA_GAP)
 			{
 				printf("FATAL ERROR: if onday is equal to -9999 offday must be equal to -9999 - bare soil simulation (dayphen.c)\n");
 				errorCode=1;
@@ -91,6 +91,8 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 		}
 
 	}
+
+
 
 	phen->n_growthday   = phen->offday - phen->onday + 1;
 

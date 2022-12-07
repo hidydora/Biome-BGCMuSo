@@ -3,8 +3,8 @@ tipping.c
 Tipping model for INFILT simulation()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -37,6 +37,8 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 	double m_to_cm, mm_to_cm, dz0, dz1;
 
 	double DRN[N_SOILLAYERS]; /* drainage rate throug soil layer (cm/day) */
+	double soilwPercol[N_SOILLAYERS];
+	double soilwDiffus[N_SOILLAYERS];
 	
 
 	m_to_cm   = 100;
@@ -161,7 +163,7 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 			} /* END ELSE: INFILT < HOLD */
 
 			/* water flux: cm/day to kg/(m2*day) */
-			wf->soilw_percolated[layer] = (DRN[layer] / m_to_cm) * water_density;
+			soilwPercol[layer] = (DRN[layer] / m_to_cm) * water_density;
 
 		
 			/* state update: with new VWC calcualte soilw */
@@ -191,9 +193,6 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 			conduct_sat = sprop->hydrCONDUCTsat[layer] * m_to_cm * nSEC_IN_DAY;
 			conduct_act = conduct_sat * pow(VWC/sprop->VWCsat[layer], 2*(sprop->soilB[layer]+3));
 	
-			/* saturated hydraulic conductivity in actual layer (cm/day = m/s * 100 * sec/day) */
-			conduct_sat = sprop->hydrCONDUCTsat[layer] * m_to_cm * nSEC_IN_DAY;
-			
 
 			if (VWC  > sprop->VWCfc[layer])
 			{
@@ -257,7 +256,9 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 
 			
                  /* water flux: cm/day to kg/(m2*day) */
-			     wf->soilw_percolated[layer] = (DRN[layer] / m_to_cm) * water_density;
+			    soilwPercol[layer] = (DRN[layer] / m_to_cm) * water_density;
+			
+
 				/* state update: with new VWC calcualte soilw */
 				epv->VWC[layer]  = VWC;
 				ws->soilw[layer] = epv->VWC[layer] * sitec->soillayer_thickness[layer] * water_density;
@@ -274,7 +275,7 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 
 	if (epc->SHCM_flag == 0)
 	{
-		for (layer=0; layer<N_SOILLAYERS-2; layer++)
+		for (layer=0; layer<N_SOILLAYERS-1; layer++)
 		{
 			dz0 = sitec->soillayer_thickness[layer]  * m_to_cm;
 			dz1 = sitec->soillayer_thickness[layer+1]* m_to_cm;
@@ -298,9 +299,10 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 			FLOW   = DBAR * GRAD/(dz0+dz1) * 0.5;
 
 			if (fabs(FLOW) > 0)
-				wf->soilw_diffused[layer] = -1*(FLOW / m_to_cm) * water_density;
+				soilwDiffus[layer] = -1*(FLOW / m_to_cm) * water_density;
 			else
-				wf->soilw_diffused[layer] = 0;
+				soilwDiffus[layer] = 0;
+
 	
 			/* tipping diffusion limitation */
 			VWCequilib = (epv->VWC[layer] * sitec->soillayer_thickness[layer] + epv->VWC[layer+1] * sitec->soillayer_thickness[layer+1]) /
@@ -308,14 +310,14 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 			
 			diffus_limit = (VWCequilib - epv->VWC[layer+1]) * sitec->soillayer_thickness[layer+1] * water_density * sprop->drain_coeff[layer+1];
 
-			if (fabs(wf->soilw_diffused[layer]) > CRIT_PREC && fabs(wf->soilw_diffused[layer]) > fabs(diffus_limit))
+			if (fabs(soilwDiffus[layer]) > CRIT_PREC && fabs(soilwDiffus[layer]) > fabs(diffus_limit))
 			{
-				wf->soilw_diffused[layer] = diffus_limit;
+				soilwDiffus[layer] = diffus_limit;
 			}
 			
 			
-			ws->soilw[layer]   -= wf->soilw_diffused[layer];
-			ws->soilw[layer+1] += wf->soilw_diffused[layer];
+			ws->soilw[layer]   -= soilwDiffus[layer];
+			ws->soilw[layer+1] += soilwDiffus[layer];
 			epv->VWC[layer]    =  ws->soilw[layer]   / sitec->soillayer_thickness[layer]   / water_density;
 			epv->VWC[layer+1]  =  ws->soilw[layer+1] / sitec->soillayer_thickness[layer+1] / water_density;
 		
@@ -324,15 +326,26 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 	}
 	else
 	{
-		wf->soilw_diffused[layer] = 0;
+		for (layer=0; layer<N_SOILLAYERS-1; layer++) soilwDiffus[layer] = 0;
 	}
 
 	
 
 	/* ********************************/
 	/* 5. BOTTOM LAYER IS SPECIAL 	*/
-	ws->soilw[N_SOILLAYERS-1] += wf->soilw_percolated[N_SOILLAYERS-2] + wf->soilw_diffused[N_SOILLAYERS-2];
-	epv->VWC[N_SOILLAYERS-1]    =  ws->soilw[N_SOILLAYERS-1]   / sitec->soillayer_thickness[N_SOILLAYERS-1]   / water_density;
+
+	soilwPercol[N_SOILLAYERS-1] = soilwPercol[N_SOILLAYERS-2];
+	soilwDiffus[N_SOILLAYERS-1] = soilwDiffus[N_SOILLAYERS-2];
+	ws->soilw[N_SOILLAYERS-1]   -= soilwDiffus[N_SOILLAYERS-1];
+	epv->VWC[N_SOILLAYERS-1]     = ws->soilw[N_SOILLAYERS-1]   / sitec->soillayer_thickness[N_SOILLAYERS-1]   / water_density;
+
+
+
+
+	/* calculation of net water transport */
+	for (layer=0; layer<N_SOILLAYERS; layer++) wf->soilwFlux[layer]=soilwPercol[layer]+soilwDiffus[layer];
+
+
 
 	return (errorCode);
 

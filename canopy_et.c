@@ -4,7 +4,7 @@ A single-function treatment of canopy evaporation and transpiration
 fluxes.  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -244,18 +244,18 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		trans_shadePOT = t * metv->dayl * epv->plaishade;
 		transPOT = trans_sunPOT + trans_shadePOT;
 	}
-	wf->soilw_transPOT        = transPOT;
+	wf->soilwTransp_POT        = transPOT;
 
 
 	
 	/* multilayer soil model: multilayer transpiration is calculated in multilayer_transpiration.c */
-	if (trans > wf->soilw_transPOT)
-		wf->soilw_transpDEMAND_SUM = trans;
+	if (trans > wf->soilwTransp_POT)
+		wf->soilwTranspDemand_SUM = trans;
 	else
-		wf->soilw_transpDEMAND_SUM = wf->soilw_transPOT;
+		wf->soilwTranspDemand_SUM = wf->soilwTransp_POT;
 		
 
-	wf->soilw_transpDEMAND_SUM = trans;
+	wf->soilwTranspDemand_SUM = trans;
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
 	wf->canopyw_evap = cwe;
     wf->canopyw_to_soilw = wf->prcp_to_canopyw - cwe;

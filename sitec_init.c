@@ -3,10 +3,10 @@ sitec_init.c
 Initialize the site physical constants for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -91,20 +91,12 @@ int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl)
 		errorCode=20705;
 	}
 	
-	if (!errorCode && scan_value(init, &sitec->NdepNH4_coeff, 'd'))
+	/* CONTROL to avoid negative meteorological data */
+ 	if (sitec->albedo_sw < 0)
 	{
-		printf("ERROR reading NdepNH4_coeff: sitec_init()\n");
+		printf("ERROR in site data: albedo_sw must be positive\n");
 		errorCode=20706;
 	}
-
-
-	/* CONTROL to avoid negative meteorological data */
- 	if (sitec->albedo_sw < 0 || sitec->NdepNH4_coeff < 0)
-	{
-		printf("ERROR in site data: swalb and NdepNH4_coeff must be positive\n");
-		errorCode=20707;
-	}
-
 
 	/*--------------------------------------------------------------------------------------*/
 	/* INITALIZING */

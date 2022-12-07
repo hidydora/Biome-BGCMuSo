@@ -2,8 +2,8 @@
 multilayer_rootdepth.c
 calculation of changing rooting depth based on empirical function 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -103,13 +103,13 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 		/* live root distribution for soil water calculation */
 		if (layer < epv->n_rootlayers && layer >= epv->germ_layer)
 		{
-			epv->rootlength_prop[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rootlength) * 
+			epv->rootlengthProp[layer]   = epc->rootdistrib_param * (sitec->soillayer_thickness[layer] / epv->rootlength) * 
  												  exp(-epc->rootdistrib_param * (sitec->soillayer_midpoint[layer] / epv->rootlength));
-			RLprop_sum1 += epv->rootlength_prop[layer];
+			RLprop_sum1 += epv->rootlengthProp[layer];
 
 		}
 		else
-			epv->rootlength_prop[layer]   = 0;
+			epv->rootlengthProp[layer]   = 0;
 
 		/* dead root distribution for soil water calculation */
 		if (epv->n_maxrootlayers)
@@ -153,8 +153,8 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 	{
 		for (layer =0; layer < N_SOILLAYERS; layer++)
 		{	
-			epv->rootlength_prop[layer] = epv->rootlength_prop[layer] / RLprop_sum1;
-			RLprop_sum2                 += epv->rootlength_prop[layer];
+			epv->rootlengthProp[layer] = epv->rootlengthProp[layer] / RLprop_sum1;
+			RLprop_sum2                 += epv->rootlengthProp[layer];
 		}
 
 		if (fabs(1. - RLprop_sum2) > 1e-8)

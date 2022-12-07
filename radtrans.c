@@ -5,10 +5,10 @@ leaf area for sun and shade canopy fractions, then calculate
 canopy radiation interception and transmission 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -41,7 +41,7 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	double swabs_per_plaisun, swabs_per_plaishade;
 	double parabs_plaisun, parabs_plaishade;
 	double parabs_per_plaisun, parabs_per_plaishade, W_to_MJperDAY;
-	double crit_albedo = 0.23;
+	double crit_albedo = 0.23; //param MuSo7
 
 	double lwRADnet, swRADnet, RADnet, RADnet_per_plaisun, RADnet_per_plaishade, RADcs, rad, plai_crit;
 	double J, delta, omega_s, d_r, solar_constant, RADextter, f_cd, Tmax_K, Tmin_K, e_sat, e_act, fi;

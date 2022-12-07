@@ -3,10 +3,10 @@ potential_evap.c
 daily bare soil evaporation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -26,7 +26,7 @@ int potential_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflu
 {
 	int errorCode=0;
 	double rbl;					/* (m/s) boundary layer resistance */
-	double soilw_evapPOT;			/* (kg/m2/s) potential evaporation (daytime) */
+	double soilwEvap_POT;			/* (kg/m2/s) potential evaporation (daytime) */
 	double rcorr;				 /* correction factor for temp and pressure */
 	double lhvap, evap_limit; 
 	pmet_struct pmet_in;		/* input structure for penmon function */
@@ -51,29 +51,29 @@ int potential_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflu
 	pmet_in.rv = rbl;
 	pmet_in.rh = rbl;
 
-	/* calculate soilw_evapPOT in kg/m2/s */
-	penmon(&pmet_in, 0, &soilw_evapPOT);
+	/* calculate soilwEvap_POT in kg/m2/s */
+	penmon(&pmet_in, 0, &soilwEvap_POT);
 	
 
 	/* convert to daily total kg/m2 */
-	soilw_evapPOT *= metv->dayl;
+	soilwEvap_POT *= metv->dayl;
 
 	if (metv->tavg < 0)
-		wf->soilw_evapPOT=0;
+		wf->soilwEvap_POT=0;
 	else
-		wf->soilw_evapPOT=soilw_evapPOT;
+		wf->soilwEvap_POT=soilwEvap_POT;
 
 	if (sprop->aerodyn_resist == DATA_GAP)
-		wf->soilw_evapPOT = 0;
+		wf->soilwEvap_POT = 0;
 	else
-		wf->soilw_evapPOT = wf->soilw_evapPOT;
+		wf->soilwEvap_POT = wf->soilwEvap_POT;
 
 	/* ENERGETIC CONTROL - maximum energy */
     lhvap = 2.5023e6 - 2430.54 * pmet_in.ta;
 	evap_limit = (pmet_in.irad * metv->dayl)/lhvap;
-	if (wf->soilw_evapPOT > evap_limit)
+	if (wf->soilwEvap_POT > evap_limit)
 	{
-		wf->soilw_evapPOT = evap_limit;
+		wf->soilwEvap_POT = evap_limit;
 	}
 	
 		return(errorCode);

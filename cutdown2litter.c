@@ -3,8 +3,8 @@ cutdown2litter.c
 calculation of daily  mortality fluxes of cut-down biomass: these fluxes all enter litter sinks
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -36,7 +36,7 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 
 	cf->CTDBc_leaf_to_litr     = cs->CTDBc_leaf     * mort_nW;
 	cf->CTDBc_froot_to_litr    = cs->CTDBc_froot    * mort_nW;
-	cf->CTDBc_fruit_to_litr    = cs->CTDBc_fruit    * mort_nW;
+	cf->CTDBc_yield_to_litr    = cs->CTDBc_yield    * mort_nW;
 	cf->CTDBc_softstem_to_litr = cs->CTDBc_softstem * mort_nW;
 	cf->CTDBc_nsc_to_litr      = cs->CTDBc_nsc      * mort_nW;
 	cf->CTDBc_cstem_to_cwd     = cs->CTDBc_cstem    * mort_W;
@@ -44,7 +44,7 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 
     nf->CTDBn_leaf_to_litr     = ns->CTDBn_leaf     * mort_nW;
 	nf->CTDBn_froot_to_litr    = ns->CTDBn_froot    * mort_nW;
-	nf->CTDBn_fruit_to_litr    = ns->CTDBn_fruit    * mort_nW;
+	nf->CTDBn_yield_to_litr    = ns->CTDBn_yield    * mort_nW;
 	nf->CTDBn_softstem_to_litr = ns->CTDBn_softstem * mort_nW;
 	nf->CTDBn_nsc_to_litr      = ns->CTDBn_nsc      * mort_nW;
 	nf->CTDBn_cstem_to_cwd     = ns->CTDBn_cstem    * mort_W;
@@ -54,11 +54,11 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 	
 		
 	/* returning of cut-down plant material into litter */
-	cf->CTDBc_to_litr  = cf->CTDBc_leaf_to_litr     + cf->CTDBc_froot_to_litr + cf->CTDBc_fruit_to_litr + cf->CTDBc_softstem_to_litr +
+	cf->CTDBc_to_litr  = cf->CTDBc_leaf_to_litr     + cf->CTDBc_froot_to_litr + cf->CTDBc_yield_to_litr + cf->CTDBc_softstem_to_litr +
 		                 cf->CTDBc_nsc_to_litr + 
 						 cf->CTDBc_cstem_to_cwd     + cf->CTDBc_croot_to_cwd;
 
-	nf->CTDBn_to_litr  = nf->CTDBn_leaf_to_litr     + nf->CTDBn_froot_to_litr + nf->CTDBn_fruit_to_litr + nf->CTDBn_softstem_to_litr +
+	nf->CTDBn_to_litr  = nf->CTDBn_leaf_to_litr     + nf->CTDBn_froot_to_litr + nf->CTDBn_yield_to_litr + nf->CTDBn_softstem_to_litr +
 		                 nf->CTDBn_nsc_to_litr + 
 						 nf->CTDBn_cstem_to_cwd     + nf->CTDBn_croot_to_cwd;
 
@@ -75,64 +75,64 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 	propLAYER2 = sitec->soillayer_thickness[2]/sitec->soillayer_depth[2];
 
 
-	cs->litr1c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flab  + cf->CTDBc_fruit_to_litr * epc->fruitlitr_flab  + 
+	cs->litr1c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flab  + cf->CTDBc_yield_to_litr * epc->yieldlitr_flab  + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_flab + cf->CTDBc_nsc_to_litr) * propLAYER0;
-	cs->litr2c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fucel + cf->CTDBc_fruit_to_litr * epc->fruitlitr_fucel + 
+	cs->litr2c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fucel + cf->CTDBc_yield_to_litr * epc->yieldlitr_fucel + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER0;
-	cs->litr3c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fscel + cf->CTDBc_fruit_to_litr * epc->fruitlitr_fscel + 
+	cs->litr3c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fscel + cf->CTDBc_yield_to_litr * epc->yieldlitr_fscel + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_fscel) * propLAYER0;
-	cs->litr4c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flig  + cf->CTDBc_fruit_to_litr * epc->fruitlitr_flig  + 
+	cs->litr4c[0] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flig  + cf->CTDBc_yield_to_litr * epc->yieldlitr_flig  + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_flig) * propLAYER0;
 	cs->cwdc[0]   += (cf->CTDBc_cstem_to_cwd) * propLAYER0;
 
-	ns->litr1n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flab  + nf->CTDBn_fruit_to_litr * epc->fruitlitr_flab  + 
+	ns->litr1n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flab  + nf->CTDBn_yield_to_litr * epc->yieldlitr_flab  + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_flab + nf->CTDBn_nsc_to_litr) * propLAYER0;
-	ns->litr2n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fucel + nf->CTDBn_fruit_to_litr * epc->fruitlitr_fucel + 
+	ns->litr2n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fucel + nf->CTDBn_yield_to_litr * epc->yieldlitr_fucel + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER0;
-	ns->litr3n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fscel + nf->CTDBn_fruit_to_litr * epc->fruitlitr_fscel + 
+	ns->litr3n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fscel + nf->CTDBn_yield_to_litr * epc->yieldlitr_fscel + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_fscel) * propLAYER0;
-	ns->litr4n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flig  + nf->CTDBn_fruit_to_litr * epc->fruitlitr_flig  + 
+	ns->litr4n[0] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flig  + nf->CTDBn_yield_to_litr * epc->yieldlitr_flig  + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_flig) * propLAYER0;
 	ns->cwdn[0]   += (nf->CTDBn_cstem_to_cwd) * propLAYER0;
 
 
-	cs->litr1c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flab  + cf->CTDBc_fruit_to_litr * epc->fruitlitr_flab  + 
+	cs->litr1c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flab  + cf->CTDBc_yield_to_litr * epc->yieldlitr_flab  + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_flab + cf->CTDBc_nsc_to_litr) * propLAYER1;
-	cs->litr2c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fucel + cf->CTDBc_fruit_to_litr * epc->fruitlitr_fucel + 
+	cs->litr2c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fucel + cf->CTDBc_yield_to_litr * epc->yieldlitr_fucel + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER1;
-	cs->litr3c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fscel + cf->CTDBc_fruit_to_litr * epc->fruitlitr_fscel + 
+	cs->litr3c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fscel + cf->CTDBc_yield_to_litr * epc->yieldlitr_fscel + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_fscel) * propLAYER1;
-	cs->litr4c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flig  + cf->CTDBc_fruit_to_litr * epc->fruitlitr_flig  + 
+	cs->litr4c[1] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flig  + cf->CTDBc_yield_to_litr * epc->yieldlitr_flig  + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_flig) * propLAYER1;
 	cs->cwdc[1]   += (cf->CTDBc_cstem_to_cwd) * propLAYER1;
 
-	ns->litr1n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flab  + nf->CTDBn_fruit_to_litr * epc->fruitlitr_flab  + 
+	ns->litr1n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flab  + nf->CTDBn_yield_to_litr * epc->yieldlitr_flab  + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_flab + nf->CTDBn_nsc_to_litr) * propLAYER1;
-	ns->litr2n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fucel + nf->CTDBn_fruit_to_litr * epc->fruitlitr_fucel + 
+	ns->litr2n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fucel + nf->CTDBn_yield_to_litr * epc->yieldlitr_fucel + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER1;
-	ns->litr3n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fscel + nf->CTDBn_fruit_to_litr * epc->fruitlitr_fscel + 
+	ns->litr3n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fscel + nf->CTDBn_yield_to_litr * epc->yieldlitr_fscel + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_fscel) * propLAYER1;
-	ns->litr4n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flig  + nf->CTDBn_fruit_to_litr * epc->fruitlitr_flig  + 
+	ns->litr4n[1] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flig  + nf->CTDBn_yield_to_litr * epc->yieldlitr_flig  + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_flig) * propLAYER1;
 	ns->cwdn[1]   += (nf->CTDBn_cstem_to_cwd) * propLAYER1;
 	
-	cs->litr1c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flab  + cf->CTDBc_fruit_to_litr * epc->fruitlitr_flab  + 
+	cs->litr1c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flab  + cf->CTDBc_yield_to_litr * epc->yieldlitr_flab  + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_flab + cf->CTDBc_nsc_to_litr) * propLAYER2;
-	cs->litr2c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fucel + cf->CTDBc_fruit_to_litr * epc->fruitlitr_fucel + 
+	cs->litr2c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fucel + cf->CTDBc_yield_to_litr * epc->yieldlitr_fucel + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER2;
-	cs->litr3c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fscel + cf->CTDBc_fruit_to_litr * epc->fruitlitr_fscel + 
+	cs->litr3c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_fscel + cf->CTDBc_yield_to_litr * epc->yieldlitr_fscel + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_fscel) * propLAYER2;
-	cs->litr4c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flig  + cf->CTDBc_fruit_to_litr * epc->fruitlitr_flig  + 
+	cs->litr4c[2] += (cf->CTDBc_leaf_to_litr * epc->leaflitr_flig  + cf->CTDBc_yield_to_litr * epc->yieldlitr_flig  + 
 		              cf->CTDBc_softstem_to_litr * epc->softstemlitr_flig) * propLAYER2;
 	cs->cwdc[2]   += (cf->CTDBc_cstem_to_cwd) * propLAYER2;
 
-	ns->litr1n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flab  + nf->CTDBn_fruit_to_litr * epc->fruitlitr_flab  + 
+	ns->litr1n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flab  + nf->CTDBn_yield_to_litr * epc->yieldlitr_flab  + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_flab + nf->CTDBn_nsc_to_litr) * propLAYER2;
-	ns->litr2n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fucel + nf->CTDBn_fruit_to_litr * epc->fruitlitr_fucel + 
+	ns->litr2n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fucel + nf->CTDBn_yield_to_litr * epc->yieldlitr_fucel + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER2;
-	ns->litr3n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fscel + nf->CTDBn_fruit_to_litr * epc->fruitlitr_fscel + 
+	ns->litr3n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_fscel + nf->CTDBn_yield_to_litr * epc->yieldlitr_fscel + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_fscel) * propLAYER2;
-	ns->litr4n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flig  + nf->CTDBn_fruit_to_litr * epc->fruitlitr_flig  + 
+	ns->litr4n[2] += (nf->CTDBn_leaf_to_litr * epc->leaflitr_flig  + nf->CTDBn_yield_to_litr * epc->yieldlitr_flig  + 
 		              nf->CTDBn_softstem_to_litr * epc->softstemlitr_flig) * propLAYER2;
 	ns->cwdn[2]   += (nf->CTDBn_cstem_to_cwd) * propLAYER2;
 
@@ -141,16 +141,16 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 	{
 		for (layer=0; layer < N_SOILLAYERS; layer++)
 		{
-			cs->litr1c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_flab  * epv->rootlength_prop[layer];
-			cs->litr2c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_fucel * epv->rootlength_prop[layer];
-			cs->litr3c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_fscel * epv->rootlength_prop[layer];
-			cs->litr4c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_flig  * epv->rootlength_prop[layer];
+			cs->litr1c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_flab  * epv->rootlengthProp[layer];
+			cs->litr2c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_fucel * epv->rootlengthProp[layer];
+			cs->litr3c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_fscel * epv->rootlengthProp[layer];
+			cs->litr4c[layer]  += cf->CTDBc_froot_to_litr * epc->frootlitr_flig  * epv->rootlengthProp[layer];
 			cs->cwdc[layer]    += cf->CTDBc_croot_to_cwd  * epv->rootlengthLandD_prop[layer];
 
-			ns->litr1n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_flab  * epv->rootlength_prop[layer];
-			ns->litr2n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_fucel * epv->rootlength_prop[layer];
-			ns->litr3n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_fscel * epv->rootlength_prop[layer];
-			ns->litr4n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_flig  * epv->rootlength_prop[layer];
+			ns->litr1n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_flab  * epv->rootlengthProp[layer];
+			ns->litr2n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_fucel * epv->rootlengthProp[layer];
+			ns->litr3n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_fscel * epv->rootlengthProp[layer];
+			ns->litr4n[layer]  += nf->CTDBn_froot_to_litr * epc->frootlitr_flig  * epv->rootlengthProp[layer];
 			ns->cwdn[layer]    += nf->CTDBn_croot_to_cwd  * epv->rootlengthLandD_prop[layer];
 		}
 	}
@@ -179,7 +179,7 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 
 	cs->CTDBc_leaf     -= cf->CTDBc_leaf_to_litr;
 	cs->CTDBc_froot    -= cf->CTDBc_froot_to_litr;
-	cs->CTDBc_fruit    -= cf->CTDBc_fruit_to_litr;
+	cs->CTDBc_yield    -= cf->CTDBc_yield_to_litr;
 	cs->CTDBc_softstem -= cf->CTDBc_softstem_to_litr;
 	cs->CTDBc_nsc      -= cf->CTDBc_nsc_to_litr;
 	cs->CTDBc_cstem    -= cf->CTDBc_cstem_to_cwd;
@@ -188,7 +188,7 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 
     ns->CTDBn_leaf     -= nf->CTDBn_leaf_to_litr;
 	ns->CTDBn_froot    -= nf->CTDBn_froot_to_litr;
-	ns->CTDBn_fruit    -= nf->CTDBn_fruit_to_litr;
+	ns->CTDBn_yield    -= nf->CTDBn_yield_to_litr;
 	ns->CTDBn_softstem -= nf->CTDBn_softstem_to_litr;
 	ns->CTDBn_nsc      -= nf->CTDBn_nsc_to_litr;
 	ns->CTDBn_cstem    -= nf->CTDBn_cstem_to_cwd;
@@ -198,7 +198,7 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 	/* 4. estimating aboveground litter and cwdc*/
 
 	cs->cwdc_above += cf->CTDBc_cstem_to_cwd;
-	cs->litrc_above += cf->CTDBc_leaf_to_litr + cf->CTDBc_fruit_to_litr + cf->CTDBc_softstem_to_litr + cf->CTDBc_nsc_to_litr;
+	cs->litrc_above += cf->CTDBc_leaf_to_litr + cf->CTDBc_yield_to_litr + cf->CTDBc_softstem_to_litr;
 
 	/************************************************************/
 	/* 5. precision control */
@@ -211,12 +211,12 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 		ns->CTDBn_leaf = 0;
 	}
 
-	if ((cs->CTDBc_fruit != 0 && fabs(cs->CTDBc_fruit) < CRIT_PREC) || (ns->CTDBn_fruit != 0 && fabs(ns->CTDBn_fruit) < CRIT_PREC))
+	if ((cs->CTDBc_yield != 0 && fabs(cs->CTDBc_yield) < CRIT_PREC) || (ns->CTDBn_yield != 0 && fabs(ns->CTDBn_yield) < CRIT_PREC))
 	{
-		cs->FIREsnk_C += cs->CTDBc_fruit;
-		ns->FIREsnk_N += ns->CTDBn_fruit; 
-		cs->CTDBc_fruit = 0;
-		ns->CTDBn_fruit = 0;
+		cs->FIREsnk_C += cs->CTDBc_yield;
+		ns->FIREsnk_N += ns->CTDBn_yield; 
+		cs->CTDBc_yield = 0;
+		ns->CTDBn_yield = 0;
 	}
 
 	if ((cs->CTDBc_softstem != 0 && fabs(cs->CTDBc_softstem) < CRIT_PREC) || (ns->CTDBn_softstem != 0 && fabs(ns->CTDBn_softstem) < CRIT_PREC))

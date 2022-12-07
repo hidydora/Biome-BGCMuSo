@@ -2,8 +2,8 @@
 conduct_limit_factors.c
 calculate the limitation factors of conductance
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -26,9 +26,9 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilpr
 {
 	int errorCode=0;
 	int layer;
-	double VWCsat,VWCfc,VWCwp, VWC_crit1, VWC_crit2;
+	double VWCsat,VWCfc,VWCwp, VWC_SScrit1, VWC_SScrit2;
     
-	VWCsat=VWCfc=VWCwp=VWC_crit1=VWC_crit2=0;
+	VWCsat=VWCfc=VWCwp=VWC_SScrit1=VWC_SScrit2=0;
 
 	
 
@@ -39,38 +39,38 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilpr
 		VWCfc  = sprop->VWCfc[layer]; 
 		VWCwp  = sprop->VWCwp[layer];
 
-		if (epc->VWCratio_crit1 != DATA_GAP)
-			VWC_crit1 = VWCwp + epc->VWCratio_crit1 * (VWCfc - VWCwp);
+		if (epc->VWCratio_SScrit1 != DATA_GAP)
+			VWC_SScrit1 = VWCwp + epc->VWCratio_SScrit1 * (VWCfc - VWCwp);
 		else
-			VWC_crit1 = VWCfc;
+			VWC_SScrit1 = VWCfc;
 
-		if (epc->VWCratio_crit2 != DATA_GAP)
-			VWC_crit2 = VWCfc + epc->VWCratio_crit2 * (VWCsat - VWCfc);
+		if (epc->VWCratio_SScrit2 != DATA_GAP)
+			VWC_SScrit2 = VWCfc + epc->VWCratio_SScrit2 * (VWCsat - VWCfc);
 		else
-			VWC_crit2 = VWCsat;
+			VWC_SScrit2 = VWCsat;
 
 
 		/* CONTROL */
-		if (VWC_crit2 > VWCsat)
+		if (VWC_SScrit2 > VWCsat)
 		{
 			printf("\n");
-			printf("ERROR: VWC_crit2 data is greater than saturation value in layer:%i\n", layer);
+			printf("ERROR: VWC_SScrit2 data is greater than saturation value in layer:%i\n", layer);
 			errorCode=1;
 		}
 
-		if (!errorCode && VWC_crit2 < VWC_crit1)
+		if (!errorCode && VWC_SScrit2 < VWC_SScrit1)
 		{
 			printf("\n");
-			printf("ERROR: VWC_crit1 data is greater then VWC_crit2 data in layer:%i\n", layer);
+			printf("ERROR: VWC_SScrit1 data is greater then VWC_SScrit2 data in layer:%i\n", layer);
 			errorCode=1;
 		}
 	
-		epv->VWC_crit1[layer]		= VWC_crit1;
-		epv->VWC_crit2[layer]		= VWC_crit2;
+		epv->VWC_SScrit1[layer]		= VWC_SScrit1;
+		epv->VWC_SScrit2[layer]		= VWC_SScrit2;
 
 	}
 	if (ctrl->spinup < 2) fprintf(logfile.ptr, "LIMITATION VALUES OF SWC (m3/m3) IN TOP SOIL LAYER \n");  
-	if (ctrl->spinup < 2) fprintf(logfile.ptr, "SWC (limit1 and limit2):  %12.3f %12.3f\n", epv->VWC_crit1[0], epv->VWC_crit2[0]);
+	if (ctrl->spinup < 2) fprintf(logfile.ptr, "SWC (limit1 and limit2):  %12.3f %12.3f\n", epv->VWC_SScrit1[0], epv->VWC_SScrit2[0]);
 	if (ctrl->spinup < 2) fprintf(logfile.ptr, " \n");
 		
 	return (errorCode);

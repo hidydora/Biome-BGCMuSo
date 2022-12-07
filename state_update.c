@@ -3,10 +3,10 @@ state_update.c
 Resolve the fluxes in bgc() daily loop to update state variables
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -53,28 +53,29 @@ int daily_water_state_update(const epconst_struct* epc, const wflux_struct* wf, 
 	ws->snoww          -= wf->snoww_subl;
 	
 	/* bare soil evaporation */
-	ws->soilEvap_snk   += wf->soilw_evap;
+	ws->soilEvap_snk   += wf->soilwEvap;
 	
 	/* transpiration */
-	ws->trans_snk      += wf->soilw_transp_SUM;
+	ws->trans_snk      += wf->soilwTransp_SUM;
 	
 	/* runoff - from the top soil layer (net loss) */
 	ws->runoff_snk	   += wf->prcp_to_runoff + wf->pondw_to_runoff;;
 
 	/* pond water filling - from precipitiation (only in case of tipping) */
-	if (epc->SHCM_flag == 0 || epc->SHCM_flag == 2) ws->pondw -= wf->pondw_evap;
+	if (epc->SHCM_flag == 0 || epc->SHCM_flag == 2) ws->pondw -= wf->pondwEvap;
 
-	ws->pondEvap_snk += wf->pondw_evap; 
+	ws->pondEvap_snk += wf->pondwEvap; 
 
 	/* deep percolation: percolation of the bottom layer is net loss for the sytem*/
-	ws->deeppercolation_snk += wf->soilw_percolated[N_SOILLAYERS-1] + wf->soilw_diffused[N_SOILLAYERS-1];
+	ws->deeppercolation_snk += wf->soilwFlux[N_SOILLAYERS-1];
 	
 	/* groundwater */	
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		ws->groundwater_src += wf->soilw_from_GW[layer];
-		ws->groundwater_snk += wf->GW_recharge[layer];
+		ws->groundwater_src += wf->GWdischarge[layer];
+		ws->groundwater_snk += wf->GWrecharge[layer];
 	}
+	ws->groundwater_src += wf->GW_to_pondw;
 
 
 	/* irrigating */
@@ -90,7 +91,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	
 	int errorCode=0;
 	int layer, pp;
-	double leafc_to_litr, leafn_to_litr, frootc_to_litr, frootn_to_litr, fruitc_to_litr, fruitn_to_litr, softstemc_to_litr, softstemn_to_litr;
+	double leafc_to_litr, leafn_to_litr, frootc_to_litr, frootn_to_litr, yield_to_litr, yieldn_to_litr, softstemc_to_litr, softstemn_to_litr;
 	double propLAYER0, propLAYER1, propLAYER2;
 
 	/* estimating aboveground litter and cwdc*/
@@ -137,16 +138,16 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->fruitc_transfer_to_fruitc, nf->fruitn_transfer_to_fruitn, 0)) 
+	if (!errorCode && epc->yield_cn && CNratio_control(cs, epc->yield_cn, cs->yield, ns->yieldn, cf->yield_transfer_to_yield, nf->yieldn_transfer_to_yieldn, 0)) 
 	{
-		cs->fruitc               += cf->fruitc_transfer_to_fruitc;
-		cs->fruitc_transfer      -= cf->fruitc_transfer_to_fruitc;
-		ns->fruitn               = cs->fruitc / epc->fruit_cn;
-		ns->fruitn_transfer      = cs->fruitc_transfer / epc->fruit_cn;
+		cs->yield               += cf->yield_transfer_to_yield;
+		cs->yield_transfer      -= cf->yield_transfer_to_yield;
+		ns->yieldn               = cs->yield / epc->yield_cn;
+		ns->yieldn_transfer      = cs->yield_transfer / epc->yield_cn;
 	}
-	else if (epc->fruit_cn)	
+	else if (epc->yield_cn)	
 	{	
-		if (!errorCode) printf("ERROR in fruit CN calculation in state_update.c\n");
+		if (!errorCode) printf("ERROR in yield CN calculation in state_update.c\n");
 		errorCode=1;
 	}
 
@@ -273,47 +274,47 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 	
-	fruitc_to_litr = cf->fruitc_to_litr1c + cf->fruitc_to_litr2c + cf->fruitc_to_litr3c + cf->fruitc_to_litr4c;
-	fruitn_to_litr = nf->fruitn_to_litr1n + nf->fruitn_to_litr2n + nf->fruitn_to_litr3n + nf->fruitn_to_litr4n;
-	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc, ns->fruitn, fruitc_to_litr, fruitn_to_litr, 0)) 
+	yield_to_litr = cf->yield_to_litr1c + cf->yield_to_litr2c + cf->yield_to_litr3c + cf->yield_to_litr4c;
+	yieldn_to_litr = nf->yieldn_to_litr1n + nf->yieldn_to_litr2n + nf->yieldn_to_litr3n + nf->yieldn_to_litr4n;
+	if (!errorCode && epc->yield_cn && CNratio_control(cs, epc->yield_cn, cs->yield, ns->yieldn, yield_to_litr, yieldn_to_litr, 0)) 
 	{
-		cs->litr1c[0]  += (cf->fruitc_to_litr1c) * propLAYER0;
-		cs->litr2c[0]  += (cf->fruitc_to_litr2c) * propLAYER0;
-		cs->litr3c[0]  += (cf->fruitc_to_litr3c) * propLAYER0;
-		cs->litr4c[0]  += (cf->fruitc_to_litr4c) * propLAYER0;
+		cs->litr1c[0]  += (cf->yield_to_litr1c) * propLAYER0;
+		cs->litr2c[0]  += (cf->yield_to_litr2c) * propLAYER0;
+		cs->litr3c[0]  += (cf->yield_to_litr3c) * propLAYER0;
+		cs->litr4c[0]  += (cf->yield_to_litr4c) * propLAYER0;
 
-		cs->litr1c[1]  += (cf->fruitc_to_litr1c) * propLAYER1;
-		cs->litr2c[1]  += (cf->fruitc_to_litr2c) * propLAYER1;
-		cs->litr3c[1]  += (cf->fruitc_to_litr3c) * propLAYER1;
-		cs->litr4c[1]  += (cf->fruitc_to_litr4c) * propLAYER1;
+		cs->litr1c[1]  += (cf->yield_to_litr1c) * propLAYER1;
+		cs->litr2c[1]  += (cf->yield_to_litr2c) * propLAYER1;
+		cs->litr3c[1]  += (cf->yield_to_litr3c) * propLAYER1;
+		cs->litr4c[1]  += (cf->yield_to_litr4c) * propLAYER1;
 
-		cs->litr1c[2]  += (cf->fruitc_to_litr1c) * propLAYER2;
-		cs->litr2c[2]  += (cf->fruitc_to_litr2c) * propLAYER2;
-		cs->litr3c[2]  += (cf->fruitc_to_litr3c) * propLAYER2;
-		cs->litr4c[2]  += (cf->fruitc_to_litr4c) * propLAYER2;
+		cs->litr1c[2]  += (cf->yield_to_litr1c) * propLAYER2;
+		cs->litr2c[2]  += (cf->yield_to_litr2c) * propLAYER2;
+		cs->litr3c[2]  += (cf->yield_to_litr3c) * propLAYER2;
+		cs->litr4c[2]  += (cf->yield_to_litr4c) * propLAYER2;
 
-		cs->fruitc      -= (cf->fruitc_to_litr1c + cf->fruitc_to_litr2c + cf->fruitc_to_litr3c + cf->fruitc_to_litr4c);
+		cs->yield      -= (cf->yield_to_litr1c + cf->yield_to_litr2c + cf->yield_to_litr3c + cf->yield_to_litr4c);
 
-		ns->litr1n[0]  += (nf->fruitn_to_litr1n) * propLAYER0;
-		ns->litr2n[0]  += (nf->fruitn_to_litr2n) * propLAYER0;
-		ns->litr3n[0]  += (nf->fruitn_to_litr3n) * propLAYER0;
-		ns->litr4n[0]  += (nf->fruitn_to_litr4n) * propLAYER0;
+		ns->litr1n[0]  += (nf->yieldn_to_litr1n) * propLAYER0;
+		ns->litr2n[0]  += (nf->yieldn_to_litr2n) * propLAYER0;
+		ns->litr3n[0]  += (nf->yieldn_to_litr3n) * propLAYER0;
+		ns->litr4n[0]  += (nf->yieldn_to_litr4n) * propLAYER0;
 
-		ns->litr1n[1]  += (nf->fruitn_to_litr1n) * propLAYER1;
-		ns->litr2n[1]  += (nf->fruitn_to_litr2n) * propLAYER1;
-		ns->litr3n[1]  += (nf->fruitn_to_litr3n) * propLAYER1;
-		ns->litr4n[1]  += (nf->fruitn_to_litr4n) * propLAYER1;	
+		ns->litr1n[1]  += (nf->yieldn_to_litr1n) * propLAYER1;
+		ns->litr2n[1]  += (nf->yieldn_to_litr2n) * propLAYER1;
+		ns->litr3n[1]  += (nf->yieldn_to_litr3n) * propLAYER1;
+		ns->litr4n[1]  += (nf->yieldn_to_litr4n) * propLAYER1;	
 
-		ns->litr1n[2]  += (nf->fruitn_to_litr1n) * propLAYER2;
-		ns->litr2n[2]  += (nf->fruitn_to_litr2n) * propLAYER2;
-		ns->litr3n[2]  += (nf->fruitn_to_litr3n) * propLAYER2;
-		ns->litr4n[2]  += (nf->fruitn_to_litr4n) * propLAYER2;	
+		ns->litr1n[2]  += (nf->yieldn_to_litr1n) * propLAYER2;
+		ns->litr2n[2]  += (nf->yieldn_to_litr2n) * propLAYER2;
+		ns->litr3n[2]  += (nf->yieldn_to_litr3n) * propLAYER2;
+		ns->litr4n[2]  += (nf->yieldn_to_litr4n) * propLAYER2;	
 
-		ns->fruitn      = cs->fruitc / epc->fruit_cn;
+		ns->yieldn      = cs->yield / epc->yield_cn;
 	}
-	else if (epc->fruit_cn)		
+	else if (epc->yield_cn)		
 	{
-		if (!errorCode) printf("ERROR in fruit_to_litr CN calculation in state_update.c\n");
+		if (!errorCode) printf("ERROR in yield_to_litr CN calculation in state_update.c\n");
 		errorCode=1;
 	}
 
@@ -368,15 +369,15 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	{
 		for (layer = 0; layer < N_SOILLAYERS; layer++)
 		{
-			cs->litr1c[layer] += cf->frootc_to_litr1c * epv->rootlength_prop[layer];
-			cs->litr2c[layer] += cf->frootc_to_litr2c * epv->rootlength_prop[layer];
-			cs->litr3c[layer] += cf->frootc_to_litr3c * epv->rootlength_prop[layer];
-			cs->litr4c[layer] += cf->frootc_to_litr4c * epv->rootlength_prop[layer];
+			cs->litr1c[layer] += cf->frootc_to_litr1c * epv->rootlengthProp[layer];
+			cs->litr2c[layer] += cf->frootc_to_litr2c * epv->rootlengthProp[layer];
+			cs->litr3c[layer] += cf->frootc_to_litr3c * epv->rootlengthProp[layer];
+			cs->litr4c[layer] += cf->frootc_to_litr4c * epv->rootlengthProp[layer];
 
-			ns->litr1n[layer] += nf->frootn_to_litr1n * epv->rootlength_prop[layer];
-			ns->litr2n[layer] += nf->frootn_to_litr2n * epv->rootlength_prop[layer];
-			ns->litr3n[layer] += nf->frootn_to_litr3n * epv->rootlength_prop[layer];
-			ns->litr4n[layer] += nf->frootn_to_litr4n * epv->rootlength_prop[layer];
+			ns->litr1n[layer] += nf->frootn_to_litr1n * epv->rootlengthProp[layer];
+			ns->litr2n[layer] += nf->frootn_to_litr2n * epv->rootlengthProp[layer];
+			ns->litr3n[layer] += nf->frootn_to_litr3n * epv->rootlengthProp[layer];
+			ns->litr4n[layer] += nf->frootn_to_litr4n * epv->rootlengthProp[layer];
 		}
 		cs->frootc       -= frootc_to_litr;
 		ns->frootn	      = cs->frootc / epc->froot_cn;
@@ -410,8 +411,8 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	cs->cpool        += (cf->psnsun_to_cpool + cf->psnshade_to_cpool);
 
 	/* 7. Plant allocation flux, from N retrans pool */
-	ns->npool		    += nf->retransn_to_npoolTOTAL;
-	ns->retransn        -= nf->retransn_to_npoolTOTAL;
+	ns->npool		    += nf->retransn_to_npool_total;
+	ns->retransn        -= nf->retransn_to_npool_total;
 
 	
 	/* 8. Litter decomposition fluxes - MULTILAYER SOIL */
@@ -549,46 +550,46 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		errorCode=1;
 	}
 
-	/* Daily fruit allocation fluxes + EXTRA: effect of heat stress during flowering in yield filling phenophase */
-	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc, ns->fruitn, cf->cpool_to_fruitc, nf->npool_to_fruitn, 0)) 
+	/* Daily yield allocation fluxes + EXTRA: effect of heat stress during flowering in yield filling phenophase */
+	if (!errorCode && epc->yield_cn && CNratio_control(cs, epc->yield_cn, cs->yield, ns->yieldn, cf->cpool_to_yield, nf->npool_to_yieldn, 0)) 
 	{
-		cs->cpool          -= cf->cpool_to_fruitc;
-		cs->fruitc         += cf->cpool_to_fruitc;
+		cs->cpool          -= cf->cpool_to_yield;
+		cs->yield         += cf->cpool_to_yield;
 		
-		ns->npool          -= nf->npool_to_fruitn;
-		ns->fruitn          = cs->fruitc / epc->fruit_cn;
+		ns->npool          -= nf->npool_to_yieldn;
+		ns->yieldn          = cs->yield / epc->yield_cn;
 			
-		cs->fruitc         -= cf->fruitc_to_flowHS;
-		cs->STDBc_fruit    += cf->fruitc_to_flowHS;
+		cs->yield         -= cf->yield_to_flowHS;
+		cs->STDBc_yield    += cf->yield_to_flowHS;
 
-		ns->fruitn         -= nf->fruitn_to_flowHS;
-		ns->STDBn_fruit    += nf->fruitn_to_flowHS;
+		ns->yieldn         -= nf->yieldn_to_flowHS;
+		ns->STDBn_yield    += nf->yieldn_to_flowHS;
 
 		/* control */
-		if ((cf->fruitc_to_flowHS > 0 && nf->fruitn_to_flowHS > 0 && epv->n_actphen != epc->n_flowHS_phenophase + 1) || 
-			(cs->fruitc < 0 && fabs(cs->fruitc) > CRIT_PREC)  || (ns->fruitn < 0 && fabs(ns->fruitn) > CRIT_PREC)  )
+		if ((cf->yield_to_flowHS > 0 && nf->yieldn_to_flowHS > 0 && epv->n_actphen != epc->n_flowHS_phenophase) || 
+			(cs->yield < 0 && fabs(cs->yield) > CRIT_PREC)  || (ns->yieldn < 0 && fabs(ns->yieldn) > CRIT_PREC)  )
 		{
 			if (!errorCode) printf("ERROR in flowering heat stress calculation in state_update.c\n");
 			errorCode=1;
 		}
 	}
-	else if (epc->fruit_cn)		
+	else if (epc->yield_cn)		
 	{
-		if (!errorCode) printf("ERROR in cpool_to_fruitc CN calculation in state_update.c\n");
+		if (!errorCode) printf("ERROR in cpool_to_yield CN calculation in state_update.c\n");
 		errorCode=1;
 	}
 
-	if (!errorCode && epc->fruit_cn && CNratio_control(cs, epc->fruit_cn, cs->fruitc_storage, ns->fruitn_storage, cf->cpool_to_fruitc_storage, nf->npool_to_fruitn_storage, 0)) 
+	if (!errorCode && epc->yield_cn && CNratio_control(cs, epc->yield_cn, cs->yield_storage, ns->yieldn_storage, cf->cpool_to_yield_storage, nf->npool_to_yieldn_storage, 0)) 
 	{
-		cs->cpool          -= cf->cpool_to_fruitc_storage;
-		cs->fruitc_storage += cf->cpool_to_fruitc_storage;
+		cs->cpool          -= cf->cpool_to_yield_storage;
+		cs->yield_storage += cf->cpool_to_yield_storage;
 		
-		ns->npool          -= nf->npool_to_fruitn_storage;
-		ns->fruitn_storage  = cs->fruitc_storage / epc->fruit_cn;
+		ns->npool          -= nf->npool_to_yieldn_storage;
+		ns->yieldn_storage  = cs->yield_storage / epc->yield_cn;
 	}
-	else if (epc->fruit_cn)		
+	else if (epc->yield_cn)		
 	{
-		if (!errorCode) printf("ERROR in cpool_to_fruitc_storage CN calculation in state_update.c\n");
+		if (!errorCode) printf("ERROR in cpool_to_yield_storage CN calculation in state_update.c\n");
 		errorCode=1;
 	}
 	
@@ -762,14 +763,14 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 	cs->cpool           -= cf->cpool_froot_storage_gr;
 	cs->froot_gr_snk    += cf->transfer_froot_gr;
 	cs->gresp_transfer  -= cf->transfer_froot_gr;
-	/* Fruit growth respiration */
-	cs->fruit_gr_snk     += cf->cpool_fruit_gr;
-	cs->cpool            -= cf->cpool_fruit_gr;
-	cs->fruit_gr_snk     += cf->cpool_fruit_storage_gr;
-	cs->cpool            -= cf->cpool_fruit_storage_gr;
-	cs->fruit_gr_snk     += cf->transfer_fruit_gr;
-	cs->gresp_transfer   -= cf->transfer_fruit_gr;
-	/* Fruit growth respiration. */
+	/* yield growth respiration */
+	cs->yield_gr_snk     += cf->cpool_yield_gr;
+	cs->cpool            -= cf->cpool_yield_gr;
+	cs->yield_gr_snk     += cf->cpool_yield_storage_gr;
+	cs->cpool            -= cf->cpool_yield_storage_gr;
+	cs->yield_gr_snk     += cf->transfer_yield_gr;
+	cs->gresp_transfer   -= cf->transfer_yield_gr;
+	/* yield growth respiration. */
 	cs->softstem_gr_snk  += cf->cpool_softstem_gr;
 	cs->cpool            -= cf->cpool_softstem_gr;
 	cs->softstem_gr_snk  += cf->cpool_softstem_storage_gr;
@@ -828,7 +829,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		season, instead of two growing seasons from now. */
 		cf->leafc_storage_to_leafc_transfer				= cs->leafc_storage;
 		cf->frootc_storage_to_frootc_transfer			= cs->frootc_storage;
-		cf->fruitc_storage_to_fruitc_transfer			= cs->fruitc_storage;
+		cf->yield_storage_to_yield_transfer			= cs->yield_storage;
 		cf->softstemc_storage_to_softstemc_transfer		= cs->softstemc_storage;
 		cf->gresp_storage_to_gresp_transfer				= cs->gresp_storage;
 		cf->livestemc_storage_to_livestemc_transfer		= cs->livestemc_storage;
@@ -838,7 +839,7 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 
 		nf->leafn_storage_to_leafn_transfer				= ns->leafn_storage;
 		nf->frootn_storage_to_frootn_transfer			= ns->frootn_storage;
-		nf->fruitn_storage_to_fruitn_transfer			= ns->fruitn_storage;
+		nf->yieldn_storage_to_yieldn_transfer			= ns->yieldn_storage;
 		nf->softstemn_storage_to_softstemn_transfer		= ns->softstemn_storage;
 		nf->livestemn_storage_to_livestemn_transfer		= ns->livestemn_storage;
 		nf->deadstemn_storage_to_deadstemn_transfer		= ns->deadstemn_storage;
@@ -851,8 +852,8 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		cs->leafc_storage      -= cf->leafc_storage_to_leafc_transfer;
 		cs->frootc_transfer    += cf->frootc_storage_to_frootc_transfer;
 		cs->frootc_storage     -= cf->frootc_storage_to_frootc_transfer;
-		cs->fruitc_transfer    += cf->fruitc_storage_to_fruitc_transfer;
-		cs->fruitc_storage     -= cf->fruitc_storage_to_fruitc_transfer;
+		cs->yield_transfer    += cf->yield_storage_to_yield_transfer;
+		cs->yield_storage     -= cf->yield_storage_to_yield_transfer;
 		cs->softstemc_transfer += cf->softstemc_storage_to_softstemc_transfer;
 		cs->softstemc_storage  -= cf->softstemc_storage_to_softstemc_transfer;
 		cs->gresp_transfer     += cf->gresp_storage_to_gresp_transfer;
@@ -862,8 +863,8 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		ns->leafn_storage      -= nf->leafn_storage_to_leafn_transfer;
 		ns->frootn_transfer    += nf->frootn_storage_to_frootn_transfer;
 		ns->frootn_storage     -= nf->frootn_storage_to_frootn_transfer;
-		ns->fruitn_transfer    += nf->fruitn_storage_to_fruitn_transfer;
-		ns->fruitn_storage     -= nf->fruitn_storage_to_fruitn_transfer;
+		ns->yieldn_transfer    += nf->yieldn_storage_to_yieldn_transfer;
+		ns->yieldn_storage     -= nf->yieldn_storage_to_yieldn_transfer;
 		ns->softstemn_transfer += nf->softstemn_storage_to_softstemn_transfer;
 		ns->softstemn_storage  -= nf->softstemn_storage_to_softstemn_transfer;
 
@@ -891,13 +892,13 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 		/* for deciduous system, force leafc and frootc to exactly 0.0 on the last day */
 		if (!evergreen)
 		{
-			if (-cs->leafc > CRIT_PREC || -cs->frootc > CRIT_PREC || -cs->fruitc > CRIT_PREC || -cs->softstemc > CRIT_PREC)
+			if (-cs->leafc > CRIT_PREC || -cs->frootc > CRIT_PREC || -cs->yield > CRIT_PREC || -cs->softstemc > CRIT_PREC)
 			{
 				printf("\n");
 				if (!errorCode) printf("ERROR: negative plant carbon pool in state_update.c\n");
 				errorCode=1;
 			}
-			if (-ns->leafn > CRIT_PREC || -ns->frootn > CRIT_PREC || -ns->fruitn > CRIT_PREC || -ns->softstemn > CRIT_PREC)
+			if (-ns->leafn > CRIT_PREC || -ns->frootn > CRIT_PREC || -ns->yieldn > CRIT_PREC || -ns->softstemn > CRIT_PREC)
 			{
 				printf("\n");
 				if (!errorCode) printf("ERROR: negative plant nitrogen pool in state_update.c\n");
@@ -913,10 +914,10 @@ int daily_CN_state_update(const siteconst_struct* sitec, const epconst_struct* e
 				cs->frootc = 0.0;
 				ns->frootn = 0.0;
 			}
-			if (cs->fruitc < CRIT_PREC || ns->fruitn  < CRIT_PREC) 
+			if (cs->yield < CRIT_PREC || ns->yieldn  < CRIT_PREC) 
 			{
-				cs->fruitc = 0.0;
-				ns->fruitn = 0.0;
+				cs->yield = 0.0;
+				ns->yieldn = 0.0;
 			}
 			if (cs->softstemc < CRIT_PREC || ns->softstemn  < CRIT_PREC) 
 			{
@@ -1002,17 +1003,17 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 	
 	
 	/* summarizing maint.resp fluxes and available non-structural carbohydrate fluxes - non-woody and woody */
-	mresp_nw = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->fruit_mr + cf->softstem_mr;
+	mresp_nw = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->yield_mr + cf->softstem_mr;
 	mresp_w  = cf->livestem_mr + cf->livecroot_mr;
 	
 		
-	nsc_nw  = (cs->leafc_storage      +  cs->frootc_storage     + cs->fruitc_storage     + cs->softstemc_storage + 
-			   cs->leafc_transfer     +  cs->frootc_transfer    + cs->fruitc_transfer    + cs->softstemc_transfer);
+	nsc_nw  = (cs->leafc_storage      +  cs->frootc_storage     + cs->yield_storage     + cs->softstemc_storage + 
+			   cs->leafc_transfer     +  cs->frootc_transfer    + cs->yield_transfer    + cs->softstemc_transfer);
 
 	nsc_w  = (cs->livestemc_storage  + cs->livecrootc_storage  + cs->deadstemc_storage  + cs->deadcrootc_storage +
 		      cs->livestemc_transfer + cs->livecrootc_transfer + cs->deadstemc_transfer + cs->deadcrootc_transfer);
 
-	sc_nw = cs->leafc     +  cs->frootc    + cs->fruitc     + cs->softstemc;
+	sc_nw = cs->leafc     +  cs->frootc    + cs->yield     + cs->softstemc;
 
 	sc_w = cs->livestemc  + cs->livecrootc  + cs->deadstemc  + cs->deadcrootc;
 
@@ -1069,54 +1070,54 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 			{
 				cf->leafc_storage_to_maintresp		 = diff * cs->leafc_storage/nsc_nw;
 				cf->frootc_storage_to_maintresp		 = diff * cs->frootc_storage/nsc_nw;
-				cf->fruitc_storage_to_maintresp		 = diff * cs->fruitc_storage/nsc_nw;
+				cf->yield_storage_to_maintresp		 = diff * cs->yield_storage/nsc_nw;
 				cf->softstemc_storage_to_maintresp	 = diff * cs->softstemc_storage/nsc_nw;
 
 				cf->leafc_transfer_to_maintresp		 = diff * cs->leafc_transfer/nsc_nw;
 				cf->frootc_transfer_to_maintresp	 = diff * cs->frootc_transfer/nsc_nw;
-				cf->fruitc_transfer_to_maintresp	 = diff * cs->fruitc_transfer/nsc_nw;
+				cf->yield_transfer_to_maintresp	 = diff * cs->yield_transfer/nsc_nw;
 				cf->softstemc_transfer_to_maintresp	 = diff * cs->softstemc_transfer/nsc_nw;
 			
 
-				cf->NSC_nw_to_maintresp  = cf->leafc_storage_to_maintresp + cf->frootc_storage_to_maintresp + cf->fruitc_storage_to_maintresp + cf->softstemc_storage_to_maintresp +
-										   cf->leafc_transfer_to_maintresp + cf->frootc_transfer_to_maintresp + cf->fruitc_transfer_to_maintresp + cf->softstemc_transfer_to_maintresp;
+				cf->NSC_nw_to_maintresp  = cf->leafc_storage_to_maintresp + cf->frootc_storage_to_maintresp + cf->yield_storage_to_maintresp + cf->softstemc_storage_to_maintresp +
+										   cf->leafc_transfer_to_maintresp + cf->frootc_transfer_to_maintresp + cf->yield_transfer_to_maintresp + cf->softstemc_transfer_to_maintresp;
 	
 				if (epc->leaf_cn)     nf->leafn_storage_to_maintresp		  = cf->leafc_storage_to_maintresp / epc->leaf_cn;
 				if (epc->froot_cn)    nf->frootn_storage_to_maintresp		  = cf->frootc_storage_to_maintresp / epc->froot_cn;
-				if (epc->fruit_cn)    nf->fruitn_storage_to_maintresp		  = cf->fruitc_storage_to_maintresp / epc->fruit_cn;
+				if (epc->yield_cn)    nf->yieldn_storage_to_maintresp		  = cf->yield_storage_to_maintresp / epc->yield_cn;
 				if (epc->softstem_cn) nf->softstemn_storage_to_maintresp      = cf->softstemc_storage_to_maintresp / epc->softstem_cn;
 
 				if (epc->leaf_cn)     nf->leafn_transfer_to_maintresp		  = cf->leafc_transfer_to_maintresp / epc->leaf_cn;
 				if (epc->froot_cn)    nf->frootn_transfer_to_maintresp		  = cf->frootc_transfer_to_maintresp / epc->froot_cn;
-				if (epc->fruit_cn)    nf->fruitn_transfer_to_maintresp		  = cf->fruitc_transfer_to_maintresp / epc->fruit_cn;
+				if (epc->yield_cn)    nf->yieldn_transfer_to_maintresp		  = cf->yield_transfer_to_maintresp / epc->yield_cn;
 				if (epc->softstem_cn) nf->softstemn_transfer_to_maintresp     = cf->softstemc_transfer_to_maintresp / epc->softstem_cn;
 	
 
 			
-				nf->NSN_nw_to_maintresp = nf->leafn_storage_to_maintresp + nf->frootn_storage_to_maintresp + nf->fruitn_storage_to_maintresp + nf->softstemn_storage_to_maintresp +
-									      nf->leafn_transfer_to_maintresp + nf->frootn_transfer_to_maintresp + nf->fruitn_transfer_to_maintresp + nf->softstemn_transfer_to_maintresp;
+				nf->NSN_nw_to_maintresp = nf->leafn_storage_to_maintresp + nf->frootn_storage_to_maintresp + nf->yieldn_storage_to_maintresp + nf->softstemn_storage_to_maintresp +
+									      nf->leafn_transfer_to_maintresp + nf->frootn_transfer_to_maintresp + nf->yieldn_transfer_to_maintresp + nf->softstemn_transfer_to_maintresp;
 			
 			
 				/* 1.3. state update of storage and transfer pools */
 				cs->leafc_storage					-= cf->leafc_storage_to_maintresp;
 				cs->frootc_storage					-= cf->frootc_storage_to_maintresp;
-				cs->fruitc_storage					-= cf->fruitc_storage_to_maintresp;
+				cs->yield_storage					-= cf->yield_storage_to_maintresp;
 				cs->softstemc_storage				-= cf->softstemc_storage_to_maintresp;
 		
 
 				cs->leafc_transfer					-= cf->leafc_transfer_to_maintresp;
 				cs->frootc_transfer					-= cf->frootc_transfer_to_maintresp;
-				cs->fruitc_transfer					-= cf->fruitc_transfer_to_maintresp;
+				cs->yield_transfer					-= cf->yield_transfer_to_maintresp;
 				cs->softstemc_transfer				-= cf->softstemc_transfer_to_maintresp;
 		
 				ns->leafn_storage					-= nf->leafn_storage_to_maintresp;
 				ns->frootn_storage					-= nf->frootn_storage_to_maintresp;
-				ns->fruitn_storage					-= nf->fruitn_storage_to_maintresp;
+				ns->yieldn_storage					-= nf->yieldn_storage_to_maintresp;
 				ns->softstemn_storage				-= nf->softstemn_storage_to_maintresp;
 		
 				ns->leafn_transfer					-= nf->leafn_transfer_to_maintresp;
 				ns->frootn_transfer					-= nf->frootn_transfer_to_maintresp;
-				ns->fruitn_transfer					-= nf->fruitn_transfer_to_maintresp;
+				ns->yieldn_transfer					-= nf->yieldn_transfer_to_maintresp;
 				ns->softstemn_transfer				-= nf->softstemn_transfer_to_maintresp;
 	
 				ns->retransn                        += nf->NSN_nw_to_maintresp;
@@ -1183,21 +1184,21 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 					}
 				}
 
-				if (cf->fruit_mr > 0)
+				if (cf->yield_mr > 0)
 				{
-					if (cs->fruitc > CRIT_PREC)
+					if (cs->yield > CRIT_PREC)
 					{
-						cf->fruitc_to_maintresp = diff * (cf->fruit_mr / mresp_nw); 
-						if (cf->fruitc_to_maintresp > cs->fruitc)
+						cf->yield_to_maintresp = diff * (cf->yield_mr / mresp_nw); 
+						if (cf->yield_to_maintresp > cs->yield)
 						{
-							cf->fruitc_to_maintresp = cs->fruitc;
-							excess += diff * (cf->fruit_mr / mresp_nw) - cf->fruitc_to_maintresp;
+							cf->yield_to_maintresp = cs->yield;
+							excess += diff * (cf->yield_mr / mresp_nw) - cf->yield_to_maintresp;
 						}
-						nf->fruitn_to_maintresp = cf->fruitc_to_maintresp / epc->fruit_cn; 
+						nf->yieldn_to_maintresp = cf->yield_to_maintresp / epc->yield_cn; 
 					}
 					else
 					{
-						excess += diff * (cf->fruit_mr / mresp_nw);
+						excess += diff * (cf->yield_mr / mresp_nw);
 					}
 				}
 
@@ -1221,25 +1222,25 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 
 			
 
-				cf->actC_nw_to_maintresp  = cf->leafc_to_maintresp + cf->frootc_to_maintresp + cf->fruitc_to_maintresp + cf->softstemc_to_maintresp;
+				cf->actC_nw_to_maintresp  = cf->leafc_to_maintresp + cf->frootc_to_maintresp + cf->yield_to_maintresp + cf->softstemc_to_maintresp;
 
-				nf->actN_nw_to_maintresp  = nf->leafn_to_maintresp + nf->frootn_to_maintresp + nf->fruitn_to_maintresp + nf->softstemn_to_maintresp;
+				nf->actN_nw_to_maintresp  = nf->leafn_to_maintresp + nf->frootn_to_maintresp + nf->yieldn_to_maintresp + nf->softstemn_to_maintresp;
 
 				/* 1.5. state update of actual pools */
 				cs->leafc					-= cf->leafc_to_maintresp;
 				cs->frootc					-= cf->frootc_to_maintresp;
-				cs->fruitc					-= cf->fruitc_to_maintresp;
+				cs->yield					-= cf->yield_to_maintresp;
 				cs->softstemc				-= cf->softstemc_to_maintresp;
 
 				ns->leafn					-= nf->leafn_to_maintresp;
 				ns->frootn					-= nf->frootn_to_maintresp;
-				ns->fruitn					-= nf->fruitn_to_maintresp;
+				ns->yieldn					-= nf->yieldn_to_maintresp;
 				ns->softstemn				-= nf->softstemn_to_maintresp;
 			
 				ns->retransn                += nf->actN_nw_to_maintresp;
 				
 				
-				mresp_nw = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->fruit_mr + cf->softstem_mr;
+				mresp_nw = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->yield_mr + cf->softstem_mr;
 
 				/* if maintresp of non-woody biomass can not be covered from non-woody biomass -> added to woody demand */
 				if (excess)
@@ -1405,7 +1406,7 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 		cf->leaf_day_mr   += cs->cpool * cf->leaf_day_mr   / mresp_nw;
  		cf->leaf_night_mr += cs->cpool * cf->leaf_night_mr / mresp_nw;
 		cf->froot_mr      += cs->cpool * cf->froot_mr / mresp_nw;
-		cf->fruit_mr      += cs->cpool * cf->fruit_mr / mresp_nw;
+		cf->yield_mr      += cs->cpool * cf->yield_mr / mresp_nw;
 		cf->softstem_mr   += cs->cpool * cf->softstem_mr / mresp_nw;
 
 		cs->cpool = 0;
@@ -1418,7 +1419,7 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 	cs->leaf_mr_snk		 += cf->leaf_day_mr;
 	cs->leaf_mr_snk		 += cf->leaf_night_mr;
 	cs->froot_mr_snk	 += cf->froot_mr;
-	cs->fruit_mr_snk	 += cf->fruit_mr;
+	cs->yield_mr_snk	 += cf->yield_mr;
 	cs->softstem_mr_snk  += cf->softstem_mr;
 	cs->livestem_mr_snk  += cf->livestem_mr;
 	cs->livecroot_mr_snk += cf->livecroot_mr;
@@ -1427,13 +1428,13 @@ int nsc_maintresp(const epconst_struct* epc, control_struct *ctrl, epvar_struct*
 	
 		
 
-	cs->nsc_nw = cs->leafc_storage      +  cs->frootc_storage     + cs->fruitc_storage     + cs->softstemc_storage +
-		         cs->leafc_transfer     +  cs->frootc_transfer    + cs->fruitc_transfer    + cs->softstemc_transfer;
+	cs->nsc_nw = cs->leafc_storage      +  cs->frootc_storage     + cs->yield_storage     + cs->softstemc_storage +
+		         cs->leafc_transfer     +  cs->frootc_transfer    + cs->yield_transfer    + cs->softstemc_transfer;
 
 	cs->nsc_w = cs->livestemc_storage  + cs->livecrootc_storage  + cs->deadstemc_storage  + cs->deadcrootc_storage +
 			    cs->livestemc_transfer + cs->livecrootc_transfer + cs->deadstemc_transfer + cs->deadcrootc_transfer;
 
-	cs->sc_nw = cs->leafc     +  cs->frootc    + cs->fruitc     + cs->softstemc;
+	cs->sc_nw = cs->leafc     +  cs->frootc    + cs->yield     + cs->softstemc;
 
 	cs->sc_w = cs->livestemc  + cs->livecrootc  + cs->deadstemc  + cs->deadcrootc;
 

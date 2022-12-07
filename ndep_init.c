@@ -3,10 +3,10 @@ ndep_init.c
 Initialize the varied N deposition parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -24,7 +24,7 @@ Modified:
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
 
-int ndep_init(file init, ndep_control_struct* ndep, control_struct *ctrl)
+int ndep_init(file init, NdepControl_struct* ndep, control_struct *ctrl)
 {
 	int errorCode, ny;
 	char key1[] = "NDEP_CONTROL";
@@ -85,6 +85,21 @@ int ndep_init(file init, ndep_control_struct* ndep, control_struct *ctrl)
 			errorCode=20609;
 		}
 	}
+
+	if (!errorCode && scan_value(init, &ndep->NdepNH4_coeff, 'd'))
+	{
+		printf("ERROR reading NdepNH4_coeff: sitec_init()\n");
+		errorCode=20610;
+	}
+
+
+	/* CONTROL to avoid negative meteorological data */
+ 	if (ndep->NdepNH4_coeff < 0)
+	{
+		printf("ERROR in site data: NdepNH4_coeff must be positive\n");
+		errorCode=20611;
+	}
+
 	
 	/* if using variable Ndep file, open it, otherwise
 	discard the next line of the ini file */

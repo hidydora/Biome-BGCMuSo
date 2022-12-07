@@ -3,8 +3,8 @@ writeErrorCode.c
 Initialize the simulation timing control parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-D. Hidy (2020)
+Biome-BGCMuSo v6.4.
+D. Hidy (2022)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 */
 

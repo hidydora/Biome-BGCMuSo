@@ -3,8 +3,8 @@ soilstress_calculation.c
 calculation of drought and saturation soil water content stress layer by layers 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
-Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v6.4.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -44,29 +44,29 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 				if (epv->VWC[layer] > sprop->VWCwp[layer] && (sprop->VWCsat[layer] - epv->VWC[layer]) > CRIT_PREC)
 				{
 					/* DROUGHT STRESS */
-					if (epv->VWC[layer] <= epv->VWC_crit1[layer])
+					if (epv->VWC[layer] <= epv->VWC_SScrit1[layer])
 					{
-						m_vwcR_layer  = pow((epv->VWC[layer] - sprop->VWCwp[layer])/(epv->VWC_crit1[layer] - sprop->VWCwp[layer]), sprop->q_soilstress);
+						m_vwcR_layer  = pow((epv->VWC[layer] - sprop->VWCwp[layer])/(epv->VWC_SScrit1[layer] - sprop->VWCwp[layer]), sprop->curvature_SS);
 					}
 
 					/* ANOXIC CONDITION STRESS */
-					if (epv->VWC[layer] >= epv->VWC_crit2[layer])
+					if (epv->VWC[layer] >= epv->VWC_SScrit2[layer])
 					{
-						m_vwcR_layer  = (sprop->VWCsat[layer] - epv->VWC[layer])/(sprop->VWCsat[layer] - epv->VWC_crit2[layer]);	
+						m_vwcR_layer  = (sprop->VWCsat[layer] - epv->VWC[layer])/(sprop->VWCsat[layer] - epv->VWC_SScrit2[layer]);	
 					}
 				}
 				else
 					m_vwcR_layer  = 0;
 
 				/* lower limit for saturation: m_fullstress2 */
-				if (epv->VWC[layer] >= epv->VWC_crit1[layer] && m_vwcR_layer < epc->m_fullstress2) m_vwcR_layer = epc->m_fullstress2;
+				if (epv->VWC[layer] >= epv->VWC_SScrit1[layer] && m_vwcR_layer < epc->m_fullstress2) m_vwcR_layer = epc->m_fullstress2;
 
 				/* if VWCratio_crit is set to -9999: no soilstress calculation -> m_SWCstress = 1 */
-				if (epc->VWCratio_crit1 == DATA_GAP && epv->VWC[layer] <= sprop->VWCfc[layer]) m_vwcR_layer  = 1;
-				if (epc->VWCratio_crit2 == DATA_GAP && epv->VWC[layer] >= sprop->VWCfc[layer]) m_vwcR_layer  = 1;
+				if (epc->VWCratio_SScrit1 == DATA_GAP && epv->VWC[layer] <= sprop->VWCfc[layer]) m_vwcR_layer  = 1;
+				if (epc->VWCratio_SScrit2 == DATA_GAP && epv->VWC[layer] >= sprop->VWCfc[layer]) m_vwcR_layer  = 1;
 
 				epv->m_SWCstress_layer[layer] =  m_vwcR_layer;
-				m_SWCstress_avg	 += epv->m_SWCstress_layer[layer] * epv->rootlength_prop[layer];
+				m_SWCstress_avg	 += epv->m_SWCstress_layer[layer] * epv->rootlengthProp[layer];
 			}
 	
 			epv->m_SWCstress = m_SWCstress_avg;
@@ -78,8 +78,8 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 			{
 				for (layer = 0; layer < epv->n_rootlayers; layer++)
 				{	
-					if (wf->soilw_transpDEMAND[layer])
-						epv->m_SWCstress_layer[layer] = wf->soilw_transp[layer] / wf->soilw_transpDEMAND[layer];
+					if (wf->soilwTranspDemand[layer])
+						epv->m_SWCstress_layer[layer] = wf->soilwTransp[layer] / wf->soilwTranspDemand[layer];
 					else
 						epv->m_SWCstress_layer[layer] = 1;
 
@@ -91,7 +91,7 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 						errorCode=1;
 					}
 		
-					m_SWCstress_avg	 += epv->m_SWCstress_layer[layer] * epv->rootlength_prop[layer];
+					m_SWCstress_avg	 += epv->m_SWCstress_layer[layer] * epv->rootlengthProp[layer];
 				}
 			}
 			else
@@ -126,7 +126,7 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 		epv->SWCstressLENGTH += (1 - epv->m_SWCstress);
 		epv->cumSWCstress    += (1 - epv->m_SWCstress);
 	}
-	
+
 	
 	if (epv->SWCstressLENGTH < epc->SWCstressLENGTH_crit)
 		epv->m_SWCstressLENGTH = 1;
@@ -140,16 +140,14 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 	/* 3. N-stress based on immobilization ratio */
 
 	if (epv->rootdepth)
-		for (layer = 0; layer < N_SOILLAYERS; layer++) m_Nstress_avg += epv->IMMOBratio[layer] * epv->rootlength_prop[layer];
+		for (layer = 0; layer < N_SOILLAYERS; layer++) m_Nstress_avg += epv->IMMOBratio[layer] * epv->rootlengthProp[layer];
 	else
 		m_Nstress_avg = 1;
 
 	if (1-m_Nstress_avg < CRIT_PREC) m_Nstress_avg = 1;
 	
-	if (epv->n_actphen > epc->n_emerg_phenophase)
-		epv->cumNstress += (1-m_Nstress_avg);
-	else
-		epv->cumNstress = 0;
+	if (epv->n_actphen > epc->n_emerg_phenophase) epv->cumNstress += (1-m_Nstress_avg);
+
 	
 	
 

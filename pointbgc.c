@@ -4,10 +4,10 @@ front-end to BIOME-BGC for single-point, single-biome simulations
 Uses BBGC MuSo v6 library function
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2020, D. Hidy [dori.hidy@gmail.com]
+Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -86,8 +86,6 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.prephen1_flag = 0;         
 	bgcin.ctrl.prephen2_flag = 0;          
 	bgcin.ctrl.bareground_flag = 0;
-	bgcin.ctrl.GW_flag = 0;
-	bgcin.ctrl.oldSOIfile_flag = 0;
 	bgcin.ctrl.vegper_flag = 0;
 	bgcin.ctrl.south_shift = 0;
 	bgcin.ctrl.allocControl_flag = 0;
@@ -106,7 +104,7 @@ int main(int argc, char *argv[])
 	{
         if(!strcmp(argv[1],"-v"))
 		{
-           	printf("Model version: Biome-BGCMuSo6.3 (Biome-BGCMAg2.3)\n");
+           	printf("Model version: Biome-BGCMuSo6.4\n");
 			exit(0);
         }
     }
@@ -194,7 +192,7 @@ int main(int argc, char *argv[])
 	}
 	
 	/* read soil properties */
-	errorCode = sprop_init(init,  &bgcin.sitec, &bgcin.sprop, &bgcin.ctrl);
+	errorCode = sprop_init(init, &bgcin.sprop, &bgcin.ctrl);
 	if (errorCode)
 	{
 		printf("ERROR in call to sprop_init() from pointbgc.c... Exiting\n");

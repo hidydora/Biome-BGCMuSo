@@ -3,7 +3,7 @@ met_init.c
 open met file for input, scan through header lines
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.2.
+Biome-BGCMuSo v6.4.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -53,14 +53,14 @@ int met_init(file init, point_struct* point)
     if (!errorCode && scan_open(init,&point->metf,'i',1)) 
 	{
 		printf("ERROR opening met data file: met_init()\n");
-		errorCode=20201;
+		errorCode=20221;
 	}
 	
 	/* get number of metfile header lines */
 	if (!errorCode && scan_value(init, &nhead, 'i'))
 	{
 		printf("ERROR reading number of met file header lines: met_init()\n");
-		errorCode=20202;
+		errorCode=20222;
 	}
 	
 	/* read header lines from input met data file and discard */
@@ -69,7 +69,7 @@ int met_init(file init, point_struct* point)
 		if (scan_value(point->metf, junk_head, 's'))
 		{
 			printf("ERROR reading met file header line #%d\n",i+1);
-			errorCode=20202;
+			errorCode=20222;
 		}
 	}
 
@@ -77,7 +77,7 @@ int met_init(file init, point_struct* point)
 	if (!errorCode && scan_value(init, &point->nday_lastsimyear, 'i'))
 	{
 		printf("ERROR reading number of simdays in last simyear: met_init()\n");
-		errorCode=20203;
+		errorCode=20223;
 	}
 
 	return (errorCode);

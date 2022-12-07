@@ -37,7 +37,7 @@ int pondANDrunoff(siteconst_struct* sitec, soilprop_struct* sprop, epvar_struct*
 	 errorCode=layer=flagEXTRA=0;
 
 	/* sum of potential infitration */
-	INFILT = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp);
+	INFILT = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + wf->FRZ_to_soilw);
 
 	/* calculation of the amount of water which can still fits into the soil */ 
 	
@@ -152,7 +152,7 @@ int pondANDrunoff(siteconst_struct* sitec, soilprop_struct* sprop, epvar_struct*
 		}
 
 
-		wf->infiltPOT = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + wf->pondw_to_soilw - wf->prcp_to_runoff - wf->prcp_to_pondw);
+		wf->infiltPOT = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + wf->FRZ_to_soilw+ wf->pondw_to_soilw - wf->prcp_to_runoff - wf->prcp_to_pondw);
 	}
 
 

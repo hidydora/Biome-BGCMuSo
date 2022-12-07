@@ -22,23 +22,44 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_func.h"
 #include "bgc_constants.h"
 
-int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf)
+int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const siteconst_struct* sitec, const soilprop_struct* sprop,
+	           epvar_struct* epv, wstate_struct* ws, wflux_struct* wf)
 {
 	/* irrigating parameters */	   
 	
 	int errorCode=0;
-	int condIRG;
-	double critVWCbef, critVWCaft, critSOILWaft, condIRG_amount;
+	int condIRG, condIRG_flag, condIRG_startyr;
+	double critVWCbef, critVWCaft, critSOILWaft, condIRG_amount, VWCact_condIRG, VWCfc_condIRG, VWCwp_condIRG, soilw_condIRG;
+	double LAIcrit_condIRG;
+	int md, year, layer, nl;
 
-	int md, year;
-
+	LAIcrit_condIRG = 0.2; // fixedParam
 	year = ctrl->simstartyear + ctrl->simyr;
 	md = IRG->mgmdIRG-1;
+	condIRG_flag=condIRG_startyr=0;
+	
 
 
-	critVWCbef=condIRG_amount=critSOILWaft=0;
+	critVWCbef=condIRG_amount=critSOILWaft=VWCact_condIRG=VWCfc_condIRG=VWCwp_condIRG=soilw_condIRG=0;
 	condIRG=0;
 
+	/* type of conditional irrigation: 1 -based on SWC, 2: - based on SMSI, 12002 - based on SWC but only after 2002, 22002, based on SMSI but only after 2002 */
+	if (IRG->condIRG_flag)
+	{
+		if (IRG->condIRG_flag == 1) condIRG_flag = 1;
+		if (IRG->condIRG_flag == 2) condIRG_flag = 2;
+		if (IRG->condIRG_flag > 10000 && IRG->condIRG_flag < 20000) 
+		{
+			condIRG_flag = 1;
+			condIRG_startyr = IRG->condIRG_flag - 10000;
+		}
+		if (IRG->condIRG_flag > 20000 && IRG->condIRG_flag < 30000) 
+		{
+			condIRG_flag = 2;
+			condIRG_startyr = IRG->condIRG_flag - 20000;
+		}
+	}
+	
 	/*  1. CALCULATING FLUXES: amount of water (kgH2O) * (%_to_prop) */
 	if (IRG->IRG_num && md >= 0)
 	{
@@ -55,37 +76,58 @@ int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, epvar_s
 	/* 2. conditional irrigating: in case of dry soil */
 	if (IRG->condIRG_flag)
 	{
-		/* in case of critical VWCratio is used */
-		if (IRG->condIRG_flag == 1)
+		/* number of layer taking into account */
+		if (IRG->nLayer_condIRG != DATA_GAP)
 		{
-			critVWCbef = epv->VWCwp_RZ + IRG->befVWCratio_condIRG * (epv->VWCfc_RZ - epv->VWCwp_RZ);
-			if (epv->VWC_RZ < critVWCbef) condIRG = 1;
+			nl = (int) IRG->nLayer_condIRG-1;
+			for (layer = 0; layer <= nl; layer++)
+			{
+				VWCact_condIRG += epv->VWC[layer]     * sitec->soillayer_thickness[layer]/sitec->soillayer_depth[nl];
+				VWCfc_condIRG   += sprop->VWCfc[layer] * sitec->soillayer_thickness[layer]/sitec->soillayer_depth[nl];
+				VWCwp_condIRG   += sprop->VWCwp[layer] * sitec->soillayer_thickness[layer]/sitec->soillayer_depth[nl];
+				soilw_condIRG   += ws->soilw[layer];
+			}
 		}
-		/* in case of critical SMSI is used */
 		else
 		{
-			if (epv->SMSI > IRG->befSMSI_condIRG) condIRG = 1;
+			VWCact_condIRG = epv->VWC_RZ;
+			VWCfc_condIRG   = epv->VWCfc_RZ;
+			VWCwp_condIRG   = epv->VWCwp_RZ;
+			soilw_condIRG   = ws->soilw_RZ;
 		}
+	
+		/* in case of critical VWCratio is used */
+		if (condIRG_flag == 1 && year >= condIRG_startyr)
+		{
+			critVWCbef = VWCwp_condIRG + IRG->startPoint_condIRG * (VWCfc_condIRG - VWCwp_condIRG);
+			if (VWCact_condIRG < critVWCbef) condIRG = 1;
+
+		}
+		/* in case of critical SMSI is used */
+		if (condIRG_flag == 2 && year >= condIRG_startyr)
+		{
+			if (epv->SMSI > IRG->startPoint_condIRG) condIRG = 1;
+		}
+		
 
 		/* if condIRG - calculation of irrigating amount */
-		if (condIRG && epv->rootdepth)
+		if (condIRG && epv->proj_lai > LAIcrit_condIRG)
 		{
-			critVWCaft = epv->VWCwp_RZ + IRG->aftVWCratio_condIRG * (epv->VWCfc_RZ - epv->VWCwp_RZ);
+			critVWCaft = VWCwp_condIRG + IRG->aftVWCratio_condIRG * (VWCfc_condIRG - VWCwp_condIRG);
 
-			critSOILWaft = critVWCaft * epv->rootlength * water_density;
-			condIRG_amount = critSOILWaft - ws->soilw_RZ;
-			if (IRG->condIRG_flag == 2)
+			if (IRG->nLayer_condIRG != DATA_GAP)
+				critSOILWaft = critVWCaft * sitec->soillayer_depth[nl] * water_density;
+			else
+				critSOILWaft = critVWCaft * epv->rootlength * water_density;
+
+			condIRG_amount = critSOILWaft - soilw_condIRG;
+			if (condIRG_amount < 0)
 			{
-				if (ctrl->onscreen && ctrl->spinup == 0) printf("WARNING: too low befSMSI_condIRG parameter in conditional IRRIGATING\n");
+				if (ctrl->onscreen && ctrl->spinup == 0) printf("WARNING: too low starting point of cond. IRRIGATION parameter in conditional IRRIGATING\n");
 				condIRG_amount = 0;
 			}
 		}
 		
-		if (condIRG_amount < 0)
-		{
-			printf("ERROR in conditional irrigating calculation (irrigating.c)\n");
-			errorCode=1;
-		}
 
 		/* irrigating amount is added to IRG_to_prcp (limitation is possible based on condIRG parameters*/	
 		if (condIRG_amount)

@@ -63,6 +63,11 @@ int potential_evap(const soilprop_struct* sprop, const metvar_struct* metv, wflu
 	else
 		wf->soilw_evapPOT=soilw_evapPOT;
 
+	if (sprop->aerodyn_resist == DATA_GAP)
+		wf->soilw_evapPOT = 0;
+	else
+		wf->soilw_evapPOT = wf->soilw_evapPOT;
+
 	/* ENERGETIC CONTROL - maximum energy */
     lhvap = 2.5023e6 - 2430.54 * pmet_in.ta;
 	evap_limit = (pmet_in.irad * metv->dayl)/lhvap;

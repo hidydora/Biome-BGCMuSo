@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.oldSOIfile_flag = 0;
 	bgcin.ctrl.vegper_flag = 0;
 	bgcin.ctrl.south_shift = 0;
+	bgcin.ctrl.allocControl_flag = 0;
 	bgcin.ctrl.NaddSPINUP_flag = 0;
 	bgcin.ctrl.soiltype = 0;
 
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
 	{
         if(!strcmp(argv[1],"-v"))
 		{
-           	printf("Model version: Biome-BGCMuSo6.2alfa (Biome-BGCMAg2.2alfa)\n");
+           	printf("Model version: Biome-BGCMuSo6.3 (Biome-BGCMAg2.3)\n");
 			exit(0);
         }
     }

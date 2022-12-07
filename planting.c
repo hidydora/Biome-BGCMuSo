@@ -92,8 +92,7 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 
 			epv->germ_depth = PLT->germ_depth_array[md]; 
 
-			cs->fruitC_HRV        = 0;
-			cs->vegC_HRV          = 0;
+	
 
 			/* resetting of storage variables */
 			if (cs->leafc_storage > 0)

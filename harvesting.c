@@ -54,6 +54,7 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 			HRVcoeff_leaf  = 1.0;
 			HRVcoeff_fruit = 1.0;
 			HRVcoeff_softstem = HRV->snagprop_array[md] / 100;
+                        cs->frootC_HRV  = cs->frootc;
 		}
 	}
 		

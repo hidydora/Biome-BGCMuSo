@@ -39,15 +39,15 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 	/* diffusion and percolation calculation */
 	double D0, D1, Dact;	        /* hydrological diffusion coefficient (m2/s) */
 
-	int layer, n_second, n_sec, discretlevel;
+	int layer, n_second, n_sec, discretlevel, l;
 
-	double CRIT_PRECwater;
+	double CRIT_PRECwater,CFsoilw;
 	double VWCdiff_max, VWCdiff, diff, diff1, diff2;
 	double localvalue,  exponent_discretlevel;
 	double soilw0, VWC0, VWC1, soilw_sat0;
-	double Ksat0, Ksat1, Kact;
+	double Ksat0, Ksat1, Kact1, Kact2, Kact;
 
-	double pondw_act, infilt_limit,outflux;
+	double pondw_act, infilt_limit,waterFromAbove;
 	double soilw_to_pondw, infilt_to_soilw, infilt_to_pondw, pondw_evap, soilw_evap, pondw_to_soilw;
 
 	double dz0, dz1;
@@ -57,7 +57,7 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 	CRIT_PRECwater=1e-8;
 	
 	INFILT=EVAP=INFILT_ctrl=EVAP_act=EVAP_ctrl=TRANSP_ctrl=0;
-	outflux=pondw_to_soilw=soilw_to_pondw=infilt_to_soilw=infilt_to_pondw=pondw_evap=soilw_evap=pondw_act=0;
+	pondw_to_soilw=soilw_to_pondw=infilt_to_soilw=infilt_to_pondw=pondw_evap=soilw_evap=pondw_act=0;
 	for (layer=0 ; layer < N_SOILLAYERS; layer++)
 	{
 		transp[layer]=0;
@@ -106,6 +106,15 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 		/* 1. CALCULATE PROCESSES  LAYER TO LAYER */
 		for (layer=0 ; layer < N_SOILLAYERS-1; layer++)
 		{	
+
+			/* calculation of saturation of capillary zone */
+			CFsoilw=0;
+			for (l=layer; l<N_SOILLAYERS-2;l++) 
+				CFsoilw += sprop->VWCsat[l+1] * sitec->soillayer_thickness[l+1] * water_density - ws->soilw[l+1];
+			CFsoilw = sprop->VWCsat[l+1] * sitec->soillayer_thickness[l+1] * water_density - ws->soilw[l+1];
+			if (CFsoilw < 0.001) CFsoilw=0;
+
+			
 			/* -------------------*/
 			/* 1.0. INITALIZATION */
 			dz0        = sitec->soillayer_thickness[layer];
@@ -125,6 +134,9 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
   			if (layer == 0) 
 			{
 				infilt_limit = Ksat0 * water_density * n_sec;
+
+				// GWtest
+				if (soilw_sat0-ws->soilw[0] < infilt_limit)  infilt_limit = soilw_sat0-ws->soilw[0];
 
  				if (pondw_act == 0)
 				{
@@ -178,10 +190,31 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 			/* 1.4. PERCOLATION */
 
 			/* conductivity coefficient - theoretical upper limit: saturation value */
-			Kact = Ksat0 * pow(VWC0/sprop->VWCsat[layer], 2*(sprop->soilB[layer])+3);
+		        Kact1 = Ksat0 * pow(VWC0/sprop->VWCsat[layer], 2*(sprop->soilB[layer])+3);
+			Kact2 = Ksat1 * pow(VWC0/sprop->VWCsat[layer+1], 2*(sprop->soilB[layer+1])+3);
+
+			Kact=(Kact1 * dz0/(dz0+dz1) + Kact2 * dz1/(dz0+dz1));
 
 			/* percolation flux */
 			percol[layer] = Kact * water_density * n_sec; // kg/m2
+
+			if (sprop->CFflag[layer] != 0)
+			{
+		
+				if (layer == 0)
+					waterFromAbove = infilt_to_soilw + pondw_to_soilw;
+				else
+					waterFromAbove = percol[layer-1] + diffus[layer-1];
+					
+				/* in capillary zone - percolation only if waterFromAbove > 0 AND zone is saturated */
+				if (waterFromAbove != 0 && CFsoilw > 0)
+				{
+					if (CFsoilw < percol[layer]) 
+						percol[layer] = CFsoilw;
+				}
+				else
+					percol[layer] = 0;	
+			}
 
 			/* -------------------*/
 			/* 1.5. DIFFUSION */
@@ -225,10 +258,20 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 				ws->soilw[layer] = ws->soilw[layer] - transp[layer] + percol[layer-1] + diffus[layer-1] - percol[layer] - diffus[layer];
 
 			
-
-			diff             = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density - ws->soilw[layer];
+		
+			/* control to avoid oversaturated SWC pool - GWtest  */
+			diff             = ws->soilw[layer] - sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
+			if (diff >	0)
+			{
+				wf->GW_recharge[layer] += diff; 	
+				epv->VWC[layer] = sprop->VWCsat[layer];
+				ws->soilw[layer] = epv->VWC[layer] * water_density * sitec->soillayer_thickness[layer];
+			}
+			
+		
 		
 			/* control to avoid negative SWC pool */
+			diff             = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density - ws->soilw[layer];
 			if (diff >	0)
 			{
 				/*  top soil layer: limitation of evaporation AND transpiration */
@@ -249,18 +292,23 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 						diff            -= (soilw_evap +transp[layer]);
 						soilw_evap       = 0;
 						transp[layer]    = 0;
-						if (percol[layer] > diff)
+						if (diff > CRIT_PRECwater)
 						{
-							percol[layer]   -= diff;
-							ws->soilw[layer] = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density;
-							diff             = 0;
+							if (percol[layer] > diff)
+							{
+								percol[layer]   -= diff;
+								ws->soilw[layer] = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density;
+								diff             = 0;
+							}
+							else
+							{
+								printf("\n");
+								printf("ERROR: negative soil water content\n");
+								errorCode=1;
+							}
 						}
 						else
-						{
-							printf("\n");
-							printf("ERROR: negative soil water content\n");
-							errorCode=1;
-						}
+							ws->soilw[layer]  = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density;
 					}
 				}
 				/* except of top soil layer: limitation of transpiration */
@@ -275,18 +323,23 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 					else
 					{
 						diff  -= transp[layer];
-						if (percol[layer] > diff)
+						if (diff > CRIT_PRECwater)
 						{
-							percol[layer]   -= diff;
-							ws->soilw[layer] = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density;
-							diff             = 0;
+							if (percol[layer] > diff)
+							{
+								percol[layer]   -= diff;
+								ws->soilw[layer] = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density;
+								diff             = 0;
+							}
+							else
+							{
+								printf("\n");
+								printf("ERROR: negative soil water content\n");
+								errorCode=1;
+							}
 						}
 						else
-						{
-							printf("\n");
-							printf("ERROR: negative soil water content\n");
-							errorCode=1;
-						}
+							ws->soilw[layer]  = sprop->VWChw[layer] * sitec->soillayer_thickness[layer] * water_density;
 					}
 				}
 			}
@@ -299,6 +352,7 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 		
 			epv->VWC[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
 	
+
 		
 			wf->soilw_transp[layer]     += transp[layer];
 			wf->soilw_percolated[layer] += percol[layer];
@@ -384,7 +438,7 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 		/* 3. CALCULATION OF DISCRETE LEVEL: if the maximal change of VWC is not equal to 0 (greater than) -> discretlevel is the function of local value of the change */
 		VWCdiff_max = VWCdiff_max/n_sec;
 		
-		if (epc->discretlevel_Richards < 5)
+		if (epc->discretlevel_Richards < 3)
 		{
 			if (VWCdiff_max > CRIT_PRECwater)
 			{
@@ -404,7 +458,12 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 			}
 		}
 		else
-			n_sec = 1;
+                {
+			if (epc->discretlevel_Richards == 3) 
+				n_sec = 10;
+			else
+				n_sec = 1;
+		}
 
 		VWCdiff_max = 0;
 
@@ -456,9 +515,9 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 	ws->pondw = pondw_act;
 
 	/* --------------------------------------------------------------------------------------------------------*/	
-	/* III. CONTROLS OF CALCULATION /
+	/* III. CONTROLS OF CALCULATION */
 
-	/* ----------------------------------------*/
+	/* ---------------------------------------- */
 	/* 1. control of soil evaporation  */
 	if (wf->soilw_evap > wf->soilw_evapPOT)
 	{
@@ -531,8 +590,11 @@ int richards(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_stru
 	}
 
 
-	/* BOTTOM LAYER IS SPECIAL */
-	diff = ws->soilw[N_SOILLAYERS-1] - sprop->VWCfc[N_SOILLAYERS-1]* sitec->soillayer_thickness[N_SOILLAYERS-1] * water_density;
+	/* BOTTOM LAYER IS SPECIAL - GWtest*/
+	if (sprop->CFflag[N_SOILLAYERS-1] == 0)
+		diff = ws->soilw[N_SOILLAYERS-1] - sprop->VWCfc[N_SOILLAYERS-1]* sitec->soillayer_thickness[N_SOILLAYERS-1] * water_density;
+	else
+		diff = ws->soilw[N_SOILLAYERS-1] - sprop->VWCsat[N_SOILLAYERS-1]* sitec->soillayer_thickness[N_SOILLAYERS-1] * water_density;
 	if (diff > 0)
 	{
 		wf->soilw_percolated[N_SOILLAYERS-1]  = diff;

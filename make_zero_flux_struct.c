@@ -39,7 +39,9 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	wf->snoww_subl = 0;
 	wf->snoww_to_soilw = 0;
 	wf->soilw_evap = 0;
+	wf->soilw_evapPOT = 0;
 	wf->soilw_transPOT = 0;
+
 	wf->soilw_transp_SUM = 0;
 	wf->soilw_transpDEMAND_SUM = 0;
 	wf->evapotransp = 0;
@@ -50,7 +52,7 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	wf->infilt_to_soilw = 0;
 	wf->infilt_to_pondw = 0;
 	wf->GW_to_pondw = 0;
-	wf->soilw_leached_RZ = 0;
+	wf->soilw_leachRZ = 0;
 	wf->canopyw_to_THN = 0;
 	wf->canopyw_to_MOW = 0;
 	wf->canopyw_to_HRV = 0;
@@ -58,7 +60,7 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	wf->canopyw_to_GRZ = 0;
 	wf->IRG_to_prcp = 0;
 	wf->FRZ_to_soilw = 0;
-	wf->soilw_evapPOT = 0;
+
 	wf->infiltPOT = 0;
 	if (ctrl->yday == 0) wf->soilw_from_GW0 = 0;
 
@@ -875,6 +877,8 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 		nf->soil2_DON_diffus[layer] = 0;
 		nf->soil3_DON_diffus[layer] = 0;
 		nf->soil4_DON_diffus[layer] = 0;
+	    nf->sminNH4_leach[layer] = 0;
+		nf->sminNO3_leach[layer] = 0;
 		nf->retransn_to_npool[layer] = 0;
 		nf->ndep_to_sminNH4[layer] = 0;
 		nf->ndep_to_sminNO3[layer] = 0;

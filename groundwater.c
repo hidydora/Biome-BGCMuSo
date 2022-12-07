@@ -28,12 +28,12 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 {
 	int layerSAT,errorCode,layer,layerLOW,md, year;
 	double soilw_fc,soilw_sat;
-	double GWdistM, GWdistB, GWboundL,GWboundU,critVWCdiff,VWC_GW;
+	double GWdistM, GWdistB, GWboundL,GWboundU,critVWCdiff,VWC_GW,ratio;
 
 	
 
 	layer=layerLOW=layerSAT=errorCode=0;
-	GWdistM=GWdistB=0;
+	GWdistM=GWdistB=ratio=0;
 
 	/* critical VWC-difference */
 	critVWCdiff = 0.01;
@@ -41,7 +41,12 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 	year = ctrl->simstartyear + ctrl->simyr;
 
 	/* initialization */
-	for (layer = 0; layer < N_SOILLAYERS-1; layer++) sprop->GWeff[layer]=0;
+	sprop->CapillFringe_act = 0;
+	for (layer = 0; layer < N_SOILLAYERS; layer++) 
+	{
+		sprop->GWeff[layer]=0;
+		sprop->CFflag[layer]=0;
+	}
 
 
 	/*if gound water depth information is available using in multilayer calculation */
@@ -56,7 +61,7 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 		}
 
 
-		sprop->GWlayer=DATA_GAP;
+	
 
 		/* GW above the surface */
 		if (sprop->GWD < 0)
@@ -66,12 +71,34 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 			sprop->GWD           = 0;
 		}
 
+		/* define GWlayer and actual CF */
+		sprop->GWlayer=DATA_GAP;
+		if (ctrl->GW_flag > 0)
+		{
+			layer = N_SOILLAYERS-1;
+			while (sprop->GWlayer == DATA_GAP && layer >= 0)
+			{
+				GWboundL = sitec->soillayer_depth[layer];
+				if (layer == 0)
+					GWboundU  = -1*CRIT_PREC;
+				else
+					GWboundU  = sitec->soillayer_depth[layer-1];
+				
+				/* if groundwater table is in actual layer (above lower boundary): GWlayer = actual layer, lower layers are charged */
+				if (sprop->GWD <= GWboundL && sprop->GWD > GWboundU) sprop->GWlayer=(double) layer;
+				layer -= 1;
+			}
+			if (sprop->GWlayer != DATA_GAP) sprop->CapillFringe_act = sprop->CapillFringe[layer];
+
+		}
+
+							
 		/*  METHOD1: increasing FC values */
 		if (ctrl->GW_flag == 0)	
 		{
 			/* calculate processes while layer is enough close to groundwater table */
 			layer = N_SOILLAYERS-1;
-			while (GWdistM <= sprop->CapillFringe && layer >= 0)
+			while (GWdistM <= sprop->CapillFringe_act && layer >= 0)
 			{
 				soilw_fc     = sprop->VWCfc[layer]   * sitec->soillayer_thickness[layer] * water_density;
 
@@ -87,12 +114,11 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 				else
 					GWboundU  = sitec->soillayer_depth[layer-1];
 				
-				if (GWdistM <= sprop->CapillFringe)
+				if (GWdistM <= sprop->CapillFringe_act)
 				{
 					/* if groundwater table is in actual layer (above lower boundary): GWlayer = actual layer, lower layers are charged */
 					if (sprop->GWD <= GWboundL && sprop->GWD > GWboundU) 
 					{
-						sprop->GWlayer=(double) layer;
 						/* soil layers below the groundwater table are saturated - net water gain from soil system */
 						for (layerSAT = 1; layer+layerSAT < N_SOILLAYERS; layerSAT++)
 						{
@@ -115,7 +141,7 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 					{
 						/* if groundwater table is below the midpoint -> GWdist is positive -> GWeff is less than 1 */
 						if (GWdistM > 0)
-							sprop->GWeff[layer] = 1-GWdistM/sprop->CapillFringe;
+							sprop->GWeff[layer] = 1-GWdistM/sprop->CapillFringe_act;
 						else
 							sprop->GWeff[layer] = 1;
 
@@ -153,12 +179,13 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 				sprop->VWCfc[0]          = sprop->VWCsat[0];
 			}
 		}
+		/*  METHOD2: CF-effect */
 		else
 		{
 		
 			/* calculate processes while layer is enough close to groundwater table */
 			layer = N_SOILLAYERS-1;
-			while (GWdistB <= sprop->CapillFringe && layer >= 0)
+			while (GWdistB <= sprop->CapillFringe_act && layer >= 0)
 			{
 
 				/* if water table (GW) is closer than a critical distance (200 cm), the effect of GW is noticable: 
@@ -173,20 +200,21 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 				else
 					GWboundU  = sitec->soillayer_depth[layer-1];
 
-				if (GWdistB <= sprop->CapillFringe)
+				if (GWdistB <= 0)
 				{
-					if (sprop->GWD - sprop->CapillFringe > GWboundU)
-						sprop->GWeff[layer] = (sitec->soillayer_depth[layer] - (sprop->GWD - sprop->CapillFringe)) / sitec->soillayer_thickness[layer];
+					
+					/* calculation the GWeff variable for the position of GW */
+					if (sprop->GWD  > GWboundU)
+						sprop->GWeff[layer] = (sitec->soillayer_depth[layer] - sprop->GWD) / sitec->soillayer_thickness[layer];
 					else
 						sprop->GWeff[layer] = 1;
 
-					/* if groundwater table is in actual layer (above lower boundary): GWlayer = actual layer, lower layers are charged */
-					if (sprop->GWD <= GWboundL && sprop->GWD > GWboundU) sprop->GWlayer=(double) layer;
-					
+					/* soil layers below the GW - part of the special capillary zone - GWtest */
+					sprop->CFflag[layer]=1;
 				
 					/* bottom layer is special - default soil moisture: field capacity */
 					if (layer == N_SOILLAYERS-1)
-						VWC_GW = sprop->GWeff[layer] * sprop->VWCsat[layer] + (1-sprop->GWeff[layer]) * sprop->VWCfc[layer];
+						VWC_GW = sprop->GWeff[layer] * sprop->VWCsat[layer] + (1-sprop->GWeff[layer]) * epv->VWC[layer];// GWtest: sprop->VWCfc[layer];
 					else
 						VWC_GW = sprop->GWeff[layer] * sprop->VWCsat[layer] + (1-sprop->GWeff[layer]) * epv->VWC[layer];
 					
@@ -203,6 +231,21 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 
 					epv->VWC[layer]          = ws->soilw[layer] / sitec->soillayer_thickness[layer] / water_density;
 				}
+				else
+				{
+					if (GWdistB <= sprop->CapillFringe_act)
+					{
+						if (sprop->GWD-sprop->CapillFringe_act < GWboundU)
+							sprop->CFflag[layer]=1;
+						else
+						{
+							soilw_sat = sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
+							ratio = (sprop->GWD-sprop->CapillFringe_act - GWboundU)/sitec->soillayer_thickness[layer];
+							if (ws->soilw[layer] >= soilw_sat*ratio) sprop->CFflag[layer]=ratio;
+						}
+					}
+				}
+			
 
 				layer = layer-1;
 			}
@@ -214,7 +257,6 @@ int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilp
 				wf->soilw_from_GW[0]    += (soilw_sat - ws->soilw[0]);
 				ws->soilw[0]             = soilw_sat;
 				epv->VWC[0]              = sprop->VWCsat[0];
-			//	sprop->VWCfc[0]          = sprop->VWCsat[0];
 			}
 		}
 	}

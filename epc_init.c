@@ -35,7 +35,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	double t2 = 0;
 	double t3 = 0;
 	double t4,r1;
-	double sum;
+	double sum, maxIND, diff;
 	int phenphase, scanflag;
 	file epc_file, WPM_file, MSC_file, SGS_file, EGS_file; 	
 	char key[] = "EPC_FILE";
@@ -49,6 +49,7 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 	int dataread;
 	int ndata = 0;
 
+	sum=maxIND=diff=0;
 
 	ctrl->planttypeName = (char*) malloc(STRINGSIZE * sizeof(char));
 			
@@ -1339,21 +1340,21 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 		errorCode=20964;
 	}
 
-	if (!errorCode && scan_value(epc_file, &epc->SNSCmort_abovebiom_max, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->maxSNSCmort_leaf, 'd'))
 	{
-		printf("ERROR reading senescence mortality parameter of aboveground biomass: epc_init()\n");
+		printf("ERROR reading maximal senescence mortality parameter of leaf: epc_init()\n");
 		errorCode=20965;
 	}
 
-	if (!errorCode && scan_value(epc_file, &epc->SNSCmort_belowbiom_max, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->maxSNSCmort_other, 'd'))
 	{
-		printf("ERROR reading senescence mortality parameter of belowground biomass: epc_init()\n");
+		printf("ERROR reading maximal senescence mortality of softstem and froot: epc_init()\n");
 		errorCode=20965;
 	}
 
-	if (!errorCode && scan_value(epc_file, &epc->SNSCmort_nsc_max, 'd'))
+	if (!errorCode && scan_value(epc_file, &epc->m_nscSNSCmort, 'd'))
 	{
-		printf("ERROR reading senescence mortality parameter of non-stuctured biomass: epc_init()\n");
+		printf("ERROR reading multiplier of senescence mortality calculation of non-stuctured biomass: epc_init()\n");
 		errorCode=20965;
 	}
 
@@ -1669,11 +1670,47 @@ int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromIN
 			  epc->alloc_livestemc[phenphase]   + epc->alloc_deadstemc[phenphase] + 
 			  epc->alloc_livecrootc[phenphase]  + epc->alloc_deadcrootc[phenphase];
 
-		if (!errorCode && sum != 0 && fabs(sum - 1.) > CRIT_PREC)
+		/* control of allocation parameter settings */
+		if (epc->alloc_leafc[phenphase]      < 1e-04)  epc->alloc_leafc[phenphase]      = 0;
+		if (epc->alloc_frootc[phenphase]     < 1e-04)  epc->alloc_frootc[phenphase]     = 0;
+		if (epc->alloc_fruitc[phenphase]     < 1e-04)  epc->alloc_fruitc[phenphase]     = 0;
+		if (epc->alloc_softstemc[phenphase]  < 1e-04)  epc->alloc_softstemc[phenphase]  = 0;
+		if (epc->alloc_livestemc[phenphase]  < 1e-04)  epc->alloc_livestemc[phenphase]  = 0;
+		if (epc->alloc_deadstemc[phenphase]  < 1e-04)  epc->alloc_deadstemc[phenphase]  = 0;
+		if (epc->alloc_livecrootc[phenphase] < 1e-04)  epc->alloc_livecrootc[phenphase] = 0;
+		if (epc->alloc_deadcrootc[phenphase] < 1e-04)  epc->alloc_deadcrootc[phenphase] = 0;
+
+		/*  searching of the maximal allocation */
+		if (epc->alloc_leafc[phenphase]      > maxIND) maxIND=1;
+		if (epc->alloc_frootc[phenphase]     > maxIND) maxIND=2;
+		if (epc->alloc_fruitc[phenphase]     > maxIND) maxIND=3;
+		if (epc->alloc_softstemc[phenphase]  > maxIND) maxIND=4;
+		if (epc->alloc_livestemc[phenphase]  > maxIND) maxIND=5;
+		if (epc->alloc_deadstemc[phenphase]  > maxIND) maxIND=6;
+		if (epc->alloc_livecrootc[phenphase] > maxIND) maxIND=7;
+		if (epc->alloc_deadcrootc[phenphase] > maxIND) maxIND=8;
+
+		diff=fabs(sum - 1.);
+		if (!errorCode && sum != 0 && diff > CRIT_PREC)
 		{
-			printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
-			printf("Allocation parameters must sum to 1.0 in every phenophase. Check EPC file and try again.\n");
-			errorCode=2098901;
+			if (diff < 1e-04)
+			{
+				if (maxIND == 1) epc->alloc_leafc[phenphase]      -= diff;
+				if (maxIND == 2) epc->alloc_frootc[phenphase]     -= diff;
+				if (maxIND == 3) epc->alloc_fruitc[phenphase]     -= diff;
+				if (maxIND == 4) epc->alloc_softstemc[phenphase]  -= diff;
+				if (maxIND == 5) epc->alloc_livestemc[phenphase]  -= diff;
+				if (maxIND == 6) epc->alloc_deadstemc[phenphase]  -= diff;
+				if (maxIND == 7) epc->alloc_livecrootc[phenphase] -= diff;
+				if (maxIND == 8) epc->alloc_deadcrootc[phenphase] -= diff;
+				ctrl->allocControl_flag = 1;
+			}
+			else
+			{
+				printf("ERROR in allocation parameters in phenophase %i, epc_init()\n", phenphase+1);
+				printf("Allocation parameters must sum to 1.0 in every phenophase. Check EPC file and try again.\n");
+				errorCode=2098901;
+			}
 		
 		}
 

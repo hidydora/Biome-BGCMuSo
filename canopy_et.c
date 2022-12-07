@@ -59,7 +59,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* call penman-monteith function, returns e in kg/m2/s */
 		if (penmon(&pmet_in, 0, &e))
 		{
-			printf("ERROR: penmon() for canopy evap... \n");
+			printf("ERROR: penmon() for canopy evap in canopy_et.c\n");
 			errorCode=1;
 		}
 		
@@ -95,7 +95,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			/* call Penman-Monthieth function */
 			if (penmon(&pmet_in, 0, &t))
 			{
-				printf("ERROR: penmon() for adjusted transpiration... \n");
+				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
 			trans_sun = t * t_dayl * epv->plaisun;
@@ -113,7 +113,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			/* call Penman-Monthieth function */
 			if (penmon(&pmet_in, 0, &t))
 			{
-				printf("ERROR: penmon() for adjusted transpiration... \n");
+				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
 			trans_shade = t * t_dayl * epv->plaishade;
@@ -134,7 +134,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			/* call Penman-Monthieth function */
 			if (penmon(&pmet_in, 0, &t))
 			{
-				printf("ERROR: penmon() for adjusted transpiration... \n");
+				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
 			trans_sunPOT = t * t_dayl * epv->plaisun;
@@ -152,7 +152,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			/* call Penman-Monthieth function */
 			if (penmon(&pmet_in, 0, &t))
 			{
-				printf("ERROR: penmon() for adjusted transpiration... \n");
+				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
 			trans_shadePOT = t * t_dayl * epv->plaishade;
@@ -177,7 +177,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* call Penman-Monthieth function */
 		if (penmon(&pmet_in, 0, &t))
 		{
-			printf("ERROR: penmon() for adjusted transpiration... \n");
+			printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 			errorCode=1;
 		}
 		
@@ -197,7 +197,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* call Penman-Monthieth function */
 		if (penmon(&pmet_in, 0, &t))
 		{
-			printf("ERROR: penmon() for adjusted transpiration... \n");
+			printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 			errorCode=1;
 		}
 		trans_shade = t * metv->dayl * epv->plaishade;
@@ -218,7 +218,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* call Penman-Monthieth function */
 		if (penmon(&pmet_in, 0, &t))
 		{
-			printf("ERROR: penmon() for adjusted transpiration... \n");
+			printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 			errorCode=1;
 		}
 		
@@ -238,19 +238,24 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* call Penman-Monthieth function */
 		if (penmon(&pmet_in, 0, &t))
 		{
-			printf("ERROR: penmon() for adjusted transpiration... \n");
+			printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 			errorCode=1;
 		}
 		trans_shadePOT = t * metv->dayl * epv->plaishade;
 		transPOT = trans_sunPOT + trans_shadePOT;
+	}
+	wf->soilw_transPOT        = transPOT;
+
+
+	
+	/* multilayer soil model: multilayer transpiration is calculated in multilayer_transpiration.c */
+	if (trans > wf->soilw_transPOT)
+		wf->soilw_transpDEMAND_SUM = trans;
+	else
+		wf->soilw_transpDEMAND_SUM = wf->soilw_transPOT;
 		
 
-		
-	}
-	/* multilayer soil model: multilayer transpiration is calculated in multilayer_transpiration.c */
 	wf->soilw_transpDEMAND_SUM = trans;
-	wf->soilw_transPOT        = transPOT;
-	
 	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
 	wf->canopyw_evap = cwe;
     wf->canopyw_to_soilw = wf->prcp_to_canopyw - cwe;

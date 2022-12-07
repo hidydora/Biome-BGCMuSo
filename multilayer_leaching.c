@@ -49,6 +49,13 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
+		/* initialization of cumulative varaibles */
+		if (ctrl->yday == 0)
+		{
+			nf->sminNH4_leachCUM[layer]=0;
+			nf->sminNO3_leachCUM[layer]=0;
+		}
+
 		soilwater_NH4conc_downward = ns->sminNH4avail[layer]  / ws->soilw[layer];
 		soilwater_NO3conc_downward = ns->sminNO3avail[layer]  / ws->soilw[layer];
 
@@ -220,7 +227,7 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 							   nf->soil1_DON_diffus[epv->n_maxrootlayers-1] + nf->soil2_DON_diffus[epv->n_maxrootlayers-1] + 
 		                       nf->soil3_DON_diffus[epv->n_maxrootlayers-1] + nf->soil4_DON_diffus[epv->n_maxrootlayers-1];
 	
-	wf->soilw_leached_RZ  = wf->soilw_percolated[epv->n_maxrootlayers-1]  + wf->soilw_diffused[epv->n_maxrootlayers-1];
+	wf->soilw_leachRZ  = wf->soilw_percolated[epv->n_maxrootlayers-1]  + wf->soilw_diffused[epv->n_maxrootlayers-1];
 
 	nf->sminN_leached_RZ  = nf->sminNH4_percol[epv->n_maxrootlayers-1]   + nf->sminNO3_percol[epv->n_maxrootlayers-1]+ 
 		                     nf->sminNH4_diffus[epv->n_maxrootlayers-1]   + nf->sminNO3_diffus[epv->n_maxrootlayers-1];
@@ -370,6 +377,9 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 				if (layer < N_SOILLAYERS-1) ns->sminNH4[layer+1]		= state1;
 				nf->sminNH4_percol[layer]   = lflux;
 				nf->sminNH4_diffus[layer]   = dflux;
+				
+				nf->sminNH4_leach[layer]    = nf->sminNH4_percol[layer] + nf->sminNH4_diffus[layer];
+				nf->sminNH4_leachCUM[layer]+= nf->sminNH4_leach[layer];
 			}
 
 			/* NO3 pool  */
@@ -379,6 +389,9 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 				if (layer < N_SOILLAYERS-1) ns->sminNO3[layer+1]		= state1;
 				nf->sminNO3_percol[layer]   = lflux;
 				nf->sminNO3_diffus[layer]   = dflux;
+					
+				nf->sminNO3_leach[layer]    = nf->sminNO3_percol[layer] + nf->sminNO3_diffus[layer];
+				nf->sminNO3_leachCUM[layer]+= nf->sminNO3_leach[layer];
 			}
 
 		
@@ -476,7 +489,7 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 		/*-----------------------------------*/
 
 	} /* endfor of layer */
-	
+   
 
 	/* deepleach calculation from the bottom layer */
 	ns->Ndeepleach_snk += nf->sminNH4_percol[N_SOILLAYERS-1] + nf->sminNO3_percol[N_SOILLAYERS-1]  + 

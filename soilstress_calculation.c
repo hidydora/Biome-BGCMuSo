@@ -81,7 +81,7 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 					if (wf->soilw_transpDEMAND[layer])
 						epv->m_SWCstress_layer[layer] = wf->soilw_transp[layer] / wf->soilw_transpDEMAND[layer];
 					else
-						epv->m_SWCstress_layer[layer] = 0;
+						epv->m_SWCstress_layer[layer] = 1;
 
 					/* control */
 					if (epv->m_SWCstress_layer[layer] < 0 || epv->m_SWCstress_layer[layer] > 1) 
@@ -126,11 +126,7 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 		epv->SWCstressLENGTH += (1 - epv->m_SWCstress);
 		epv->cumSWCstress    += (1 - epv->m_SWCstress);
 	}
-	else
-	{
-		epv->SWCstressLENGTH = 0;
-		epv->cumSWCstress    = 0;
-	}
+	
 	
 	if (epv->SWCstressLENGTH < epc->SWCstressLENGTH_crit)
 		epv->m_SWCstressLENGTH = 1;

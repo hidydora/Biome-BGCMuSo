@@ -50,6 +50,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		phen->GDD_emergEND   = 0;
 		phen->GDD_limit = 0;
 		epv->sla_avg = 0;
+		cs->flowHSsnk_C = 0;
 		
 		for (pp = 0; pp < N_PHENPHASES; pp++) 
 		{
@@ -65,8 +66,24 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		epv->m_SWCstress = 1;
 		epv->m_SWCstressLENGTH = 1;
 		epv->m_extremT = 1;
-		
 
+	
+		
+		for (pp=0; pp<N_PHENPHASES; pp++) epv->phenphase_date[pp] = -1;
+		epv->flower_date = 0;
+		epv->winterEnd_date = 0;
+	}
+
+	if (ctrl->yday == 0)
+	{
+		cs->fruitC_HRV        = 0;
+		cs->vegC_HRV          = 0;
+        cs->frootC_HRV        = 0;
+		epv->cumSWCstress     = 0;
+		epv->cumNstress       = 0;
+		epv->SWCstressLENGTH  = 0;
+		epv->plantCalloc_CUM  = 0;
+		epv->plantNalloc_CUM  = 0;
 	}
 
 	/* 2.1 first day of vegetation period */
@@ -106,24 +123,11 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		phen->offday = -1;
 		phen->remdays_litfall =-1;
 		lastday = 1;
-
-		epv->cumSWCstress = 0;
-		epv->cumNstress = 0;
-		epv->SWCstressLENGTH = 0;
 	}
 
 	/* 2.3 first day of phenological phases and flowering phenophase (0: in 1th of January) */
 
-	if (epv->n_actphen == 0)
-	{
-		for (pp=0; pp<N_PHENPHASES; pp++) epv->phenphase_date[pp] = -1;
-		epv->flower_date = 0;
-		epv->winterEnd_date = 0;
-	}
-	
 	pp = (int) epv->n_actphen; 
-	
-	
 	if (pp == epc->n_flowHS_phenophase && ctrl->yday-epv->phenphase_date[pp-1] == 1) 
 	{
 		epv->flower_date = ctrl->yday;

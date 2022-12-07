@@ -215,14 +215,13 @@ int sprop_init(file init, siteconst_struct* sitec, soilprop_struct* sprop, contr
 			errorCode=20855;
 		}
 
-		if (!errorCode && scan_value(eSp_file, &sprop->CapillFringe_act, 'd'))
+		if (!errorCode && scan_value(eSp_file, &sprop->CapillFringe_mes, 'd'))
 		{
 			printf("ERROR CapillFringe_act, sprop_init()\n");
 			errorCode=20856;
 		}
 
-		if (sprop->CapillFringe_act != DATA_GAP) sprop->CapillFringe = sprop->CapillFringe_act;
-		
+	
 		fclose(eSp_file.ptr);
 
 		/********************************************/
@@ -1069,14 +1068,13 @@ int sprop_init(file init, siteconst_struct* sitec, soilprop_struct* sprop, contr
 			errorCode=20855;
 		}
 		/* capillary fringe */
-		if (!errorCode && scan_value(sprop_file, &sprop->CapillFringe_act, 'd'))
+		if (!errorCode && scan_value(sprop_file, &sprop->CapillFringe_mes, 'd'))
 		{
 			printf("ERROR CapillFringe_act, sprop_init()\n");
 			errorCode=20856;
 		}
 
-		if (sprop->CapillFringe_act != DATA_GAP) sprop->CapillFringe = sprop->CapillFringe_act;
-
+		
 		/****************************/
 		/* dividing line from file */ 
 		if (!errorCode && scan_value(sprop_file, header, 's'))
@@ -1318,11 +1316,11 @@ int sprop_init(file init, siteconst_struct* sitec, soilprop_struct* sprop, contr
 	/* groundwater data initalization */
 	sprop->GWD=DATA_GAP;
 	sprop->GWlayer=DATA_GAP;
+	sprop->CapillFringe_act = 0;
+	for (layer=0; layer<N_SOILLAYERS;layer++) sprop->CFflag[layer]=0;
 
 	
-	/* extra parameters for nitrification and decompostion from independent file - preparation of MuSo7 */
 
-	
 
 
 
@@ -1336,7 +1334,7 @@ int sprop_init(file init, siteconst_struct* sitec, soilprop_struct* sprop, contr
 }
 
 int soilb_estimation(double sand, double silt, double* soilB, double* VWCsat,double* VWCfc, double* VWCwp,  
-	                 double* BD, double* RCN, double* CapillFringe, int* soiltype)
+	                 double* BD, double* RCN, int* soiltype)
 {
 
 	int st=-1;
@@ -1348,7 +1346,6 @@ int soilb_estimation(double sand, double silt, double* soilB, double* VWCsat,dou
 	double VWCwp_array[12]			= {0.030, 0.050, 0.090, 0.130, 0.170, 0.190,	0.205, 0.220,	0.240,	0.260,	0.275,	0.290};
 	double BD_array[12]				= {1.6,   1.58,  1.56,  1.54,  1.52,  1.5,		1.48,  1.46,	1.44,	1.42,	1.4,	1.38};
 	double RCN_array[12]			= {50,    52,    54,    56,    58,    60,		62,    64,		66,		68,		70,		72};
-	double CapillFringe_array[12]	= {0.17,  0.19,  0.25,  0.37,  0.68,  1.63,		0.26,  0.47,	1.34,	0.3,	1.92,   0.81};
 	                                 //sand l.sand sa.loam  loam  si.loam silt  sa.c.loam  c.loam si.c.loam sa.clay si.clay clay  
 	double clay = 100-sand-silt;
 
@@ -1406,7 +1403,6 @@ int soilb_estimation(double sand, double silt, double* soilB, double* VWCsat,dou
 		*VWCwp			= VWCwp_array[st];
 		*BD				= BD_array[st];
 		*RCN			= RCN_array[st];
-		*CapillFringe  = CapillFringe_array[st];
 	}
 	else
 	{	
@@ -1428,16 +1424,13 @@ int multilayer_soilcalc(control_struct* ctrl,  siteconst_struct* sitec, soilprop
 	double soilB, BD, RCN, CapillFringe, VWCsat, VWCfc, VWCwp, VWChw, hydrCONDUCTsat, hydrDIFFUSsat, hydrCONDUCTfc,hydrDIFFUSfc; 
 	int errorCode = 0;
 
-	double CapillFringe_layer[N_SOILLAYERS];
-
 	soilB = BD = RCN = CapillFringe = PSIsat = VWCsat =VWCwp = VWChw = hydrCONDUCTsat = hydrDIFFUSsat = hydrCONDUCTfc =hydrDIFFUSfc = 0;
 	m_to_cm   = 100;
 
 	
 	/* -------------------------------------------------------------------------------------------------------------------------------*/
 
-	/* initialization */
-	if (sprop->CapillFringe_act == DATA_GAP) sprop->CapillFringe = 0;
+	
 
 	/* 1. estimated soil water potential at hygroscopic water in MPa (1MPa = 10000cm)  (fc: pF = 2.5; wp: pF = 4.2) */
 	sprop->PSIhw  = pow(10,pF_hygroscopw) / (-10000);
@@ -1474,10 +1467,15 @@ int multilayer_soilcalc(control_struct* ctrl,  siteconst_struct* sitec, soilprop
 
 	
 		/* 2.2 saturation value of soil water potential */
-		PSIsat = -(exp((1.54 - 0.0095*sand + 0.0063*silt)*log(10.0))*9.8e-5);
+		 PSIsat = -(exp((1.54 - 0.0095*sand + 0.0063*silt)*log(10.0))*9.8e-5);
+		
+		 /* capillary fringe */
+		if (sprop->CapillFringe_mes == DATA_GAP) 
+			sprop->CapillFringe[layer] = -100*PSIsat;
+		else
+			sprop->CapillFringe[layer] = sprop->CapillFringe_mes;
 
-
-		if (soilb_estimation(sand, silt, &soilB, &VWCsat, &VWCfc, &VWCwp,&BD, &RCN, &CapillFringe, &ctrl->soiltype))
+		if (soilb_estimation(sand, silt, &soilB, &VWCsat, &VWCfc, &VWCwp,&BD, &RCN,  &ctrl->soiltype))
 		{
 			if (!errorCode) 
 			{
@@ -1563,10 +1561,6 @@ int multilayer_soilcalc(control_struct* ctrl,  siteconst_struct* sitec, soilprop
 		sprop->hydrDIFFUSfc[layer]		= hydrDIFFUSfc;
 		sprop->GWeff[layer]		        = 0;
 
-		CapillFringe_layer[layer]	    = CapillFringe;
-
-		if (sprop->CapillFringe_act == DATA_GAP)
-			sprop->CapillFringe += CapillFringe_layer[layer] * sitec->soillayer_thickness[layer] / sitec->soillayer_depth[N_SOILLAYERS-1];
 
 		if (layer == 0) 
 		{

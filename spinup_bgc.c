@@ -851,7 +851,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				/* do canopy ET calculations whenever there is leaf areadisplayed, since there may be intercepted water on the canopy that needs to be dealt with */
 				if (!errorCode && epv.n_actphen > epc.n_emerg_phenophase && metv.dayl)
 				{
-
 					/* evapo-transpiration */
 					if (!errorCode && cs.leafc && canopy_et(&epc, &metv, &epv, &wf))
 					{
@@ -933,7 +932,7 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				/* heat stress during flowering can affect daily allocation of fruit */
 				if (epc.n_flowHS_phenophase > 0)
 				{
-					if (!errorCode && flowering_heatstress(&epc, &metv, &epv, &cf, &nf))
+					if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))
 					{
 						printf("ERROR in flowering_heatstress.c from spinup_bgc.c\n");
 						errorCode=519;
@@ -1338,7 +1337,7 @@ if (ctrl.onscreen)
 	if (!ctrl.limittransp_flag && !ctrl.limitevap_flag && !ctrl.limitleach_flag && !ctrl.limitleach_flag && !ctrl.limitdiffus_flag &&
 		!ctrl.limitSNSC_flag && !ctrl.limitMR_flag && !ctrl.notransp_flag && !ctrl.noMR_flag && !ctrl.pond_flag && 
 		!ctrl.condMOWerr_flag && !ctrl.condIRGerr_flag && !ctrl.condIRGerr_flag && !ctrl.prephen1_flag && !ctrl.prephen2_flag && 
-		!ctrl.bareground_flag && !ctrl.vegper_flag)
+		!ctrl.bareground_flag && !ctrl.vegper_flag && !ctrl.allocControl_flag)
 	{
 		fprintf(bgcout->log_file.ptr, "no WARNINGS\n");
 	}
@@ -1423,6 +1422,12 @@ if (ctrl.onscreen)
 		{
 			fprintf(bgcout->log_file.ptr, "Vegetation period has not ended until the last day of year, the offday is equal to the last day of year\n");
 			ctrl.vegper_flag = -1;
+		}
+
+		if (ctrl.allocControl_flag)
+		{
+			fprintf(bgcout->log_file.ptr, "Adjustment of allocation parameters due to small error (<10-4) in the setting of allocation parameters\n");
+			ctrl.allocControl_flag = -1;
 		}
 	}
 

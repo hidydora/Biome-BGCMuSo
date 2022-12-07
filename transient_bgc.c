@@ -661,7 +661,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
                         /* heat stress during flowering can affect daily allocation of fruit */
 			if (epc.n_flowHS_phenophase != DATA_GAP)
 			{
-				if (!errorCode && flowering_heatstress(&epc, &metv, &epv, &cf, &nf))
+				if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))
 				{
 					printf("ERROR in flowering_heatstress() from transient_bgc.c\n");
 					errorCode=5190;
@@ -704,7 +704,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			
 
 	        /* IRRIGATING separately from other management routines */
-			if (!errorCode && irrigating(&ctrl, &IRG, &epv, &ws, &wf))
+			if (!errorCode && irrigating(&ctrl, &IRG, &sitec, &sprop, &epv, &ws, &wf))
 			{
 				printf("ERROR in irrigating() from transient_bgc.c\n");
 				errorCode=5220;
@@ -1015,7 +1015,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	if (!ctrl.limittransp_flag && !ctrl.limitevap_flag && !ctrl.limitleach_flag && !ctrl.limitleach_flag && !ctrl.limitdiffus_flag &&
 		!ctrl.limitSNSC_flag && !ctrl.limitMR_flag && !ctrl.notransp_flag && !ctrl.noMR_flag && !ctrl.pond_flag&& !ctrl.grazingW_flag &&
 		!ctrl.condMOWerr_flag && !ctrl.condIRGerr_flag && !ctrl.condIRGerr_flag && !ctrl.prephen1_flag && !ctrl.prephen2_flag && 
-		!ctrl.bareground_flag && !ctrl.vegper_flag)
+		!ctrl.bareground_flag && !ctrl.vegper_flag && !ctrl.allocControl_flag)
 	{
 		fprintf(bgcout->log_file.ptr, "no WARNINGS\n");
 	}
@@ -1118,7 +1118,11 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			ctrl.vegper_flag = -1;
 		}
 
-
+		if (ctrl.allocControl_flag)
+		{
+			fprintf(bgcout->log_file.ptr, "Adjustment of allocation parameters due to small error (<10-4) in the setting of allocation parameters (see EPC file, lines 129-136)\n");
+			ctrl.allocControl_flag = -1;
+		}
 		
 	}
 	/********************************************************************************************************* */

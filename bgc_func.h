@@ -13,7 +13,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 */
 
 int soilb_estimation(double sand, double silt, double* soilB, double* VWCsat,double* VWCfc, double* VWCwp,  
-	                 double* BD, double* RCN, double* CapillFringe, int* soiltype);
+	                 double* BD, double* RCN, int* soiltype);
 int multilayer_soilcalc(control_struct* ctrl,  siteconst_struct* sitec, soilprop_struct* sprop);
 
 
@@ -101,7 +101,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	                 cstate_struct*cs,  nstate_struct* ns, cflux_struct* cf, nflux_struct* nf, epvar_struct* epv, ntemp_struct* nt, double naddfrac);
 
 
-int flowering_heatstress(const epconst_struct* epc, const metvar_struct *metv, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf);
+int flowering_heatstress(const epconst_struct* epc, const metvar_struct *metv, cstate_struct* cs, epvar_struct* epv, cflux_struct* cf, nflux_struct* nf);
 
 int annual_rates(const epconst_struct* epc, epvar_struct* epv);
 
@@ -110,7 +110,8 @@ int growth_resp(const epconst_struct* epc, cflux_struct* cf);
 int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec, const soilprop_struct* sprop, 
 	                          epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
-int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
+int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const siteconst_struct* sitec, const soilprop_struct* sprop,
+	           epvar_struct* epv, wstate_struct* ws, wflux_struct* wf);
 
 int groundwater(const control_struct* ctrl, const siteconst_struct* sitec, soilprop_struct* sprop, epvar_struct* epv, 
 	            wstate_struct* ws, wflux_struct* wf, groundwater_struct* gws);

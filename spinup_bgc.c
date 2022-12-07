@@ -867,10 +867,6 @@ int spinup_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 #ifdef DEBUG
 				printf("%d\t%d\tdone snowmelt\n",simyr,yday);
 #endif
-				if (ctrl.simyr == 21 && ctrl.yday == 337)
-				{
-					int balus=6;
-				}
 			
 				/* potential evaporation and transpiration */
 				if (!errorCode && Elimit_and_PET(&epc, &sprop, &metv, &epv, &wf))

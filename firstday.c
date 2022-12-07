@@ -4,7 +4,7 @@ Initializes the state variables for the first day of a simulation that
 is not using a restart file.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -74,14 +74,14 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 
 	epv->rootlength = 0;
 	epv->rs_decomp_avg = 0;
-	epv->m_tmin = 0;
+	epv->m_Tmin = 0;
 	epv->m_co2 = 0;
 	epv->stomaCONDUCT_max = 0;
 	epv->albedo_LAI = 0;
 	epv->assim_Tcoeff = 1;
 	epv->assim_SScoeff = 1;
 	epv->mulch_coverage = 0;
-	epv->evapREDmulch = 1;
+	epv->mulch_EVPred = 1;
 
 	psn_sun->A      = 0;
 	psn_sun->Ci	    = 0;
@@ -113,7 +113,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 
 	/* initalize the number of the soil layers in which root can be found. It determines the rootzone depth (only on first day) */
 	
-	if (calc_nrootlayers(0, epc->max_rootzone_depth, cs->frootc, sitec, epv))
+	if (calc_nrootlayers(0, epc->rootzoneDepth_max, cs->frootc, sitec, epv))
 	{
 		if (!errorCode) 
 		{
@@ -146,7 +146,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		epv->rootlengthProp[0] = 1;
 		epv->n_rootlayers = 1;
 		if (epc->woody) 
-			epv->rootdepth = epc->max_rootzone_depth;
+			epv->rootdepth = epc->rootzoneDepth_max;
 		else
 			epv->rootdepth = CRIT_PREC;
 	}
@@ -185,6 +185,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	}
 	epv->VWC_avg		    = sprop->VWCfc[0];
 	epv->VWC_RZ 		    = sprop->VWCfc[0];  
+	epv->VWC_maxRZ          = sprop->VWCfc[0]; 
 	epv->hydrCONDUCTsat_avg = sprop->hydrCONDUCTsat[0];
 	epv->VWCsat_RZ 		    = sprop->VWCsat[0];  
 	epv->VWCfc_RZ 		    = sprop->VWCfc[0];  
@@ -195,8 +196,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	epv->SMSI               = 0;
 	epv->flower_date        = 0;
 	epv->winterEnd_date     = 0;
-	metv->tsoil_avg	   	    = sitec->tair_annavg;
-	metv->tsoil_surface_pre	= sitec->tair_annavg;	
+
 
 	phen->GDD_emergSTART = 0;
 	phen->GDD_emergEND   = 0;
@@ -226,7 +226,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		/* all types can use annmax leafc and frootc */
 		epv->annmax_leafc = 0.0;
 		epv->annmax_frootc = 0.0;
-		epv->annmax_yield = 0.0;
+		epv->annmax_yieldc = 0.0;
 		epv->annmax_softstemc = 0.0;
 		epv->annmax_livestemc = 0.0;
 		epv->annmax_livecrootc = 0.0;
@@ -234,7 +234,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		/* initialize the c and n storage state variables, but NOT in transient phase */
 		cs->leafc_storage = 0.0;
 		cs->frootc_storage = 0.0;
-		cs->yield_storage = 0.0;
+		cs->yieldc_storage = 0.0;
 		cs->softstemc_storage = 0.0;
 		cs->livestemc_storage = 0.0;
 		cs->deadstemc_storage = 0.0;
@@ -276,11 +276,11 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 
 		if (epc->yield_cn)
 		{
-			cinit->max_yield         = cinit->max_leafc    * (epc->alloc_yield[0]/epc->alloc_leafc[0]);
-			cs->yield_transfer       = cinit->max_yield   * epc->nonwoody_turnover;
-			cs->yield                = cinit->max_yield   - cs->yield_transfer;
-			ns->yieldn_transfer       = cs->yield_transfer / epc->yield_cn;
-			ns->yieldn                = cs->yield          / epc->yield_cn;
+			cinit->max_yieldc         = cinit->max_leafc    * (epc->alloc_yield[0]/epc->alloc_leafc[0]);
+			cs->yieldc_transfer       = cinit->max_yieldc   * epc->nonwoody_turnover;
+			cs->yieldc                = cinit->max_yieldc   - cs->yieldc_transfer;
+			ns->yieldn_transfer       = cs->yieldc_transfer / epc->yield_cn;
+			ns->yieldn                = cs->yieldc          / epc->yield_cn;
 		}
 
 		if (epc->softstem_cn)
@@ -344,9 +344,9 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 			ns->frootn          += transfer;
 			ns->frootn_transfer -= transfer;
 			/* yield simulation  */
-			transfer = prop_transfer * cs->yield_transfer;
-			cs->yield          += transfer;
-			cs->yield_transfer -= transfer;
+			transfer = prop_transfer * cs->yieldc_transfer;
+			cs->yieldc          += transfer;
+			cs->yieldc_transfer -= transfer;
 			transfer = prop_transfer * ns->yieldn_transfer;
 			ns->yieldn          += transfer;
 			ns->yieldn_transfer -= transfer;
@@ -400,13 +400,13 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 				prop_litfall = (double)phen->predays_litfall/(double)(phen->predays_litfall+phen->remdays_litfall);
 				cs->leafc  -= prop_litfall * cs->leafc * epc->nonwoody_turnover;
 				cs->frootc -= prop_litfall * cs->frootc * epc->nonwoody_turnover;
-				cs->yield -= prop_litfall * cs->yield * epc->nonwoody_turnover;
+				cs->yieldc -= prop_litfall * cs->yieldc * epc->nonwoody_turnover;
 				cs->softstemc -= prop_litfall * cs->softstemc * epc->nonwoody_turnover;
 			}
 		} /* end if transfer */
 		/* add the growth respiration requirement for the first year's leaf and fine root growth from transfer pools to the gresp_transfer pool */
 		cs->gresp_transfer = 0.0;
-		cs->gresp_transfer += (cs->leafc_transfer + cs->frootc_transfer + cs->yield_transfer + cs->softstemc_transfer +
+		cs->gresp_transfer += (cs->leafc_transfer + cs->frootc_transfer + cs->yieldc_transfer + cs->softstemc_transfer +
 			                   cs->livestemc_transfer + cs->deadstemc_transfer + cs->livecrootc_transfer + cs->deadcrootc_transfer) * epc->GR_ratio; 
 	
 
@@ -417,29 +417,27 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	{
 		cs->HRV_transportC += cs->leafc + cs->leafc_transfer;
 		cs->HRV_transportC += cs->frootc + cs->frootc_transfer;
-		cs->HRV_transportC += cs->yield + cs->yield_transfer;
+		cs->HRV_transportC += cs->yieldc + cs->yieldc_transfer;
 		cs->HRV_transportC += cs->softstemc + cs->softstemc_transfer;
 		cs->HRV_transportC += cs->gresp_transfer;
 		cs->HRV_transportC += cs->STDBc_leaf;
 		cs->HRV_transportC += cs->STDBc_froot;
 		cs->HRV_transportC += cs->STDBc_yield;
 		cs->HRV_transportC += cs->STDBc_softstem;
-		cs->HRV_transportC += cs->STDBc_nsc;
 
 		cs->leafc = 0;
 		cs->frootc = 0;
-		cs->yield = 0;
+		cs->yieldc = 0;
 		cs->softstemc = 0;
 		cs->leafc_transfer = 0;
 		cs->frootc_transfer = 0;
-		cs->yield_transfer = 0;
+		cs->yieldc_transfer = 0;
 		cs->softstemc_transfer = 0;
 		cs->gresp_transfer = 0;
 		cs->STDBc_leaf = 0;
 		cs->STDBc_froot = 0;
 		cs->STDBc_yield = 0;
 		cs->STDBc_softstem = 0;
-		cs->STDBc_nsc = 0;
 
 		ns->HRV_transportN += ns->leafn + ns->leafn_transfer;
 		ns->HRV_transportN += ns->frootn + ns->frootn_transfer;
@@ -450,7 +448,6 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		ns->HRV_transportN += ns->STDBn_froot;
 		ns->HRV_transportN += ns->STDBn_yield;
 		ns->HRV_transportN += ns->STDBn_softstem;
-		ns->HRV_transportN += ns->STDBn_nsc;
 
 		ns->leafn = 0;
 		ns->frootn = 0;
@@ -465,7 +462,6 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		ns->STDBn_froot = 0;
 		ns->STDBn_yield = 0;
 		ns->STDBn_softstem = 0;
-		ns->STDBn_nsc = 0;
 	}
 	
 	/* set the initial rates of litterfall and live wood turnover */
@@ -476,14 +472,14 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		{
 			epv->day_leafc_litfall_increment = cinit->max_leafc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 			epv->day_frootc_litfall_increment = cinit->max_frootc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
-			epv->day_yield_litfall_increment = cinit->max_yield * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_yield_litfall_increment = cinit->max_yieldc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 			epv->day_softstemc_litfall_increment = cinit->max_softstemc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 		}
 		else
 		{
 			epv->day_leafc_litfall_increment = epv->annmax_leafc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 			epv->day_frootc_litfall_increment = epv->annmax_frootc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
-			epv->day_yield_litfall_increment = epv->annmax_yield * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+			epv->day_yield_litfall_increment = epv->annmax_yieldc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 			epv->day_softstemc_litfall_increment = epv->annmax_softstemc * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 		}
 	}

@@ -3,7 +3,7 @@ prephenology.c
 Initialize phenology arrays, called prior to annual loop in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -19,8 +19,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "ini.h"
 #include "bgc_struct.h"
 #include "pointbgc_struct.h"
-#include "pointbgc_func.h"
-#include "bgc_func.h"     
+#include "pointbgc_func.h"    
+#include "bgc_func.h" 
 #include "bgc_constants.h"
 #include "misc_func.h"
 
@@ -30,7 +30,7 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 	int errorCode=0;
 	
 	int model,woody,evergreen;
-	int countONOFFDAY;
+	int countONOFFDAY, leap;
 	double t1;
 	int i,pday,ndays,py;
 	int nyears,phenyears;
@@ -38,12 +38,12 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 	/* phenology model variables */
 	int *onday_arr = 0;
 	int *offday_arr = 0;
-	int fall_tavg_count;
+	int fall_Tavg_count;
 	int onset_day, offset_day;
-	double mean_tavg,fall_tavg;
+	double mean_Tavg,fall_Tavg;
 	double phensoilt,phendayl;
 	double onset_critsum, sum_soilt;
-	double critdayl = 39300.0; /* seconds */
+	double criTdayl = 39300.0; /* seconds */
 	/* grass model parameters */
 	double ann_prcp;
 	double sum_prcp, phenprcp;
@@ -55,21 +55,22 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 	double grass_a = 32.9;
 	double grass_k = 0.15;
 	double grass_tmid = 9.0;
-	double grass_prcpyear[365];
+	double grass_prcpyear[nDAYS_OF_YEAR];
 	double grass_prcpprevcrit = 1.14;
 	double grass_prcpprev;
 	double grass_prcpnextcrit = 0.97;
 	double grass_prcpnext;
-	double grass_tmaxyear[nDAYS_OF_YEAR];
-	double grass_tminyear[nDAYS_OF_YEAR];
-	double grass_3daytmin[nDAYS_OF_YEAR];
-	int psum_startday, psum_stopday;
-	double tmax_ann, tmax, new_tmax;
-	double tmin_annavg;
+	double grass_Tmaxyear[nDAYS_OF_YEAR];
+	double grass_Tminyear[nDAYS_OF_YEAR];
+	double grass_3dayTmin[nDAYS_OF_YEAR];
+	int psum_starTday, psum_stopday;
+	double Tmax_ann, Tmax, new_Tmax;
+	double Tmin_annavg;
 
 	int onday_min, onday_max, offday_min, offday_max;
 	int PLTyday, HRVyday, PLTyear, HRVyear;
-
+	int* mondays=0;
+	int* enddays=0;
 
 
 	onday = offday = PLTyday = HRVyday = PLTyear = HRVyear = 0;
@@ -106,7 +107,27 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 		}
 	}
 	
-	
+	/* allocate space for enddays and mondays */	
+	if (!errorCode) 
+	{
+		enddays = (int*) malloc(nMONTHS_OF_YEAR * sizeof(int));
+		if (!enddays)
+		{
+			printf("ERROR allocating for enddays in bgc.c()\n");
+			errorCode=2100;
+		}
+	}
+
+	if (!errorCode) 
+	{
+		mondays = (int*) malloc(nMONTHS_OF_YEAR * sizeof(int));
+		if (!mondays)
+		{
+			printf("ERROR allocating for enddays in bgc.c()\n");
+			errorCode=2100;
+		}
+	}
+
 	/* set some local flags to control the phenology model behavior */
 	/* model=1 --> use phenology model   model=0 --> user specified phenology */
 	/* woody=1 --> woody veg type        woody=0 --> non-woody veg type */
@@ -149,10 +170,21 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 			for (py=0 ; py<PLT->PLT_num; py++)
 			{
 				PLTyear = PLT->PLTyear_array[countONOFFDAY];
-				HRVyear = HRV->HRVyear_array[countONOFFDAY];
+				if (!errorCode && leapControl(PLTyear, enddays, mondays, &leap))
+				{
+					printf("ERROR in call to leapControl() from prephenology_init.c\n");
+					errorCode=1;
+				}
+				PLTyday = date_to_doy(mondays, PLT->PLTmonth_array[countONOFFDAY], PLT->PLTday_array[countONOFFDAY]);
 				
-				PLTyday = date_to_doy(PLT->PLTmonth_array[countONOFFDAY], PLT->PLTday_array[countONOFFDAY]);
-				HRVyday = date_to_doy(HRV->HRVmonth_array[countONOFFDAY], HRV->HRVday_array[countONOFFDAY]);
+				
+				HRVyear = HRV->HRVyear_array[countONOFFDAY];
+				if (!errorCode && leapControl(HRVyear, enddays, mondays, &leap))
+				{
+					printf("ERROR in call to leapControl() from prephenology_init.c\n");
+					errorCode=1;
+				}
+				HRVyday = date_to_doy(mondays, HRV->HRVmonth_array[countONOFFDAY], HRV->HRVday_array[countONOFFDAY]);
 					
 				
 				onday_arr[countONOFFDAY] = PLTyday;
@@ -247,36 +279,36 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 			if (woody)
 			{
 				/* use DECIDUOUS TREE PHENOLOGY MODEL */
-				/* loop through the entire tavg timeseries to calculate long-term
-				average tavg */
-				mean_tavg = 0.0;
+				/* loop through the entire Tavg timeseries to calculate long-term
+				average Tavg */
+				mean_Tavg = 0.0;
 				for (i=0 ; i<ndays ; i++)
 				{
-					mean_tavg += (metarr->tmax[i] + metarr->tmin[i])/2.;
+					mean_Tavg += (metarr->Tmax_array[i] + metarr->Tmin_array[i])/2.;
 				}
-				mean_tavg /= (double)ndays;
+				mean_Tavg /= (double)ndays;
 				/* tree onset equation from Mike White, Aug. 1997 */
-				onset_critsum = exp(4.795 + 0.129*mean_tavg);
+				onset_critsum = exp(4.795 + 0.129*mean_Tavg);
 				
 				/* now go through the phenological years and generate expansion
 				and litterfall arrays. Some complications for Southern
 				hemisphere sites... */
-				/* calculate fall_tavg, the mean tavg from phenyday 244-304 */
-				fall_tavg = 0.0;
-				fall_tavg_count = 0;
+				/* calculate fall_Tavg, the mean Tavg from phenyday 244-304 */
+				fall_Tavg = 0.0;
+				fall_Tavg_count = 0;
 				for (py=0 ; py<phenyears ; py++)
 				{
 					for (pday=244 ; pday<305 ; pday++)
 					{
 				
-						phensoilt = metarr->tavg11_ra[py*nDAYS_OF_YEAR+pday];
+						phensoilt = metarr->TavgRA11_array[py*nDAYS_OF_YEAR+pday];
 						
-						fall_tavg += phensoilt;
-						fall_tavg_count++;
+						fall_Tavg += phensoilt;
+						fall_Tavg_count++;
 						
 					} /* end pday loop */
 				} /* end py loop */
-				fall_tavg /= (double)fall_tavg_count;
+				fall_Tavg /= (double)fall_Tavg_count;
 				
 				/* loop through phenyears again, fill onset and offset arrays */
 				for (py=0 ; py<phenyears ; py++)
@@ -286,8 +318,8 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 					for (pday=0 ; pday<nDAYS_OF_YEAR ; pday++)
 					{
 					
-						phensoilt = metarr->tavg11_ra[py*nDAYS_OF_YEAR+pday];
-						phendayl = metarr->dayl[py*nDAYS_OF_YEAR+pday];
+						phensoilt = metarr->TavgRA11_array[py*nDAYS_OF_YEAR+pday];
+						phendayl = metarr->dayl_array[py*nDAYS_OF_YEAR+pday];
 						
 						/* tree onset test */
 						if (onset_day == -1)
@@ -300,7 +332,7 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 						if (onset_day != -1 && offset_day == -1)
 						{
 							if ((pday>182) && 
-							(((phendayl<=critdayl) && (phensoilt<=fall_tavg)) ||
+							(((phendayl<=criTdayl) && (phensoilt<=fall_Tavg)) ||
 							(phensoilt<=2.0))) offset_day = pday;
 						}
 						
@@ -361,23 +393,23 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 			{
 			
 
-				/* non-woody, use the GRASS PHENOLOGY MODEL to calculate the
+				/* non-woody, use the grass PHENOLOGY MODEL to calculate the
 				array of onset and offset days */
-				/* loop through the entire tavg timeseries to calculate long-term
-				average tavg and long-term average annual total precip */
-				mean_tavg = 0.0;
+				/* loop through the entire Tavg timeseries to calculate long-term
+				average Tavg and long-term average annual total precip */
+				mean_Tavg = 0.0;
 				ann_prcp = 0.0;
 				for (i=0 ; i<ndays ; i++)
 				{
-					mean_tavg += metarr->tday[i];
-					ann_prcp += metarr->prcp[i];
+					mean_Tavg += metarr->Tday_array[i];
+					ann_prcp += metarr->prcp_array[i];
 				}
-				mean_tavg /= (double)ndays;
+				mean_Tavg /= (double)ndays;
 				ann_prcp /= (double)ndays / nDAYS_OF_YEAR;
 				
 				/* grass onset equation from White et al., 1997, with parameter
 				values specified by Mike White, Aug. 1997 */
-				t1 = exp(grass_a * (mean_tavg - grass_tmid));
+				t1 = exp(grass_a * (mean_Tavg - grass_tmid));
 				grass_stsumcrit = ((grass_stsummax - grass_stsummin)* 0.5 *
 					((t1-1)/(t1+1))) + grass_stsummid;
 				grass_prcpcrit = ann_prcp * grass_k;
@@ -387,26 +419,26 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 				
 				/* calculate the long-term average annual high temperature
 				for use in grass offset prediction */
-				tmax_ann = 0.0;
-				tmin_annavg = 0.0;
+				Tmax_ann = 0.0;
+				Tmin_annavg = 0.0;
 				for (py=0 ; py<phenyears ; py++)
 				{
-					new_tmax = -1000.0;
+					new_Tmax = -1000.0;
 					for (pday=0 ; pday<nDAYS_OF_YEAR ; pday++)
 					{
-						tmax = metarr->tmax[py*nDAYS_OF_YEAR+pday];
-						tmin_annavg += metarr->tmin[py*nDAYS_OF_YEAR+pday];
+						Tmax = metarr->Tmax_array[py*nDAYS_OF_YEAR+pday];
+						Tmin_annavg += metarr->Tmin_array[py*nDAYS_OF_YEAR+pday];
 						
-						if (tmax > new_tmax) new_tmax = tmax;
+						if (Tmax > new_Tmax) new_Tmax = Tmax;
 						
 					} /* end pday loop */
 					
-					tmax_ann += new_tmax;
+					Tmax_ann += new_Tmax;
 				} /* end py loop */
-				tmax_ann /= (double) phenyears;
-				/* 92% of tmax_ann is the threshold used in grass offset below */
-				tmax_ann *= 0.92;
-				tmin_annavg /= (double) phenyears * nDAYS_OF_YEAR;
+				Tmax_ann /= (double) phenyears;
+				/* 92% of Tmax_ann is the threshold used in grass offset below */
+				Tmax_ann *= 0.92;
+				Tmin_annavg /= (double) phenyears * nDAYS_OF_YEAR;
 				
 				/* loop through phenyears again, fill onset and offset arrays */
 				for (py=0 ; py<phenyears ; py++)
@@ -417,11 +449,11 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 					for (pday=0 ; pday<nDAYS_OF_YEAR ; pday++)
 					{
 					
-						phensoilt = metarr->tavg11_ra[py*nDAYS_OF_YEAR+pday];
-						phenprcp = metarr->prcp[py*nDAYS_OF_YEAR+pday];
+						phensoilt = metarr->TavgRA11_array[py*nDAYS_OF_YEAR+pday];
+						phenprcp = metarr->prcp_array[py*nDAYS_OF_YEAR+pday];
 						grass_prcpyear[pday] = phenprcp;
-						grass_tminyear[pday] = metarr->tmin[py*nDAYS_OF_YEAR+pday];
-						grass_tmaxyear[pday] = metarr->tmax[py*nDAYS_OF_YEAR+pday];
+						grass_Tminyear[pday] = metarr->Tmin_array[py*nDAYS_OF_YEAR+pday];
+						grass_Tmaxyear[pday] = metarr->Tmax_array[py*nDAYS_OF_YEAR+pday];
 						
 						/* grass onset test */
 						if (onset_day == -1)
@@ -435,14 +467,14 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 						
 					} /* end pday loop */
 					
-					/* do averaging operations on grass_prcpyear and grass_tminyear,
+					/* do averaging operations on grass_prcpyear and grass_Tminyear,
 					and do tests for offset day. Offset due to hot & dry can't
 					happen within one month after the onset day, and offset due
 					to cold can't happen before midyear (yearday 182) */
 					if (onset_day != -1)
 					{
-						/* calculate three-day boxcar average of tmin */
-						if (boxcar_smooth(grass_tminyear, grass_3daytmin, nDAYS_OF_YEAR,3,0))
+						/* calculate three-day boxcar average of Tmin */
+						if (boxcar_smooth(grass_Tminyear, grass_3dayTmin, nDAYS_OF_YEAR,3,0))
 						{
 							printf("ERROR in prephenology() call to boxcar()\n");
 							errorCode=1;
@@ -451,9 +483,9 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 						for (pday=onset_day+30 ; pday<nDAYS_OF_YEAR ; pday++)
 						{
 							/* calculate the previous 31-day prcp total */
-							psum_startday = pday - 30;
+							psum_starTday = pday - 30;
 							grass_prcpprev = 0.0;
-							for (i=psum_startday ; i<=pday ; i++)
+							for (i=psum_starTday ; i<=pday ; i++)
 							{
 								grass_prcpprev += grass_prcpyear[i];
 							}
@@ -472,7 +504,7 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 							{
 								if (grass_prcpprev < grass_prcpprevcrit && 
 									grass_prcpnext < grass_prcpnextcrit &&
-									grass_tmaxyear[pday] > tmax_ann)
+									grass_Tmaxyear[pday] > Tmax_ann)
 									offset_day = pday;
 							}
 							
@@ -480,7 +512,7 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 							if (offset_day == -1)
 							{
 								if (pday > 182 &&
-									grass_3daytmin[pday] <= tmin_annavg)
+									grass_3dayTmin[pday] <= Tmin_annavg)
 									offset_day = pday;
 							}
 							
@@ -592,6 +624,8 @@ int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* m
 	/* free the local array memory */
 	free(onday_arr); 
 	free(offday_arr);
+	free(enddays);
+	free(mondays);
 
 	return (errorCode);
 }

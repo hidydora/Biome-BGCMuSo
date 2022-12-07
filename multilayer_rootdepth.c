@@ -2,7 +2,7 @@
 multilayer_rootdepth.c
 calculation of changing rooting depth based on empirical function 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -33,10 +33,10 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 
 	RLprop_sum1=RLprop_sum2=RLprop_sum0=0.0;
 
-	if (sprop->soildepth < epc->max_rootzone_depth)
+	if (sprop->soildepth < epc->rootzoneDepth_max)
 		maxRD = sprop->soildepth;
 	else
-		maxRD = epc->max_rootzone_depth;
+		maxRD = epc->rootzoneDepth_max;
 
 	frootc = cs->frootc;
 
@@ -67,9 +67,8 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 			epv->rootdepth = epv->germ_depth + (maxRD-epv->germ_depth) * pow(frootc / epc->rootlength_par1, epc->rootlength_par2);
 		}
 		else
-			epv->rootdepth = epv->germ_depth + (maxRD-epv->germ_depth);
+			epv->rootdepth = maxRD;
 
-		if (epv->rootdepth > maxRD-epv->germ_depth) epv->rootdepth = maxRD-epv->germ_depth;
 	}
 	else
 		epv->rootdepth = 0;
@@ -176,15 +175,15 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 	/* par1: stem weight corresponding to max plant height, par2: plant height function shape parameter */
 	if (epc->woody)
 	{
-		epv->plant_height = epc->max_plant_height*(1-exp((-5/epc->plantheight_par1)*(cs->livestemc+cs->deadstemc)));
+		epv->plant_height = epc->plantHeight_max*(1-exp((-5/epc->plantHeight_par1)*(cs->livestemc+cs->deadstemc)));
 	}
 	else
 	{
 		
-		epv->plant_height = epc->max_plant_height * pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantheight_par1),epc->plantheight_par2);
+		epv->plant_height = epc->plantHeight_max * pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantHeight_par1),epc->plantHeight_par2);
 		
 	}
-	if (epv->plant_height > epc->max_plant_height) epv->plant_height = epc->max_plant_height;
+	if (epv->plant_height > epc->plantHeight_max) epv->plant_height = epc->plantHeight_max;
 
 	
 

@@ -4,7 +4,7 @@ Calculating the change in content of soil mineral nitrogen in multilayer soil (p
 depostion and fixing). 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -23,37 +23,37 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const soilprop_struct* sprop, const siteconst_struct* sitec, const cflux_struct* cf, 
+int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const soilprop_struct* sprop, const siteconst_struct* sitec, const cflux_struct* cf, const NdepControl_struct *ndep,
 	                 epvar_struct* epv, nstate_struct* ns, nflux_struct* nf)
 {
 	int errorCode=0;
 	int layer=0;
-	double NH4_prop,SOMresp,sminNO3avail,sminNO3avail_ppm;
+	double NH4_prop,SR_layer,sminNO3avail,sminNO3avail_ppm;
 	double pH, tsoil, WFPS, net_miner,sminNH4avail, N2O_flux_NITRIF,sminNH4_to_nitrif;
 	double weight,g_per_cm3_to_kg_per_m3;
 	double sminn_layer[N_SOILLAYERS];
 	double sminNH4_change[N_SOILLAYERS];
 	double sminNO3_change[N_SOILLAYERS];
 	double sminn_to_soilCTRL, sminn_to_npoolCTRL, ndep_to_sminnCTRL, nfix_to_sminnCTRL;
-	double SOMrespTOTAL,sminNO3_to_denitr,ratioN2_N2O;
+	double SR_total,sminNO3_to_denitr,ratioN2_N2O;
 	
-	NH4_prop=net_miner=SOMresp=sminn_to_soilCTRL=sminn_to_npoolCTRL=ndep_to_sminnCTRL=nfix_to_sminnCTRL=0;
+	NH4_prop=net_miner=SR_layer=sminn_to_soilCTRL=sminn_to_npoolCTRL=ndep_to_sminnCTRL=nfix_to_sminnCTRL=0;
 	g_per_cm3_to_kg_per_m3 = 1000;
 
 	/* *****************************************************************************************************
 
 	1.Deposition and fixation - INPUT
 	2.Plant N uptake from SMINN: sminn_to_npool 
-	3.Immobilization-mineralization: sminn_to_soil_SUM - due microbial soil processes SMINN is changing in the soil (determined in daily_allocation).
+	3.Immobilization-mineralization: sminn_to_soil_SUM - due microbial soil processes SMINN is changing in the soil (determined in allocation).
 	4. Denitrification and Nitrification */
 
 	/* if no root - no N-fixation */
 	if (epv->n_rootlayers == 0) nf->nfix_to_sminn_total = 0;
 
-	/* SOMrespTOTAL calculation - unit: kgC/ha */
-	SOMrespTOTAL = 0;
+	/* SR_total calculation - unit: kgC/ha */
+	SR_total = 0;
 	for (layer = 0; layer < N_SOILLAYERS; layer++) 
-		SOMrespTOTAL += (cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer])* 10000;
+		SR_total += (cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer])* 10000;
 	
 
 	/*-----------------------------------------------------------------------------*/
@@ -137,9 +137,9 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 
 		sminNO3avail_ppm = sminNO3avail / (sprop->BD[layer] / g_per_cm3_to_kg_per_m3 * sitec->soillayer_thickness[layer]);
 		
-		SOMresp = (cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer])* 1000;
+		SR_layer = (cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer])* 1000;
 
-		if (!errorCode && denitrification(ctrl->soiltype, sminNO3avail_ppm, pH,WFPS, SOMrespTOTAL, &sminNO3_to_denitr,&ratioN2_N2O))
+		if (!errorCode && denitrification(ctrl->soiltype, sminNO3avail_ppm, pH,WFPS, SR_layer, &sminNO3_to_denitr,&ratioN2_N2O))
 		{
 			printf("\n");
 			printf("ERROR in denitrification() for multilayer_sminn.c \n");
@@ -147,7 +147,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		
 		
 		if (epv->VWC[layer] / sprop->VWCsat[layer] > sprop->critWFPS_denitr && sminNO3avail > 0)
-			nf->sminNO3_to_denitr[layer] = sprop->denitr_coeff * SOMresp * sminNO3avail * (epv->VWC[layer] / sprop->VWCsat[layer]);
+			nf->sminNO3_to_denitr[layer] = sprop->denitr_coeff * SR_layer * sminNO3avail * (epv->VWC[layer] / sprop->VWCsat[layer]);
 		else
 			nf->sminNO3_to_denitr[layer] = 0;
 		
@@ -161,9 +161,11 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		/*********************************************/
 		/* 7. STATE UPDATE */
 
-		sminNH4_change[layer] = (nf->nfix_to_sminNH4[layer] + nf->ndep_to_sminNH4[layer] + nf->soil4n_to_sminn[layer] - 
+		sminNH4_change[layer] = (nf->nfix_to_sminNH4[layer] + nf->ndep_to_sminNH4[layer] + nf->soil4n_to_sminn[layer] + 
+			                    (nf->litr1n_to_release[layer] + nf->litr2n_to_release[layer] + nf->litr4n_to_release[layer]) * 0.5  - 
 			                     nf->sminNH4_to_soil_SUM[layer] - nf->sminNH4_to_npool[layer] - nf->sminNH4_to_nitrif[layer]);
-		sminNO3_change[layer] = (nf->ndep_to_sminNO3[layer] + (nf->sminNH4_to_nitrif[layer]- nf->N2O_flux_NITRIF[layer]) -
+		sminNO3_change[layer] = (nf->ndep_to_sminNO3[layer] + (nf->sminNH4_to_nitrif[layer]- nf->N2O_flux_NITRIF[layer]) +
+		                     	(nf->litr1n_to_release[layer] + nf->litr2n_to_release[layer] + nf->litr4n_to_release[layer]) * 0.5 -
 			                     nf->sminNO3_to_soil_SUM[layer] - nf->sminNO3_to_npool[layer] - nf->sminNO3_to_denitr[layer]);
 
 		ns->sminNH4[layer] += sminNH4_change[layer]; 
@@ -377,7 +379,7 @@ int nitrification(int layer, const soilprop_struct* sprop, double net_miner, dou
 	return (errorCode);
 }
 
-int denitrification(double soiltype, double sminNO3avail_ppm, double pH, double WFPS, double SOMrespTOTAL, double* sminNO3_to_denitr, double* ratioN2_N2O)
+int denitrification(double soiltype, double sminNO3avail_ppm, double pH, double WFPS, double SR_total, double* sminNO3_to_denitr, double* ratioN2_N2O)
 {
 	int errorCode = 0;
 	double pDEN1, FrNO3, FrCO2, FrWFPS, FrPH;
@@ -422,7 +424,7 @@ int denitrification(double soiltype, double sminNO3avail_ppm, double pH, double 
 		
 	FdWFPS = a / pow(b,e);
 		
-	FdCO2 = 24000/(1 + (200/exp(0.35*SOMrespTOTAL)));
+	FdCO2 = 24000/(1 + (200/exp(0.35*SR_total)));
 		
 		
 	if (pH < 6.5)
@@ -443,7 +445,7 @@ int denitrification(double soiltype, double sminNO3avail_ppm, double pH, double 
 
 	FrNO3 = (1 - (0.5 + ((atan(PI * 0.01 * (sminNO3avail_ppm - 190))) / PI))) * 25;
 		
-	FrCO2 = 13 + ((30.78 * atan(PI * 0.07 * (SOMrespTOTAL-13))) / PI);
+	FrCO2 = 13 + ((30.78 * atan(PI * 0.07 * (SR_total-13))) / PI);
 	
 	pDEN1 = pow(13,2.2*WFPS);
 	FrWFPS = 1.4 / pow(13,17/pDEN1);

@@ -4,7 +4,7 @@ calculation of daily senescence mortality fluxes (due to drought/water stress)
 Senescence mortality: these fluxes all enter litter sinks due to  low VWC during a long period
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -42,13 +42,13 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 	/*  SMSI - multiplication of m_SWCstress, m_extremT and m_SWCstressLENGTH */
 	/* calculating EXTREM temperature effect */
 	
-	if (metv->tmax < epc->SNSC_extremT1)
+	if (metv->Tmax < epc->SNSC_extremT1)
 		epv->m_extremT = 1;
 	else
 	{
 		/*  above critical temperature -> max, below linearly decreasing */
-		if (metv->tmax < epc->SNSC_extremT2)
-			epv->m_extremT = 1 - (metv->tmax - epc->SNSC_extremT1) / (epc->SNSC_extremT2 - epc->SNSC_extremT1);
+		if (metv->Tmax < epc->SNSC_extremT2)
+			epv->m_extremT = 1 - (metv->Tmax - epc->SNSC_extremT1) / (epc->SNSC_extremT2 - epc->SNSC_extremT1);
 		else
 			epv->m_extremT = 0;
 			
@@ -152,20 +152,20 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 			STDB_CN = epc->froot_cn * epc->leaflitr_cn/epc->leaf_cn;
 			if (STDB_CN <= 0) errorCode=1;
 
-			cf->m_frootc_to_SNSC			= SNSCmort_other * cs->frootc;	 
-			cf->m_frootc_storage_to_SNSC	= m_nscSNSCmort * SNSCmort_other * cs->frootc_storage;	
-			cf->m_frootc_transfer_to_SNSC	= m_nscSNSCmort * SNSCmort_other * cs->frootc_transfer;
+			cf->m_frootc_to_SNSC			  = SNSCmort_other * cs->frootc;	 
+			cf->m_frootc_storage_to_SNSC	  = m_nscSNSCmort * SNSCmort_other * cs->frootc_storage;	
+			cf->m_frootc_transfer_to_SNSC	  = m_nscSNSCmort * SNSCmort_other * cs->frootc_transfer;
 			
 	
-			nf->m_frootn_to_SNSC			= cf->m_frootc_to_SNSC / epc->froot_cn;
-			nf->m_frootn_storage_to_SNSC	= cf->m_frootc_storage_to_SNSC / epc->froot_cn;
-			nf->m_frootn_transfer_to_SNSC	= cf->m_frootc_transfer_to_SNSC / epc->froot_cn;
+			nf->m_frootn_to_SNSC			  = cf->m_frootc_to_SNSC / epc->froot_cn;
+			nf->m_frootn_storage_to_SNSC	  = cf->m_frootc_storage_to_SNSC / epc->froot_cn;
+			nf->m_frootn_transfer_to_SNSC	  = cf->m_frootc_transfer_to_SNSC / epc->froot_cn;
 
 			nf->frootSNSC_to_retrans          = nf->m_frootn_to_SNSC - cf->m_frootc_to_SNSC/STDB_CN;
 			nf->froot_transferSNSC_to_retrans = nf->m_frootn_transfer_to_SNSC - cf->m_frootc_transfer_to_SNSC/STDB_CN;
 			nf->froot_storageSNSC_to_retrans  = nf->m_frootn_storage_to_SNSC - cf->m_frootc_storage_to_SNSC/STDB_CN;	
 
-			nf->SNSC_to_retrans             += nf->frootSNSC_to_retrans + nf->froot_transferSNSC_to_retrans + nf->froot_storageSNSC_to_retrans;
+			nf->SNSC_to_retrans              += nf->frootSNSC_to_retrans + nf->froot_transferSNSC_to_retrans + nf->froot_storageSNSC_to_retrans;
 
 		}
 	
@@ -174,26 +174,26 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 			STDB_CN = epc->softstem_cn * epc->leaflitr_cn/epc->leaf_cn;
 			if (STDB_CN <= 0) errorCode=1;
 
-			cf->m_softstemc_to_SNSC			= SNSCmort_other * cs->softstemc;
-			cf->m_softstemc_storage_to_SNSC	= m_nscSNSCmort * SNSCmort_other * cs->softstemc_storage;	
-			cf->m_softstemc_transfer_to_SNSC= m_nscSNSCmort * SNSCmort_other * cs->softstemc_transfer;
+			cf->m_softstemc_to_SNSC			    = SNSCmort_other * cs->softstemc;
+			cf->m_softstemc_storage_to_SNSC	    = m_nscSNSCmort * SNSCmort_other * cs->softstemc_storage;	
+			cf->m_softstemc_transfer_to_SNSC    = m_nscSNSCmort * SNSCmort_other * cs->softstemc_transfer;
 			
 
-			nf->m_softstemn_to_SNSC			= cf->m_softstemc_to_SNSC / epc->softstem_cn;
-			nf->m_softstemn_storage_to_SNSC	= cf->m_softstemc_storage_to_SNSC / epc->softstem_cn;	
-			nf->m_softstemn_transfer_to_SNSC= cf->m_softstemc_transfer_to_SNSC / epc->softstem_cn;
+			nf->m_softstemn_to_SNSC			    = cf->m_softstemc_to_SNSC / epc->softstem_cn;
+			nf->m_softstemn_storage_to_SNSC	    = cf->m_softstemc_storage_to_SNSC / epc->softstem_cn;	
+			nf->m_softstemn_transfer_to_SNSC    = cf->m_softstemc_transfer_to_SNSC / epc->softstem_cn;
 
 			nf->softstemSNSC_to_retrans          = nf->m_softstemn_to_SNSC - cf->m_softstemc_to_SNSC/STDB_CN;
 			nf->softstem_transferSNSC_to_retrans = nf->m_softstemn_transfer_to_SNSC - cf->m_softstemc_transfer_to_SNSC/STDB_CN;
 			nf->softstem_storageSNSC_to_retrans  = nf->m_softstemn_storage_to_SNSC - cf->m_softstemc_storage_to_SNSC/STDB_CN;	
 
-			nf->SNSC_to_retrans             += nf->softstemSNSC_to_retrans + nf->softstem_transferSNSC_to_retrans + nf->softstem_storageSNSC_to_retrans;
+			nf->SNSC_to_retrans                 += nf->softstemSNSC_to_retrans + nf->softstem_transferSNSC_to_retrans + nf->softstem_storageSNSC_to_retrans;
 		}
 
 	
-		cf->m_yield_to_SNSC			= 0; 
-		cf->m_yield_storage_to_SNSC	= 0;	
-		cf->m_yield_transfer_to_SNSC	= 0;
+		cf->m_yieldc_to_SNSC			    = 0; 
+		cf->m_yieldc_storage_to_SNSC	    = 0;	
+		cf->m_yieldc_transfer_to_SNSC	= 0;
 	
 		nf->m_yieldn_to_SNSC			= 0; 
 		nf->m_yieldn_storage_to_SNSC	= 0;	
@@ -218,9 +218,9 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		cs->frootc_storage	   -= cf->m_frootc_storage_to_SNSC; 
 		cs->frootc_transfer    -= cf->m_frootc_transfer_to_SNSC; 
 	
-		cs->yield			   -= cf->m_yield_to_SNSC; 
-		cs->yield_storage	   -= cf->m_yield_storage_to_SNSC; 
-		cs->yield_transfer    -= cf->m_yield_transfer_to_SNSC; 
+		cs->yieldc			   -= cf->m_yieldc_to_SNSC; 
+		cs->yieldc_storage	   -= cf->m_yieldc_storage_to_SNSC; 
+		cs->yieldc_transfer    -= cf->m_yieldc_transfer_to_SNSC; 
 
 		cs->softstemc		   -= cf->m_softstemc_to_SNSC; 
 		cs->softstemc_storage  -= cf->m_softstemc_storage_to_SNSC; 
@@ -288,7 +288,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 	
 	cf->m_vegc_to_SNSC  += cf->m_leafc_to_SNSC     + cf->m_leafc_storage_to_SNSC     + cf->m_leafc_transfer_to_SNSC  +   cf->m_leafc_to_SNSCgenprog + 
 						   cf->m_frootc_to_SNSC    + cf->m_frootc_storage_to_SNSC    + cf->m_frootc_transfer_to_SNSC +  
-						   cf->m_yield_to_SNSC    + cf->m_yield_storage_to_SNSC    + cf->m_yield_transfer_to_SNSC +
+						   cf->m_yieldc_to_SNSC    + cf->m_yieldc_storage_to_SNSC    + cf->m_yieldc_transfer_to_SNSC +
 						   cf->m_softstemc_to_SNSC + cf->m_softstemc_storage_to_SNSC + cf->m_softstemc_transfer_to_SNSC + 
 						   cf->m_gresp_storage_to_SNSC  + cf->m_gresp_transfer_to_SNSC;
 	cs->SNSCsnk_C       += cf->m_vegc_to_SNSC; 
@@ -306,25 +306,23 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 	MULTILAYER SOIL: separate above- and belowground litr1 */
 	
 
-	cs->STDBc_leaf     += cf->m_leafc_to_SNSC + cf->m_leafc_to_SNSCgenprog; 											
-	cs->STDBc_froot    += cf->m_frootc_to_SNSC;
-	cs->STDBc_yield    += cf->m_yield_to_SNSC; 
-	cs->STDBc_softstem += cf->m_softstemc_to_SNSC; 
-	cs->STDBc_nsc      += cf->m_leafc_storage_to_SNSC  + cf->m_leafc_transfer_to_SNSC  + cf->m_frootc_storage_to_SNSC    + cf->m_frootc_transfer_to_SNSC +
-		                  cf->m_yield_storage_to_SNSC + cf->m_yield_transfer_to_SNSC + cf->m_softstemc_storage_to_SNSC + cf->m_softstemc_transfer_to_SNSC +
-				          cf->m_gresp_storage_to_SNSC + cf->m_gresp_transfer_to_SNSC;
+	cs->STDBc_leaf     += cf->m_leafc_to_SNSC  + cf->m_leafc_to_SNSCgenprog + cf->m_leafc_storage_to_SNSC  + cf->m_leafc_transfer_to_SNSC; 											
+	cs->STDBc_froot    += cf->m_frootc_to_SNSC + cf->m_frootc_storage_to_SNSC    + cf->m_frootc_transfer_to_SNSC;
+	cs->STDBc_yield    += cf->m_yieldc_to_SNSC  + cf->m_yieldc_storage_to_SNSC + cf->m_yieldc_transfer_to_SNSC; 
+	cs->STDBc_softstem += cf->m_softstemc_to_SNSC + cf->m_softstemc_storage_to_SNSC + cf->m_softstemc_transfer_to_SNSC; 
+	cs->STDBc_leaf     += cf->m_gresp_storage_to_SNSC + cf->m_gresp_transfer_to_SNSC;
 
-	ns->STDBn_leaf     += nf->m_leafn_to_SNSC + nf->m_leafn_to_SNSCgenprog - (nf->leafSNSCgenprog_to_retrans + nf->leafSNSC_to_retrans); 											
-	ns->STDBn_froot    += nf->m_frootn_to_SNSC - nf->frootSNSC_to_retrans;
-	ns->STDBn_yield    += nf->m_yieldn_to_SNSC - nf->yieldSNSC_to_retrans; 
-	ns->STDBn_softstem += nf->m_softstemn_to_SNSC  - nf->softstemSNSC_to_retrans; 
-	ns->STDBn_nsc      += nf->m_leafn_storage_to_SNSC  + nf->m_leafn_transfer_to_SNSC  + nf->m_frootn_storage_to_SNSC    + nf->m_frootn_transfer_to_SNSC +
-		                  nf->m_yieldn_storage_to_SNSC + nf->m_yieldn_transfer_to_SNSC + nf->m_softstemn_storage_to_SNSC + nf->m_softstemn_transfer_to_SNSC +
-				          nf->m_retransn_to_SNSC - 
-					     (nf->leaf_transferSNSC_to_retrans + nf->leaf_storageSNSC_to_retrans + nf->froot_transferSNSC_to_retrans + nf->froot_storageSNSC_to_retrans +
-						  nf->yield_transferSNSC_to_retrans + nf->yield_storageSNSC_to_retrans + nf->softstem_transferSNSC_to_retrans + nf->softstem_storageSNSC_to_retrans);
+	ns->STDBn_leaf     += nf->m_leafn_to_SNSC + nf->m_leafn_storage_to_SNSC  + nf->m_leafn_transfer_to_SNSC + nf->m_leafn_to_SNSCgenprog 
+		                  - (nf->leafSNSC_to_retrans + nf->leaf_transferSNSC_to_retrans + nf->leaf_storageSNSC_to_retrans + nf->leafSNSCgenprog_to_retrans); 											
+	ns->STDBn_froot    += nf->m_frootn_to_SNSC + nf->m_frootn_storage_to_SNSC + nf->m_frootn_transfer_to_SNSC 
+		                  - (nf->frootSNSC_to_retrans + nf->froot_transferSNSC_to_retrans + nf->froot_storageSNSC_to_retrans);
+	ns->STDBn_yield    += nf->m_yieldn_to_SNSC + nf->m_yieldn_storage_to_SNSC + nf->m_yieldn_transfer_to_SNSC 
+		                  - (nf->yieldSNSC_to_retrans + nf->yieldc_transferSNSC_to_retrans + nf->yieldc_storageSNSC_to_retrans); 
+	ns->STDBn_softstem += nf->m_softstemn_to_SNSC + nf->m_softstemn_storage_to_SNSC + nf->m_softstemn_transfer_to_SNSC  
+		                  - (nf->softstemSNSC_to_retrans + nf->softstem_transferSNSC_to_retrans + nf->softstem_storageSNSC_to_retrans); 
+	ns->STDBn_froot    += nf->m_retransn_to_SNSC;
 
-	ns->retransn            += nf->SNSC_to_retrans;
+	ns->retransn       += nf->SNSC_to_retrans;
 	 /****************************************************************************************/
 	/* 8. mortality fluxes into litter pools */
 
@@ -333,17 +331,15 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 	cf->STDBc_froot_to_litr    = cs->STDBc_froot    * mort_SNSC_to_litter;                                                         
 	cf->STDBc_yield_to_litr    = cs->STDBc_yield    * mort_SNSC_to_litter;
 	cf->STDBc_softstem_to_litr = cs->STDBc_softstem * mort_SNSC_to_litter;
-	cf->STDBc_nsc_to_litr      = cs->STDBc_nsc      * mort_SNSC_to_litter;
 
 	nf->STDBn_leaf_to_litr     = ns->STDBn_leaf     * mort_SNSC_to_litter;
 	nf->STDBn_froot_to_litr    = ns->STDBn_froot    * mort_SNSC_to_litter;                                                         
 	nf->STDBn_yield_to_litr    = ns->STDBn_yield    * mort_SNSC_to_litter;
 	nf->STDBn_softstem_to_litr = ns->STDBn_softstem * mort_SNSC_to_litter;
-	nf->STDBn_nsc_to_litr      = ns->STDBn_nsc      * mort_SNSC_to_litter;
 
-	cf->STDBc_to_litr = cf->STDBc_leaf_to_litr + cf->STDBc_froot_to_litr + cf->STDBc_yield_to_litr + cf->STDBc_softstem_to_litr + cf->STDBc_nsc_to_litr;
+	cf->STDBc_to_litr = cf->STDBc_leaf_to_litr + cf->STDBc_froot_to_litr + cf->STDBc_yield_to_litr + cf->STDBc_softstem_to_litr;
 
-	nf->STDBn_to_litr = nf->STDBn_leaf_to_litr + nf->STDBn_froot_to_litr + nf->STDBn_yield_to_litr + nf->STDBn_softstem_to_litr + nf->STDBn_nsc_to_litr;
+	nf->STDBn_to_litr = nf->STDBn_leaf_to_litr + nf->STDBn_froot_to_litr + nf->STDBn_yield_to_litr + nf->STDBn_softstem_to_litr;
 
 	/****************************************************************************************/
 	/* 9. mortality fluxes turn into litter pools: 	aboveground biomass into the top soil layer, belowground biomass divided between soil layers based on their root content */
@@ -358,7 +354,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 	/* 9.1 aboveground biomass into the top soil layer */
 
 	cs->litr1c[0] += (cf->STDBc_leaf_to_litr * epc->leaflitr_flab  + cf->STDBc_yield_to_litr * epc->yieldlitr_flab  + 
-		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flab + cf->STDBc_nsc_to_litr) * propLAYER0;
+		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flab) * propLAYER0;
 	cs->litr2c[0] += (cf->STDBc_leaf_to_litr * epc->leaflitr_fucel + cf->STDBc_yield_to_litr * epc->yieldlitr_fucel + 
 		              cf->STDBc_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER0;
 	cs->litr3c[0] += (cf->STDBc_leaf_to_litr * epc->leaflitr_fscel + cf->STDBc_yield_to_litr * epc->yieldlitr_fscel + 
@@ -367,7 +363,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flig) * propLAYER0;
 
 	ns->litr1n[0] += (nf->STDBn_leaf_to_litr * epc->leaflitr_flab  + nf->STDBn_yield_to_litr * epc->yieldlitr_flab  + 
-		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flab + nf->STDBn_nsc_to_litr) * propLAYER0;
+		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flab) * propLAYER0;
 	ns->litr2n[0] += (nf->STDBn_leaf_to_litr * epc->leaflitr_fucel + nf->STDBn_yield_to_litr * epc->yieldlitr_fucel + 
 		              nf->STDBn_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER0;
 	ns->litr3n[0] += (nf->STDBn_leaf_to_litr * epc->leaflitr_fscel + nf->STDBn_yield_to_litr * epc->yieldlitr_fscel + 
@@ -376,7 +372,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flig) * propLAYER0;
 
 	cs->litr1c[1] += (cf->STDBc_leaf_to_litr * epc->leaflitr_flab  + cf->STDBc_yield_to_litr * epc->yieldlitr_flab  + 
-		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flab + cf->STDBc_nsc_to_litr) * propLAYER1;
+		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flab) * propLAYER1;
 	cs->litr2c[1] += (cf->STDBc_leaf_to_litr * epc->leaflitr_fucel + cf->STDBc_yield_to_litr * epc->yieldlitr_fucel + 
 		              cf->STDBc_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER1;
 	cs->litr3c[1] += (cf->STDBc_leaf_to_litr * epc->leaflitr_fscel + cf->STDBc_yield_to_litr * epc->yieldlitr_fscel + 
@@ -385,7 +381,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flig) * propLAYER1;
 
 	ns->litr1n[1] += (nf->STDBn_leaf_to_litr * epc->leaflitr_flab  + nf->STDBn_yield_to_litr * epc->yieldlitr_flab  + 
-		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flab + nf->STDBn_nsc_to_litr) * propLAYER1;
+		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flab) * propLAYER1;
 	ns->litr2n[1] += (nf->STDBn_leaf_to_litr * epc->leaflitr_fucel + nf->STDBn_yield_to_litr * epc->yieldlitr_fucel + 
 		              nf->STDBn_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER1;
 	ns->litr3n[1] += (nf->STDBn_leaf_to_litr * epc->leaflitr_fscel + nf->STDBn_yield_to_litr * epc->yieldlitr_fscel + 
@@ -394,7 +390,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flig) * propLAYER1;
 	
 	cs->litr1c[2] += (cf->STDBc_leaf_to_litr * epc->leaflitr_flab  + cf->STDBc_yield_to_litr * epc->yieldlitr_flab  + 
-		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flab + cf->STDBc_nsc_to_litr) * propLAYER2;
+		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flab) * propLAYER2;
 	cs->litr2c[2] += (cf->STDBc_leaf_to_litr * epc->leaflitr_fucel + cf->STDBc_yield_to_litr * epc->yieldlitr_fucel + 
 		              cf->STDBc_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER2;
 	cs->litr3c[2] += (cf->STDBc_leaf_to_litr * epc->leaflitr_fscel + cf->STDBc_yield_to_litr * epc->yieldlitr_fscel + 
@@ -403,7 +399,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		              cf->STDBc_softstem_to_litr * epc->softstemlitr_flig) * propLAYER2;
 
 	ns->litr1n[2] += (nf->STDBn_leaf_to_litr * epc->leaflitr_flab  + nf->STDBn_yield_to_litr * epc->yieldlitr_flab  + 
-		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flab + nf->STDBn_nsc_to_litr) * propLAYER2;
+		              nf->STDBn_softstem_to_litr * epc->softstemlitr_flab) * propLAYER2;
 	ns->litr2n[2] += (nf->STDBn_leaf_to_litr * epc->leaflitr_fucel + nf->STDBn_yield_to_litr * epc->yieldlitr_fucel + 
 		              nf->STDBn_softstem_to_litr * epc->softstemlitr_fucel) * propLAYER2;
 	ns->litr3n[2] += (nf->STDBn_leaf_to_litr * epc->leaflitr_fscel + nf->STDBn_yield_to_litr * epc->yieldlitr_fscel + 
@@ -445,7 +441,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 	}
 	
 	/* estimating aboveground litter and cwdc */
-	cs->litrc_above +=  cf->STDBc_leaf_to_litr + cf->STDBc_yield_to_litr + cf->STDBc_softstem_to_litr + cf->STDBc_nsc_to_litr;
+	cs->litrc_above +=  cf->STDBc_leaf_to_litr + cf->STDBc_yield_to_litr + cf->STDBc_softstem_to_litr;
 
 	/****************************************************************************************/
 	/* 10. decreasing of temporary pool */
@@ -454,13 +450,11 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 	cs->STDBc_froot    -= cf->STDBc_froot_to_litr;
 	cs->STDBc_yield    -= cf->STDBc_yield_to_litr;
 	cs->STDBc_softstem -= cf->STDBc_softstem_to_litr;
-	cs->STDBc_nsc      -= cf->STDBc_nsc_to_litr;
 
 	ns->STDBn_leaf     -= ns->STDBn_leaf     * mort_SNSC_to_litter;
 	ns->STDBn_froot    -= ns->STDBn_froot    * mort_SNSC_to_litter;
 	ns->STDBn_yield    -= ns->STDBn_yield    * mort_SNSC_to_litter;
 	ns->STDBn_softstem -= ns->STDBn_softstem * mort_SNSC_to_litter;
-	ns->STDBn_nsc      -= ns->STDBn_nsc      * mort_SNSC_to_litter;
 
 
 	/************************************************************/
@@ -498,13 +492,6 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		ns->STDBn_froot = 0;
 	}
 
-	if ((cs->STDBc_nsc != 0 && fabs(cs->STDBc_nsc) < CRIT_PREC) || (ns->STDBn_nsc != 0 && fabs(ns->STDBn_nsc) < CRIT_PREC))
-	{
-		cs->FIREsnk_C += cs->STDBc_nsc;
-		ns->FIREsnk_N += ns->STDBn_nsc; 
-		cs->STDBc_nsc = 0;
-		ns->STDBn_nsc = 0;
-	}
 	
 	
 	return (errorCode);
@@ -527,8 +514,8 @@ int genprog_senescence(const epconst_struct* epc, const metvar_struct* metv, epv
 	{
 		leafday += 1;
 
-		if (metv->tavg - epc->base_temp > 0)
-			epv->thermal_time = (metv->tavg - epc->base_temp);
+		if (metv->Tavg - epc->base_temp > 0)
+			epv->thermal_time = (metv->Tavg - epc->base_temp);
 		else
 			epv->thermal_time = 0;
 

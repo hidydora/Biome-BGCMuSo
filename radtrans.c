@@ -5,7 +5,7 @@ leaf area for sun and shade canopy fractions, then calculate
 canopy radiation interception and transmission 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -191,8 +191,8 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	}
 
 	/*--------------------------------------------------------------------------------------------------------------------------------------------*/
-	/* 2. calculate the net radiation based on THE ASCE STANDARDIZED REFERENCE EVAPOTRANSPIRATION EQUATION” prepared by 
-	Task Committee on Standardization of Reference Evapotranspiration of the Environmental and Water Resources Institute */
+	/* 2. calculate the net radiation based on THE ASCE STANDARDIZED REFERENCE EVPOtranspiration EQUATION” prepared by 
+	Task Committee on Standardization of Reference evapotranspiration of the Environmental and Water Resources Institute */
 
 	/* 2.1. constant values */
 	W_to_MJperDAY = 1e-6 * metv->dayl; //(nSEC_IN_DAY); 
@@ -232,11 +232,11 @@ int radtrans(const control_struct* ctrl, const phenology_struct* phen, const cst
 	
 	
 	/* max and min temperature */
-	Tmax_K = metv->tmax + C_to_K;
-	Tmin_K = metv->tmin + C_to_K;
+	Tmax_K = metv->Tmax + C_to_K;
+	Tmin_K = metv->Tmin + C_to_K;
 
 	/* vapor pressure: e_act - dimensions: e_sat:hPa to kPa, VPD: Pa to kPa */
-	e_sat = 6.11 * pow(10, (7.5 * metv->tmax)/(metv->tmax + C_to_K)) / 10;
+	e_sat = 6.11 * pow(10, (7.5 * metv->Tmax)/(metv->Tmax + C_to_K)) / 10;
 	e_act = e_sat - metv->vpd / 1000;
 
 	if (e_act < 0)

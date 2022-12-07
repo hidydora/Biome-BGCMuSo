@@ -2,7 +2,7 @@
 output_handling.c
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -22,8 +22,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
 
-int output_handling(int monday, int endday, control_struct* ctrl, double** output_map, 
-					double* dayarr, double* monavgarr, double* annavgarr, double* annarr, 
+int output_handling(int* mondays, int* enddays, control_struct* ctrl, double** output_map, double* dayarr, double* monavgarr, double* annavgarr, double* annarr, 
 					file dayout, file monavgout, file annavgout, file annout)
 {
 	int i = 0;
@@ -41,7 +40,7 @@ int output_handling(int monday, int endday, control_struct* ctrl, double** outpu
 
 
 	/* date handling: specific case for southern hemisphere */
-	if (ctrl->spinup == 0)
+	if (ctrl->spinup != 1)
 		yearOUT=simyr+ctrl->simstartyear;
 	else
 		yearOUT  = simyr;
@@ -59,7 +58,7 @@ int output_handling(int monday, int endday, control_struct* ctrl, double** outpu
 			yearOUT += 1;
 		}
 		
-		if (!errorCode && doy_to_date(ydayOUT, &monthOUT, &dayOUT, 1))
+		if (!errorCode && doy_to_date(enddays, ydayOUT, &monthOUT, &dayOUT, 1))
 		{
 			printf("\n");
 			printf("ERROR in call to doy_to_date() from output_handling()\n");
@@ -162,12 +161,12 @@ int output_handling(int monday, int endday, control_struct* ctrl, double** outpu
 		}
 		
 		/* if this is the last day of the current month, output... */
-		if (yday == endday)
+		if (yday == enddays[ctrl->curmonth])
 		{
 			/* finish the averages */
 			for (outv=0 ; outv<ctrl->ndayout ; outv++)
 			{
-				monavgarr[outv] /= (double)monday;
+				monavgarr[outv] /= (double)mondays[ctrl->curmonth];
 			}
 
 			if (ctrl->domonavg == 2)
@@ -370,7 +369,7 @@ int output_handling(int monday, int endday, control_struct* ctrl, double** outpu
 	
 
 		/* calculate month and day variables at the end of a month */
-		if (yday == endday)
+		if (yday == enddays[ctrl->curmonth])
 		{
 			/* if this is the last day of the year, output... */
 			if (yday == nDAYS_OF_YEAR-1)

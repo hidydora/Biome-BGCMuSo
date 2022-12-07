@@ -4,7 +4,7 @@ Initialize water, carbon, and nitrogen state variables to 0.0 before
 each simulation.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022 D. Hidy [dori.hidy@gmail.com]
@@ -31,7 +31,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 
 	cinit->max_leafc = 0.0;
 	cinit->max_frootc = 0.0;
-	cinit->max_yield = 0.0;
+	cinit->max_yieldc = 0.0;
 	cinit->max_softstemc = 0.0;
 	cinit->max_livestemc = 0.0;
 	cinit->max_livecrootc = 0.0;
@@ -44,12 +44,12 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->snoww = 0;
 	ws->canopyw = 0;
 	ws->prcp_src = 0;
-	ws->soilEvap_snk = 0;
-	ws->snowsubl_snk = 0;
-	ws->canopyevap_snk = 0;
-	ws->trans_snk = 0;
+	ws->soilEVP_snk = 0;
+	ws->snowSUBL_snk = 0;
+	ws->canopywEVP_snk = 0;
+	ws->TRP_snk = 0;
 	ws->runoff_snk = 0;
-	ws->pondEvap_snk = 0;
+	ws->pondEVP_snk = 0;
 	ws->deeppercolation_snk = 0;
 	ws->groundwater_src = 0;
 	ws->groundwater_snk = 0;
@@ -61,12 +61,13 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->IRGsrc_W = 0;
 	ws->condIRGsrc = 0;
 	ws->FRZsrc_W = 0;
+	ws->GW_waterlogging = 0.0;
 	ws->WbalanceERR = 0;
 	ws->inW = 0;
 	ws->outW = 0;
 	ws->storeW = 0;
-	ws->soilEvapCUM1 = 0.0;
-	ws->soilEvapCUM2 = 0.0;
+	ws->cumEVPsoil1 = 0.0;
+	ws->cumEVPsoil2 = 0.0;
 	ws->timestepRichards = 0;
 	cs->leafc = 0;
 	cs->leafc_storage = 0;
@@ -74,9 +75,9 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->frootc = 0;
 	cs->frootc_storage = 0;
 	cs->frootc_transfer = 0;
-	cs->yield = 0;
-	cs->yield_storage = 0;
-	cs->yield_transfer = 0;
+	cs->yieldc = 0;
+	cs->yieldc_storage = 0;
+	cs->yieldc_transfer = 0;
 	cs->softstemc = 0;
 	cs->softstemc_storage = 0;
 	cs->softstemc_transfer = 0;
@@ -105,14 +106,12 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->STDBc_froot = 0;
 	cs->STDBc_yield = 0;
 	cs->STDBc_softstem = 0;
-	cs->STDBc_nsc = 0;
 	cs->STDBc_above = 0;
 	cs->STDBc_below = 0;
 	cs->CTDBc_leaf = 0;
 	cs->CTDBc_froot = 0;
 	cs->CTDBc_yield = 0;
 	cs->CTDBc_softstem = 0;
-	cs->CTDBc_nsc = 0;
 	cs->CTDBc_cstem = 0;
 	cs->CTDBc_croot = 0;
 	cs->CTDBc_above = 0;
@@ -124,22 +123,22 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->cpool = 0;
 	cs->psnsun_src = 0;
 	cs->psnshade_src = 0;
-	cs->NSC_mr_snk = 0;
-	cs->actC_mr_snk = 0;
-	cs->leaf_mr_snk = 0;
-	cs->leaf_gr_snk = 0;
-	cs->froot_mr_snk = 0;
-	cs->froot_gr_snk = 0;
-	cs->yield_gr_snk = 0;
-	cs->yield_mr_snk = 0;
-	cs->softstem_gr_snk = 0;
-	cs->softstem_mr_snk = 0;
-	cs->livestem_mr_snk = 0;
-	cs->livestem_gr_snk = 0;
-	cs->deadstem_gr_snk = 0;
-	cs->livecroot_mr_snk = 0;
-	cs->livecroot_gr_snk = 0;
-	cs->deadcroot_gr_snk = 0;
+	cs->NSC_MR_snk = 0;
+	cs->actC_MR_snk = 0;
+	cs->leaf_MR_snk = 0;
+	cs->leaf_GR_snk = 0;
+	cs->froot_MR_snk = 0;
+	cs->froot_GR_snk = 0;
+	cs->yield_GR_snk = 0;
+	cs->yield_MR_snk = 0;
+	cs->softstem_GR_snk = 0;
+	cs->softstem_MR_snk = 0;
+	cs->livestem_MR_snk = 0;
+	cs->livestem_GR_snk = 0;
+	cs->deadstem_GR_snk = 0;
+	cs->livecroot_MR_snk = 0;
+	cs->livecroot_GR_snk = 0;
+	cs->deadcroot_GR_snk = 0;
 	cs->litr1_hr_snk = 0;
 	cs->litr2_hr_snk = 0;
 	cs->litr4_hr_snk = 0;
@@ -149,6 +148,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->soil4_hr_snk = 0;
 	cs->Cdeepleach_snk = 0;
 	cs->flowHSsnk_C = 0;
+	cs->calc_flowHS = 0;
 	cs->FIREsnk_C = 0;
 	cs->SNSCsnk_C = 0;
 	cs->PLTsrc_C = 0;
@@ -158,7 +158,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->GRZsnk_C = 0;
 	cs->GRZsrc_C = 0;
 	cs->FRZsrc_C = 0;
-	cs->yield_HRV = 0.0;
+	cs->yieldC_HRV = 0.0;
 	cs->frootC_HRV = 0.0;
 	cs->vegC_HRV = 0.0;
 	cs->CbalanceERR = 0;
@@ -200,14 +200,12 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->STDBn_froot = 0;
 	ns->STDBn_yield = 0;
 	ns->STDBn_softstem = 0;
-	ns->STDBn_nsc = 0;
 	ns->STDBn_above = 0;
 	ns->STDBn_below = 0;
 	ns->CTDBn_leaf = 0;
 	ns->CTDBn_froot = 0;
 	ns->CTDBn_yield = 0;
 	ns->CTDBn_softstem = 0;
-	ns->CTDBn_nsc = 0;
 	ns->CTDBn_cstem = 0;
 	ns->CTDBn_croot = 0;
 	ns->CTDBn_above = 0;

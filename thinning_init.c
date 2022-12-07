@@ -3,7 +3,7 @@ thinning_init.c
 read thinning information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -45,10 +45,10 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 	int* THNyear_array;				
 	int* THNmonth_array;					
 	int* THNday_array;						
-	double* thinningrate_w_array;				
-	double* thinningrate_nw_array;				
-	double* transpcoeff_w_array;			
-	double* transpcoeff_nw_array;			
+	double* thinningRate_w_array;				
+	double* thinningRate_nw_array;				
+	double* transpCoeff_w_array;			
+	double* transpCoeff_nw_array;			
 	
 	maxTHN_num=1000;
 
@@ -89,10 +89,10 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 		THNyear_array         = (int*) malloc(maxTHN_num*sizeof(double));  
 		THNmonth_array        = (int*) malloc(maxTHN_num*sizeof(double)); 
 		THNday_array          = (int*) malloc(maxTHN_num*sizeof(double)); 
-		thinningrate_w_array  = (double*) malloc(maxTHN_num*sizeof(double)); 
-		thinningrate_nw_array = (double*) malloc(maxTHN_num*sizeof(double)); 
-		transpcoeff_w_array   = (double*) malloc(maxTHN_num*sizeof(double)); 
-		transpcoeff_nw_array  = (double*) malloc(maxTHN_num*sizeof(double)); 
+		thinningRate_w_array  = (double*) malloc(maxTHN_num*sizeof(double)); 
+		thinningRate_nw_array = (double*) malloc(maxTHN_num*sizeof(double)); 
+		transpCoeff_w_array   = (double*) malloc(maxTHN_num*sizeof(double)); 
+		transpCoeff_nw_array  = (double*) malloc(maxTHN_num*sizeof(double)); 
 		
 		if (!errorCode && scan_value(init, THN_filename, 's'))
 		{
@@ -132,10 +132,10 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 				THNyear_array[nmgm]         = p1;
 				THNmonth_array[nmgm]        = p2;
 				THNday_array[nmgm]          = p3;
-				thinningrate_w_array[nmgm]  = p4;
-				thinningrate_nw_array[nmgm] = p5;
-				transpcoeff_w_array[nmgm]   = p6;
-				transpcoeff_nw_array[nmgm]  = p7;
+				thinningRate_w_array[nmgm]  = p4;
+				thinningRate_nw_array[nmgm] = p5;
+				transpCoeff_w_array[nmgm]   = p6;
+				transpCoeff_nw_array[nmgm]  = p7;
 
 				nmgm += 1;
 			}
@@ -147,20 +147,20 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 		THN->THNyear_array         = (int*) malloc(THN->THN_num*sizeof(double));  
 		THN->THNmonth_array        = (int*) malloc(THN->THN_num*sizeof(double)); 
 		THN->THNday_array          = (int*) malloc(THN->THN_num*sizeof(double)); 
-		THN->thinningrate_w_array  = (double*) malloc(THN->THN_num*sizeof(double)); 
-		THN->thinningrate_nw_array = (double*) malloc(THN->THN_num*sizeof(double)); 
-		THN->transpcoeff_w_array   = (double*) malloc(THN->THN_num*sizeof(double)); 
-		THN->transpcoeff_nw_array  = (double*) malloc(THN->THN_num*sizeof(double)); 
+		THN->thinningRate_w_array  = (double*) malloc(THN->THN_num*sizeof(double)); 
+		THN->thinningRate_nw_array = (double*) malloc(THN->THN_num*sizeof(double)); 
+		THN->transpCoeff_w_array   = (double*) malloc(THN->THN_num*sizeof(double)); 
+		THN->transpCoeff_nw_array  = (double*) malloc(THN->THN_num*sizeof(double)); 
 
 		for (nmgm = 0; nmgm < THN->THN_num; nmgm++)
 		{
 			THN->THNyear_array[nmgm]         = THNyear_array[nmgm];
 			THN->THNmonth_array[nmgm]        = THNmonth_array[nmgm] ;
 			THN->THNday_array[nmgm]          = THNday_array[nmgm];
-			THN->thinningrate_w_array[nmgm]  = thinningrate_w_array[nmgm];
-			THN->thinningrate_nw_array[nmgm] = thinningrate_nw_array[nmgm];
-			THN->transpcoeff_w_array[nmgm]   = transpcoeff_w_array[nmgm] ;
-			THN->transpcoeff_nw_array[nmgm]  = transpcoeff_nw_array[nmgm];
+			THN->thinningRate_w_array[nmgm]  = thinningRate_w_array[nmgm];
+			THN->thinningRate_nw_array[nmgm] = thinningRate_nw_array[nmgm];
+			THN->transpCoeff_w_array[nmgm]   = transpCoeff_w_array[nmgm] ;
+			THN->transpCoeff_nw_array[nmgm]  = transpCoeff_nw_array[nmgm];
 		}
 
 
@@ -170,10 +170,10 @@ int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN)
 		free(THNyear_array);				
 		free(THNmonth_array);					
 		free(THNday_array);						
-		free(thinningrate_w_array);				
-		free(thinningrate_nw_array);				
-		free(transpcoeff_w_array);			
-		free(transpcoeff_nw_array);	
+		free(thinningRate_w_array);				
+		free(thinningRate_nw_array);				
+		free(transpCoeff_w_array);			
+		free(transpCoeff_nw_array);	
 	}
 	else
 	{

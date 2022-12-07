@@ -4,7 +4,7 @@ A single-function treatment of canopy evaporation and transpiration
 fluxes.  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -25,15 +25,15 @@ Missoula, MT 59812
 int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct* epv, wflux_struct* wf)
 {
 	int errorCode=0;
-	double e, cwe, t, trans, trans_sun, trans_shade, transPOT, trans_sunPOT, trans_shadePOT,e_dayl,t_dayl;
+	double e, cwe, t, TRP, TRPsun, TRPshade, TRP_pot, TRPsun_pot, TRPshade_pot,e_dayl,t_dayl,diff;
 	
 	pmet_struct pmet_in;
     
-	e=cwe=t=trans=trans_sun=trans_shade=e_dayl=t_dayl=transPOT=trans_sunPOT=trans_shadePOT=0;
+	e=cwe=t=TRP=TRPsun=TRPshade=e_dayl=t_dayl=TRP_pot=TRPsun_pot=TRPshade_pot=0;
 
 
 	/* Assign values in pmet_in that don't change */
-	pmet_in.ta = metv->tday;
+	pmet_in.ta = metv->Tday;
 	pmet_in.pa = metv->pa;
 	pmet_in.vpd = metv->vpd;
 
@@ -59,7 +59,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		/* call penman-monteith function, returns e in kg/m2/s */
 		if (penmon(&pmet_in, 0, &e))
 		{
-			printf("ERROR: penmon() for canopy evap in canopy_et.c\n");
+			printf("ERROR: penmon() for canopy EVP in canopy_et.c\n");
 			errorCode=1;
 		}
 		
@@ -68,8 +68,8 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 		
 		if (e_dayl > metv->dayl)  
 		{
-			/* day not long enough to evap. all int. water */
-			trans = 0.0;    /* no time left for transpiration */
+			/* day not long enough to EVP. all int. water */
+			TRP = 0.0;    /* no time left for transpiration */
 			cwe = e * metv->dayl;   /* daylength limits canopy evaporation */
 		}
 		else                
@@ -98,7 +98,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
-			trans_sun = t * t_dayl * epv->plaisun;
+			TRPsun = t * t_dayl * epv->plaisun;
 			
 			/* next for shaded canopy fraction */
 			pmet_in.rv = 1.0/epv->gl_t_wv_shade;
@@ -116,8 +116,8 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
-			trans_shade = t * t_dayl * epv->plaishade;
-			trans = trans_sun + trans_shade;
+			TRPshade = t * t_dayl * epv->plaishade;
+			TRP = TRPsun + TRPshade;
 
 			/**********POTENTIAL******************/
 			/* calculate  transpiration using adjusted daylength */
@@ -137,7 +137,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
-			trans_sunPOT = t * t_dayl * epv->plaisun;
+			TRPsun_pot = t * t_dayl * epv->plaisun;
 			
 			/* next for shaded canopy fraction */
 			pmet_in.rv = 1.0/epv->gl_t_wv_shadePOT;
@@ -155,13 +155,16 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 				printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 				errorCode=1;
 			}
-			trans_shadePOT = t * t_dayl * epv->plaishade;
-			transPOT = trans_sunPOT + trans_shadePOT;
+			TRPshade_pot = t * t_dayl * epv->plaishade;
+			TRP_pot = TRPsun_pot + TRPshade_pot;
 		}
+		wf->canopywEVP = cwe;
 	}    /* end if canopy_water */
 	
 	else /* no canopy water, transpiration with unadjusted daylength */
 	{
+		wf->canopywEVP = 0;
+
 		/**********ACTUAL******************/
 		/* first for sunlit canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_sun;
@@ -181,7 +184,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			errorCode=1;
 		}
 		
-		trans_sun = t * metv->dayl * epv->plaisun;
+		TRPsun = t * metv->dayl * epv->plaisun;
 		
 		/* next for shaded canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_shade;
@@ -200,8 +203,8 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 			errorCode=1;
 		}
-		trans_shade = t * metv->dayl * epv->plaishade;
-		trans = trans_sun + trans_shade;
+		TRPshade = t * metv->dayl * epv->plaishade;
+		TRP = TRPsun + TRPshade;
 
 		/**********POTENTIAL******************/
 		/* first for sunlit canopy fraction */
@@ -222,7 +225,7 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			errorCode=1;
 		}
 		
-		trans_sunPOT = t * metv->dayl * epv->plaisun;
+		TRPsun_pot = t * metv->dayl * epv->plaisun;
 		
 		/* next for shaded canopy fraction */
 		pmet_in.rv = 1.0/epv->gl_t_wv_shadePOT;
@@ -241,25 +244,27 @@ int canopy_et(const epconst_struct* epc, const metvar_struct* metv, epvar_struct
 			printf("ERROR: penmon() for adjusted transpiration in canopy_et.c\n");
 			errorCode=1;
 		}
-		trans_shadePOT = t * metv->dayl * epv->plaishade;
-		transPOT = trans_sunPOT + trans_shadePOT;
+		TRPshade_pot = t * metv->dayl * epv->plaishade;
+		TRP_pot = TRPsun_pot + TRPshade_pot;
 	}
-	wf->soilwTransp_POT        = transPOT;
+	wf->soilwTRP_POT        = TRP_pot;
 
-
-	
-	/* multilayer soil model: multilayer transpiration is calculated in multilayer_transpiration.c */
-	if (trans > wf->soilwTransp_POT)
-		wf->soilwTranspDemand_SUM = trans;
-	else
-		wf->soilwTranspDemand_SUM = wf->soilwTransp_POT;
-		
-
-	wf->soilwTranspDemand_SUM = trans;
-	/* assign water fluxes, all excess not evaporated goes to soil water compartment */
-	wf->canopyw_evap = cwe;
-    wf->canopyw_to_soilw = wf->prcp_to_canopyw - cwe;
-
+	/*---------------------------------------------------------------*/
+	/* 5. Energy limit  */
+	/*---------------------------------------------------------------*/
+	diff = wf->canopywEVP + wf->soilwTRP_POT - wf->potETcanopy;
+	if (diff > CRIT_PRECwater)
+	{
+		if (wf->canopywEVP  > wf->potETcanopy)
+		{
+			wf->canopywEVP   = wf->potETcanopy;
+			wf->soilwTRP_POT = 0;
+		}
+		else
+		{
+			wf->soilwTRP_POT -= diff;
+		}
+	}
 
 
 	return (errorCode);

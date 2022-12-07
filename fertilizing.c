@@ -3,7 +3,7 @@ fertilizing.c
 do fertilization  - increase the mineral soil nitrogen (sminn)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -45,7 +45,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 	int FRZlayer;                               /* (DIM) number of fertilization layer */
 	
 		
-	double ratio, ratioSUM,ha_to_m2;
+	double ratio, ratioSUM,ha_to_m2, diff;
 
 	int md, year;
 
@@ -180,17 +180,15 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 				ns->sminNH4[layer]  += nf->FRZ_to_sminNH4 * ratio;
 				ns->sminNO3[layer]  += nf->FRZ_to_sminNO3 * ratio;
 
-		
-			}
+				/* water from fertilization -> soil layers, in case of oversaturation: pondw */	
+				ws->soilw[layer] += wf->FRZ_to_soilw * ratio;
 
-			/*water from fertilization -> pondw. If pond water is greatedr than a maximum height -> runoff */
-			ws->pondw         += wf->FRZ_to_soilw;
-			
-			if (ws->pondw  > sprop->pondmax)
-			{
-				wf->pondw_to_runoff  += ws->pondw - sprop->pondmax;
-				ws->runoff_snk	     += ws->pondw - sprop->pondmax;
-				ws->pondw            = sprop->pondmax;
+				diff = ws->soilw[layer] - sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
+				if (diff > CRIT_PRECwater) 
+				{
+					ws->pondw += diff;
+					ws->soilw[layer] = sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
+				}
 
 			}
 

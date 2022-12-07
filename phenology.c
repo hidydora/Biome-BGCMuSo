@@ -3,7 +3,7 @@ phenology.c
 daily phenology fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -39,7 +39,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 
 	
 
-	/* phenological control for EVERGREENS */
+	/* phenological control for evergreenS */
 	if (epc->evergreen)
 	{
 		/* transfer growth fluxes */
@@ -62,8 +62,8 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 	        
 			if (epc->yield_cn)
 			{
-				cf->yield_transfer_to_yield       = cs->yield_transfer / ndays;
-				nf->yieldn_transfer_to_yieldn       = cf->yield_transfer_to_yield       / epc->yield_cn;
+				cf->yieldc_transfer_to_yield       = cs->yieldc_transfer / ndays;
+				nf->yieldn_transfer_to_yieldn       = cf->yieldc_transfer_to_yield       / epc->yield_cn;
 			}
 
 			if (epc->softstem_cn)
@@ -116,7 +116,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 
 		/* yield litterfall */
 		yieldlitfallc = epv->day_yield_litfall_increment;
-		if (yieldlitfallc > cs->yield) yieldlitfallc = cs->yield;
+		if (yieldlitfallc > cs->yieldc) yieldlitfallc = cs->yieldc;
 		if (!errorCode && yield_litfall(epc,yieldlitfallc,cf,nf))
 		{
 			printf("\n");
@@ -205,8 +205,8 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 	        
 				if (epc->yield_cn)
 				{
-					cf->yield_transfer_to_yield       = 2*cs->yield_transfer / ndays;
-					nf->yieldn_transfer_to_yieldn       = cf->yield_transfer_to_yield       / epc->yield_cn;
+					cf->yieldc_transfer_to_yield       = 2*cs->yieldc_transfer / ndays;
+					nf->yieldn_transfer_to_yieldn       = cf->yieldc_transfer_to_yield       / epc->yield_cn;
 				}
 
 				if (epc->softstem_cn)
@@ -233,7 +233,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 			
 				if (cf->leafc_transfer_to_leafc > cs->leafc_transfer)               cf->leafc_transfer_to_leafc = cs->leafc_transfer;
 				if (cf->frootc_transfer_to_frootc > cs->frootc_transfer)             cf->frootc_transfer_to_frootc = cs->frootc_transfer;
-				if (cf->yield_transfer_to_yield > cs->yield_transfer)             cf->yield_transfer_to_yield = cs->yield_transfer;
+				if (cf->yieldc_transfer_to_yield > cs->yieldc_transfer)             cf->yieldc_transfer_to_yield = cs->yieldc_transfer;
 				if (cf->softstemc_transfer_to_softstemc > cs->softstemc_transfer)    cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer;
 				if (cf->livestemc_transfer_to_livestemc > cs->livestemc_transfer)    cf->livestemc_transfer_to_livestemc = cs->livestemc_transfer;
 				if (cf->deadstemc_transfer_to_deadstemc > cs->deadstemc_transfer)    cf->deadstemc_transfer_to_deadstemc = cs->deadstemc_transfer;
@@ -268,7 +268,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 				/* SPECIAL DAY AFTER litterfall, special case to gaurantee that pools go to 0.0 */
 				leaflitfallc     = cs->leafc;
 				frootlitfallc    = cs->frootc;
-				yieldlitfallc    = cs->yield;
+				yieldlitfallc    = cs->yieldc;
 				softstemlitfallc = cs->softstemc;
 			}
 			else
@@ -283,7 +283,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 				epv->day_frootc_litfall_increment += drate;
 
 				yieldlitfallc = epv->day_yield_litfall_increment;
-				drate = 2.0*(cs->yield - yieldlitfallc*ndays)/(ndays*ndays);
+				drate = 2.0*(cs->yieldc - yieldlitfallc*ndays)/(ndays*ndays);
 				epv->day_yield_litfall_increment += drate;
 
 				softstemlitfallc = epv->day_softstemc_litfall_increment;
@@ -311,7 +311,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 			}
 
 			/* yield litterfall */
-			if (yieldlitfallc > cs->yield) yieldlitfallc = cs->yield;
+			if (yieldlitfallc > cs->yieldc) yieldlitfallc = cs->yieldc;
 			if (!errorCode && yieldlitfallc && yield_litfall(epc,yieldlitfallc,cf,nf))
 			{
 				printf("\n");
@@ -367,7 +367,7 @@ int phenology(const epconst_struct* epc, const cstate_struct* cs, const nstate_s
 	/* for all types, find annual maximum leafc */
 	if (epv->annmax_leafc < cs->leafc)           epv->annmax_leafc = cs->leafc;
 	if (epv->annmax_frootc < cs->frootc)         epv->annmax_frootc = cs->frootc;
-	if (epv->annmax_yield < cs->yield)         epv->annmax_yield = cs->yield;
+	if (epv->annmax_yieldc < cs->yieldc)           epv->annmax_yieldc = cs->yieldc;
 	if (epv->annmax_softstemc < cs->softstemc)   epv->annmax_softstemc = cs->softstemc;
 	if (epv->annmax_livestemc < cs->livestemc)   epv->annmax_livestemc = cs->livestemc;
 	if (epv->annmax_livecrootc < cs->livecrootc) epv->annmax_livecrootc = cs->livecrootc;
@@ -436,10 +436,10 @@ int yield_litfall(const epconst_struct* epc, double litfallc, cflux_struct* cf, 
 	if (!errorCode)
 	{
 		/* set fluxes in daily flux structure */
-		cf->yield_to_litr1c = c1;
-		cf->yield_to_litr2c = c2;
-		cf->yield_to_litr3c = c3;
-		cf->yield_to_litr4c = c4;
+		cf->yieldc_to_litr1c = c1;
+		cf->yieldc_to_litr2c = c2;
+		cf->yieldc_to_litr3c = c3;
+		cf->yieldc_to_litr4c = c4;
 		nf->yieldn_to_litr1n = n1;
 		nf->yieldn_to_litr2n = n2;
 		nf->yieldn_to_litr3n = n3;
@@ -528,7 +528,7 @@ int transfer_fromGDD(const epconst_struct* epc, const cstate_struct* cs, const n
 	int n_actphen          = (int) epv->n_actphen;
 
 	/* **********************************************************************************/
-	/* Growing degree day calculation for phenological calculation */
+	/* growing degree day calculation for phenological calculation */
 
 	/* transfer period */
 	if (n_actphen == epc->n_emerg_phenophase)
@@ -564,8 +564,8 @@ int transfer_fromGDD(const epconst_struct* epc, const cstate_struct* cs, const n
 		cf->frootc_transfer_to_frootc = cs->frootc_transfer * epv->transfer_ratio;
 		nf->frootn_transfer_to_frootn = cf->frootc_transfer_to_frootc / epc->froot_cn;
 		
-		cf->yield_transfer_to_yield = cs->yield_transfer * epv->transfer_ratio;
-		nf->yieldn_transfer_to_yieldn = cf->yield_transfer_to_yield / epc->yield_cn;
+		cf->yieldc_transfer_to_yield = cs->yieldc_transfer * epv->transfer_ratio;
+		nf->yieldn_transfer_to_yieldn = cf->yieldc_transfer_to_yield / epc->yield_cn;
 
 		cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer * epv->transfer_ratio;
 		nf->softstemn_transfer_to_softstemn = cf->softstemc_transfer_to_softstemc / epc->softstem_cn;
@@ -574,7 +574,7 @@ int transfer_fromGDD(const epconst_struct* epc, const cstate_struct* cs, const n
 		if (nf->leafn_transfer_to_leafn > ns->leafn_transfer) nf->leafn_transfer_to_leafn = ns->leafn_transfer;
 		if (cf->frootc_transfer_to_frootc > cs->frootc_transfer) cf->frootc_transfer_to_frootc = cs->frootc_transfer;
 		if (nf->frootn_transfer_to_frootn > ns->frootn_transfer) nf->frootn_transfer_to_frootn = ns->frootn_transfer;
-		if (cf->yield_transfer_to_yield > cs->yield_transfer) cf->yield_transfer_to_yield = cs->yield_transfer;
+		if (cf->yieldc_transfer_to_yield > cs->yieldc_transfer) cf->yieldc_transfer_to_yield = cs->yieldc_transfer;
 		if (nf->yieldn_transfer_to_yieldn > ns->yieldn_transfer) nf->yieldn_transfer_to_yieldn = ns->yieldn_transfer;
 		if (cf->softstemc_transfer_to_softstemc > cs->softstemc_transfer) cf->softstemc_transfer_to_softstemc = cs->softstemc_transfer;
 		if (nf->softstemn_transfer_to_softstemn > ns->softstemn_transfer) nf->softstemn_transfer_to_softstemn = ns->softstemn_transfer;

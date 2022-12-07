@@ -4,7 +4,7 @@ function prototypes for pointbgc
 for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -18,7 +18,7 @@ ndep_init function. Changes are made by Galina Churkina.
 int writeErrorCode(int errorCode);
 int met_init(file init, point_struct* point);
 int restart_init(file init, restart_ctrl_struct* restart);
-int time_init(file init, control_struct *ctrl);
+int time_init(file init, point_struct* point, control_struct *ctrl);
 int scc_init(file init, climchange_struct* scc);
 int co2_init(file init, co2control_struct* co2, control_struct *ctrl);
 int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl);
@@ -46,13 +46,12 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilpr
 int prephenology(file logfile, const epconst_struct* epc, const metarr_struct* metarr, 
 	             planting_struct* PLT, harvesting_struct* HRV, control_struct* ctrl, phenarray_struct* phenarr);
 	
-	int date_to_doy(int month, int day);
+	int date_to_doy(int* mondays, int month, int day);
 
-int output_handling(int monday, int endday, control_struct* ctrl, 
-                    double** output_map, double* dayarr, double* monavgarr, double* annavgarr, double* annarr, 
+int output_handling(int* mondays, int* enddays, control_struct* ctrl, double** output_map, double* dayarr, double* monavgarr, double* annavgarr, double* annarr, 
 					file dayout, file monavgout, file annavgout, file annout);
 
-	int doy_to_date(int yday, int* month, int* day, int from1);
+	int doy_to_date(int* enddays, int yday, int* month, int* day, int from1);
 
 int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN);
 int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW);

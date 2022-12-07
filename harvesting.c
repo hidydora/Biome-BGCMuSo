@@ -3,7 +3,7 @@ harvesting.c
 do harvesting  - decrease the plant material (leafc, leafn, canopy water)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -29,7 +29,7 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		                                    
 	double HRVcoeff_leaf, HRVcoeff_yield, HRVcoeff_softstem, remained_prop;	/* decrease of plant material caused by harvest: difference between plant material before and after harvesting */
 	double outc, outn, inc, inn, HRV_to_transpC, HRV_to_transpN;
-	double yield_HRV, leafstemC_HRV;
+	double yieldC_HRV, leafstemC_HRV;
 	int md, year;
 
 	year = ctrl->simstartyear + ctrl->simyr;
@@ -72,52 +72,50 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		if (epc->leaf_cn)
 		{
 			cf->leafc_to_HRV              = cs->leafc          * HRVcoeff_leaf;
-			cf->leafc_storage_to_HRV      = 0; // cs->leafc_storage  * HRVcoeff_leaf;
-			cf->leafc_transfer_to_HRV     = 0; // cs->leafc_transfer * HRVcoeff_leaf;
+			cf->leafc_storage_to_HRV      = cs->leafc_storage  * HRVcoeff_leaf;
+			cf->leafc_transfer_to_HRV     = cs->leafc_transfer * HRVcoeff_leaf;
 
 			nf->leafn_to_HRV              = cf->leafc_to_HRV          / epc->leaf_cn;
-			nf->leafn_storage_to_HRV      = 0; // cf->leafc_storage_to_HRV  / epc->leaf_cn;
-			nf->leafn_transfer_to_HRV     = 0; // cf->leafc_transfer_to_HRV / epc->leaf_cn;
+			nf->leafn_storage_to_HRV      = cf->leafc_storage_to_HRV  / epc->leaf_cn;
+			nf->leafn_transfer_to_HRV     = cf->leafc_transfer_to_HRV / epc->leaf_cn;
 		}
 
 		if (epc->yield_cn)
 		{
-			cf->yield_to_HRV              = cs->yield          * HRVcoeff_yield;
-			cf->yield_storage_to_HRV      = 0; // cs->yield_storage  * HRVcoeff_yield;
-			cf->yield_transfer_to_HRV     = 0; // cs->yield_transfer * HRVcoeff_yield;
+			cf->yieldc_to_HRV              = cs->yieldc          * HRVcoeff_yield;
+			cf->yieldc_storage_to_HRV      = cs->yieldc_storage  * HRVcoeff_yield;
+			cf->yieldc_transfer_to_HRV     = cs->yieldc_transfer * HRVcoeff_yield;
 
-			nf->yieldn_to_HRV              = cf->yield_to_HRV          / epc->yield_cn;
-			nf->yieldn_storage_to_HRV      = 0; // cf->yield_storage_to_HRV  / epc->yield_cn;
-			nf->yieldn_transfer_to_HRV     = 0; // cf->yield_transfer_to_HRV / epc->yield_cn;
+			nf->yieldn_to_HRV              = cf->yieldc_to_HRV          / epc->yield_cn;
+			nf->yieldn_storage_to_HRV      = cf->yieldc_storage_to_HRV  / epc->yield_cn;
+			nf->yieldn_transfer_to_HRV     = cf->yieldc_transfer_to_HRV / epc->yield_cn;
 		}
 
 		if (epc->softstem_cn)
 		{
 			cf->softstemc_to_HRV              = cs->softstemc          * HRVcoeff_softstem;
-			cf->softstemc_storage_to_HRV      = 0; // cs->softstemc_storage  * HRVcoeff_softstem;
-			cf->softstemc_transfer_to_HRV     = 0; // cs->softstemc_transfer * HRVcoeff_softstem;
+			cf->softstemc_storage_to_HRV      = cs->softstemc_storage  * HRVcoeff_softstem;
+			cf->softstemc_transfer_to_HRV     = cs->softstemc_transfer * HRVcoeff_softstem;
 
 			nf->softstemn_to_HRV              = cf->softstemc_to_HRV          / epc->softstem_cn;
-			nf->softstemn_storage_to_HRV      = 0; // cf->softstemc_storage_to_HRV  / epc->softstem_cn;
-			nf->softstemn_transfer_to_HRV     = 0; // cf->softstemc_transfer_to_HRV / epc->softstem_cn;
+			nf->softstemn_storage_to_HRV      = cf->softstemc_storage_to_HRV  / epc->softstem_cn;
+			nf->softstemn_transfer_to_HRV     = cf->softstemc_transfer_to_HRV / epc->softstem_cn;
 		}
 
-		cf->gresp_storage_to_HRV      = 0; // cs->gresp_storage  * HRVcoeff_leaf;
-		cf->gresp_transfer_to_HRV     = 0; // cs->gresp_transfer * HRVcoeff_leaf;
+		cf->gresp_storage_to_HRV      = cs->gresp_storage  * HRVcoeff_leaf;
+		cf->gresp_transfer_to_HRV     = cs->gresp_transfer * HRVcoeff_leaf;
 	
-		nf->retransn_to_HRV           = 0; // ns->retransn * HRVcoeff_leaf;
+		nf->retransn_to_HRV           = 0;
 
 		/* 1.2 standing dead biome */
 		cf->STDBc_leaf_to_HRV     = cs->STDBc_leaf     * HRVcoeff_leaf; 
 		cf->STDBc_yield_to_HRV    = cs->STDBc_yield    * HRVcoeff_yield; 
 		cf->STDBc_softstem_to_HRV = cs->STDBc_softstem * HRVcoeff_softstem;
-		cf->STDBc_nsc_to_HRV = cs->STDBc_nsc * HRVcoeff_softstem;
 		
-
 		nf->STDBn_leaf_to_HRV     = ns->STDBn_leaf     * HRVcoeff_leaf; 
 		nf->STDBn_yield_to_HRV    = ns->STDBn_yield    * HRVcoeff_yield; 
 		nf->STDBn_softstem_to_HRV = ns->STDBn_softstem * HRVcoeff_softstem;
-		nf->STDBn_nsc_to_HRV      = ns->STDBn_nsc * HRVcoeff_softstem;
+
 
 		
 		/* 1.3 Water */
@@ -125,40 +123,35 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 
 
  		/*----------------------------------------------------------*/
-		/* 2. TRANSPORT: part of the plant material is transported (all of the yield, transp_coeff part of leaf and softstem, but no transfer pools!)*/
+		/* 2. TRANSPORT: part of the plant material is transported (all of the yield, 1-remained_prop part of leaf and softstem, but no transfer pools!)*/
 
-		HRV_to_transpC = (cf->leafc_to_HRV  + cf->softstemc_to_HRV + cf->STDBc_leaf_to_HRV + cf->STDBc_softstem_to_HRV) * (1-remained_prop) +
-						  cf->yield_to_HRV + cf->STDBc_yield_to_HRV;
-		HRV_to_transpN = (nf->leafn_to_HRV  + nf->softstemn_to_HRV + nf->STDBn_leaf_to_HRV + nf->STDBn_softstem_to_HRV) * (1-remained_prop) +
-						  nf->yieldn_to_HRV + nf->STDBn_yield_to_HRV;
+		HRV_to_transpC = (cf->leafc_to_HRV  +  cf->leafc_transfer_to_HRV + cf->leafc_storage_to_HRV   + cf->STDBc_leaf_to_HRV +
+			              cf->gresp_storage_to_HRV + cf->gresp_transfer_to_HRV +
+			              cf->softstemc_to_HRV  +  cf->softstemc_transfer_to_HRV + cf->softstemc_storage_to_HRV   + cf->STDBc_softstem_to_HRV) * (1-remained_prop) +
+						  cf->yieldc_to_HRV +   cf->yieldc_transfer_to_HRV + cf->yieldc_storage_to_HRV + cf->STDBc_yield_to_HRV;
+		HRV_to_transpN = (nf->leafn_to_HRV  +  nf->leafn_transfer_to_HRV + nf->leafn_storage_to_HRV   + nf->STDBn_leaf_to_HRV +
+			              nf->retransn_to_HRV +
+			              nf->softstemn_to_HRV  +  nf->softstemn_transfer_to_HRV + nf->softstemn_storage_to_HRV   + nf->STDBn_softstem_to_HRV) * (1-remained_prop) +
+						  nf->yieldn_to_HRV +   nf->yieldn_transfer_to_HRV + nf->yieldn_storage_to_HRV + nf->STDBn_yield_to_HRV;
 
 		/*----------------------------------------------------------*/
 		/* 3. IN: cut-down biomass - the rest remains at the site */
 
-		cf->HRV_to_CTDBc_leaf     = (cf->leafc_to_HRV     + cf->STDBc_leaf_to_HRV) * remained_prop;
+		cf->HRV_to_CTDBc_leaf     = (cf->leafc_to_HRV  + cf->leafc_transfer_to_HRV + cf->leafc_storage_to_HRV   + cf->STDBc_leaf_to_HRV +
+			                         cf->gresp_storage_to_HRV + cf->gresp_transfer_to_HRV) * remained_prop;
 
 		cf->HRV_to_CTDBc_yield    = 0;
 
-		cf->HRV_to_CTDBc_softstem = (cf->softstemc_to_HRV + cf->STDBc_softstem_to_HRV) * remained_prop;
+		cf->HRV_to_CTDBc_softstem = (cf->softstemc_to_HRV + cf->softstemc_transfer_to_HRV + cf->softstemc_storage_to_HRV + cf->STDBc_softstem_to_HRV) * remained_prop;
 
-		cf->HRV_to_CTDBc_nsc = (cf->leafc_transfer_to_HRV     + cf->leafc_storage_to_HRV + 
-									 cf->yield_transfer_to_HRV    + cf->yield_storage_to_HRV + 
-									 cf->softstemc_transfer_to_HRV + cf->softstemc_storage_to_HRV + 
-									 cf->gresp_storage_to_HRV      + cf->gresp_transfer_to_HRV +
-									 cf->STDBc_nsc_to_HRV);
+	
 
-
-		nf->HRV_to_CTDBn_leaf     = (nf->leafn_to_HRV     + nf->STDBn_leaf_to_HRV)  * remained_prop;
+		nf->HRV_to_CTDBn_leaf     = (nf->leafn_to_HRV  + nf->leafn_transfer_to_HRV + nf->leafn_storage_to_HRV   + nf->STDBn_leaf_to_HRV) * remained_prop;
 
 		nf->HRV_to_CTDBn_yield    = 0;
 
-		nf->HRV_to_CTDBn_softstem = (nf->softstemn_to_HRV + nf->STDBn_softstem_to_HRV) * remained_prop;
+		nf->HRV_to_CTDBn_softstem = (nf->softstemn_to_HRV + nf->softstemn_transfer_to_HRV + nf->softstemn_storage_to_HRV + nf->STDBn_softstem_to_HRV) * remained_prop;
 
-		nf->HRV_to_CTDBn_nsc      = (nf->leafn_transfer_to_HRV     + nf->leafn_storage_to_HRV + 
-									 nf->yieldn_transfer_to_HRV    + nf->yieldn_storage_to_HRV + 
-									 nf->softstemn_transfer_to_HRV + nf->softstemn_storage_to_HRV + 
-									 nf->retransn_to_HRV +
-									 nf->STDBn_nsc_to_HRV);
 
   
 
@@ -172,9 +165,9 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		cs->leafc				-= cf->leafc_to_HRV;
 		cs->leafc_transfer		-= cf->leafc_transfer_to_HRV;
 		cs->leafc_storage		-= cf->leafc_storage_to_HRV;
-		cs->yield				-= cf->yield_to_HRV;
-		cs->yield_transfer		-= cf->yield_transfer_to_HRV;
-		cs->yield_storage		-= cf->yield_storage_to_HRV;
+		cs->yieldc				-= cf->yieldc_to_HRV;
+		cs->yieldc_transfer		-= cf->yieldc_transfer_to_HRV;
+		cs->yieldc_storage		-= cf->yieldc_storage_to_HRV;
 		cs->softstemc			-= cf->softstemc_to_HRV;
 		cs->softstemc_transfer	-= cf->softstemc_transfer_to_HRV;
 		cs->softstemc_storage	-= cf->softstemc_storage_to_HRV;
@@ -198,12 +191,10 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		cs->STDBc_leaf     -= cf->STDBc_leaf_to_HRV;
 		cs->STDBc_yield    -= cf->STDBc_yield_to_HRV;
 		cs->STDBc_softstem -= cf->STDBc_softstem_to_HRV;
-		cs->STDBc_nsc      -= cf->STDBc_nsc_to_HRV;
-
+	
 		ns->STDBn_leaf     -= nf->STDBn_leaf_to_HRV;
 		ns->STDBn_yield    -= nf->STDBn_yield_to_HRV;
 		ns->STDBn_softstem -= nf->STDBn_softstem_to_HRV;
-		ns->STDBn_nsc      -= nf->STDBn_nsc_to_HRV;
 
 
 		/* 1.3. water */
@@ -218,12 +209,10 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		cs->CTDBc_leaf     += cf->HRV_to_CTDBc_leaf;
 		cs->CTDBc_yield    += cf->HRV_to_CTDBc_yield;
 		cs->CTDBc_softstem += cf->HRV_to_CTDBc_softstem;
-		cs->CTDBc_nsc      += cf->HRV_to_CTDBc_nsc;
 
 		ns->CTDBn_leaf     += nf->HRV_to_CTDBn_leaf;
 		ns->CTDBn_yield    += nf->HRV_to_CTDBn_yield;
 		ns->CTDBn_softstem += nf->HRV_to_CTDBn_softstem;
-		ns->CTDBn_nsc      += nf->HRV_to_CTDBn_nsc;
 
 		/* 4. after harvest, remaining softstem and froot and transfer pools transferred to standing dead biomass */
 		
@@ -231,12 +220,12 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_leafc_transfer_to_SNSC      = cs->leafc_transfer;
 			cs->leafc_transfer                 -= cf->HRV_leafc_transfer_to_SNSC;
-			cs->STDBc_nsc                      += cf->HRV_leafc_transfer_to_SNSC;
+			cs->STDBc_leaf                     += cf->HRV_leafc_transfer_to_SNSC;
 			cs->SNSCsnk_C                      += cf->HRV_leafc_transfer_to_SNSC;
 
 			nf->HRV_leafn_transfer_to_SNSC      = ns->leafn_transfer;
 			ns->leafn_transfer                 -= nf->HRV_leafn_transfer_to_SNSC;
-			ns->STDBn_nsc                      += nf->HRV_leafn_transfer_to_SNSC;
+			ns->STDBn_leaf                     += nf->HRV_leafn_transfer_to_SNSC;
 			ns->SNSCsnk_N                      += nf->HRV_leafn_transfer_to_SNSC;
 		}
 
@@ -244,38 +233,38 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_leafc_storage_to_SNSC      = cs->leafc_storage;
 			cs->leafc_storage                 -= cf->HRV_leafc_storage_to_SNSC;
-			cs->STDBc_nsc                     += cf->HRV_leafc_storage_to_SNSC;
-			cs->SNSCsnk_C                     += cf->HRV_leafc_storage_to_SNSC;
+			cs->STDBc_leaf                     += cf->HRV_leafc_storage_to_SNSC;
+			cs->SNSCsnk_C                      += cf->HRV_leafc_storage_to_SNSC;
 
 			nf->HRV_leafn_storage_to_SNSC      = ns->leafn_storage;
 			ns->leafn_storage                 -= nf->HRV_leafn_storage_to_SNSC;
-			ns->STDBn_nsc                     += nf->HRV_leafn_storage_to_SNSC;
+			ns->STDBn_leaf                    += nf->HRV_leafn_storage_to_SNSC;
 			ns->SNSCsnk_N                     += nf->HRV_leafn_storage_to_SNSC;
 		}
 
-		if (cs->yield_transfer || ns->yieldn_transfer)
+		if (cs->yieldc_transfer || ns->yieldn_transfer)
 		{
-			cf->HRV_yield_transfer_to_SNSC    = cs->yield_transfer;
-			cs->yield_transfer               -= cf->HRV_yield_transfer_to_SNSC;
-			cs->STDBc_nsc                     += cf->HRV_yield_transfer_to_SNSC;
-			cs->SNSCsnk_C                     += cf->HRV_yield_transfer_to_SNSC;
+			cf->HRV_yieldc_transfer_to_SNSC    = cs->yieldc_transfer;
+			cs->yieldc_transfer               -= cf->HRV_yieldc_transfer_to_SNSC;
+			cs->STDBc_yield                  += cf->HRV_yieldc_transfer_to_SNSC;
+			cs->SNSCsnk_C                    += cf->HRV_yieldc_transfer_to_SNSC;
 
 			nf->HRV_yieldn_transfer_to_SNSC    = ns->yieldn_transfer;
 			ns->yieldn_transfer               -= nf->HRV_yieldn_transfer_to_SNSC;
-			ns->STDBn_nsc                     += nf->HRV_yieldn_transfer_to_SNSC;
+			ns->STDBn_yield                   += nf->HRV_yieldn_transfer_to_SNSC;
 			ns->SNSCsnk_N                     += nf->HRV_yieldn_transfer_to_SNSC;
 		}
 		
-		if (cs->yield_storage || ns->yieldn_storage)
+		if (cs->yieldc_storage || ns->yieldn_storage)
 		{
-			cf->HRV_yield_storage_to_SNSC     = cs->yield_storage;
-			cs->yield_storage                -= cf->HRV_yield_storage_to_SNSC;
-			cs->STDBc_nsc                     += cf->HRV_yield_storage_to_SNSC;
-			cs->SNSCsnk_C                     += cf->HRV_yield_storage_to_SNSC;
+			cf->HRV_yieldc_storage_to_SNSC     = cs->yieldc_storage;
+			cs->yieldc_storage                -= cf->HRV_yieldc_storage_to_SNSC;
+			cs->STDBc_yield                   += cf->HRV_softstemc_transfer_to_SNSC;
+			cs->SNSCsnk_C                     += cf->HRV_yieldc_storage_to_SNSC;
 
 			nf->HRV_yieldn_storage_to_SNSC     = ns->yieldn_storage;
 			ns->yieldn_storage                -= nf->HRV_yieldn_storage_to_SNSC;
-			ns->STDBn_nsc                     += nf->HRV_yieldn_storage_to_SNSC;
+			ns->STDBn_yield                     += nf->HRV_yieldn_storage_to_SNSC;
 			ns->SNSCsnk_N                     += nf->HRV_yieldn_storage_to_SNSC;
 		}
 
@@ -283,12 +272,12 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_softstemc_transfer_to_SNSC	 = cs->softstemc_transfer;
 			cs->softstemc_transfer				-= cf->HRV_softstemc_transfer_to_SNSC;
-			cs->STDBc_nsc                       += cf->HRV_softstemc_transfer_to_SNSC;
+			cs->STDBc_softstem                  += cf->HRV_softstemc_transfer_to_SNSC;
 			cs->SNSCsnk_C                       += cf->HRV_softstemc_transfer_to_SNSC;
 
 			nf->HRV_softstemn_transfer_to_SNSC    = ns->softstemn_transfer;
 			ns->softstemn_transfer               -= nf->HRV_softstemn_transfer_to_SNSC;
-			ns->STDBn_nsc                        += nf->HRV_softstemn_transfer_to_SNSC;
+			ns->STDBn_softstem                  += nf->HRV_softstemn_transfer_to_SNSC;
 			ns->SNSCsnk_N                        += nf->HRV_softstemn_transfer_to_SNSC;
 		}
 		
@@ -309,12 +298,12 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_softstemc_storage_to_SNSC  = cs->softstemc_storage;
 			cs->softstemc_storage             -= cf->HRV_softstemc_storage_to_SNSC;
-			cs->STDBc_nsc                     += cf->HRV_softstemc_storage_to_SNSC;
+			cs->STDBc_softstem                += cf->HRV_softstemc_storage_to_SNSC;
 			cs->SNSCsnk_C                     += cf->HRV_softstemc_storage_to_SNSC;
 
 			nf->HRV_softstemn_storage_to_SNSC  = ns->softstemn_storage;
 			ns->softstemn_storage             -= nf->HRV_softstemn_storage_to_SNSC;
-			ns->STDBn_nsc                     += nf->HRV_softstemn_storage_to_SNSC;
+			ns->STDBn_softstem                += nf->HRV_softstemn_storage_to_SNSC;
 			ns->SNSCsnk_N                     += nf->HRV_softstemn_storage_to_SNSC;
 		}
 
@@ -322,12 +311,12 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_softstemc_transfer_to_SNSC = cs->softstemc_transfer;
 			cs->softstemc_transfer            -= cf->HRV_softstemc_transfer_to_SNSC;
-			cs->STDBc_nsc                     += cf->HRV_softstemc_transfer_to_SNSC;
+			cs->STDBc_softstem                += cf->HRV_softstemc_transfer_to_SNSC;
 			cs->SNSCsnk_C                     += cf->HRV_softstemc_transfer_to_SNSC;
 
 			nf->HRV_softstemn_transfer_to_SNSC = ns->softstemn_transfer;
 			ns->softstemn_transfer            -= nf->HRV_softstemn_transfer_to_SNSC;
-			ns->STDBn_nsc                     += nf->HRV_softstemn_transfer_to_SNSC;
+			ns->STDBn_softstem                += nf->HRV_softstemn_transfer_to_SNSC;
 			ns->SNSCsnk_N                     += nf->HRV_softstemn_transfer_to_SNSC;
 		}
 
@@ -348,12 +337,12 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_frootc_storage_to_SNSC  = cs->frootc_storage;
 			cs->frootc_storage             -= cf->HRV_frootc_storage_to_SNSC;
-			cs->STDBc_nsc                  += cf->HRV_frootc_storage_to_SNSC;
+			cs->STDBc_froot                += cf->HRV_frootc_storage_to_SNSC;
 			cs->SNSCsnk_C                  += cf->HRV_frootc_storage_to_SNSC;
 
 			nf->HRV_frootn_storage_to_SNSC  = ns->frootn_storage;
 			ns->frootn_storage             -= nf->HRV_frootn_storage_to_SNSC;
-			ns->STDBn_nsc                  += nf->HRV_frootn_storage_to_SNSC;
+			ns->STDBn_froot                += nf->HRV_frootn_storage_to_SNSC;
 			ns->SNSCsnk_N                  += nf->HRV_frootn_storage_to_SNSC;
 		}
 
@@ -361,12 +350,12 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_frootc_transfer_to_SNSC  = cs->frootc_transfer;
 			cs->frootc_transfer             -= cf->HRV_frootc_transfer_to_SNSC;
-			cs->STDBc_nsc                   += cf->HRV_frootc_transfer_to_SNSC;
+			cs->STDBc_froot                 += cf->HRV_frootc_transfer_to_SNSC;
 			cs->SNSCsnk_C                   += cf->HRV_frootc_transfer_to_SNSC;
 
 			nf->HRV_frootn_transfer_to_SNSC  = ns->frootn_transfer;
 			ns->frootn_transfer             -= nf->HRV_frootn_transfer_to_SNSC;
-			ns->STDBn_nsc                   += nf->HRV_frootn_transfer_to_SNSC;
+			ns->STDBn_froot                 += nf->HRV_frootn_transfer_to_SNSC;
 			ns->SNSCsnk_N                   += nf->HRV_frootn_transfer_to_SNSC;
 		}
 
@@ -374,7 +363,7 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_gresp_storage_to_SNSC  = cs->gresp_storage;
 			cs->gresp_storage             -= cf->HRV_gresp_storage_to_SNSC;
-			cs->STDBc_nsc            += cf->HRV_gresp_storage_to_SNSC;
+			cs->STDBc_leaf                += cf->HRV_gresp_storage_to_SNSC;
 			cs->SNSCsnk_C                 += cf->HRV_gresp_storage_to_SNSC;
 		}
 
@@ -382,7 +371,7 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			cf->HRV_gresp_transfer_to_SNSC  = cs->gresp_transfer;
 			cs->gresp_transfer             -= cf->HRV_gresp_transfer_to_SNSC;
-			cs->STDBc_nsc			       += cf->HRV_gresp_transfer_to_SNSC;
+			cs->STDBc_leaf			       += cf->HRV_gresp_transfer_to_SNSC;
 			cs->SNSCsnk_C				   += cf->HRV_gresp_transfer_to_SNSC;
 		}
 
@@ -390,21 +379,21 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{
 			nf->HRV_retransn_to_SNSC        = ns->retransn;
 			ns->retransn                   -= nf->HRV_retransn_to_SNSC;
-			ns->STDBn_nsc			       += nf->HRV_retransn_to_SNSC;
+			ns->STDBn_froot			       += nf->HRV_retransn_to_SNSC;
 			ns->SNSCsnk_N				   += nf->HRV_retransn_to_SNSC;
 		}
 
 		/* harvested yield and leaf-stem carbon content */
 
-		yield_HRV      = cf->yield_to_HRV + cf->STDBc_yield_to_HRV;
-		leafstemC_HRV   = cf->leafc_to_HRV + cf->STDBc_leaf_to_HRV + cf->softstemc_to_HRV + cf->STDBc_softstem_to_HRV;
+		yieldC_HRV      = cf->yieldc_to_HRV + cf->STDBc_yield_to_HRV;
+		leafstemC_HRV  = cf->leafc_to_HRV + cf->STDBc_leaf_to_HRV + cf->softstemc_to_HRV + cf->STDBc_softstem_to_HRV;
 		
 
-		cs->yield_HRV += yield_HRV;
-		cs->vegC_HRV   += yield_HRV + leafstemC_HRV;
+		cs->yieldC_HRV += yieldC_HRV;
+		cs->vegC_HRV   += yieldC_HRV + leafstemC_HRV;
 
 		fprintf(econout.ptr, "%6i %12.0f %12.4f %12.4f %12.4f %6i\n", ctrl->simyr+ctrl->simstartyear, phen->planttype, 
-			                                                          yield_HRV * m2_to_ha * kg_to_t, leafstemC_HRV * m2_to_ha * kg_to_t,
+			                                                          yieldC_HRV * m2_to_ha * kg_to_t, leafstemC_HRV * m2_to_ha * kg_to_t,
 																	  ws->condIRGsrc, IRG->condIRG_flag);  
 
 		ws->condIRGsrc = 0;
@@ -412,21 +401,21 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		/* IV. CONTROL */
 
 		outc = cf->leafc_to_HRV         + cf->leafc_transfer_to_HRV     + cf->leafc_storage_to_HRV +
-			   cf->yield_to_HRV        + cf->yield_transfer_to_HRV    + cf->yield_storage_to_HRV +
+			   cf->yieldc_to_HRV         + cf->yieldc_transfer_to_HRV     + cf->yieldc_storage_to_HRV +
 			   cf->softstemc_to_HRV     + cf->softstemc_transfer_to_HRV + cf->softstemc_storage_to_HRV +
 			   cf->gresp_storage_to_HRV + cf->gresp_transfer_to_HRV + 
-			   cf->STDBc_leaf_to_HRV + cf->STDBc_yield_to_HRV + cf->STDBc_softstem_to_HRV + cf->STDBc_nsc_to_HRV;
+			   cf->STDBc_leaf_to_HRV + cf->STDBc_yield_to_HRV + cf->STDBc_softstem_to_HRV;
 
 
 		outn = nf->leafn_to_HRV         + nf->leafn_transfer_to_HRV     + nf->leafn_storage_to_HRV +
 			   nf->yieldn_to_HRV        + nf->yieldn_transfer_to_HRV    + nf->yieldn_storage_to_HRV +
 			   nf->softstemn_to_HRV     + nf->softstemn_transfer_to_HRV + nf->softstemn_storage_to_HRV +
 			   nf->retransn_to_HRV + 
-			   nf->STDBn_leaf_to_HRV + nf->STDBn_yield_to_HRV + nf->STDBn_softstem_to_HRV + nf->STDBn_nsc_to_HRV;
+			   nf->STDBn_leaf_to_HRV + nf->STDBn_yield_to_HRV + nf->STDBn_softstem_to_HRV;
 
-		inc = cf->HRV_to_CTDBc_leaf + cf->HRV_to_CTDBc_yield  + cf->HRV_to_CTDBc_softstem + cf->HRV_to_CTDBc_nsc;
+		inc = cf->HRV_to_CTDBc_leaf + cf->HRV_to_CTDBc_yield  + cf->HRV_to_CTDBc_softstem;
 
-		inn = nf->HRV_to_CTDBn_leaf + nf->HRV_to_CTDBn_yield  + nf->HRV_to_CTDBn_softstem + nf->HRV_to_CTDBn_nsc;
+		inn = nf->HRV_to_CTDBn_leaf + nf->HRV_to_CTDBn_yield  + nf->HRV_to_CTDBn_softstem;
 
 
 		if (fabs(inc + HRV_to_transpC - outc) > CRIT_PREC || fabs(inn + HRV_to_transpN - outn) > CRIT_PREC )

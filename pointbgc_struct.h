@@ -3,7 +3,7 @@ pointbgc_struct.h
 for use with pointbgc front-end to BBGC MuSo v4 library
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -33,8 +33,8 @@ typedef struct
 /* a structure to hold scalar climate change scenario information */
 typedef struct
 {
-    double s_tmax;          /* (deg C)   daily maximum air temperature */
-    double s_tmin;          /* (deg C)   daily minimum air temperature */
+    double s_Tmax;          /* (deg C)   daily maximum air temperature */
+    double s_Tmin;          /* (deg C)   daily minimum air temperature */
     double s_prcp;          /* (scalar)  precipitation multiplier */
     double s_vpd;           /* (scalar)  vpd multiplier */
     double s_swavgfd;       /* (scalar)  shortwave multiplier */

@@ -1,8 +1,8 @@
-/* date_to_doy.c
+/* doy_to_date.c
 calculate date from DOY (from1=0: yday=0-364, from1=1: yday=1-365)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -19,20 +19,20 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int doy_to_date(int yday, int* month, int* day, int from1)
+int doy_to_date(int* enddays, int yday, int* month, int* day, int from1)
 {
 	int nd, done, errorCode;
-	int endday[nMONTHS_OF_YEAR] = {30,58,89,119,150,180,211,242,272,303,333,364};
-	
+
+	/* DOY-calculation */
 	errorCode=nd=done=0;
 	yday-=from1;
 	while (done == 0 && nd < nMONTHS_OF_YEAR) 
 	{
-		if (yday <= endday[nd])
+		if (yday <= enddays[nd])
 		{
 			*month = nd+1;
 			if (nd > 0)
-				*day= yday-endday[nd-1];
+				*day= yday-enddays[nd-1];
 			else
 				*day=yday+1;
 			done = 1;
@@ -40,7 +40,6 @@ int doy_to_date(int yday, int* month, int* day, int from1)
 		else
 			nd=nd+1;
 	}
-
 
 	return (errorCode);
 

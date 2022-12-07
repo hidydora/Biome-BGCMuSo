@@ -3,7 +3,7 @@ harvesting_init.c
 read harvesting information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -39,7 +39,7 @@ int harvesting_init(file init, const control_struct* ctrl, planting_struct* PLT,
 	double p4,p5;
 	char tempvar;
 
-	int n_HRVparam, maxHRV_num, PLTyday, HRVyday;
+	int n_HRVparam, maxHRV_num;
 
 	int* HRVyear_array;						
 	int* HRVmonth_array;						
@@ -122,19 +122,14 @@ int harvesting_init(file init, const control_struct* ctrl, planting_struct* PLT,
 			}
 
 			if (p1 >= ctrl->simstartyear && p1 < ctrl->simstartyear + ctrl->simyears)
-			{
-				PLTyday = PLT->PLTyear_array[0] * nDAYS_OF_YEAR + date_to_doy(PLT->PLTmonth_array[0], PLT->PLTday_array[0]);
-				HRVyday = p1 * nDAYS_OF_YEAR + date_to_doy(p2, p3);
-				if (HRVyday > PLTyday)
-				{
-					HRVyear_array[nmgm]         = p1;
-					HRVmonth_array[nmgm]        = p2;
-					HRVday_array[nmgm]          = p3;
-					snagprop_array[nmgm]        = p4;
-					transportHRV_array[nmgm]    = p5;
+			{	
+				HRVyear_array[nmgm]         = p1;
+				HRVmonth_array[nmgm]        = p2;
+				HRVday_array[nmgm]          = p3;
+				snagprop_array[nmgm]        = p4;
+				transportHRV_array[nmgm]    = p5;
 
-					nmgm += 1;
-				}
+				nmgm += 1;
 			}
 		}
 

@@ -4,7 +4,7 @@ Detects very low values in state variable structures, and forces them to
 0.0, in order to avoid rounding and overflow errors.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -88,27 +88,27 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 	}
 
 	/************************/
-	if ((fabs(cs->yield) < CRIT_PREC && fabs(cs->yield) != 0) || (fabs(ns->yieldn) < CRIT_PREC && fabs(ns->yieldn) != 0))
+	if ((fabs(cs->yieldc) < CRIT_PREC && fabs(cs->yieldc) != 0) || (fabs(ns->yieldn) < CRIT_PREC && fabs(ns->yieldn) != 0))
 	{
-		cs->litr1c[0] += cs->yield;
+		cs->litr1c[0] += cs->yieldc;
 		ns->litr1n[0] += ns->yieldn;
-		cs->yield = 0.0;
+		cs->yieldc = 0.0;
 		ns->yieldn = 0.0;
 	}
 
-    if ((cs->yield_storage != 0 && fabs(cs->yield_storage) < CRIT_PREC_RIG) || (ns->yieldn_storage != 0 && fabs(ns->yieldn_storage) < CRIT_PREC_RIG) )
+    if ((cs->yieldc_storage != 0 && fabs(cs->yieldc_storage) < CRIT_PREC_RIG) || (ns->yieldn_storage != 0 && fabs(ns->yieldn_storage) < CRIT_PREC_RIG) )
 	{
-		cs->litr1c[0] += cs->yield_storage;
+		cs->litr1c[0] += cs->yieldc_storage;
 		ns->litr1n[0] += ns->yieldn_storage;
-		cs->yield_storage = 0.0;
+		cs->yieldc_storage = 0.0;
 		ns->yieldn_storage = 0.0;
 	}
 
-	if ((cs->yield_transfer != 0 && fabs(cs->yield_transfer) < CRIT_PREC_RIG) || (ns->yieldn_transfer < 0 && fabs(ns->yieldn_transfer) < CRIT_PREC_RIG) )
+	if ((cs->yieldc_transfer != 0 && fabs(cs->yieldc_transfer) < CRIT_PREC_RIG) || (ns->yieldn_transfer < 0 && fabs(ns->yieldn_transfer) < CRIT_PREC_RIG) )
 	{
-		cs->litr1c[0] += cs->yield_transfer;
+		cs->litr1c[0] += cs->yieldc_transfer;
 		ns->litr1n[0] += ns->yieldn_transfer;
-		cs->yield_transfer = 0.0;
+		cs->yieldc_transfer = 0.0;
 		ns->yieldn_transfer = 0.0;
 	}
 
@@ -314,13 +314,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->STDBn_yield = 0.0;
 	}
 
-	if ((fabs(cs->STDBc_nsc) < CRIT_PREC && fabs(cs->STDBc_nsc) != 0) || (fabs(ns->STDBn_nsc) < CRIT_PREC && fabs(ns->STDBn_nsc) != 0))
-	{
-		cs->litr1c[0] += cs->STDBc_nsc;
-		ns->litr1n[0] += ns->STDBn_nsc;
-		cs->STDBc_nsc = 0.0;
-		ns->STDBn_nsc = 0.0;
-	}
+
 
 	/************************/
 	if ((fabs(cs->CTDBc_leaf) < CRIT_PREC && fabs(cs->CTDBc_leaf) != 0) || (fabs(ns->CTDBn_leaf) < CRIT_PREC && fabs(ns->CTDBn_leaf) != 0))
@@ -355,16 +349,10 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 		ns->CTDBn_yield = 0.0;
 	}
 
-	if ((fabs(cs->CTDBc_nsc) < CRIT_PREC && fabs(cs->CTDBc_nsc) != 0) || (fabs(ns->CTDBn_nsc) < CRIT_PREC && fabs(ns->CTDBn_nsc) != 0))
-	{
-		cs->litr1c[0] += cs->CTDBc_nsc;
-		ns->litr1n[0] += ns->CTDBn_nsc;
-		cs->CTDBc_nsc = 0.0;
-		ns->CTDBn_nsc = 0.0;
-	}
+
 
 	/************************/	
-	/* test for litter and soil poils in multilayer soil. Excess goes to hr sink (C) or volatilized sink (N) */
+	/* test for litter and soil poils in multilayer soil. Excess goes to HR sink (C) or volatilized sink (N) */
 
 
 	for (layer=0; layer < N_SOILLAYERS; layer++)
@@ -504,7 +492,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 	{
 		if (ws->soilw[layer] < 0 && fabs(ws->soilw[layer]) < CRIT_PREC)
 		{
-			ws->soilEvap_snk += ws->soilw[layer];
+			ws->soilEVP_snk += ws->soilw[layer];
 			ws->soilw[layer] = 0.0;
 		}
 
@@ -512,18 +500,18 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 	if (ws->snoww < 0 && fabs(ws->snoww) < CRIT_PREC)
 	{
-		ws->snowsubl_snk += ws->snoww;
+		ws->snowSUBL_snk += ws->snoww;
 		ws->snoww = 0.0;
 	}
 	if (ws->canopyw < 0 && fabs(ws->canopyw) < CRIT_PREC)
 	{
-		ws->canopyevap_snk += ws->canopyw;
+		ws->canopywEVP_snk += ws->canopyw;
 		ws->canopyw = 0.0;
 	}
 
 	if (ws->pondw < 0 && fabs(ws->pondw) < CRIT_PREC)
 	{
-		ws->pondEvap_snk += ws->pondw;
+		ws->pondEVP_snk += ws->pondw;
 		ws->pondw = 0.0;
 	}
 	

@@ -3,7 +3,7 @@ irrigating_init.c
 read irrigating information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -37,7 +37,7 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 	int nmgm = 0;
 
 	int p1,p2,p3;
-	double p4;
+	double p4, p5;
 	char tempvar;
 
 
@@ -46,7 +46,8 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
     int* IRGyear_array;	
 	int* IRGmonth_array;	
 	int* IRGday_array;							
-	double* IRGquantity_array;					
+	double* IRGquantity_array;			
+	double* IRGheight_array;	
 
 	maxIRG_num=1000;
 
@@ -89,6 +90,7 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 		IRGmonth_array     = (int*) malloc(maxIRG_num*sizeof(double)); 
 		IRGday_array       = (int*) malloc(maxIRG_num*sizeof(double)); 
 		IRGquantity_array  = (double*) malloc(maxIRG_num*sizeof(double)); 
+		IRGheight_array     = (double*) malloc(maxIRG_num*sizeof(double)); 
 	
 		
 		if (!errorCode && scan_value(init, IRG_filename, 's'))
@@ -116,9 +118,9 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 	
 		while (!errorCode && !(mgmread = scan_array (IRG_file, &p1, 'i', 0, 0)))
 		{
-			n_IRGparam = 5;
+			n_IRGparam = 6;
 
-			mgmread = fscanf(IRG_file.ptr, "%c%d%c%d%lf%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4);
+			mgmread = fscanf(IRG_file.ptr, "%c%d%c%d%lf%lf%*[^\n]",&tempvar,&p2,&tempvar,&p3,&p4,&p5);
 			if (mgmread != n_IRGparam)
 			{
 				printf("ERROR reading IRRIGATING parameters from IRRIGATING file  file\n");
@@ -131,6 +133,7 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 				IRGmonth_array[nmgm]     = p2;
 				IRGday_array[nmgm]       = p3;
 				IRGquantity_array[nmgm]  = p4;
+				IRGheight_array[nmgm]     = p5;
 
 				nmgm += 1;
 			}
@@ -144,6 +147,7 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 		IRG->IRGmonth_array     = (int*) malloc(IRG->IRG_num*sizeof(double)); 
 		IRG->IRGday_array       = (int*) malloc(IRG->IRG_num*sizeof(double)); 
 		IRG->IRGquantity_array  = (double*) malloc(IRG->IRG_num*sizeof(double)); 
+		IRG->IRGheight_array     = (double*) malloc(IRG->IRG_num*sizeof(double)); 
 
 		for (nmgm = 0; nmgm < IRG->IRG_num; nmgm++)
 		{
@@ -151,6 +155,7 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 			IRG->IRGmonth_array[nmgm]     = IRGmonth_array[nmgm];
 			IRG->IRGday_array[nmgm]       = IRGday_array[nmgm];
 			IRG->IRGquantity_array[nmgm]  = IRGquantity_array[nmgm];
+			IRG->IRGheight_array[nmgm]     = IRGheight_array[nmgm];
 		}
 
 		/* close IRRIGATING file and free temporary memory*/
@@ -159,7 +164,8 @@ int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IR
 		free(IRGyear_array);	
 		free(IRGmonth_array);	
 		free(IRGday_array);							
-		free(IRGquantity_array);		
+		free(IRGquantity_array);	
+		free(IRGheight_array);	
 	}
 	else
 	{

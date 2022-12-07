@@ -3,7 +3,7 @@ mowing.c
 do mowing  - decrease the plant material (leafc, leafn, canopy water)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -107,51 +107,49 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 		if (epc->leaf_cn)
 		{
 			cf->leafc_to_MOW              = cs->leafc * MOWcoeff;
-			cf->leafc_transfer_to_MOW     = 0; //cs->leafc_transfer * MOWcoeff * 0.1;
-			cf->leafc_storage_to_MOW      = 0; //cs->leafc_storage * MOWcoeff * 0.1;
+			cf->leafc_transfer_to_MOW     = cs->leafc_transfer * MOWcoeff;
+			cf->leafc_storage_to_MOW      = cs->leafc_storage * MOWcoeff;
 
 			nf->leafn_to_MOW              = cf->leafc_to_MOW          / epc->leaf_cn;
-			nf->leafn_transfer_to_MOW     = 0; //cf->leafc_transfer_to_MOW / epc->leaf_cn;
-			nf->leafn_storage_to_MOW      = 0; //cf->leafc_storage_to_MOW  / epc->leaf_cn;
+			nf->leafn_transfer_to_MOW     = cf->leafc_transfer_to_MOW / epc->leaf_cn;
+			nf->leafn_storage_to_MOW      = cf->leafc_storage_to_MOW  / epc->leaf_cn;
 		}
 	
 		if (epc->yield_cn)
 		{
-			cf->yield_to_MOW              = cs->yield * MOWcoeff;
-			cf->yield_transfer_to_MOW     = 0; //cs->yield_transfer * MOWcoeff * 0.1;
-			cf->yield_storage_to_MOW      = 0; //cs->yield_storage * MOWcoeff * 0.1;
+			cf->yieldc_to_MOW              = cs->yieldc * MOWcoeff;
+			cf->yieldc_transfer_to_MOW     = cs->yieldc_transfer * MOWcoeff;
+			cf->yieldc_storage_to_MOW      = cs->yieldc_storage * MOWcoeff;
 
-			nf->yieldn_to_MOW              = cf->yield_to_MOW          / epc->yield_cn;
-			nf->yieldn_transfer_to_MOW     = 0; //cf->yield_transfer_to_MOW / epc->yield_cn;
-			nf->yieldn_storage_to_MOW      = 0; //cf->yield_storage_to_MOW  / epc->yield_cn;
+			nf->yieldn_to_MOW              = cf->yieldc_to_MOW          / epc->yield_cn;
+			nf->yieldn_transfer_to_MOW     = cf->yieldc_transfer_to_MOW / epc->yield_cn;
+			nf->yieldn_storage_to_MOW      = cf->yieldc_storage_to_MOW  / epc->yield_cn;
 		}
 
 		if (epc->softstem_cn)
 		{
 			cf->softstemc_to_MOW              = cs->softstemc * MOWcoeff;
-			cf->softstemc_transfer_to_MOW     = 0; //cs->softstemc_transfer * MOWcoeff * 0.1;
-			cf->softstemc_storage_to_MOW      = 0; //cs->softstemc_storage * MOWcoeff * 0.1;
+			cf->softstemc_transfer_to_MOW     = cs->softstemc_transfer * MOWcoeff;
+			cf->softstemc_storage_to_MOW      = cs->softstemc_storage * MOWcoeff;
 
 			nf->softstemn_to_MOW              = cf->softstemc_to_MOW          / epc->softstem_cn;
-			nf->softstemn_transfer_to_MOW     = 0; //cf->softstemc_transfer_to_MOW / epc->softstem_cn;
-			nf->softstemn_storage_to_MOW      = 0; //cf->softstemc_storage_to_MOW  / epc->softstem_cn;
+			nf->softstemn_transfer_to_MOW     = cf->softstemc_transfer_to_MOW / epc->softstem_cn;
+			nf->softstemn_storage_to_MOW      = cf->softstemc_storage_to_MOW  / epc->softstem_cn;
 		}
 	
-		cf->gresp_transfer_to_MOW     = 0; //cs->gresp_transfer * MOWcoeff;
-		cf->gresp_storage_to_MOW      = 0; //cs->gresp_storage * MOWcoeff;
+		cf->gresp_transfer_to_MOW     = cs->gresp_transfer * MOWcoeff;
+		cf->gresp_storage_to_MOW      = cs->gresp_storage * MOWcoeff;
 
-		nf->retransn_to_MOW           = 0; //ns->retransn * MOWcoeff ;
+
 
 		/* 1.2.  standing dead biome */
 		cf->STDBc_leaf_to_MOW     = cs->STDBc_leaf     * MOWcoeff;
 		cf->STDBc_yield_to_MOW    = cs->STDBc_yield    * MOWcoeff; 
 		cf->STDBc_softstem_to_MOW = cs->STDBc_softstem * MOWcoeff;
-		cf->STDBc_nsc_to_MOW = cs->STDBc_nsc * MOWcoeff;
 
 		nf->STDBn_leaf_to_MOW     = ns->STDBn_leaf     * MOWcoeff; 
 		nf->STDBn_yield_to_MOW    = ns->STDBn_yield    * MOWcoeff; 
 		nf->STDBn_softstem_to_MOW = ns->STDBn_softstem * MOWcoeff;
-		nf->STDBn_nsc_to_MOW      = ns->STDBn_nsc * MOWcoeff;
 
 
 
@@ -160,41 +158,36 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 
 
 		/*----------------------------------------------------------*/
-		/* 2. transport: part of the plant material is transported (MOW_to_transpC and MOW_to_transpN; transp_coeff = 1-remained_prop),*/
+		/* 2. transport: part of the plant material is transported (MOW_to_transpC and MOW_to_transpN; 1-remained_prop),*/
 
-		MOW_to_transpC = (cf->leafc_to_MOW + cf->yield_to_MOW + cf->softstemc_to_MOW + 
-						  cf->STDBc_leaf_to_MOW + cf->STDBc_yield_to_MOW + cf->STDBc_softstem_to_MOW)  * (1-remained_prop);
-		MOW_to_transpN = (nf->leafn_to_MOW + nf->yieldn_to_MOW + nf->softstemn_to_MOW + 
-						  nf->STDBn_leaf_to_MOW + nf->STDBn_yield_to_MOW + nf->STDBn_softstem_to_MOW)  * (1-remained_prop);
+		MOW_to_transpC = (cf->leafc_to_MOW     + cf->leafc_transfer_to_MOW     + cf->leafc_storage_to_MOW     + cf->STDBc_leaf_to_MOW +
+			              cf->gresp_storage_to_MOW      + cf->gresp_transfer_to_MOW +
+			              cf->yieldc_to_MOW     + cf->yieldc_transfer_to_MOW     + cf->yieldc_storage_to_MOW     + cf->STDBc_yield_to_MOW + 
+						  cf->softstemc_to_MOW + cf->softstemc_transfer_to_MOW + cf->softstemc_storage_to_MOW + cf->STDBc_softstem_to_MOW)  * (1-remained_prop);
+		MOW_to_transpN = (nf->leafn_to_MOW     + nf->leafn_transfer_to_MOW     + nf->leafn_storage_to_MOW     + nf->STDBn_leaf_to_MOW +
+			              nf->yieldn_to_MOW    + nf->yieldn_transfer_to_MOW   + nf->yieldn_storage_to_MOW    + nf->STDBn_yield_to_MOW + 
+						  nf->softstemn_to_MOW + nf->softstemn_transfer_to_MOW + nf->softstemn_storage_to_MOW + nf->STDBn_softstem_to_MOW)  * (1-remained_prop);
 
 
 		/*----------------------------------------------------------*/
 		/* 3. cut-down biomass: the rest remains at the site (MOW_to_litrc_strg, MOW_to_litrn_strg)*/
 	
-		cf->MOW_to_CTDBc_leaf     = (cf->leafc_to_MOW     + cf->STDBc_leaf_to_MOW) * remained_prop;
+		cf->MOW_to_CTDBc_leaf     = (cf->leafc_to_MOW     + cf->leafc_transfer_to_MOW    + cf->leafc_storage_to_MOW     + cf->STDBc_leaf_to_MOW +
+			                         cf->gresp_storage_to_MOW      + cf->gresp_transfer_to_MOW) * remained_prop;
 
-		cf->MOW_to_CTDBc_yield    = (cf->yield_to_MOW    + cf->STDBc_yield_to_MOW)  * remained_prop;
+		cf->MOW_to_CTDBc_yield    = (cf->yieldc_to_MOW     + cf->yieldc_transfer_to_MOW     + cf->yieldc_storage_to_MOW     + cf->STDBc_yield_to_MOW)  * remained_prop;
 
-		cf->MOW_to_CTDBc_softstem = (cf->softstemc_to_MOW + cf->STDBc_softstem_to_MOW)  * remained_prop;
-
-		cf->MOW_to_CTDBc_nsc      = (cf->leafc_transfer_to_MOW     + cf->leafc_storage_to_MOW + 
-									 cf->yield_transfer_to_MOW    + cf->yield_storage_to_MOW + 
-									 cf->softstemc_transfer_to_MOW + cf->softstemc_storage_to_MOW + 
-									 cf->gresp_storage_to_MOW      + cf->gresp_transfer_to_MOW +
-									 cf->STDBc_nsc_to_MOW);
+		cf->MOW_to_CTDBc_softstem = (cf->softstemc_to_MOW + cf->softstemc_transfer_to_MOW + cf->softstemc_storage_to_MOW + cf->STDBc_softstem_to_MOW)  * remained_prop;
 
 
-		nf->MOW_to_CTDBn_leaf     = (nf->leafn_to_MOW     + nf->STDBn_leaf_to_MOW) * remained_prop;
 
-		nf->MOW_to_CTDBn_yield    = (nf->yieldn_to_MOW    + nf->STDBn_yield_to_MOW)  * remained_prop;
+		nf->MOW_to_CTDBn_leaf     = (nf->leafn_to_MOW     + nf->leafn_transfer_to_MOW     + nf->leafn_storage_to_MOW     + nf->STDBn_leaf_to_MOW) * remained_prop;
 
-		nf->MOW_to_CTDBn_softstem = (nf->softstemn_to_MOW + nf->STDBn_softstem_to_MOW) * remained_prop;
+		nf->MOW_to_CTDBn_yield    = (nf->yieldn_to_MOW    + nf->yieldn_transfer_to_MOW    + nf->yieldn_storage_to_MOW    + nf->STDBn_yield_to_MOW)  * remained_prop;
 
-		nf->MOW_to_CTDBn_nsc      = (nf->leafn_transfer_to_MOW     + nf->leafn_storage_to_MOW + 
-									 nf->yieldn_transfer_to_MOW    + nf->yieldn_storage_to_MOW + 
-									 nf->softstemn_transfer_to_MOW + nf->softstemn_storage_to_MOW + 
-									 nf->retransn_to_MOW +
-									 nf->STDBn_nsc_to_MOW);
+		nf->MOW_to_CTDBn_softstem = (nf->softstemn_to_MOW + nf->softstemn_transfer_to_MOW + nf->softstemn_storage_to_MOW + nf->STDBn_softstem_to_MOW) * remained_prop;
+
+		
 
 		/**********************************************************************************************/
 		/* III. STATE UPDATE */
@@ -202,15 +195,15 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 		/* 1. OUT */
 		/* 1.1.actual and transfer plant pools */	
 		cs->leafc				-= cf->leafc_to_MOW;
-		cs->yield				-= cf->yield_to_MOW;
+		cs->yieldc				-= cf->yieldc_to_MOW;
 		cs->softstemc			-= cf->softstemc_to_MOW;
 
 		cs->leafc_storage		-= cf->leafc_storage_to_MOW;
-		cs->yield_storage		-= cf->yield_storage_to_MOW;
+		cs->yieldc_storage		-= cf->yieldc_storage_to_MOW;
 		cs->softstemc_storage	-= cf->softstemc_storage_to_MOW;
 
 		cs->leafc_transfer		-= cf->leafc_transfer_to_MOW;
-		cs->yield_transfer		-= cf->yield_transfer_to_MOW;
+		cs->yieldc_transfer		-= cf->yieldc_transfer_to_MOW;
 		cs->softstemc_transfer	-= cf->softstemc_transfer_to_MOW;
 
 		cs->gresp_transfer      -= cf->gresp_transfer_to_MOW;
@@ -229,19 +222,15 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 		ns->yieldn_transfer		-= nf->yieldn_transfer_to_MOW;
 		ns->softstemn_transfer	-= nf->softstemn_transfer_to_MOW;
 
-		ns->retransn            -= nf->retransn_to_MOW;
-
 
 		/* 1.2. dead standing biomass */
 		cs->STDBc_leaf     -= cf->STDBc_leaf_to_MOW;
 		cs->STDBc_yield    -= cf->STDBc_yield_to_MOW;
 		cs->STDBc_softstem -= cf->STDBc_softstem_to_MOW;
-		cs->STDBc_nsc -= cf->STDBc_nsc_to_MOW ;
 
 		ns->STDBn_leaf     -= nf->STDBn_leaf_to_MOW;
 		ns->STDBn_yield    -= nf->STDBn_yield_to_MOW;
 		ns->STDBn_softstem -= nf->STDBn_softstem_to_MOW;
-		ns->STDBn_nsc      -= nf->STDBn_nsc_to_MOW ;
 
 
 		/* 1.3. water */
@@ -258,31 +247,28 @@ int mowing(const control_struct* ctrl, const epconst_struct* epc, const mowing_s
 		cs->CTDBc_leaf     += cf->MOW_to_CTDBc_leaf;
 		cs->CTDBc_yield    += cf->MOW_to_CTDBc_yield;
 		cs->CTDBc_softstem += cf->MOW_to_CTDBc_softstem;
-		cs->CTDBc_nsc      += cf->MOW_to_CTDBc_nsc;
 
 		ns->CTDBn_leaf     += nf->MOW_to_CTDBn_leaf;
 		ns->CTDBn_yield    += nf->MOW_to_CTDBn_yield;
 		ns->CTDBn_softstem += nf->MOW_to_CTDBn_softstem;
-		ns->CTDBn_nsc      += nf->MOW_to_CTDBn_nsc;
 	
 
 		/**********************************************************************************************/
 		/* IV. CONTROL */
 
 		outc = cf->leafc_to_MOW + cf->leafc_transfer_to_MOW + cf->leafc_storage_to_MOW +
-			   cf->yield_to_MOW + cf->yield_transfer_to_MOW + cf->yield_storage_to_MOW +
+			   cf->yieldc_to_MOW + cf->yieldc_transfer_to_MOW + cf->yieldc_storage_to_MOW +
 			   cf->softstemc_to_MOW + cf->softstemc_transfer_to_MOW + cf->softstemc_storage_to_MOW +
 			   cf->gresp_storage_to_MOW + cf->gresp_transfer_to_MOW + 
-			   cf->STDBc_leaf_to_MOW + cf->STDBc_yield_to_MOW + cf->STDBc_softstem_to_MOW + cf->STDBc_nsc_to_MOW;
+			   cf->STDBc_leaf_to_MOW + cf->STDBc_yield_to_MOW + cf->STDBc_softstem_to_MOW;
 
 		outn = nf->leafn_to_MOW + nf->leafn_transfer_to_MOW + nf->leafn_storage_to_MOW +
 			   nf->yieldn_to_MOW + nf->yieldn_transfer_to_MOW + nf->yieldn_storage_to_MOW +
 			   nf->softstemn_to_MOW + nf->softstemn_transfer_to_MOW + nf->softstemn_storage_to_MOW +
-			   nf->retransn_to_MOW + 
-			   nf->STDBn_leaf_to_MOW + nf->STDBn_yield_to_MOW + nf->STDBn_softstem_to_MOW + nf->STDBn_nsc_to_MOW;
+			   nf->STDBn_leaf_to_MOW + nf->STDBn_yield_to_MOW + nf->STDBn_softstem_to_MOW;
 
-		inc = cf->MOW_to_CTDBc_leaf + cf->MOW_to_CTDBc_yield  + cf->MOW_to_CTDBc_softstem + cf->MOW_to_CTDBc_nsc;
-		inn = nf->MOW_to_CTDBn_leaf + nf->MOW_to_CTDBn_yield  + nf->MOW_to_CTDBn_softstem + nf->MOW_to_CTDBn_nsc;
+		inc = cf->MOW_to_CTDBc_leaf + cf->MOW_to_CTDBc_yield  + cf->MOW_to_CTDBc_softstem;
+		inn = nf->MOW_to_CTDBn_leaf + nf->MOW_to_CTDBn_yield  + nf->MOW_to_CTDBn_softstem;
 
 		if (fabs(inc + MOW_to_transpC - outc) > CRIT_PREC || fabs(inn + MOW_to_transpN - outn) > CRIT_PREC )
 		{

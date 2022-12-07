@@ -3,7 +3,7 @@ phenphase.c
 calculation of n_actphen, GDD and GDDmod (based on vernalization and photoslow effect)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -30,7 +30,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 	int pp,	counter, layer;
 	double  dev_rate;
 	int errorCode=0;
-	int lastday = 0;
+	int lasTday = 0;
 	double critVWC = 0;
 
 	
@@ -51,7 +51,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		phen->GDD_limit = 0;
 		phen->remdays_litfall =-1;
 		epv->sla_avg = 0;
-		cs->flowHSsnk_C = 0;
+		cs->calc_flowHS = 0;
 
 		for (pp = 0; pp < N_PHENPHASES; pp++) 
 		{
@@ -75,13 +75,13 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 
 	if (ctrl->yday == 0)
 	{
-		cs->yield_HRV        = 0;
+		cs->yieldC_HRV        = 0;
 		cs->vegC_HRV          = 0;
 		cs->frootC_HRV        = 0;
 	    epv->cumSWCstress     = 0;
 		epv->cumNstress       = 0;
 		epv->plantCalloc_CUM  = 0;
-		epv->plantNalloc_CUM  = 0;
+		epv->plantNalloc_CUM  = 0;  
 	}
 
 	/* 2.1 first day of vegetation period */
@@ -163,10 +163,10 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		/* if aboveground biomass exists -> air temperature, if not (plant is below the ground): soil temperature */
 		if (epv->n_actphen >= epc->n_emerg_phenophase)
 		{
-			if (metv->tavg > epc->base_temp) 
+			if (metv->Tavg > epc->base_temp) 
 			{
-				metv->GDD       += (metv->tavg - epc->base_temp);
-				metv-> GDD_wMOD  += (metv->tavg - epc->base_temp) * dev_rate;
+				metv->GDD       += (metv->Tavg - epc->base_temp);
+				metv-> GDD_wMOD  += (metv->Tavg - epc->base_temp) * dev_rate;
 			}
 		}
 		else
@@ -312,7 +312,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 	{
 		phen->remdays_transfer = 0;
 		phen->predays_transfer = 0;
-		if (!lastday) phen->remdays_litfall = 0;
+		if (!lasTday) phen->remdays_litfall = 0;
 		phen->predays_litfall = 0;
 		phen->remdays_curgrowth = 0;
 		for (pp=0; pp<N_PHENPHASES; pp++) epv->rootdepth_phen[pp] = -1;
@@ -328,7 +328,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 	{
 		epv->n_actphen = 0;
 
-		lastday = 1;
+		lasTday = 1;
 
 		phen->onday = -1;
 		phen->offday = -1;
@@ -348,20 +348,20 @@ int vernalization(const epconst_struct* epc, const metvar_struct* metv, phenolog
 	double RVE; /* relative vernalization effectiveness */
 
 	/* calculation of RVE of a given day */
-	if (metv->tavg < epc->vern_parT1)
+	if (metv->Tavg < epc->vern_parT1)
 		RVE = 0;
 	else
 	{
-		if (metv->tavg < epc->vern_parT2)
-			RVE = (metv->tavg - epc->vern_parT1) / (epc->vern_parT2 - epc->vern_parT1);
+		if (metv->Tavg < epc->vern_parT2)
+			RVE = (metv->Tavg - epc->vern_parT1) / (epc->vern_parT2 - epc->vern_parT1);
 		else
 		{
-			if(metv->tavg < epc->vern_parT3)
+			if(metv->Tavg < epc->vern_parT3)
 				RVE = 1;
 			else
 			{
-				if(metv->tavg < epc->vern_parT4)
-					RVE = (epc->vern_parT4 - metv->tavg) / (epc->vern_parT4 - epc->vern_parT3);
+				if(metv->Tavg < epc->vern_parT4)
+					RVE = (epc->vern_parT4 - metv->Tavg) / (epc->vern_parT4 - epc->vern_parT3);
 				else
 					RVE = 0;
 			}

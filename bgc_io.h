@@ -4,7 +4,7 @@ header file to hold the structures used to communicate with bgc()
 also contains the function prototype for bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -19,7 +19,7 @@ typedef struct
 {
 	restart_data_struct restart_input;  /* input restart data */
 	control_struct ctrl;		/* bgc control variables */
-	ndep_control_struct ndep;	/* Ndep information */
+	NdepControl_struct ndep;	/* Ndep information */
 	co2control_struct co2;		/* CO2 concentration information */
 	metarr_struct metarr;		/* meteorological data array */
 	wstate_struct ws;			/* water state variables */

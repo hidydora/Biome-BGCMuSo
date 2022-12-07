@@ -3,7 +3,7 @@ annual_rates.c
 Functions called annually from bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -31,14 +31,14 @@ int annual_rates(const epconst_struct* epc, epvar_struct* epv)
 		/* leaf and fineroot litterfall rates */
 		epv->day_leafc_litfall_increment = epv->annmax_leafc            * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 		epv->day_frootc_litfall_increment = epv->annmax_frootc          * epc->nonwoody_turnover / nDAYS_OF_YEAR;
-		epv->day_yield_litfall_increment = epv->annmax_yield          * epc->nonwoody_turnover / nDAYS_OF_YEAR;
+		epv->day_yield_litfall_increment = epv->annmax_yieldc          * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 		epv->day_softstemc_litfall_increment = epv->annmax_softstemc    * epc->nonwoody_turnover / nDAYS_OF_YEAR;
 		epv->day_livestemc_turnover_increment = epv->annmax_livestemc   * epc->woody_turnover / nDAYS_OF_YEAR;
 		epv->day_livecrootc_turnover_increment = epv->annmax_livecrootc * epc->woody_turnover / nDAYS_OF_YEAR;
 		
 		epv->annmax_leafc = 0.0;
 		epv->annmax_frootc = 0.0;
-		epv->annmax_yield = 0.0;
+		epv->annmax_yieldc = 0.0;
 		epv->annmax_softstemc = 0.0;
 		epv->annmax_livestemc = 0.0;
 		epv->annmax_livecrootc = 0.0;

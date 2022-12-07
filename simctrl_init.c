@@ -3,7 +3,7 @@ simctrl_init.c
 read simulation control flags for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -110,7 +110,6 @@ int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_
 		errorCode=21107;
 	}
 
-
 	/* soil temperature calculation flag */
 	if (!errorCode && scan_value(init, &epc->STCM_flag, 'i'))
 	{
@@ -148,20 +147,17 @@ int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_
 
 
 	/*  evapotranspiration calculation method flag */
-	if (!errorCode && scan_value(init, &epc->evapotransp_flag, 'i'))
+	if (!errorCode && scan_value(init, &epc->ET_flag, 'i'))
 	{
 		printf("ERROR reading evapotranspiration calculation method flag: epc_init.c\n");
 		errorCode=21112;
 	}
 
-	/* control: evapotransp_flag */
-	if (!errorCode && epc->evapotransp_flag) 
+	if (epc->ET_flag && epc->PT_ETcritT == DATA_GAP)
 	{
-		printf("ERROR: Priestley-Taylor evaportanspiration method is not implemented yet in the model.\n");
-		printf("Please use the Penman-Monteith Scheme [see INI file]\n");
-		errorCode=21112;
+		printf("ERROR in evaporatranspiration calculation: if ET_flag = 1 -> PT_ETcritT must be specified in EPC file()\n");
+		errorCode=2111201;
 	}
-
 
 	/*  radiation calculation method flag */
 	if (!errorCode && scan_value(init, &epc->radiation_flag, 'i'))
@@ -176,6 +172,14 @@ int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_
 		printf("ERROR reading soilstress calculation method flag: epc_init.c\n");
 		errorCode=21114;
 	}
+
+	/*  soilstress calculation method flag */
+	if (!errorCode && scan_value(init, &epc->interception_flag, 'i'))
+	{
+		printf("ERROR reading interception calculation method flag: epc_init.c\n");
+		errorCode=21115;
+	}
+
 
 	/* control: in case of planting/harvesting, model-defined phenology is not possible: first day - planting day, last day - harvesting day */
 	if (epc->phenology_flag == 1 && PLT->PLT_num) 

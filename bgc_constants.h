@@ -3,7 +3,7 @@ bgc_constants.h
 Holds macro definitions for constants used in bgc()
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -66,7 +66,7 @@ are set to 0.0 to control rounding and overflow errors */
 /* contants for snow estimation in GSI calculation */
 #define sn_abs				0.6			/* absorptivity of snow */
 #define lh_fus				335.0		/* (kJ/kg) latent heat of fusion */
-#define lh_sub				2845.0		/* (kJ/kg) latent heal of sublimation */
+#define lh_sub				2845.0		/* (kJ/kg) latent heat of sublimation */
 #define tcoef				0.65		/* (kg/m2/deg C/d) temp. snowmelt coef */
 
 #define nDAYS_OF_YEAR	    365	
@@ -76,7 +76,7 @@ are set to 0.0 to control rounding and overflow errors */
 #define DATA_GAP			-9999
 #define Celsius2Kelvin      273.15
 #define m2_to_ha            10000
-#define kg_to_t            0.001
+#define kg_to_t             0.001
 
 /* constant for net radiation calculation */
 #define PI                  3.14159265358979323846
@@ -89,5 +89,7 @@ are set to 0.0 to control rounding and overflow errors */
 
 /* NO3 mobilen proportion */
 #define NO3_mobilen_prop    1
+
+
 
 

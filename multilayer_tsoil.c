@@ -4,7 +4,7 @@ calculation of soil temperature in the different soil layers based on the change
 to top soil layer and based on empirical function of temperature gradient in soil (Zheng et al.1993)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -37,7 +37,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 	double tsoil_top_change, heating_coefficient;
 
 
-	/* daily averaged air tempreture on the given day (calculated from tmax and tmin), temp.gradient and local temperatures */
+	/* daily averaged air tempreture on the given day (calculated from Tmax and Tmin), temp.gradient and local temperatures */
 	double temp_diff_total, temp_diff, tsoil, tsoil_avg;
 
 	double STv1, STv2, WC, FX, f1, ALX, TA, Td, ZD;
@@ -58,7 +58,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 		heating_coefficient = heatcoeff_nosnow;
 	
 	/* shading effect of vegetation (if soil temperature is lower than air temperature the effect is zero) */
-	if (metv->tday > metv->tsoil_surface_pre && epv->proj_lai > 0) 
+	if (metv->Tday > metv->tsoil_surface_pre && epv->proj_lai > 0) 
 		effect_of_vegetation = exp(-1 * epc->ext_coef * epv->proj_lai);
 	else 
 		effect_of_vegetation = 1.0;
@@ -67,7 +67,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 		
 	/* empirical function for the effect of tair changing */
-	tsoil_top_change = (metv->tday - metv->tsoil_surface_pre) * heating_coefficient * effect_of_vegetation;	
+	tsoil_top_change = (metv->Tday - metv->tsoil_surface_pre) * heating_coefficient * effect_of_vegetation;	
 
 
 	/* ************************************************- */
@@ -77,7 +77,7 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 	metv->tsoil_surface += tsoil_top_change;
 	
-	temp_diff_total = sitec->tair_annavg - metv->tsoil_surface;
+	temp_diff_total = metv->annTavgRA - metv->tsoil_surface;
 	
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -93,12 +93,12 @@ int multilayer_tsoil(const epconst_struct* epc, const siteconst_struct* sitec, c
 		f1 = 1/(FX*STv1);
 
 		ALX = 0.0174*(yday-200);
-		TA = sitec->tair_annavg + sitec->tair_annrange * cos(ALX)/2;
-		Td = metv->F_temprad_ra - TA;
+		TA = metv->annTavgRA + metv->annTrangeRA * cos(ALX)/2;
+		Td = metv->tempradFra - TA;
 	
 		ZD = -1 * sitec->soillayer_midpoint[layer] * 1000 * f1 * c_param_tsoil; // m to mm
 	
-		tsoil = sitec->tair_annavg + (sitec->tair_annrange/2 * cos(ALX + ZD) + Td)  * exp(ZD); // depth: m to cm 
+		tsoil = metv->annTavgRA + (metv->annTrangeRA/2 * cos(ALX + ZD) + Td)  * exp(ZD); // depth: m to cm 
 
 		if (epc->STCM_flag) 
 			metv->tsoil[layer] = tsoil;

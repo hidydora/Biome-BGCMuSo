@@ -3,7 +3,7 @@ flowering_heatstress.c
 daily crop-specific phenology fluxes
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -35,12 +35,12 @@ int flowering_heatstress(const epconst_struct* epc, const metvar_struct *metv, c
 	/* in flowering phase heat stress can affect the seed fertilization */
 	if (n_actphen == n_flowHS_phenophase)
 	{
-		if(metv->tmax < epc->flowHS_parT1)
+		if(metv->Tmax < epc->flowHS_parT1)
 			mort_act = 0;
 		else
 		{
-			if (metv->tmax < epc->flowHS_parT2) 
-				mort_act = (metv->tmax - epc->flowHS_parT1) / (epc->flowHS_parT2 - epc->flowHS_parT1);
+			if (metv->Tmax < epc->flowHS_parT2) 
+				mort_act = (metv->Tmax - epc->flowHS_parT1) / (epc->flowHS_parT2 - epc->flowHS_parT1);
 			else
 				mort_act = 1;
 		}
@@ -55,15 +55,16 @@ int flowering_heatstress(const epconst_struct* epc, const metvar_struct *metv, c
 		/* in phenophase of yield filling the heat stress affects the material flow to yield (parameter: flowHS_mort)
 		if (n_actphen == n_flowHS_phenophase+1 && epc->yield_cn) 
 		{
-			cf->yield_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->yield;
-			nf->yieldn_to_flowHS = cf->yield_to_flowHS / epc->yield_cn;
+			cf->yieldc_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->yieldc;
+			nf->yieldn_to_flowHS = cf->yieldc_to_flowHS / epc->yield_cn;
 		}
 		else */
 			
 
-	cf->yield_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->yield;
-	nf->yieldn_to_flowHS = cf->yield_to_flowHS / epc->yield_cn;
-	cs->flowHSsnk_C += cf->yield_to_flowHS;
+	cf->yieldc_to_flowHS = epv->flowHS_mort * epc->flowHS_parMORT * cs->yieldc;
+	nf->yieldn_to_flowHS = cf->yieldc_to_flowHS / epc->yield_cn;
+	cs->calc_flowHS += cf->yieldc_to_flowHS;
+	cs->flowHSsnk_C += cf->yieldc_to_flowHS;
 
 
 

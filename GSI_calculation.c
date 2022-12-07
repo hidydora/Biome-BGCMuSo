@@ -5,7 +5,7 @@ based on literure (Jolly et al, 2005) and own method. The goal is to replace pre
 of the model-defined onset and offset day does not work correctly
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -43,15 +43,15 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 	int n_yday = nDAYS_OF_YEAR;
 	
 	/*  enviromental conditions taken account to calculate onset and offset days */
-	double tmax_act, tmin_act, tavg_act, vpd_act, dayl_act, heatsum_act;	
+	double Tmax_act, Tmin_act, Tavg_act, vpd_act, dayl_act, heatsum_act;	
 
 	
 	/* threshold limits for each variable, between assuming that phenological activity varied linearly from inactive to unconstrained */
 	double base_temp = epc->base_temp;
 	double heatsum_limit1 = epc->heatsum_limit1;
 	double heatsum_limit2 = epc->heatsum_limit2;
-	double tmin_limit1 = epc->tmin_limit1;
-	double tmin_limit2 = epc->tmin_limit2;
+	double Tmin_limit1 = epc->Tmin_limit1;
+	double Tmin_limit2 = epc->Tmin_limit2;
 	double vpd_limit1 = epc->vpd_limit1;
 	double vpd_limit2 = epc->vpd_limit2;
 	double dayl_limit1 = epc->dayl_limit1;
@@ -63,7 +63,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 
 
 	/* indexes for the different variables and total index (multiplication of  partial indexes)*/
-	double tmin_index = 0;
+	double Tmin_index = 0;
 	double vpd_index = 0; 
 	double dayl_index = 0; 
 	double gsi_index = 0; 
@@ -95,7 +95,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 		phenarr->onday_arr  = (int**) malloc(nyears*sizeof(int*));  
         phenarr->offday_arr = (int**) malloc(nyears*sizeof(int*));  
 
-		phenarr->tmin_index     = (double**) malloc(nyears*sizeof(int*));  
+		phenarr->Tmin_index     = (double**) malloc(nyears*sizeof(int*));  
 		phenarr->vpd_index      = (double**) malloc(nyears*sizeof(int*));  
 		phenarr->dayl_index     = (double**) malloc(nyears*sizeof(int*));  
 		phenarr->gsi_indexAVG   = (double**) malloc(nyears*sizeof(int*));  
@@ -109,7 +109,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 			phenarr->onday_arr[ny]  = (int*) malloc(2*sizeof(int));  
 			phenarr->offday_arr[ny] = (int*) malloc(2*sizeof(int)); 
 
-			phenarr->tmin_index[ny]     = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
+			phenarr->Tmin_index[ny]     = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
 			phenarr->vpd_index[ny]      = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
 			phenarr->dayl_index[ny]     = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
 			phenarr->gsi_indexAVG[ny]   = (double*) malloc(nDAYS_OF_YEAR*sizeof(double));  
@@ -144,20 +144,20 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 		/* ******************************************************************* */
 		/* 1. calculation of snow loss and plus*/
 		
-			tmax_act     = metarr->tmax[ny*n_yday+yday];
-			tmin_act     = metarr->tmin[ny*n_yday+yday];
-			tavg_act     = (tmax_act+tmin_act)/2.;
-			prcp_act     = metarr->prcp[ny*n_yday+yday];	
-			srad_act     = metarr->swavgfd[ny*n_yday+yday];
-			dayl_act     = metarr->dayl[ny*n_yday+yday];
+			Tmax_act     = metarr->Tmax_array[ny*n_yday+yday];
+			Tmin_act     = metarr->Tmin_array[ny*n_yday+yday];
+			Tavg_act     = (Tmax_act+Tmin_act)/2.;
+			prcp_act     = metarr->prcp_array[ny*n_yday+yday];	
+			srad_act     = metarr->swavgfd_array[ny*n_yday+yday];
+			dayl_act     = metarr->dayl_array[ny*n_yday+yday];
 
 			/* canopy transmitted radiaiton: convert from W/m2 --> KJ/m2/d */	
 			rn = srad_act * (1.0 - albedo_sw) * dayl_act * sn_abs * 0.001;
 
 			/* 1.a. snow loss: melting and sublim. */
-			if (tavg_act > 0.0)  
+			if (Tavg_act > 0.0)  
 			{	/* temperature melt from snowpack */
-				tmelt = tcoef * tavg_act;
+				tmelt = tcoef * Tavg_act;
 				/* radiaiton melt from snowpack */
 				rmelt = rn / lh_fus;
 				melt = tmelt+rmelt;
@@ -173,7 +173,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 			if (snow_loss > snowcover) snow_loss = snowcover;	
 		
 			/* 1.b. snow plus: melting and sublim. */
-			if (tavg_act < 0.0)  
+			if (Tavg_act < 0.0)  
 			{
 				snow_plus = prcp_act*10;
 			}
@@ -188,7 +188,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 			if (yday < n_moving_avg)
 			{
 				heatsum_act     = 0;
-				tmin_index      = 0;
+				Tmin_index      = 0;
 				vpd_index       = 0;
 				dayl_index      = 0;
 				gsi_indexAVG   = 0;
@@ -202,36 +202,36 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 				for (back=0; back<=n_moving_avg; back++)
 				{
 					/* search actual values of variables */
-					tmax_act = metarr->tmax[ny*n_yday+yday-(n_moving_avg-back)];
-					tmin_act = metarr->tmin[ny*n_yday+yday-(n_moving_avg-back)];
-					tavg_act = (tmax_act+tmin_act)/2.;
-					vpd_act  = metarr->vpd[ny*n_yday+yday-(n_moving_avg-back)];
-					dayl_act = metarr->dayl[ny*n_yday+yday-(n_moving_avg-back)];
+					Tmax_act = metarr->Tmax_array[ny*n_yday+yday-(n_moving_avg-back)];
+					Tmin_act = metarr->Tmin_array[ny*n_yday+yday-(n_moving_avg-back)];
+					Tavg_act = (Tmax_act+Tmin_act)/2.;
+					vpd_act  = metarr->vpd_array[ny*n_yday+yday-(n_moving_avg-back)];
+					dayl_act = metarr->dayl_array[ny*n_yday+yday-(n_moving_avg-back)];
 					 
 			
 					/* ******************************************************************* */
 					/* 1.1 calculation of heatsum regarding to the basic temperature and n_moving_avg long period */
-					if (tavg_act > base_temp) 
+					if (Tavg_act > base_temp) 
 					{
-						heatsum_act += (tavg_act-base_temp);
+						heatsum_act += (Tavg_act-base_temp);
 					}
 
 					/* ******************************************************************* */
 					/* 1.2. calculation of indexes regarding to the different variables */
-					/* !!!!!!!!!!!!!!!!!!!!!!!!!!  A: tmin !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
-					if (tmin_act < tmin_limit1)
+					/* !!!!!!!!!!!!!!!!!!!!!!!!!!  A: Tmin !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
+					if (Tmin_act < Tmin_limit1)
 					{
-						tmin_index=0;
+						Tmin_index=0;
 					}
 					else
 					{
-						if (tmin_act < tmin_limit2)
+						if (Tmin_act < Tmin_limit2)
 						{
-							tmin_index = (tmin_act-tmin_limit1)/(tmin_limit2-tmin_limit1);
+							Tmin_index = (Tmin_act-Tmin_limit1)/(Tmin_limit2-Tmin_limit1);
 						}
 						else
 						{
-							tmin_index = 1;
+							Tmin_index = 1;
 						}
 
 					}
@@ -271,7 +271,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 					}
 						
 					
-					gsi_index = tmin_index * vpd_index * dayl_index;
+					gsi_index = Tmin_index * vpd_index * dayl_index;
 					gsi_indexSUM += gsi_index;
 
 				} /* endfor - calculating indexes for the n_moving_average long period  */
@@ -337,7 +337,7 @@ int GSI_calculation(const metarr_struct* metarr, const siteconst_struct* sitec, 
 			}
 
 
-			phenarr->tmin_index[ny][yday]     = tmin_index;  
+			phenarr->Tmin_index[ny][yday]     = Tmin_index;  
 			phenarr->vpd_index[ny][yday]      = vpd_index;  
 			phenarr->dayl_index[ny][yday]     = dayl_index;  
 			phenarr->gsi_indexAVG[ny][yday]   = gsi_indexAVG;  

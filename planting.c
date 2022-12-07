@@ -3,7 +3,7 @@ planting.c
 planting  - planting seeds in soil - increase transfer pools
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -126,13 +126,13 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 				ns->softstemn_storage = 0;
 			}
 
-			if (cs->yield_storage > 0)
+			if (cs->yieldc_storage > 0)
 			{
-				cs->STDBc_yield                 += cs->yield_storage;
-				cs->SNSCsnk_C                   += cs->yield_storage;
+				cs->STDBc_yield                 += cs->yieldc_storage;
+				cs->SNSCsnk_C                   += cs->yieldc_storage;
 				ns->STDBn_yield                 += ns->yieldn_storage;
 				ns->SNSCsnk_N                   += ns->yieldn_storage;
-				cs->yield_storage = 0;
+				cs->yieldc_storage = 0;
 				ns->yieldn_storage = 0;
 			}
 
@@ -186,8 +186,8 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		
 		if (epc->yield_cn)
 		{
-			cf->yield_transfer_from_PLT = (seed_quantity * prop_yield) * seed_Ccontent;
-			nf->yieldn_transfer_from_PLT =  cf->yield_transfer_from_PLT / epc->yield_cn;
+			cf->yieldc_transfer_from_PLT = (seed_quantity * prop_yield) * seed_Ccontent;
+			nf->yieldn_transfer_from_PLT =  cf->yieldc_transfer_from_PLT / epc->yield_cn;
 			cf->STDBc_yield_to_PLT        = cs->STDBc_yield;
 			nf->STDBn_yield_to_PLT        = ns->STDBn_yield;
 		}
@@ -208,8 +208,8 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 		cs->PLTsrc_C += cf->leafc_transfer_from_PLT;
 		cs->frootc_transfer += cf->frootc_transfer_from_PLT;
 		cs->PLTsrc_C += cf->frootc_transfer_from_PLT;
-		cs->yield_transfer += cf->yield_transfer_from_PLT;
-		cs->PLTsrc_C += cf->yield_transfer_from_PLT;
+		cs->yieldc_transfer += cf->yieldc_transfer_from_PLT;
+		cs->PLTsrc_C += cf->yieldc_transfer_from_PLT;
 		cs->softstemc_transfer += cf->softstemc_transfer_from_PLT;
 		cs->PLTsrc_C += cf->softstemc_transfer_from_PLT;
 		

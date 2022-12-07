@@ -3,7 +3,7 @@ state_init.c
 Initialize water, carbon, and nitrogen state variables for pointbgc simulation  
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -59,7 +59,7 @@ int wstate_init(file init, const siteconst_struct* sitec, const soilprop_struct*
 	if (!errorCode && (prop_fc < 0.0))
 	{
 		printf("ERROR: initial soil water proportion must be >= 0.0 and <= 1.0\n");
-		errorCode=21203;
+		errorCode=2120201;
 	}
 	if (!errorCode)
 	{
@@ -70,11 +70,11 @@ int wstate_init(file init, const siteconst_struct* sitec, const soilprop_struct*
 			if (prop_fc > sprop->VWCsat[layer]/sprop->VWCfc[layer])
 			{
 				printf("ERROR: initial soil water proportion must less than saturation proportion: %lf\n", sprop->VWCsat[layer]/sprop->VWCfc[layer]);
-				errorCode=21402;
+				errorCode=21202;
 			}
 			else
 			{
-				ws->soilw[layer] = prop_fc * sprop->VWCfc[layer] * (sitec->soillayer_thickness[layer]) * 1000.0;
+				ws->soilw[layer] = prop_fc * sprop->VWCfc[layer] * sitec->soillayer_thickness[layer] * water_density;
 				ws->soilw_SUM += ws->soilw[layer];
 			}
 				
@@ -120,27 +120,27 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 	if (!errorCode && scan_value(init, &cinit->max_frootc, 'd'))
 	{
 		printf("ERROR reading first-year maximum fine root carbon, cstate_init()\n");
-		errorCode=21301;
+		errorCode=21302;
 	}
-	if (!errorCode && scan_value(init, &cinit->max_yield, 'd'))
+	if (!errorCode && scan_value(init, &cinit->max_yieldc, 'd'))
 	{
-		printf("ERROR reading first-year max_yield, cstate_init()\n");
-		errorCode=21301;
+		printf("ERROR reading first-year max_yieldc, cstate_init()\n");
+		errorCode=21303;
 	}
 	if (!errorCode && scan_value(init, &cinit->max_softstemc, 'd'))
 	{
 		printf("ERROR reading first-year max_sofstemc, cstate_init()\n");
-		errorCode=21301;
+		errorCode=21304;
 	}
 	if (!errorCode && scan_value(init, &cinit->max_livestemc, 'd'))
 	{
 		printf("ERROR reading first-year max_livestemc, cstate_init()\n");
-		errorCode=21301;
+		errorCode=21305;
 	}
 	if (!errorCode && scan_value(init, &cinit->max_livecrootc, 'd'))
 	{
 		printf("ERROR reading first-year max_livecrootc, cstate_init()\n");
-		errorCode=21301;
+		errorCode=21306;
 	}
 
 	/* control */
@@ -152,7 +152,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (epc->alloc_livecrootc[pp] > 0) alloc_livecroot=1;
 	}
 
-	if (alloc_yield == 0)     cinit->max_yield = 0;
+	if (alloc_yield == 0)     cinit->max_yieldc = 0;
 	if (alloc_softstem == 0)  cinit->max_softstemc = 0;
 	if (alloc_livestem == 0)  cinit->max_livestemc = 0;
 	if (alloc_livecroot == 0) cinit->max_livecrootc = 0;
@@ -167,7 +167,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->cwdc[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading cwdc in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21307;
 		}
 	}
 
@@ -190,7 +190,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->litr1c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading litter carbon in labile pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21308;
 		}
 	}
 	
@@ -201,7 +201,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->litr2c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading litter carbon in unshielded cellulose pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21309;
 		}
 	}
 	
@@ -212,7 +212,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->litr3c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading litter carbon in shielded cellulose pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21310;
 		}
 	}
 
@@ -223,7 +223,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->litr4c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading litter carbon in lignin pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21311;
 		}
 	}
 
@@ -250,7 +250,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->soil1c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading labile SOM carbon pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21312;
 		}
 	}
 		
@@ -261,7 +261,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->soil2c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading fast decomposing SOM carbon pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21313;
 		}
 	}
 
@@ -272,7 +272,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->soil3c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading slow decomposing SOM carbon pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21314;
 		}
 	}
 
@@ -284,7 +284,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(cs->soil4c[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading stable SOM carbon pool in layer %i, cstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21315;
 		}
 	}
 
@@ -306,7 +306,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &trash, 'd', scanflag, 1))
 		{
 			printf("ERROR reading litter nitrogen in labile pool layer %i, cnstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21316;
 		}
 	}
 	
@@ -317,7 +317,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(sminNH4_ppm[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading soil mineral nitrogen (NH4 pool) in layer %i, cnstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21317;
 		}
 	}
 
@@ -328,7 +328,7 @@ int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sp
 		if (!errorCode && scan_array(init, &(sminNO3_ppm[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading soil mineral nitrogen (NO3 pool) in layer %i, cnstate_init()\n", layer);
-			errorCode=21301;
+			errorCode=21318;
 		}
 		ns->sminNH4[layer] = sminNH4_ppm[layer] * (sprop->BD[layer] / 1000 * sitec->soillayer_thickness[layer]);
 		ns->sminNO3[layer] = sminNO3_ppm[layer] * (sprop->BD[layer] / 1000 * sitec->soillayer_thickness[layer]);

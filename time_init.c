@@ -3,7 +3,7 @@ time_init.c
 Initialize the simulation timing control parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -21,7 +21,7 @@ Missoula, MT 59812
 #include "pointbgc_struct.h"
 #include "pointbgc_func.h"
 
-int time_init(file init, control_struct *ctrl)
+int time_init(file init, point_struct* point, control_struct *ctrl)
 {
 	int errorCode=0;
 	char key1[] = "TIME_DEFINE";
@@ -51,6 +51,13 @@ int time_init(file init, control_struct *ctrl)
 	if (!errorCode && scan_value(init, &ctrl->simyears, 'i'))
 	{
 		printf("ERROR reading simyears: time_init.c\n");
+		errorCode=20401;
+	}
+
+	/* read the number of simulation years */
+	if (!errorCode && ctrl->simyears == 1 && point->nday_lastsimyear < nDAYS_OF_YEAR)
+	{
+		printf("ERROR with simyears: minimum of simulation time is 1 year (if simyears=1, nday_lastsimyear=365 in MET_INPUT\n");
 		errorCode=20402;
 	}
 

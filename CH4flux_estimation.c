@@ -3,7 +3,7 @@ CH4flux_estimation.c
 Estimation of the N2O and CH4 flux based on empirical fuctions of C:N, BD, VWC and TS (Hashimoto el al. 2011)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -20,7 +20,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int CH4flux_estimation(const soilprop_struct* sprop, int layer, double VWC, double T, double* CH4_flux)
+int CH4flux_estimation(const soilprop_struct* sprop, int layer, double VWC, double T, double* CH4flux)
 {
 	int errorCode=0;
 	double WFPS, f_BD, f1_WFPS, f2_WFPS, f_WPFS, f_TS;
@@ -46,7 +46,7 @@ int CH4flux_estimation(const soilprop_struct* sprop, int layer, double VWC, doub
 	f_TS = exp(sprop->pTS_CH4 * T);
 
 	/* summarized function */
-	*CH4_flux = f_BD * f_WPFS * f_TS * nHOURS_IN_DAY * 1e-9; // daily data, mikrogram to kilogramm
+	*CH4flux = f_BD * f_WPFS * f_TS * nHOURS_IN_DAY * 1e-9; // daily data, mikrogram to kilogramm
 
 
 

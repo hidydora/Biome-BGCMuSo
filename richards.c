@@ -6,7 +6,7 @@ calculation of soil water content layer by layer taking into account soil hydrol
  and conductivity values were valid all the day we would overestimate the velocity diffusion and percolation process) 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -32,10 +32,10 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 	
 	/* internal variables */
 	int errorCode, l;
-	double INFILT,INFILT_sum, INFILT_act,INFILT_ctrl,EVAP,EVAP_act,EVAP_ctrl,TRANSP_ctrl;
+	double INFILT,INFILT_sum,EVP_sum, INFILT_act,INFILT_ctrl,EVP,EVP_act,EVP_ctrl,TRP_ctrl;
 	double transpDEM[N_SOILLAYERS_GWC],transpDEM_act[N_SOILLAYERS_GWC];
 	double VWCequilib,diffus_limit;
-	double diffus_ctrl,VWC0_ctrl,VWC1_ctrl,D0_ctrl,D1_ctrl,Dact_ctrl;
+
 
 	/* diffusion and percolation calculation */
 	double D0, D1, Dact;	        /* hydrological diffusion coefficient (m2/s) */
@@ -44,20 +44,20 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 
 	double VWCdiff_max, VWCdiff, diff, diff1, diff2, soilw_satUPPER, extra, extra_act;
 	double localvalue,  exponent_discretlevel;
-	double soilw0, VWC0, VWC1, VWChw0,VWCsat0, VWCsat1, PSIsat0, PSIsat1, soilB0, soilB1, soilw_sat0, soilw1, soilw_sat1;
+	double soilw0, VWC0, VWC1, VWChw0,VWCsat0, VWCsat1, PSIsat0, PSIsat1, soilB0, soilB1, soilw_sat0;
 	double Ksat0, Ksat1, Kact, Kact0, Kact1;
 
-	double pondw_act, infilt_limit,waterFromAbove, evap;
-	double soilw_to_pondw, infilt_to_soilw, infilt_to_pondw, pondwEvap, soilwEvap, pondw_to_soilw;
+	double pondw_act, infilt_limit,waterFromAbove;
+	double soilw_to_pondw, infilt_to_soilw, prcp_to_pondw, pondwEVP, soilwEVP, pondw_to_soilw;
 
 	double dz0, dz1;
-	double transp[N_SOILLAYERS_GWC],diffus[N_SOILLAYERS_GWC],percol[N_SOILLAYERS_GWC],wflux[N_SOILLAYERS_GWC],GWdischarge[N_SOILLAYERS_GWC],GWrecharge[N_SOILLAYERS_GWC];
+	double TRP[N_SOILLAYERS_GWC],diffus[N_SOILLAYERS_GWC],percol[N_SOILLAYERS_GWC],wflux[N_SOILLAYERS_GWC],GWdischarge[N_SOILLAYERS_GWC],GWrecharge[N_SOILLAYERS_GWC];
 	
 	errorCode = 0;
 	
 	
-	INFILT=EVAP=INFILT_ctrl=EVAP_act=EVAP_ctrl=TRANSP_ctrl=0;
-	pondw_to_soilw=soilw_to_pondw=infilt_to_soilw=infilt_to_pondw=pondwEvap=soilwEvap=pondw_act=0;
+	INFILT=EVP_sum=EVP=INFILT_ctrl=EVP_act=EVP_ctrl=TRP_ctrl=0;
+	pondw_to_soilw=soilw_to_pondw=infilt_to_soilw=prcp_to_pondw=pondwEVP=soilwEVP=pondw_act=0;
 	
 	ws->timestepRichards=0;
 
@@ -68,26 +68,28 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 	n_sec=1;
 	discretlevel = epc->discretlevel_Richards + 3; /* discretization level: change in VWC 1% -> timestep: second */
 	
-	INFILT_sum = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp);
+	INFILT_sum = (wf->prcp_to_soilSurface + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_soilSurface);
 	INFILT     = INFILT_sum;
 	INFILT_act = INFILT/nSEC_IN_DAY;
 	
 	pondw_act = ws->pondw;
 
-	EVAP         = wf->soilwEvap_POT;
-	EVAP_act     = EVAP/nSEC_IN_DAY;
+	EVP_sum     = wf->soilwEVP;
+	EVP_act     = EVP/nSEC_IN_DAY;
+
+	wf->soilwEVP=0;
 
 	for (layer=0 ; layer < N_SOILLAYERS_GWC; layer++) 
 	{
-		gwc->soilwTranspDemand_GWC[layer]  = wf->soilwTranspDemand_SUM * gwc->rootlengthProp_GWC[layer]; 
-		transpDEM[layer]                   = gwc->soilwTranspDemand_GWC[layer];
+		gwc->soilwTRPdemand_GWC[layer]     = wf->soilwTRP_POT * gwc->rootlengthProp_GWC[layer]; 
+		transpDEM[layer]                   = gwc->soilwTRPdemand_GWC[layer];
 		transpDEM_act[layer]               = transpDEM[layer] /nSEC_IN_DAY;
-		gwc->soilwTransp_GWC[layer]        = 0;
+		gwc->soilwTRP_GWC[layer]           = 0;
 		gwc->soilwFlux_GWC[layer]          = 0;
 		gwc->GWdischarge_GWC[layer]        = 0;
 		gwc->GWrecharge_GWC[layer]         = 0;
 
-		transp[layer]=0;
+		TRP[layer]=0;
 		diffus[layer]=0;
 		percol[layer]=0;
 		wflux[layer]=0;
@@ -105,7 +107,6 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 	
 		VWCdiff_max=0;
 
-	
 		/* ----------------------------------------*/
 		/* 1. CALCULATE PROCESSES  LAYER TO LAYER */
 		for (layer=0 ; layer < N_SOILLAYERS_GWC; layer++)
@@ -115,7 +116,6 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 			/* 1.0. INITALIZATION */
 			dz0        = gwc->soillayer_thicknessGWC[layer];
 			soilw0     = gwc->soilw_GWC[layer];
-			soilw1     = gwc->soilw_GWC[layer+1];
 			VWC0       = gwc->VWC_GWC[layer];
 			VWChw0     = gwc->VWChw_GWC[layer];
 			VWCsat0    = gwc->VWCsat_GWC[layer];
@@ -133,16 +133,8 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 				PSIsat1    = gwc->PSIsat_GWC[layer+1];
 				soilB1     = gwc->soilB_GWC[layer+1];
 				Ksat1      = gwc->hydrCONDUCTsat_GWC[layer+1];
-				soilw1     = gwc->soilw_GWC[layer+1];
-				soilw_sat1 = gwc->VWCsat_GWC[layer+1] * dz1 * water_density;
-			}
-			else
-			{
-				soilw1     = 0;
-				soilw_sat1 = 0;
 			}
 			
-		
 
 			/* ------------------- */
 			/* 1.1. INFILTRATION */
@@ -153,18 +145,18 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 					if ((soilw0 + INFILT_act - soilw_sat0) > CRIT_PRECwater)			
 					{
 						infilt_to_soilw     = soilw_sat0 - soilw0;
-						infilt_to_pondw     = INFILT_act - infilt_to_soilw;
+						prcp_to_pondw     = INFILT_act - infilt_to_soilw;
 					}
 					else
 					{
 						infilt_to_soilw     = INFILT_act;
-						infilt_to_pondw     = 0;
+						prcp_to_pondw     = 0;
 					}
 					pondw_to_soilw = 0; 
 				}
 				else
 				{
-					infilt_to_pondw = INFILT_act;
+					prcp_to_pondw = INFILT_act;
 					infilt_to_soilw = 0;
 						
 					infilt_limit = soilw_sat0-soilw0;
@@ -173,27 +165,27 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 				}
 
 				/* -------------------*/
-				/* 1.2. EVAPORATION */
+				/* 1.2. evaporation */
   		
 
-				if (EVAP_act > pondw_act) /* potential evaporation > pondw -> both pondw evaporation */
+				if (EVP_act > pondw_act) /* potential evaporation > pondw -> both pondw evaporation */
 				{
-					pondwEvap = pondw_act;
-					soilwEvap = EVAP_act - pondwEvap;
+					pondwEVP = pondw_act;
+					soilwEVP = EVP_act - pondwEVP;
 				}
 				else /* potential evaporation < pondw -> only pondw is evaporated */
 				{
-					pondwEvap = EVAP_act;
-					soilwEvap = 0;
+					pondwEVP = EVP_act;
+					soilwEVP = 0;
 				}
 
 			}
 
 			/* -------------------*/
-			/* 1.3. TRANSPIRATION */
+			/* 1.3. transpiration */
 
 			/* transpiration based on rootlenght proportion */
-			transp[layer] = transpDEM_act[layer]; 
+			TRP[layer] = transpDEM_act[layer]; 
 
 			/* -------------------*/
 			/* 1.4. PERCOLATION */
@@ -228,17 +220,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 
 				Dact = (D0 * dz0/(dz0+dz1) + D1 * dz1/(dz0+dz1));
 	
-				/* diffusion flux - control (recalculation of diffusion coefficient  */
-				if (fabs(VWC0 - VWC1) > CRIT_PRECwater) 
-				{
-					diffus_ctrl = (VWC0 - VWC1)/((dz0+dz1)/2) 	* Dact  * water_density * n_sec;
-					VWC0_ctrl = VWC0 - diffus_ctrl;
-					VWC1_ctrl = VWC1 + diffus_ctrl;
-					D0_ctrl = (((soilB0    * Ksat0   * (-100*PSIsat0)))) * pow(VWC0_ctrl/VWCsat0,  soilB0 +2);
-					D1_ctrl = (((soilB1    * Ksat1   * (-100*PSIsat1)))) * pow(VWC1_ctrl/VWCsat1,  soilB1 +2);
-					Dact_ctrl = ((D0_ctrl * dz0/(dz0+dz1) + D1_ctrl * dz1/(dz0+dz1)) + Dact)/2;
-				}
-		
+			
 				/* diffusion flux  */
 				if (fabs(VWC0 - VWC1) > CRIT_PRECwater) 
 					diffus[layer]  = (VWC0 - VWC1)/((dz0+dz1)/2) 	* Dact  * water_density * n_sec;
@@ -262,7 +244,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 			if (layer == 0)
 			{
 				waterFromAbove = infilt_to_soilw + pondw_to_soilw;
-				evap           = soilwEvap; 
+				EVP           = soilwEVP; 
 			}
 			else
 			{
@@ -273,7 +255,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 				else
 					waterFromAbove = wflux[layer-1];
 
-				evap = 0; 
+				EVP = 0; 
 			}
 
 			/* Capillary-zone */	
@@ -307,7 +289,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 				GWrecharge[layer]  = waterFromAbove;
 
 				/* source of evaporation and transpiration is GW */
-				GWdischarge[layer] += transp[layer]+evap;
+				GWdischarge[layer] += TRP[layer]+EVP;
 
 				percol[layer] = 0;
 				diffus[layer] = 0;
@@ -318,8 +300,8 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 
 			if (fabs(infilt_to_soilw)    < CRIT_PREC) infilt_to_soilw=0;
 			if (fabs(pondw_to_soilw)     < CRIT_PREC) pondw_to_soilw=0;
-			if (fabs(soilwEvap)          < CRIT_PREC) soilwEvap=0;
-			if (fabs(transp[layer])      < CRIT_PREC) transp[layer]=0;
+			if (fabs(soilwEVP)           < CRIT_PREC) soilwEVP=0;
+			if (fabs(TRP[layer])         < CRIT_PREC) TRP[layer]=0;
 			if (fabs(GWdischarge[layer]) < CRIT_PREC) GWdischarge[layer]=0;
 			if (fabs(GWrecharge[layer])  < CRIT_PREC) GWrecharge[layer]=0;
 			if (fabs(diffus[layer])      < CRIT_PREC) diffus[layer]=0;
@@ -331,7 +313,6 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 			/* 1.6. WFLUX */
 
 			wflux[layer]=percol[layer]+diffus[layer];
-
 			
 		}
 
@@ -352,11 +333,11 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 			soilw0     = gwc->VWC_GWC[layer] * dz0 * water_density;
 
 			if (layer == 0)
-				gwc->soilw_GWC[layer] = gwc->soilw_GWC[layer]  + infilt_to_soilw + pondw_to_soilw - soilwEvap 
-				                        - wflux[layer] - transp[layer] + GWdischarge[layer] - GWrecharge[layer];
+				gwc->soilw_GWC[layer] = gwc->soilw_GWC[layer]  + infilt_to_soilw + pondw_to_soilw - soilwEVP 
+				                        - wflux[layer] - TRP[layer] + GWdischarge[layer] - GWrecharge[layer];
 			else
 				gwc->soilw_GWC[layer] = gwc->soilw_GWC[layer]  + wflux[layer-1] 
-			                            - wflux[layer] - transp[layer] + GWdischarge[layer] - GWrecharge[layer];
+			                            - wflux[layer] - TRP[layer] + GWdischarge[layer] - GWrecharge[layer];
 			
 		
 			/* control to avoid oversaturated SWC pool */
@@ -417,21 +398,21 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 				/*  top soil layer: limitation of evaporation AND transpiration */
 				if (layer == 0)
 				{
-					if (soilwEvap+transp[layer] > diff)
+					if (soilwEVP+TRP[layer] > diff)
 					{
-						diff1                  = soilwEvap   *(diff/(soilwEvap+transp[layer]));
-						diff2                  = transp[layer]*(diff/(soilwEvap+transp[layer]));
-						soilwEvap             -= diff1;
-						transp[layer]         -= diff2;
+						diff1                  = soilwEVP   *(diff/(soilwEVP+TRP[layer]));
+						diff2                  = TRP[layer]*(diff/(soilwEVP+TRP[layer]));
+						soilwEVP              -= diff1;
+						TRP[layer]            -= diff2;
 						gwc->soilw_GWC[layer]  = VWChw0 * dz0 * water_density;
 						diff                  -= (diff1+diff2);
 						if (diff > CRIT_PRECwater) ws->runoff_snk += diff;
 					}
 					else
 					{
-						diff            -= (soilwEvap +transp[layer]);
-						soilwEvap       = 0;
-						transp[layer]    = 0;
+						diff         -= (soilwEVP +TRP[layer]);
+						soilwEVP      = 0;
+						TRP[layer]    = 0;
 						if (diff > CRIT_PRECwater)
 						{
 							if (wflux[layer] > diff)
@@ -454,16 +435,16 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 				/* except of top soil layer: limitation of transpiration */
 				else
 				{
-					if (transp[layer] > diff)
+					if (TRP[layer] > diff)
 					{
-						transp[layer]         -= diff;
+						TRP[layer]            -= diff;
 						gwc->soilw_GWC[layer]  = VWChw0 * dz0 * water_density;
 						diff                   = 0;
 					}
 					else
 					{
-						diff  -= transp[layer];
-						transp[layer] = 0;
+						diff  -= TRP[layer];
+						TRP[layer] = 0;
 						if (diff > CRIT_PRECwater)
 						{
 							if (wflux[layer] > diff)
@@ -487,15 +468,15 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 		
 
 			gwc->VWC_GWC[layer]          = gwc->soilw_GWC[layer] / (water_density * dz0);
-			gwc->soilwTransp_GWC[layer]  += transp[layer];
+			gwc->soilwTRP_GWC[layer]  += TRP[layer];
 			gwc->soilwFlux_GWC[layer]    += wflux[layer];
 			gwc->GWdischarge_GWC[layer]  += GWdischarge[layer];
 			gwc->GWrecharge_GWC[layer]   += GWrecharge[layer];
 
 	
 		
-			transpDEM[layer]-= transp[layer];			
-			TRANSP_ctrl     += transp[layer];
+			transpDEM[layer]-= TRP[layer];			
+			TRP_ctrl     += TRP[layer];
 
 			GWdischarge[layer] = 0;
 			GWrecharge[layer]  = 0;
@@ -527,16 +508,16 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 
 		/* control to avoid SWC greater than saturation */
 		
-		pondw_act          += infilt_to_pondw + soilw_to_pondw - pondw_to_soilw - pondwEvap;
+		pondw_act          += prcp_to_pondw + soilw_to_pondw - pondw_to_soilw - pondwEVP;
 		
 	
 		
 		if (pondw_act < 0)
 		{
 			diff               = -1*pondw_act;
-			diff1              = diff * pondwEvap    /(pondwEvap+pondw_to_soilw);
-			diff2              = diff * pondw_to_soilw/(pondwEvap+pondw_to_soilw);
-			pondwEvap        -= diff1;
+			diff1              = diff * pondwEVP    /(pondwEVP+pondw_to_soilw);
+			diff2              = diff * pondw_to_soilw/(pondwEVP+pondw_to_soilw);
+			pondwEVP        -= diff1;
 			pondw_to_soilw    -= diff2;
 			gwc->soilw_GWC[0] -= diff2;
 			gwc->VWC_GWC[0]    = gwc->soilw_GWC[0] / (water_density * gwc->soillayer_thicknessGWC[0]);
@@ -553,29 +534,30 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 
 		/* 2.2 pondw and FLUX VARIABLES */
 			
-		wf->infilt_to_pondw += infilt_to_pondw;
+		wf->prcp_to_pondw += prcp_to_pondw;
 		wf->infilt_to_soilw += infilt_to_soilw;
 
 		
 		wf->soilw_to_pondw  += soilw_to_pondw;
-		wf->soilwEvap       += soilwEvap;
+		wf->soilwEVP        += soilwEVP;
+
 		wf->pondw_to_soilw  += pondw_to_soilw;
-		wf->pondwEvap       += pondwEvap;
+		wf->pondwEVP        += pondwEVP;
 	
 
-		INFILT          -= (infilt_to_soilw + infilt_to_pondw);
-		INFILT_ctrl     += (infilt_to_soilw + infilt_to_pondw);
+		INFILT              -= (infilt_to_soilw + prcp_to_pondw);
+		INFILT_ctrl         += (infilt_to_soilw + prcp_to_pondw);
 
-		EVAP           -= (pondwEvap + soilwEvap);
-		EVAP_ctrl      += (pondwEvap + soilwEvap);
+		EVP_sum             -= (pondwEVP + soilwEVP);
+		EVP_ctrl            += (pondwEVP + soilwEVP);
 
 	
 		soilw_to_pondw  = 0;
-		soilwEvap       = 0;
+		soilwEVP       = 0;
 		pondw_to_soilw  = 0;
-		pondwEvap       = 0;
+		pondwEVP       = 0;
 		infilt_to_soilw = 0;
-		infilt_to_pondw = 0;
+		prcp_to_pondw = 0;
 
 
 			
@@ -619,13 +601,13 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 		if (n_second < nSEC_IN_DAY)
 		{
 			INFILT_act = INFILT/(nSEC_IN_DAY-n_second) * n_sec; 
-			EVAP_act = EVAP/(nSEC_IN_DAY-n_second) * n_sec;
+			EVP_act = EVP_sum/(nSEC_IN_DAY-n_second) * n_sec;
 			for (layer=0 ; layer < N_SOILLAYERS_GWC; layer++) transpDEM_act[layer] = transpDEM[layer]/(nSEC_IN_DAY-n_second) * n_sec;
 		}
 		else
 		{
 			INFILT_act = 0;
-			EVAP_act = 0;
+			EVP_act = 0;
 			for (layer=0 ; layer < N_SOILLAYERS_GWC; layer++) transpDEM_act[layer] = 0;
 
 			/* pond water formation from the non-infiltrated water */
@@ -642,7 +624,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 			/* precision control */
 			if (pondw_act > 0 && pondw_act < CRIT_PRECwater)
 			{
-				wf->pondwEvap += pondw_act;
+				wf->pondwEVP += pondw_act;
 				pondw_act       = 0;
 			}
 		}
@@ -653,7 +635,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 	}
 	
 	
-	/* if pond water is greatedr than a maximum height -> runoff */
+	/* if pond water is greater than a maximum height -> runoff */
 	if (pondw_act > sprop->pondmax)
 	{
 		wf->pondw_to_runoff  = pondw_act - sprop->pondmax;
@@ -667,13 +649,13 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 
 	/* ---------------------------------------- */
 	/* 1. control of soil evaporation  */
-	if (wf->soilwEvap > wf->soilwEvap_POT)
+	if (wf->soilwEVP > wf->potEVPsurface)
 	{
-		diff = wf->soilwEvap - wf->soilwEvap_POT;
+		diff = wf->soilwEVP - wf->potEVPsurface;
 		if (diff < CRIT_PRECwater)
 		{
-			wf->soilwEvap    -= diff;
-			EVAP_ctrl         -= diff;
+			wf->soilwEVP    -= diff;
+			EVP_ctrl         -= diff;
 			gwc->soilw_GWC[0] += diff;
 			gwc->VWC_GWC[0]    = gwc->soilw_GWC[0] / (water_density * gwc->soillayer_thicknessGWC[0]);
 		}
@@ -685,7 +667,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 		}
 	}
 
-	if (fabs(wf->soilwEvap + wf->pondwEvap - EVAP_ctrl) > CRIT_PRECwater)
+	if (fabs(wf->soilwEVP + wf->pondwEVP - EVP_ctrl) > CRIT_PRECwater)
 	{
 	//	printf("\n");
 		printf("WARNING: balance problem in evaporation calculation (richards.c)\n");
@@ -694,22 +676,22 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 	/* ----------------------------------------*/
 	/* 2. control of transpiration */
 
-	wf->soilwTransp_SUM = 0;
+	wf->soilwTRP_SUM = 0;
 	for (layer=0 ; layer < N_SOILLAYERS_GWC-1; layer++)
 	{
-		wf->soilwTransp_SUM               += gwc->soilwTransp_GWC[layer];
-		gwc->soilwTranspDemand_GWC[layer]  = wf->soilwTranspDemand_SUM * gwc->rootlengthProp_GWC[layer]; 
+		wf->soilwTRP_SUM               += gwc->soilwTRP_GWC[layer];
+		gwc->soilwTRPdemand_GWC[layer]  = wf->soilwTRP_POT * gwc->rootlengthProp_GWC[layer]; 
 	}
 
-	if (wf->soilwTransp_SUM > wf->soilwTranspDemand_SUM)
+	if (wf->soilwTRP_SUM > wf->soilwTRP_POT)
 	{
-		diff = wf->soilwTransp_SUM - wf->soilwTranspDemand_SUM;
+		diff = wf->soilwTRP_SUM - wf->soilwTRP_POT;
 		if (diff < CRIT_PRECwater)
 		{
 			for (layer=0 ; layer < N_SOILLAYERS_GWC-1; layer++) 
 			{
-				gwc->soilwTransp_GWC[layer] *= (wf->soilwTranspDemand_SUM - diff)/wf->soilwTranspDemand_SUM;
-				TRANSP_ctrl                 -= diff;
+				gwc->soilwTRP_GWC[layer] *= (wf->soilwTRP_POT - diff)/wf->soilwTRP_POT;
+				TRP_ctrl                 -= diff;
 				gwc->soilw_GWC[layer]       += diff;
 				gwc->VWC_GWC[layer]          = gwc->soilw_GWC[layer] / (water_density * gwc->soillayer_thicknessGWC[layer]);
 			}
@@ -722,13 +704,13 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 		}
 	}
 
-	if (fabs(wf->soilwTransp_SUM - TRANSP_ctrl) > CRIT_PRECwater)
+	if (fabs(wf->soilwTRP_SUM - TRP_ctrl) > CRIT_PRECwater)
 	{
 		//printf("\n");
 		printf("WARNING: balance problem in transpiration calculation (richards.c)\n");
 	}
 
-	wf->infiltPOT = (wf->prcp_to_soilw + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + wf->pondw_to_soilw - wf->prcp_to_runoff - wf->prcp_to_pondw);
+	wf->infiltPOT = (wf->prcp_to_soilSurface + wf->snoww_to_soilw + wf->canopyw_to_soilw + wf->IRG_to_prcp + wf->pondw_to_soilw - wf->prcp_to_runoff);
 
 
 	/* ----------------------------------------*/

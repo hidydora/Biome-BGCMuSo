@@ -3,7 +3,7 @@ check_balance.c
 daily test of mass balance (water, carbon, and nitrogen state variables)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -60,8 +60,8 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 	ws->inW = ws->prcp_src + ws->groundwater_src + ws->IRGsrc_W +  ws->FRZsrc_W;
 	
 	/* sum of sinks */
-	ws->outW = ws->soilEvap_snk + ws->snowsubl_snk + ws->groundwater_snk +
-		ws->canopyevap_snk + ws->trans_snk +
+	ws->outW = ws->soilEVP_snk + ws->snowSUBL_snk + ws->groundwater_snk +
+		ws->canopywEVP_snk + ws->TRP_snk +
 		ws->canopyw_THNsnk +			/* thinning */
 		ws->canopyw_MOWsnk +			/* mowing */
 		ws->canopyw_HRVsnk +			/* harvesting */
@@ -69,7 +69,7 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 		ws->canopyw_GRZsnk +			/* grazing */
 		ws->runoff_snk     +			/* soil-water submodel */
 		ws->deeppercolation_snk +		/* soil-water submodel .*/
-		ws->pondEvap_snk;
+		ws->pondEVP_snk;
 
 	/* sum of current storage */
 	ws->storeW = ws->soilw_SUM + ws->pondw + ws->snoww + ws->canopyw;
@@ -81,6 +81,7 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 	if (!first_balance && (fabs(old_balance - balance) > ws->WbalanceERR))
 	{
 		ws->WbalanceERR = fabs(old_balance - balance);
+
 	}
 	old_balance = balance;
 	
@@ -97,15 +98,15 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	/* control avoiding negative pools */
 	if (cs->leafc < 0.0 ||  cs->leafc_storage < 0.0 || cs->leafc_transfer < 0.0 || 
 		cs->frootc < 0.0 || cs->frootc_storage < 0.0 || cs->frootc_transfer < 0.0 || 
-		cs->yield < 0.0 || cs->yield_storage < 0.0 || cs->yield_transfer < 0.0 || 
+		cs->yieldc < 0.0 || cs->yieldc_storage < 0.0 || cs->yieldc_transfer < 0.0 || 
 		cs->softstemc < 0.0 || cs->softstemc_storage < 0.0 || cs->softstemc_transfer < 0.0 || 
 		cs->livestemc < 0.0 || cs->livestemc_storage < 0.0 || cs->livestemc_transfer < 0.0 || 
 		cs->deadstemc < 0.0 || cs->deadstemc_storage < 0.0 || cs->deadstemc_transfer < 0.0 || 
 		cs->livecrootc < 0.0 ||  cs->livecrootc_storage < 0.0 || cs->livecrootc_transfer < 0.0 || 
 		cs->deadcrootc < 0.0 || cs->deadcrootc_storage < 0.0 || cs->deadcrootc_transfer < 0.0 || 
 		cs->gresp_storage < 0.0 || cs->gresp_transfer < 0.0 ||
-		cs->STDBc_leaf < 0 || cs->STDBc_froot < 0 || cs->STDBc_yield < 0|| cs->STDBc_softstem < 0 || cs->STDBc_nsc < 0 || 
-		cs->CTDBc_leaf < 0 || cs->CTDBc_froot < 0 || cs->CTDBc_yield < 0|| cs->CTDBc_softstem < 0 || cs->CTDBc_nsc < 0 || cs->CTDBc_cstem < 0  || cs->CTDBc_croot < 0)
+		cs->STDBc_leaf < 0 || cs->STDBc_froot < 0 || cs->STDBc_yield < 0|| cs->STDBc_softstem < 0 || 
+		cs->CTDBc_leaf < 0 || cs->CTDBc_froot < 0 || cs->CTDBc_yield < 0|| cs->CTDBc_softstem < 0 || cs->CTDBc_cstem < 0  || cs->CTDBc_croot < 0)
 		{
 			printf("\n");
 			printf("ERROR: negative carbon stock\n");
@@ -163,10 +164,10 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 
 
 	/* summarizing cut-down and standing dead biomass */
-	cs->CTDBc_above = cs->CTDBc_leaf  + cs->CTDBc_yield    + cs->CTDBc_softstem + cs->CTDBc_cstem + cs->CTDBc_nsc;
+	cs->CTDBc_above = cs->CTDBc_leaf  + cs->CTDBc_yield  + cs->CTDBc_softstem + cs->CTDBc_cstem;
 	cs->CTDBc_below = cs->CTDBc_froot + cs->CTDBc_croot;
 	
-	cs->STDBc_above = cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem + cs->STDBc_nsc;
+	cs->STDBc_above = cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem;
 	cs->STDBc_below = cs->STDBc_froot;
 
 
@@ -177,10 +178,10 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	cs->inC = cs->psnsun_src + cs->psnshade_src + cs->PLTsrc_C + cs->GRZsrc_C  + cs->FRZsrc_C;
 	
 	/* sum of sinks: respiration, fire and management */
-	cs->outC = cs->leaf_mr_snk      + cs->leaf_gr_snk      + cs->froot_mr_snk     + cs->froot_gr_snk + 
-			  cs->yield_mr_snk     + cs->yield_gr_snk     + cs->softstem_mr_snk  + cs->softstem_gr_snk + 
-			  cs->livestem_mr_snk  + cs->livestem_gr_snk  + cs->deadstem_gr_snk  + 
-			  cs->livecroot_mr_snk + cs->livecroot_gr_snk + cs->deadcroot_gr_snk + 
+	cs->outC = cs->leaf_MR_snk      + cs->leaf_GR_snk      + cs->froot_MR_snk     + cs->froot_GR_snk + 
+			  cs->yield_MR_snk     + cs->yield_GR_snk     + cs->softstem_MR_snk  + cs->softstem_GR_snk + 
+			  cs->livestem_MR_snk  + cs->livestem_GR_snk  + cs->deadstem_GR_snk  + 
+			  cs->livecroot_MR_snk + cs->livecroot_GR_snk + cs->deadcroot_GR_snk + 
 			  cs->litr1_hr_snk + cs->litr2_hr_snk + cs->litr4_hr_snk + 
 			  cs->soil1_hr_snk + cs->soil2_hr_snk + cs->soil3_hr_snk + cs->soil4_hr_snk + 
 			  cs->FIREsnk_C +  cs->Cdeepleach_snk + 
@@ -191,7 +192,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	/* sum of current storage */
 	cs->storeC = cs->leafc      + cs->leafc_storage      + cs->leafc_transfer +
 				cs->frootc     + cs->frootc_storage     + cs->frootc_transfer + 
-				cs->yield     + cs->yield_storage     + cs->yield_transfer +
+				cs->yieldc     + cs->yieldc_storage     + cs->yieldc_transfer +
 				cs->softstemc  + cs->softstemc_storage  + cs->softstemc_transfer +
 				cs->livestemc  + cs->livestemc_storage  + cs->livestemc_transfer + 
 				cs->deadstemc  + cs->deadstemc_storage  + cs->deadstemc_transfer +
@@ -236,8 +237,8 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 		ns->livecrootn < 0.0 ||  ns->livecrootn_storage < 0.0 || ns->livecrootn_transfer < 0.0 || 
 		ns->deadcrootn < 0.0 || ns->deadcrootn_storage < 0.0 || ns->deadcrootn_transfer < 0.0 ||
 		ns->retransn < 0.0 ||
-		ns->STDBn_leaf < 0 || ns->STDBn_froot < 0 || ns->STDBn_yield < 0|| ns->STDBn_softstem < 0 || ns->STDBn_nsc < 0 ||  
-		ns->CTDBn_leaf < 0 || ns->CTDBn_froot < 0 || ns->CTDBn_yield < 0|| ns->CTDBn_softstem < 0 || ns->CTDBn_nsc < 0 || ns->CTDBn_cstem < 0  || ns->CTDBn_croot < 0)
+		ns->STDBn_leaf < 0 || ns->STDBn_froot < 0 || ns->STDBn_yield < 0|| ns->STDBn_softstem < 0 || 
+		ns->CTDBn_leaf < 0 || ns->CTDBn_froot < 0 || ns->CTDBn_yield < 0|| ns->CTDBn_softstem < 0 || ns->CTDBn_cstem < 0  || ns->CTDBn_croot < 0)
 	{	
 		printf("\n");
 		printf("ERROR: negative plant nitrogen pool\n");
@@ -307,10 +308,10 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	
 	/* summarizing cut-down and standing dead biomass */
 	ns->CTDBn_above = ns->CTDBn_leaf  + ns->CTDBn_yield + ns->CTDBn_softstem + ns->CTDBn_cstem;
-	ns->CTDBn_below = ns->CTDBn_froot + ns->CTDBn_croot + ns->CTDBn_nsc;
+	ns->CTDBn_below = ns->CTDBn_froot + ns->CTDBn_croot;
 
-	ns->STDBn_above = ns->STDBn_leaf + ns->STDBn_yield + ns->STDBn_softstem;
-	ns->STDBn_below = ns->STDBn_froot + ns->STDBn_nsc;
+	ns->STDBn_above = ns->STDBn_leaf  + ns->STDBn_yield + ns->STDBn_softstem;
+	ns->STDBn_below = ns->STDBn_froot;
 
 
 

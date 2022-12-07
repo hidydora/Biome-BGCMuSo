@@ -3,7 +3,7 @@ snowmelt.c
 daily snowmelt and sublimation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -35,10 +35,9 @@ int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww)
 	rn = metv->swtrans * metv->dayl * sn_abs * 0.001;
 	tmelt = rmelt = rsub = 0.0;
 	
-	if (metv->tavg > 0.0)  /* temperature and radiaiton melt from snowpack */
-
+	if (metv->Tavg > 0.0)  /* temperature and radiaiton melt from snowpack */
 	{
-		tmelt = tcoef * (metv->tmax + metv->tmin)/2.;
+		tmelt = tcoef * (metv->Tmax + metv->Tmin)/2.;
 		rmelt = rn / lh_fus;
 		melt = tmelt+rmelt;
 	
@@ -54,8 +53,9 @@ int snowmelt(const metvar_struct* metv, wflux_struct* wf, double snoww)
 		if (rsub > snoww)
 			rsub = snoww;
 	
-		wf->snoww_subl = rsub;
+		wf->snowwSUBL = rsub;
 	}	
+
 	
 	return (errorCode);
 }

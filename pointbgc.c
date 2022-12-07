@@ -4,7 +4,7 @@ front-end to BIOME-BGC for single-point, single-biome simulations
 Uses BBGC MuSo v6 library function
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -71,14 +71,14 @@ int main(int argc, char *argv[])
 	bgcin.ctrl.spinyears = 0;							
 	bgcin.ctrl.month = 1;								
 	bgcin.ctrl.day = 1;									
-	bgcin.ctrl.limitevap_flag = 0;
-	bgcin.ctrl.limittransp_flag = 0;
+	bgcin.ctrl.limitEVP_flag = 0;
+	bgcin.ctrl.limitTRP_flag = 0;
 	bgcin.ctrl.limitMR_flag = 0;
 	bgcin.ctrl.limitSNSC_flag = 0;
 	bgcin.ctrl.limitleach_flag = 0;
 	bgcin.ctrl.limitdiffus_flag = 0;
 	bgcin.ctrl.pond_flag = 0;
-	bgcin.ctrl.notransp_flag = 0;
+	bgcin.ctrl.noTRP_flag = 0;
 	bgcin.ctrl.noMR_flag = 0;
 	bgcin.ctrl.grazingW_flag = 0;
 	bgcin.ctrl.condMOWerr_flag = 0;      
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 	{
         if(!strcmp(argv[1],"-v"))
 		{
-           	printf("Model version: Biome-BGCMuSo6.4\n");
+           	printf("Model version: Biome-BGCMuSo7.0\n");
 			exit(0);
         }
     }
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* read simulation timing control parameters */
-	errorCode = time_init(init, &(bgcin.ctrl));
+	errorCode = time_init(init, &point, &(bgcin.ctrl));
 	if (errorCode)
 	{
 		printf("ERROR in call to time_init() from pointbgc.c... Exiting\n");
@@ -413,20 +413,25 @@ int main(int argc, char *argv[])
 	/* post-processing output handling, if any, goes here */
 	
 	/* free memory */
-	free(bgcin.metarr.tmax);
-	free(bgcin.metarr.tmin);
-	free(bgcin.metarr.prcp);
-	free(bgcin.metarr.vpd);
-	free(bgcin.metarr.tday);
-	free(bgcin.metarr.tavg);
-	free(bgcin.metarr.tavg11_ra);
-	free(bgcin.metarr.tavg30_ra);
-	free(bgcin.metarr.tavg10_ra);
-	free(bgcin.metarr.F_temprad);
-	free(bgcin.metarr.F_temprad_ra);
-	free(bgcin.metarr.swavgfd);
-	free(bgcin.metarr.par);
-	free(bgcin.metarr.dayl);
+	free(bgcin.metarr.Tmax_array);
+	free(bgcin.metarr.Tmin_array);
+	free(bgcin.metarr.prcp_array);
+	free(bgcin.metarr.vpd_array);
+	free(bgcin.metarr.Tday_array);
+	free(bgcin.metarr.Tavg_array);
+	free(bgcin.metarr.TavgRA11_array);
+	free(bgcin.metarr.TavgRA30_array);
+	free(bgcin.metarr.TavgRA10_array);
+	free(bgcin.metarr.tempradF_array);
+	free(bgcin.metarr.tempradFra_array);
+	free(bgcin.metarr.swavgfd_array);
+	free(bgcin.metarr.par_array);
+	free(bgcin.metarr.dayl_array);
+	free(bgcin.metarr.annTavg_array);
+	free(bgcin.metarr.monTavg_array);
+    free(bgcin.metarr.annTrange_array);
+	free(bgcin.metarr.annTavgRA_array);
+    free(bgcin.metarr.annTrangeRA_array);
 
 	if(bgcin.PLT.PLT_num)
 	{
@@ -445,10 +450,10 @@ int main(int argc, char *argv[])
 		free(bgcin.THN.THNyear_array);  
 		free(bgcin.THN.THNmonth_array); 
 		free(bgcin.THN.THNday_array); 
-		free(bgcin.THN.thinningrate_w_array); 
-		free(bgcin.THN.thinningrate_nw_array); 
-		free(bgcin.THN.transpcoeff_w_array); 
-		free(bgcin.THN.transpcoeff_nw_array); 
+		free(bgcin.THN.thinningRate_w_array); 
+		free(bgcin.THN.thinningRate_nw_array); 
+		free(bgcin.THN.transpCoeff_w_array); 
+		free(bgcin.THN.transpCoeff_nw_array); 
 	}
 
 	if (bgcin.MOW.MOW_num)
@@ -523,7 +528,8 @@ int main(int argc, char *argv[])
 		free(bgcin.IRG.IRGyear_array);  
 		free(bgcin.IRG.IRGmonth_array); 
 		free(bgcin.IRG.IRGday_array); 
-		free(bgcin.IRG.IRGquantity_array); 
+		free(bgcin.IRG.IRGquantity_array);
+		free(bgcin.IRG.IRGheight_array); 
 	}
 
 	if (bgcin.gws.GWD_num)
@@ -540,7 +546,8 @@ int main(int argc, char *argv[])
 
 	if (bgcin.ctrl.varSGS_flag) free(bgcin.epc.SGS_array);
 	if (bgcin.ctrl.varEGS_flag) free(bgcin.epc.EGS_array);
-	if (bgcin.ctrl.varWPM_flag) free(bgcin.epc.WPM_array);
+	if (bgcin.ctrl.varWPM_flag) free(bgcin.epc.WPMyr_array);
+	if (bgcin.ctrl.varFM_flag) free(bgcin.epc.FMyr_array);
 	if (bgcin.ctrl.varMSC_flag) free(bgcin.epc.MSC_array);
 
 	if (output.ndayout != 0) free(output.daycodes);

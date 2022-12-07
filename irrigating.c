@@ -3,7 +3,7 @@ irrigating.c
 irrigating  - irrigating seeds in soil - increase transfer pools
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -28,9 +28,10 @@ int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const s
 	/* irrigating parameters */	   
 	
 	int errorCode=0;
-	int condIRG, condIRG_flag, condIRG_startyr;
+	int condIRG, condIRG_flag, condIRG_startyr, IRGlayer;
 	double critVWCbef, critVWCaft, critSOILWaft, condIRG_amount, VWCact_condIRG, VWCfc_condIRG, VWCwp_condIRG, soilw_condIRG;
 	double LAIcrit_condIRG;
+	double IRGdepth, diff;
 	int md, year, layer, nl;
 
 	LAIcrit_condIRG = 0.2; // fixedParam
@@ -65,11 +66,49 @@ int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const s
 	{
 		if (year == IRG->IRGyear_array[md] && ctrl->month == IRG->IRGmonth_array[md] && ctrl->day == IRG->IRGday_array[md])
 		{
- 			wf->IRG_to_prcp=IRG->IRGquantity_array[md];
+			/* pozitive height: compare with plant height (above or below canopy) */
+			if (IRG->IRGheight_array[md] >= 0)
+			{
+				if (IRG->IRGheight_array[md] >= epv->plant_height)
+ 					wf->IRG_to_prcp=IRG->IRGquantity_array[md];
+				else
+					wf->IRG_to_soilSurface=IRG->IRGquantity_array[md];
+			}
+			/* negative height: depth - below the surface */
+			else
+			{
+				/* irrigation layer from depth */
+				IRGdepth        = -1 * IRG->IRGheight_array[md];
+				wf->IRG_to_soilw = IRG->IRGquantity_array[md];
+
+				layer    = 1;
+				IRGlayer = 0;
+				if (IRGdepth > sitec->soillayer_depth[0])
+				{
+					while (IRGlayer == 0 && layer < N_SOILLAYERS)
+					{
+						if ((IRGdepth > sitec->soillayer_depth[layer-1]) && (IRGdepth <= sitec->soillayer_depth[layer])) IRGlayer = layer;
+						layer += 1;
+					}
+					if (IRGlayer == 0)
+					{
+						printf("ERROR in irrigation depth calculation (irrigating.c)\n");
+						errorCode=1;
+					}
+				}
+			
+				/* water from irrigation -> soil layers, in case of oversaturation: pondw */	
+				ws->soilw[IRGlayer] += wf->IRG_to_soilw;
+
+				diff = ws->soilw[IRGlayer] - sprop->VWCsat[IRGlayer] * sitec->soillayer_thickness[IRGlayer] * water_density;
+				if (diff > CRIT_PRECwater) 
+				{
+					ws->pondw          += diff;
+					ws->soilw[IRGlayer] = sprop->VWCsat[IRGlayer] * sitec->soillayer_thickness[IRGlayer] * water_density;
+					epv->VWC[IRGlayer]  = sprop->VWCsat[IRGlayer];
+				}
+			}
 		}
-		
-		else
-			wf->IRG_to_prcp=0;
 	}
 
 

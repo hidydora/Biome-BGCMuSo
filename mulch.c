@@ -3,7 +3,7 @@ mulch.c
 CALCULATING the effect of mulch on the top soil layers: evaporation limitation effect + UNIFORM DISTRIBUTION OF VWC and tsoil 
 
  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -41,7 +41,7 @@ int mulch(siteconst_struct* sitec, soilprop_struct* sprop, metvar_struct* metv, 
 
 	mulch =cs->litrc_above + cs->cwdc_above;
 	epv->mulch_coverage = sprop->p1_mulch * pow((mulch)/sprop->p2_mulch, sprop->p3_mulch);
-	epv->evapREDmulch   = pow(sprop->pRED_mulch, epv->mulch_coverage/100);
+	epv->mulch_EVPred   = pow(sprop->pRED_mulch, epv->mulch_coverage/100);
 
 	if (mulch > sprop->pCRIT_mulch)
 	{

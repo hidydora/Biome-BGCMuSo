@@ -2,10 +2,8 @@
 conduct_calc.c
 Calculation of conductance values based on limitation factors (in original BBGC this subroutine is partly included in canopy_et.c)
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
-Original code: Copyright 2000, Peter E. Thornton
-Numerical Terradynamic Simulation Group, The University of Montana, USA
-Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
+Biome-BGCMuSo v7.0.
+Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -36,7 +34,7 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	/* 1. calculate boundary layer and cuticular conductance */
 	
 	/* temperature and pressure correction factor for conductances */
-	epv->gcorr = pow((metv->tday+273.15)/293.15, 1.75) * 101300/metv->pa;
+	epv->gcorr = pow((metv->Tday+273.15)/293.15, 1.75) * 101300/metv->pa;
 	
 	/* leaf boundary-layer conductance */
 	epv->gl_bl = epc->gl_bl * epv->gcorr;
@@ -72,13 +70,13 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 
 	/*-----------------------*/
 	/* 2.4 freezing night minimum temperature multiplier */
-	if (metv->tmin > 0.0)        /* no effect */
-		epv->m_tmin = 1.0;
+	if (metv->Tmin > 0.0)        /* no effect */
+		epv->m_Tmin = 1.0;
 	else
-	if (metv->tmin < -8.0)       /* full tmin effect */
-		epv->m_tmin = 0.0;
+	if (metv->Tmin < -8.0)       /* full Tmin effect */
+		epv->m_Tmin = 0.0;
 	else                   /* partial reduction (0.0 to -8.0 C) */
-		epv->m_tmin = 1.0 + (0.125 * metv->tmin);
+		epv->m_Tmin = 1.0 + (0.125 * metv->Tmin);
 
 	/*-----------------------*/
 	/* 2.5 vapor pressure deficit multiplier, vpd in Pa */
@@ -94,14 +92,14 @@ int conduct_calc(const control_struct* ctrl, const metvar_struct* metv, const ep
 	/*-----------------------*/
 	/* 2.7. apply all multipliers to the maximum stomatal conductance */
 	
-	epv->m_final_sun   = epv->m_SWCstress * epv->m_tmin * epv->m_vpd * epv->m_ppfd_sun;
-	epv->m_final_shade = epv->m_SWCstress * epv->m_tmin * epv->m_vpd * epv->m_ppfd_shade;
+	epv->m_final_sun   = epv->m_SWCstress * epv->m_Tmin * epv->m_vpd * epv->m_ppfd_sun;
+	epv->m_final_shade = epv->m_SWCstress * epv->m_Tmin * epv->m_vpd * epv->m_ppfd_shade;
 
 	epv->gl_s_sun      = epv->stomaCONDUCT_max * epv->m_final_sun;
 	epv->gl_s_shade    = epv->stomaCONDUCT_max * epv->m_final_shade;
 
-	gl_s_sunPOT    = epv->stomaCONDUCT_max * epv->m_tmin * epv->m_vpd * epv->m_ppfd_sun; 
-	gl_s_shadePOT  = epv->stomaCONDUCT_max * epv->m_tmin * epv->m_vpd * epv->m_ppfd_shade; 
+	gl_s_sunPOT    = epv->stomaCONDUCT_max * epv->m_Tmin * epv->m_vpd * epv->m_ppfd_sun; 
+	gl_s_shadePOT  = epv->stomaCONDUCT_max * epv->m_Tmin * epv->m_vpd * epv->m_ppfd_shade; 
 
 	/* 2.8 Leaf conductance to transpired water vapor, per unit projected LAI.  This formula is derived from stomatal and cuticular conductances
 	in parallel with each other, and both in series with leaf boundary layer conductance. */

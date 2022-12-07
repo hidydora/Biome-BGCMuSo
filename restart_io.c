@@ -4,7 +4,7 @@ functions called to copy restart info between restart structure and
 active structures
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -51,9 +51,9 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	cs->frootc                            = restart->frootc;
 	cs->frootc_storage                    = restart->frootc_storage;
 	cs->frootc_transfer                   = restart->frootc_transfer;
-	cs->yield                            = restart->yield;
-	cs->yield_storage                    = restart->yield_storage;
-	cs->yield_transfer                   = restart->yield_transfer;
+	cs->yieldc                            = restart->yield;
+	cs->yieldc_storage                    = restart->yieldc_storage;
+	cs->yieldc_transfer                   = restart->yieldc_transfer;
 	cs->softstemc                         = restart->softstemc;
 	cs->softstemc_storage                 = restart->softstemc_storage;
 	cs->softstemc_transfer                = restart->softstemc_transfer;
@@ -108,9 +108,9 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 
 	if (epc->yield_cn > 0)
 	{
-		ns->yieldn                        = cs->yield          / epc->yield_cn;
-		ns->yieldn_storage                = cs->yield_storage  / epc->yield_cn;
-		ns->yieldn_transfer               = cs->yield_transfer / epc->yield_cn;
+		ns->yieldn                        = cs->yieldc          / epc->yield_cn;
+		ns->yieldn_storage                = cs->yieldc_storage  / epc->yield_cn;
+		ns->yieldn_transfer               = cs->yieldc_transfer / epc->yield_cn;
 	}
 	else
 	{
@@ -177,12 +177,10 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	cs->STDBc_froot		= restart->STDBc_froot;
 	cs->STDBc_yield		= restart->STDBc_yield;
 	cs->STDBc_softstem	= restart->STDBc_softstem;
-	cs->STDBc_nsc	    = restart->STDBc_nsc;
 	cs->CTDBc_leaf		= restart->CTDBc_leaf;
 	cs->CTDBc_froot		= restart->CTDBc_froot;
 	cs->CTDBc_yield		= restart->CTDBc_yield;
 	cs->CTDBc_softstem	= restart->CTDBc_softstem;
-	cs->CTDBc_nsc	    = restart->CTDBc_nsc;
 	cs->CTDBc_cstem		= restart->CTDBc_cstem;
 	cs->CTDBc_croot		= restart->CTDBc_croot;
 	
@@ -190,16 +188,18 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	ns->STDBn_froot		= restart->STDBn_froot;
 	ns->STDBn_yield		= restart->STDBn_yield;
 	ns->STDBn_softstem	= restart->STDBn_softstem;
-	ns->STDBn_nsc	    = restart->STDBn_nsc;
 	ns->CTDBn_leaf		= restart->CTDBn_leaf;
 	ns->CTDBn_froot		= restart->CTDBn_froot;
 	ns->CTDBn_yield		= restart->CTDBn_yield;
 	ns->CTDBn_softstem	= restart->CTDBn_softstem;
-	ns->CTDBn_nsc	    = restart->CTDBn_nsc;
 	ns->CTDBn_cstem		= restart->CTDBn_cstem;
 	ns->CTDBn_croot		= restart->CTDBn_croot;
 
 	/* 4. litter*/
+
+	cs->litrc_above     = restart->litrc_above;
+	cs->cwdc_above      = restart->cwdc_above;
+
 	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
 		
@@ -230,7 +230,7 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 	/* 4. ecophysiological variables */
 	epv->annmax_leafc                     = restart->annmax_leafc;
 	epv->annmax_frootc                    = restart->annmax_frootc;
-	epv->annmax_yield                    = restart->annmax_yield;
+	epv->annmax_yieldc                    = restart->annmax_yieldc;
 	epv->annmax_softstemc                 = restart->annmax_softstemc;
 	epv->annmax_livestemc                 = restart->annmax_livestemc;
 	epv->annmax_livecrootc                = restart->annmax_livecrootc;
@@ -262,9 +262,9 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->frootc 						  = cs->frootc;
 	restart->frootc_storage 				  = cs->frootc_storage;
 	restart->frootc_transfer				  = cs->frootc_transfer;
-	restart->yield 						  = cs->yield;
-	restart->yield_storage 				  = cs->yield_storage;
-	restart->yield_transfer				  = cs->yield_transfer;
+	restart->yield 						  = cs->yieldc;
+	restart->yieldc_storage 				  = cs->yieldc_storage;
+	restart->yieldc_transfer				  = cs->yieldc_transfer;
 	restart->softstemc 						  = cs->softstemc;
 	restart->softstemc_storage 				  = cs->softstemc_storage;
 	restart->softstemc_transfer				  = cs->softstemc_transfer;
@@ -317,12 +317,10 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->STDBc_froot		= cs->STDBc_froot;
 	restart->STDBc_yield		= cs->STDBc_yield;
 	restart->STDBc_softstem		= cs->STDBc_softstem;
-	restart->STDBc_nsc		    = cs->STDBc_nsc;
 	restart->CTDBc_leaf			= cs->CTDBc_leaf;
 	restart->CTDBc_froot		= cs->CTDBc_froot;
 	restart->CTDBc_yield		= cs->CTDBc_yield;
 	restart->CTDBc_softstem		= cs->CTDBc_softstem;
-	restart->CTDBc_nsc		    = cs->CTDBc_nsc;
 	restart->CTDBc_cstem		= cs->CTDBc_cstem;
 	restart->CTDBc_croot		= cs->CTDBc_croot;
 
@@ -330,16 +328,19 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	restart->STDBn_froot		= ns->STDBn_froot;
 	restart->STDBn_yield		= ns->STDBn_yield;
 	restart->STDBn_softstem		= ns->STDBn_softstem;
-	restart->STDBn_nsc		    = ns->STDBn_nsc;
 	restart->CTDBn_leaf			= ns->CTDBn_leaf;
 	restart->CTDBn_froot		= ns->CTDBn_froot;
 	restart->CTDBn_yield		= ns->CTDBn_yield;
 	restart->CTDBn_softstem		= ns->CTDBn_softstem;
-	restart->CTDBn_nsc		    = ns->CTDBn_nsc;
 	restart->CTDBn_cstem		= ns->CTDBn_cstem;
 	restart->CTDBn_croot		= ns->CTDBn_croot;
 
 	/* 3. multilayer litter and soil */
+
+	
+	restart->litrc_above     = cs->litrc_above;
+	restart->cwdc_above      = cs->cwdc_above;
+
 	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
 		restart->soil1c[layer] 	= cs->soil1c[layer];
@@ -371,7 +372,7 @@ int restart_output(const wstate_struct* ws, const cstate_struct* cs, const nstat
 	
 	restart->annmax_leafc					  = epv->annmax_leafc;
 	restart->annmax_frootc  				  = epv->annmax_frootc;
-	restart->annmax_yield  				  = epv->annmax_yield;
+	restart->annmax_yieldc  				  = epv->annmax_yieldc;
 	restart->annmax_softstemc  				  = epv->annmax_softstemc;
 	restart->annmax_livestemc				  = epv->annmax_livestemc;
 	restart->annmax_livecrootc  			  = epv->annmax_livecrootc;

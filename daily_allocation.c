@@ -4,7 +4,7 @@ daily allocation of carbon and nitrogen, as well as the final reconciliation
 of N immobilization by microbes (see decomp.c)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -95,8 +95,8 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	                 cstate_struct*cs,  nstate_struct* ns, cflux_struct* cf, nflux_struct* nf, epvar_struct* epv, ntemp_struct* nt, double naddfrac)
 {
 	int errorCode=0;
-    double day_gpp;     /* daily gross production */
-	double day_mresp;   /* daily total maintenance respiration */
+    double day_GPP;     /* daily gross production */
+	double day_MR;   /* daily total maintenance respiration */
 	double avail_c;     /* total C available for new production */
 	double f1;          /* RATIO   new leaf C      : new total C   */
 	double f2;          /* RATIO   new fine root C : new total C   */
@@ -116,14 +116,14 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	int layer;
 	double cn_l1,cn_l2,cn_l4,cn_s1,cn_s2,cn_s3,cn_s4;
 	double rfl1s1, rfl2s2, rfl4s3, rfs1s2, rfs2s3, rfs3s4;
-	double daily_net_nmin, daily_net_immob, actual_immob;
+	double net_nmin, net_immob, actual_immob;
 	double Ndemand_total, ndemand, sminAVAIL,pot_immob, NdifSPIN, sminNH4_NdifSPIN, sminNO3_NdifSPIN;
 	double pnow = 0;			/* proportion of growth displayed on current day */ 
 
 	/* actual phenological phase */
 	int ap = (int) epv->n_actphen-1; 
 
-	IMMOBratio=Ndemand_total=excess_c=daily_net_nmin=daily_net_immob=f1=f2=f3=f4=f5=f6=f7=f8=0;
+	IMMOBratio=Ndemand_total=excess_c=net_nmin=net_immob=f1=f2=f3=f4=f5=f6=f7=f8=0;
 	flowHSratio=1;
 	woody = epc->woody;
 
@@ -142,11 +142,11 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 
 	/*-----------------------------------------------------------------------------------------------------------------*/
 	/* 1. Assess the carbon availability on the basis of this day's gross production and maintenance respiration costs */
-	day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
+	day_GPP = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
 	
-	day_mresp = cf->leaf_day_mr + cf->leaf_night_mr + cf->froot_mr + cf->yield_mr + cf->softstem_mr +
-			         cf->livestem_mr + cf->livecroot_mr;
-	avail_c = day_gpp - day_mresp;
+	day_MR = cf->leaf_day_MR + cf->leaf_night_MR + cf->froot_MR + cf->yield_MR + cf->softstem_MR +
+			         cf->livestem_MR + cf->livecroot_MR;
+	avail_c = day_GPP - day_MR;
 
 
 	
@@ -180,19 +180,19 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		if (epc->pnow_minT != DATA_GAP)
 		{
 			/* if less than min or greater than max -> 0 */
-			if (metv->tday < epc->pnow_minT || metv->tday >= epc->pnow_maxT)
+			if (metv->Tday < epc->pnow_minT || metv->Tday >= epc->pnow_maxT)
 				pnow_Tcoeff = 0;
 			else
 			{
 				/*  between optimal temperature -> 1, below/above linearly decreasing */
-				if (metv->tday < epc->pnow_opt1T)
-					pnow_Tcoeff = (metv->tday - epc->pnow_minT) / (epc->pnow_opt1T - epc->pnow_minT);
+				if (metv->Tday < epc->pnow_opt1T)
+					pnow_Tcoeff = (metv->Tday - epc->pnow_minT) / (epc->pnow_opt1T - epc->pnow_minT);
 				else
 				{
-					if (metv->tday < epc->pnow_opt2T)
+					if (metv->Tday < epc->pnow_opt2T)
 						pnow_Tcoeff = 1;
 					else
-						pnow_Tcoeff = (epc->pnow_maxT - metv->tday) / (epc->pnow_maxT - epc->pnow_opt2T);
+						pnow_Tcoeff = (epc->pnow_maxT - metv->Tday) / (epc->pnow_maxT - epc->pnow_opt2T);
 				}
 			
 			}
@@ -339,12 +339,12 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	excess_c                 = avail_c - plantCalloc;
 	if (excess_c > 0)
 	{
-		if (day_gpp > 0)
+		if (day_GPP > 0)
 		{
-			cf->psnsun_to_cpool   -= excess_c * cf->psnsun_to_cpool/day_gpp;
-			cf->psnshade_to_cpool -= excess_c * cf->psnshade_to_cpool/day_gpp;
+			cf->psnsun_to_cpool   -= excess_c * cf->psnsun_to_cpool/day_GPP;
+			cf->psnshade_to_cpool -= excess_c * cf->psnshade_to_cpool/day_GPP;
 
-			day_gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
+			day_GPP = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
 		}
 		else
 		{
@@ -380,16 +380,16 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		nf->npool_to_softstemn_storage  = f4 * (1.0-pnow) * (1./epc->softstem_cn) * (plantCalloc/c_allometry);
 
 		/* for total flower stress - no grain allocation after */
-		if (cs->yield+cs->flowHSsnk_C) flowHSratio = cs->yield/(cs->yield+cs->flowHSsnk_C);
+		if (cs->yieldc+cs->calc_flowHS) flowHSratio = cs->yieldc/(cs->yieldc+cs->calc_flowHS);
 		if (flowHSratio > 1 || flowHSratio < 0)
 		{
 			printf("\n");
-			printf("ERROR in calculation of the effect of flowering heat stress (daily_allocation.c)\n");
+			printf("ERROR in calculation of the effect of flowering heat stress (allocation.c)\n");
 			errorCode=1;
 		}
 
 		cf->cpool_to_yield             = flowHSratio * f3 * pnow       * (plantCalloc/c_allometry);
-		cf->cpool_to_yield_storage     = flowHSratio * f3 * (1.0-pnow) * (plantCalloc/c_allometry);
+		cf->cpool_to_yieldc_storage     = flowHSratio * f3 * (1.0-pnow) * (plantCalloc/c_allometry);
 		nf->npool_to_yieldn             = flowHSratio * f3 * pnow       * (1./epc->yield_cn)    * (plantCalloc/c_allometry);
 		nf->npool_to_yieldn_storage     = flowHSratio * f3 * (1.0-pnow) * (1./epc->yield_cn)    * (plantCalloc/c_allometry);
 
@@ -422,7 +422,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		cf->cpool_to_frootc             = 0;
 		cf->cpool_to_frootc_storage     = 0;
 		cf->cpool_to_yield             = 0;
-		cf->cpool_to_yield_storage     = 0;
+		cf->cpool_to_yieldc_storage     = 0;
 		cf->cpool_to_softstemc          = 0;
 		cf->cpool_to_softstemc_storage  = 0;
 		cf->cpool_to_livestemc          = 0;
@@ -462,14 +462,15 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 	fluxes that get released on a given day are calculated in growth_resp(), but that the storage of C for growth resp during display of 
 	transferred growth is assigned here. (GRPNOW: proportion of growth resp to release at fixation ) */
 	
-	cf->cpool_to_gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage + cf->cpool_to_yield_storage + cf->cpool_to_softstemc_storage +
+	cf->cpool_to_gresp_storage = (cf->cpool_to_leafc_storage + cf->cpool_to_frootc_storage + cf->cpool_to_yieldc_storage + cf->cpool_to_softstemc_storage +
                                   cf->cpool_to_livestemc_storage + cf->cpool_to_deadstemc_storage +
 						          cf->cpool_to_livecrootc_storage + cf->cpool_to_deadcrootc_storage) * g1 * (1.0-GRPNOW);
 	
 
 	/*-----------------------------------------------------------------------------------------------------------------*/
-	/* 8. now use the N limitation information to assess the final decomposition fluxes. Mineralizing fluxes (pmnf* < 0.0) occur at the potential rate
-	regardless of the competing N demands between microbial processes and plant uptake, but immobilizing fluxes are reduced when soil mineral N is limiting */
+	/* 8. Using N limitation information to assess the final decomposition fluxes. Mineralizing fluxes (pmnf* < 0.0) occur at the potential rate
+	regardless of the competing N demands between microbial processes and plant uptake, but immobilizing fluxes are reduced when soil mineral N is limiting 
+	From MuSo7: direct decomposition of litter pools - carbon fluxes to heterotroph respiration, nitrogen fluxes to mineralization pools */
 
 
 	
@@ -494,7 +495,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		
 		IMMOBratio = epv->IMMOBratio[layer];
 
-		daily_net_nmin=daily_net_immob=0;
+		net_nmin=net_immob=0;
 		
 		/* calculate litter and soil compartment C:N ratios */
 		if (ns->litr1n[layer] > 0.0) cn_l1 = cs->litr1c[layer]/ns->litr1n[layer];
@@ -517,7 +518,7 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 				nt->plitr1c_loss[layer] *= IMMOBratio;
 				nt->pmnf_l1s1[layer]    *= IMMOBratio;
 			}
-			cf->litr1_hr[layer]         = rfl1s1 * nt->plitr1c_loss[layer];
+			cf->litr1_hr[layer]         = rfl1s1 * nt->plitr1c_loss[layer] + cf->litr1c_to_release[layer];
 			cf->litr1c_to_soil1c[layer] = (1.0 - rfl1s1) * nt->plitr1c_loss[layer];
 
 		
@@ -639,19 +640,19 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 			}
 		}
 		
-		if (nt->pmnf_l1s1[layer] > 0.0) daily_net_immob += nt->pmnf_l1s1[layer];
-		else daily_net_nmin += -nt->pmnf_l1s1[layer];
-		if (nt->pmnf_l2s2[layer] > 0.0) daily_net_immob += nt->pmnf_l2s2[layer];
-		else daily_net_nmin += -nt->pmnf_l2s2[layer];
-		if (nt->pmnf_l4s3[layer] > 0.0) daily_net_immob += nt->pmnf_l4s3[layer];
-		else daily_net_nmin += -nt->pmnf_l4s3[layer];
-		if (nt->pmnf_s1s2[layer] > 0.0) daily_net_immob += nt->pmnf_s1s2[layer];
-		else daily_net_nmin += -nt->pmnf_s1s2[layer];
-		if (nt->pmnf_s2s3[layer] > 0.0) daily_net_immob += nt->pmnf_s2s3[layer];
-		else daily_net_nmin += -nt->pmnf_s2s3[layer];
-		if (nt->pmnf_s3s4[layer] > 0.0) daily_net_immob += nt->pmnf_s3s4[layer];
-		else daily_net_nmin += -nt->pmnf_s3s4[layer];
-		daily_net_nmin += -nt->pmnf_s4[layer];
+		if (nt->pmnf_l1s1[layer] > 0.0) net_immob += nt->pmnf_l1s1[layer];
+		else net_nmin += -nt->pmnf_l1s1[layer];
+		if (nt->pmnf_l2s2[layer] > 0.0) net_immob += nt->pmnf_l2s2[layer];
+		else net_nmin += -nt->pmnf_l2s2[layer];
+		if (nt->pmnf_l4s3[layer] > 0.0) net_immob += nt->pmnf_l4s3[layer];
+		else net_nmin += -nt->pmnf_l4s3[layer];
+		if (nt->pmnf_s1s2[layer] > 0.0) net_immob += nt->pmnf_s1s2[layer];
+		else net_nmin += -nt->pmnf_s1s2[layer];
+		if (nt->pmnf_s2s3[layer] > 0.0) net_immob += nt->pmnf_s2s3[layer];
+		else net_nmin += -nt->pmnf_s2s3[layer];
+		if (nt->pmnf_s3s4[layer] > 0.0) net_immob += nt->pmnf_s3s4[layer];
+		else net_nmin += -nt->pmnf_s3s4[layer];
+		net_nmin += -nt->pmnf_s4[layer];
 
 		nf->sminn_to_soil_SUM[layer] = nf->sminn_to_soil1n_l1[layer]+nf->sminn_to_soil2n_l2[layer]+nf->sminn_to_soil3n_l4[layer] + 
 			                           nf->sminn_to_soil2n_s1[layer]+nf->sminn_to_soil3n_s2[layer]+nf->sminn_to_soil4n_s3[layer];
@@ -673,10 +674,10 @@ int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, c
 		nf->sminn_to_soil_SUM_total		+= nf->sminn_to_soil_SUM[layer];  
 
 		/* store the day's net N mineralization */
-		epv->netMINER[layer]   = daily_net_nmin;
-		epv->actIMMOB[layer]   = daily_net_immob;
-		epv->netMINER_total   += daily_net_nmin;
-		epv->actIMMOB_total   += daily_net_immob;
+		epv->netMINER[layer]   = net_nmin;
+		epv->actIMMOB[layer]   = net_immob;
+		epv->netMINER_total   += net_nmin;
+		epv->actIMMOB_total   += net_immob;
 
 
 	}

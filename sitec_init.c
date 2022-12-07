@@ -3,7 +3,7 @@ sitec_init.c
 Initialize the site physical constants for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -78,24 +78,12 @@ int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl)
 	}
 	
 
-	/* FIRST APPROXIMATION to initalize multilayer soil temperature -> mean_surf_air_temp [Celsius] */
-	if (!errorCode && scan_value(init, &sitec->tair_annavg, 'd'))
-	{
-		printf("ERROR reading tair_annavg, sitec_init()\n");
-		errorCode=20704;
-	}
-
-	if (!errorCode && scan_value(init, &sitec->tair_annrange, 'd'))
-	{
-		printf("ERROR reading tair_annrange, sitec_init()\n");
-		errorCode=20705;
-	}
 	
 	/* CONTROL to avoid negative meteorological data */
  	if (sitec->albedo_sw < 0)
 	{
 		printf("ERROR in site data: albedo_sw must be positive\n");
-		errorCode=20706;
+		errorCode=20703;
 	}
 
 	/*--------------------------------------------------------------------------------------*/

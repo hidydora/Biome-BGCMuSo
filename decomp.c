@@ -6,7 +6,7 @@ end of the daily allocation function, in order to allow competition
 between microbes and plants for available N.
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -56,7 +56,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 	double cwdn_to_litr2n, cwdn_to_litr3n , cwdn_to_litr4n;
 
 	/* empirical estimation of CH4 flux */
-	double CH4_flux;
+	double CH4flux;
 
 
 	
@@ -78,7 +78,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 	{
 
 		/* initialize the potential loss and mineral N flux variables */
-		potential_immob=mineralized=kl4=CH4_flux=0;
+		potential_immob=mineralized=kl4=CH4flux=0;
 		plitr1c_loss=plitr2c_loss=plitr4c_loss=psoil1c_loss=psoil2c_loss=psoil3c_loss=psoil4c_loss=0.0;
 		pmnf_l1s1=pmnf_l2s2=pmnf_l4s3=pmnf_s1s2=pmnf_s2s3=pmnf_s3s4=pmnf_s4=0.0;
 		cwdc_to_litr2c=cwdc_to_litr3c =cwdc_to_litr4c=cwdn_to_litr2n=cwdn_to_litr3n =cwdn_to_litr4n=0;
@@ -262,14 +262,17 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		
 
 		
-		/* calculate the non-nitrogen limited fluxes between litter and
-		soil compartments. These will be ammended for N limitation if it turns
-		out the potential gross immobilization is greater than potential gross
-		mineralization. */
+		/* Calculate the non-nitrogen limited fluxes between litter and soil compartments. These will be ammended for N limitation if it turns
+		out the potential gross immobilization is greater than potential gross mineralization. 
+		From MuSo7: direct decomposition from litter pools (litr1c_to_release and litr1n_to_release) */
+
 		/* 1. labile litter to labile SOM pool  */
 		if (litr1c > 0)
 		{
-			plitr1c_loss = kl1 * litr1c;
+			cf->litr1c_to_release[layer] = litr1c *sprop->L1release_ratio;
+			nf->litr1n_to_release[layer] = litr1n *sprop->L1release_ratio;
+	
+			plitr1c_loss = kl1 * (litr1c - cf->litr1c_to_release[layer]);
 			if (plitr1c_loss > litr1c) plitr1c_loss = litr1c;
 			if (litr1n > 0.0) ratio = cn_s1/cn_l1;
 			else ratio = 0.0;
@@ -279,7 +282,10 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		/* 2. cellulose litter to fast SOM pool  */
 		if (litr2c > 0)
 		{
-			plitr2c_loss = kl2 * litr2c;
+			cf->litr2c_to_release[layer] = litr2c *sprop->L1release_ratio;
+			nf->litr2n_to_release[layer] = litr2n *sprop->L1release_ratio;
+
+			plitr2c_loss = kl2 * (litr2c - cf->litr2c_to_release[layer]);
 			if (plitr2c_loss > litr2c) plitr2c_loss = litr2c;
 			if (litr2n > 0.0) ratio = cn_s2/cn_l2;
 			else ratio = 0.0;
@@ -289,7 +295,11 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		/* 3. lignin litter to slow SOM pool  */
 		if (litr4c > 0)
 		{
-			plitr4c_loss = kl4 * litr4c;
+			cf->litr4c_to_release[layer] = litr4c *sprop->L1release_ratio;
+			nf->litr4n_to_release[layer] = litr4n *sprop->L1release_ratio;
+
+			plitr4c_loss = kl4 * (litr4c - cf->litr4c_to_release[layer]);
+
 			if (plitr4c_loss > litr4c) plitr4c_loss = litr4c;
 			if (litr4n > 0.0) ratio = cn_s3/cn_l4;
 			else ratio = 0.0;
@@ -347,13 +357,13 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		mineralized += -pmnf_s4;
 
 		/* CH4 FLUX - only from the first layer */
-		if (!errorCode && CH4flux_estimation(sprop, layer, epv->VWC[layer], metv->tsoil[layer], &CH4_flux))
+		if (!errorCode && CH4flux_estimation(sprop, layer, epv->VWC[layer], metv->tsoil[layer], &CH4flux))
 		{
 			printf("\n");
 			printf("ERROR: CH4flux_estimation() in decomp.c\n");
 			errorCode=1;
 		}	
-		cf->CH4_flux_soil += CH4_flux;
+		cf->CH4flux_soil += CH4flux;
 			
 
 		/* save the potential fluxes until plant demand has been assessed,
@@ -399,9 +409,16 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 		nf->cwdn_to_litr2n_total += nf->cwdn_to_litr2n[layer];                
 		nf->cwdn_to_litr3n_total += nf->cwdn_to_litr3n[layer];              
-		nf->cwdn_to_litr4n_total += nf->cwdn_to_litr4n[layer];              
+		nf->cwdn_to_litr4n_total += nf->cwdn_to_litr4n[layer];  
 
-	
+		cf->litrc_to_release_total += cf->litr1c_to_release[layer];
+		cf->litrc_to_release_total += cf->litr2c_to_release[layer];
+		cf->litrc_to_release_total += cf->litr4c_to_release[layer];
+
+		nf->litrn_to_release_total += nf->litr1n_to_release[layer];
+		nf->litrn_to_release_total += nf->litr2n_to_release[layer];
+		nf->litrn_to_release_total += nf->litr4n_to_release[layer];
+
 }
 	
 	

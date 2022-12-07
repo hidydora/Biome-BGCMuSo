@@ -3,7 +3,7 @@ annVARinit.c
 initalization of annual, cumulative variables on first day of every simulation year
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phen, cstate_struct* cs, cflux_struct* cf, nflux_struct* nf)
+int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phen, cstate_struct* cs, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf)
 {
 
 	int layer;
@@ -32,50 +32,54 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phe
 	
 	summary->annprcp     = 0;
 	summary->anntavg     = 0;
-	summary->cum_runoff   = 0;
-	summary->cum_WleachRZ  = 0;
-	summary->cum_NleachRZ  = 0;
-	summary->cum_npp  = 0;
-	summary->cum_nep  = 0;
-	summary->cum_nee  = 0;
-	summary->cum_gpp  = 0;
-	summary->cum_ngb  = 0;
-	summary->cum_nbp  = 0;
-	summary->cum_mr  = 0;
-	summary->cum_gr  = 0;
-	summary->cum_hr  = 0;
-	summary->cum_tr  = 0;
-	summary->cum_sr  = 0;
-	summary->cum_n2o  = 0;
-	summary->cum_ch4  = 0;
-	summary->cum_Closs_MGM  = 0;
-	summary->cum_Cplus_MGM  = 0;
-	summary->cum_Closs_THN_w = 0;
-	summary->cum_Closs_THN_nw = 0;
-	summary->cum_Closs_MOW  = 0;
+	summary->cumRunoff   = 0;
+	summary->cumWleachRZ  = 0;
+	summary->cumNleachRZ  = 0;
+	summary->cumNPP  = 0;
+	summary->cumNEP  = 0;
+	summary->cumNEE  = 0;
+	summary->cumGPP  = 0;
+	summary->cumNGB  = 0;
+	summary->cumNBP  = 0;
+	summary->cumMR  = 0;
+	summary->cumGR  = 0;
+	summary->cumHR  = 0;
+	summary->cumAR = 0.0;
+	summary->cumTR  = 0;
+	summary->cumSR  = 0;
+	summary->cumN2Oflux  = 0;
+	summary->cumN2OfluxCeq = 0;
+	summary->cumCH4flux = 0;
+	summary->cumCflux_lateral = 0;
+	summary->cumCH4flux  = 0;
+	summary->cumCloss_MGM  = 0;
+	summary->cumCplus_MGM  = 0;
+	summary->cumCloss_THN_w = 0;
+	summary->cumCloss_THN_nw = 0;
+	summary->cumCloss_MOW  = 0;
 
-	summary->cum_Closs_GRZ  = 0;
-	summary->cum_Cplus_GRZ  = 0;
-	summary->cum_Cplus_FRZ  = 0;
+	summary->cumCloss_GRZ  = 0;
+	summary->cumCplus_GRZ  = 0;
+	summary->cumCplus_FRZ  = 0;
 		
-	summary->cum_Cplus_PLT  = 0;
-	summary->cum_Closs_PLT  = 0;
-	summary->cum_Closs_HRV  = 0;
-	summary->cum_yieldC_HRV = 0;
-	summary->cum_Closs_PLG  = 0;
+	summary->cumCplus_PLT  = 0;
+	summary->cumCloss_PLT  = 0;
+	summary->cumCloss_HRV  = 0;
+	summary->cumYieldC_HRV = 0;
+	summary->cumCloss_PLG  = 0;
 
-	summary->cum_Nplus_GRZ  = 0;
-	summary->cum_Nplus_FRZ  = 0;
-	summary->cum_Closs_SNSC  = 0;
-	summary->cum_Cplus_STDB  = 0;
-	summary->cum_Cplus_CTDB  = 0;
-	summary->cum_evap  = 0;
-	summary->cum_transp  = 0;
-	summary->cum_ET  = 0;
+	summary->cumNplus_GRZ  = 0;
+	summary->cumNplus_FRZ  = 0;
+	summary->cumCloss_SNSC  = 0;
+	summary->cumCplus_STDB  = 0;
+	summary->cumCplus_CTDB  = 0;
+	summary->cumEVP  = 0;
+	summary->cumTRP  = 0;
+	summary->cumET  = 0;
 	
 
 	
-	cs->yield_HRV        = 0;
+	cs->yieldC_HRV        = 0;
 	cs->vegC_HRV          = 0;
 	cs->frootC_HRV        = 0;
 	epv->cumSWCstress     = 0;
@@ -86,7 +90,7 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phe
 
 	epv->annmax_leafc = 0;
 	epv->annmax_frootc = 0;
-	epv->annmax_yield = 0;
+	epv->annmax_yieldc = 0;
 	epv->annmax_softstemc = 0;
 	epv->annmax_livestemc = 0;
 	epv->annmax_livecrootc = 0;
@@ -97,7 +101,7 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phe
 	nf->sminn_to_soil2n_s1_totalCUM = 0;
 	nf->sminn_to_soil3n_s2_totalCUM = 0;
 	nf->sminn_to_soil4n_s3_totalCUM = 0;
-	nf->soil4n_to_sminn_totalCUM  = 0;
+	nf->soil4n_to_sminn_totalCUM    = 0;
 	nf->netMINER_totalCUM           = 0;
 	nf->sminn_to_npool_totalCUM     = 0;
 
@@ -108,6 +112,8 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phe
 		nf->sminNO3_leachCUM[layer] = 0;
 		nf->soilDON_leachCUM[layer] = 0; 
 	}
+
+	ws->cumGWchange = 0;
 
 	return (errorCode);
 

@@ -6,7 +6,7 @@ method: Vuichard et al, 2007
 NOTE: LSU: livestock unit = unit used to compare or aggregate different species and it is equivalnet to the liveweight of an average cattle (1 adult cattle = 1 LSU)
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -25,7 +25,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_struct* sitec, grazing_struct* GRZ, epvar_struct* epv,
-			cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf)
+			cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf, wflux_struct* wf, int* mondays)
 {
 
 
@@ -39,8 +39,8 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 	double GRZcoeff;						/* coefficient determining decrease of plant material caused by grazing  */
 	double befgrazing_leafc = 0;			/* value of leafc before grazing */
 	double aftergrazing_leafc = 0;			/* value of leafc before grazing */
-	double daily_excr_prod = 0;				/* daily excrement production */	
-	double daily_C_loss = 0;				/* daily carbon loss due to grazing */
+	double excr_prod = 0;				/* daily excrement production */	
+	double C_loss = 0;				/* daily carbon loss due to grazing */
 	double Cplus_from_excrement = 0;		/* daily carbon plus from excrement */
 	double Nplus_from_excrement = 0;        /* daily nitrogen plus from excrement */
 
@@ -65,8 +65,8 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 
 	if (GRZ->GRZ_num && md >= 0)
 	{
-		GRZyday_start = date_to_doy(GRZ->GRZstart_month_array[md], GRZ->GRZstart_day_array[md]);
-		GRZyday_end   = date_to_doy(GRZ->GRZend_month_array[md], GRZ->GRZend_day_array[md]);
+		GRZyday_start = date_to_doy(mondays, GRZ->GRZstart_month_array[md], GRZ->GRZstart_day_array[md]);
+		GRZyday_end   = date_to_doy(mondays, GRZ->GRZend_month_array[md], GRZ->GRZend_day_array[md]);
 
 	
 		if (year == GRZ->GRZstart_year_array[md] && ctrl->yday >= GRZyday_start && ctrl->yday <= GRZyday_end) 
@@ -93,25 +93,25 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 			{
 				/* daily total ingested carbon per m2 from daily ingested drymatter and carbon content of drymatter and stocking rate
 								[kgC/m2 = kgDM/LSU * (kgC/kgDM) * (LSU/m2)] */	
-				daily_C_loss = (DMintake * DM_Ccontent) * stocking_rate;	
+				C_loss = (DMintake * DM_Ccontent) * stocking_rate;	
 	
 		
 				/* effect of grazing: decrease of leafc and increase of soilc and soiln (manure)*/
 				befgrazing_leafc = cs->leafc;
 		
-				if (befgrazing_leafc - daily_C_loss > 0)
+				if (befgrazing_leafc - C_loss > 0)
 				{
-					aftergrazing_leafc = befgrazing_leafc - daily_C_loss;
+					aftergrazing_leafc = befgrazing_leafc - C_loss;
 					GRZcoeff  = 1-aftergrazing_leafc/befgrazing_leafc;
 				}
 				else
 				{
 					GRZcoeff  = 1.0;
 					aftergrazing_leafc = 0;
-					daily_C_loss = befgrazing_leafc;
+					C_loss = befgrazing_leafc;
 
 				}	
-				daily_excr_prod = (daily_C_loss/DM_Ccontent) * DMintake2excr;/* kg manure/m2/day -> kgC/m2/day */
+				excr_prod = (C_loss/DM_Ccontent) * DMintake2excr;/* kg manure/m2/day -> kgC/m2/day */
 			}
 			else
 			{
@@ -144,28 +144,28 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 	
 		if (epc->yield_cn)
 		{
-			cf->yield_to_GRZ              = cs->yield * GRZcoeff;
-			cf->yield_transfer_to_GRZ     = 0; //cs->yield_transfer * GRZcoeff;
-			cf->yield_storage_to_GRZ      = 0; //cs->yield_storage * GRZcoeff;
+			cf->yieldc_to_GRZ              = cs->yieldc * GRZcoeff;
+			cf->yieldc_transfer_to_GRZ     = cs->yieldc_transfer * GRZcoeff;
+			cf->yieldc_storage_to_GRZ      = cs->yieldc_storage * GRZcoeff;
 
-			nf->yieldn_to_GRZ              = cf->yield_to_GRZ          / epc->yield_cn;
-			nf->yieldn_transfer_to_GRZ     = 0; //cf->yield_transfer_to_GRZ / epc->yield_cn;
-			nf->yieldn_storage_to_GRZ      = 0; //cf->yield_storage_to_GRZ  / epc->yield_cn;
+			nf->yieldn_to_GRZ              = cf->yieldc_to_GRZ          / epc->yield_cn;
+			nf->yieldn_transfer_to_GRZ     = cf->yieldc_transfer_to_GRZ / epc->yield_cn;
+			nf->yieldn_storage_to_GRZ      = cf->yieldc_storage_to_GRZ  / epc->yield_cn;
 		}
 
 		if (epc->softstem_cn)
 		{
 			cf->softstemc_to_GRZ              = cs->softstemc * GRZcoeff;
-			cf->softstemc_transfer_to_GRZ     = 0; //cs->softstemc_transfer * GRZcoeff;
-			cf->softstemc_storage_to_GRZ      = 0; //cs->softstemc_storage * GRZcoeff;
+			cf->softstemc_transfer_to_GRZ     = cs->softstemc_transfer * GRZcoeff;
+			cf->softstemc_storage_to_GRZ      = cs->softstemc_storage * GRZcoeff;
 
 			nf->softstemn_to_GRZ              = cf->softstemc_to_GRZ          / epc->softstem_cn;
-			nf->softstemn_transfer_to_GRZ     = 0; //cf->softstemc_transfer_to_GRZ / epc->softstem_cn;
-			nf->softstemn_storage_to_GRZ      = 0; //cf->softstemc_storage_to_GRZ  / epc->softstem_cn;
+			nf->softstemn_transfer_to_GRZ     = cf->softstemc_transfer_to_GRZ / epc->softstem_cn;
+			nf->softstemn_storage_to_GRZ      = cf->softstemc_storage_to_GRZ  / epc->softstem_cn;
 		}
 	
-		cf->gresp_transfer_to_GRZ     = 0; //cs->gresp_transfer * GRZcoeff;
-		cf->gresp_storage_to_GRZ      = 0; //cs->gresp_storage * GRZcoeff;
+		cf->gresp_transfer_to_GRZ     = cs->gresp_transfer * GRZcoeff;
+		cf->gresp_storage_to_GRZ      = cs->gresp_storage * GRZcoeff;
 
 		nf->retransn_to_GRZ           = 0; //ns->retransn * GRZcoeff ;
 
@@ -189,8 +189,8 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 
 		/* daily manure production per m2 (return to the litter) from daily total ingested dry matter and litter_return_ratio and its C and N content
 						[kgMANURE = (kgDM/LSU) * (LSU/m2) * (%)] */
-		Cplus_from_excrement = daily_excr_prod * EXCR_Ccontent_array;
-		Nplus_from_excrement = daily_excr_prod * EXCR_Ncontent_array;
+		Cplus_from_excrement = excr_prod * EXCR_Ccontent_array;
+		Nplus_from_excrement = excr_prod * EXCR_Ncontent_array;
 
 		cf->GRZ_to_litr1c = (Cplus_from_excrement) * epc->leaflitr_flab * excr2litter;
 		cf->GRZ_to_litr2c = (Cplus_from_excrement) * epc->leaflitr_fucel * excr2litter;
@@ -209,9 +209,9 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 		/*  dimension: db animal/m2 * kgN/(kg animal * day) * kg animal/db animal = kgN/m2/day */
 		nf->N2O_flux_GRZ     = stocking_rate * Nexrate * weight_LSU/1000 *  EFman_N2O * MS_N2O;
 
-		/* dimension: kgCH4/head/day * head / m2 * (C/CH4) * mg/kg = gC/m2/day */
-		cf->CH4_flux_MANURE  = EFman_CH4  * stocking_rate * 12./16.;  
-		cf->CH4_flux_ANIMAL  = EFfer_CH4  * stocking_rate * 12./16.;  
+		/* dimension: kgCH4/LSU/day * LSU / m2 * (C/CH4)  = kgC/m2/day */
+		cf->CH4flux_manure  = EFman_CH4  * stocking_rate * 12./16.;  
+		cf->CH4flux_animal  = EFfer_CH4  * stocking_rate * 12./16.;  
 
 
 		/**********************************************************************************************/
@@ -220,23 +220,23 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 		/* 1.actual and transfer plant pools */	
 
 		cs->leafc				-= cf->leafc_to_GRZ;
-		cs->yield				-= cf->yield_to_GRZ;
+		cs->yieldc				-= cf->yieldc_to_GRZ;
 		cs->softstemc			-= cf->softstemc_to_GRZ;
 
 		cs->leafc_storage		-= cf->leafc_storage_to_GRZ;
-		cs->yield_storage		-= cf->yield_storage_to_GRZ;
+		cs->yieldc_storage		-= cf->yieldc_storage_to_GRZ;
 		cs->softstemc_storage	-= cf->softstemc_storage_to_GRZ;
 
 		cs->leafc_transfer		-= cf->leafc_transfer_to_GRZ;
-		cs->yield_transfer		-= cf->yield_transfer_to_GRZ;
+		cs->yieldc_transfer		-= cf->yieldc_transfer_to_GRZ;
 		cs->softstemc_transfer	-= cf->softstemc_transfer_to_GRZ;
 
 		cs->gresp_transfer      -= cf->gresp_transfer_to_GRZ;
 		cs->gresp_storage       -= cf->gresp_storage_to_GRZ;
 
-		cs->GRZsnk_C			+= cf->leafc_to_GRZ          + cf->yield_to_GRZ          + cf->softstemc_to_GRZ +
-								   cf->leafc_storage_to_GRZ  + cf->yield_storage_to_GRZ  + cf->softstemc_storage_to_GRZ +
-								   cf->leafc_transfer_to_GRZ + cf->yield_transfer_to_GRZ + cf->softstemc_transfer_to_GRZ +
+		cs->GRZsnk_C			+= cf->leafc_to_GRZ          + cf->yieldc_to_GRZ          + cf->softstemc_to_GRZ +
+								   cf->leafc_storage_to_GRZ  + cf->yieldc_storage_to_GRZ  + cf->softstemc_storage_to_GRZ +
+								   cf->leafc_transfer_to_GRZ + cf->yieldc_transfer_to_GRZ + cf->softstemc_transfer_to_GRZ +
 								   cf->gresp_transfer_to_GRZ + cf->gresp_storage_to_GRZ;
 
 		ns->leafn				-= nf->leafn_to_GRZ;

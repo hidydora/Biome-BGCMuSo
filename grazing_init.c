@@ -3,7 +3,7 @@ grazing_init.c
 read grazinz information for pointbgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -119,7 +119,7 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 
 		if (!errorCode && scan_value(init, GRZ_filename, 's'))
 		{
-			printf("ERROR reading grazing calculating file\n");
+			printf("ERROR reading GRZ_file\n");
 			errorCode=1;
 		}
 		
@@ -128,7 +128,7 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 		/* open the main init file for ascii read and check for errors */
 		if (file_open(&GRZ_file,'i',1))
 		{
-			printf("ERROR opening GRZ_file, grazing_int.c\n");
+			printf("ERROR opening GRZ_file, grazing_init.c\n");
 			errorCode=1;
 			okFILE=0;
 		}
@@ -147,7 +147,7 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 				                                                      &p7,&p8,&p9,&p10,&p11,&p12,&p13,&p14,&p15,&p16,&p17,&p18,&p19);
 			if (mgmread != n_GRZparam)
 			{
-				printf("ERROR reading GRAZING parameters from GRAZING file  file\n");
+				printf("ERROR reading GRAZING parameters from GRZ_file\n");
 				errorCode=1;
 			}
 
@@ -227,7 +227,7 @@ int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ)
 			GRZ->EFfer_CH4[nmgm]                 = EFfer_CH4[nmgm] ; 
 		}
 
-		/* close GRAZING file and free temporary memory */
+		/* close grazing file and free temporary memory */
 		if (okFILE) fclose (GRZ_file.ptr);
 
 		free(GRZstart_year_array);				

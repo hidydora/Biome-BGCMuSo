@@ -3,7 +3,7 @@ management.c
 manages the management issues
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -21,8 +21,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_struct.h"
 #include "pointbgc_func.h"
 
-int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, 
-			   mowing_struct* MOW,planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN, irrigating_struct* IRG, groundwater_struct* gws)
+int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, mowing_struct* MOW,
+	           planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN, irrigating_struct* IRG, groundwater_struct* gws, int* mondays)
 {
 
 
@@ -73,8 +73,8 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 	{
 		md = GRZ->mgmdGRZ;
 
-		GRZstart_yday = GRZ->GRZstart_year_array[md] * nDAYS_OF_YEAR + date_to_doy(GRZ->GRZstart_month_array[md], GRZ->GRZstart_day_array[md]);
-		GRZend_yday   = GRZ->GRZend_year_array[md] * nDAYS_OF_YEAR + date_to_doy(GRZ->GRZend_month_array[md], GRZ->GRZend_day_array[md]);
+		GRZstart_yday = GRZ->GRZstart_year_array[md] * nDAYS_OF_YEAR + date_to_doy(mondays, GRZ->GRZstart_month_array[md], GRZ->GRZstart_day_array[md]);
+		GRZend_yday   = GRZ->GRZend_year_array[md] * nDAYS_OF_YEAR + date_to_doy(mondays, GRZ->GRZend_month_array[md], GRZ->GRZend_day_array[md]);
 		yday_wyr = (ctrl->simstartyear + ctrl->simyr) * nDAYS_OF_YEAR + ctrl->yday;
 
 
@@ -83,8 +83,8 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 			if (yday_wyr == GRZend_yday) GRZ->mgmdGRZ += 1;
 			if (ctrl->onscreen && ctrl->spinup != 1 && yday_wyr == GRZstart_yday) 
 			{
-				printf("GRAZING: FIRST DAY - %i%s%i\n", ctrl->month, "/", ctrl->day);
-				printf("GRAZING: LAST DAY - %i%s%i\n", ctrl->month, "/", ctrl->day);
+				printf("grazing: FIRST DAY - %i%s%i\n", ctrl->month, "/", ctrl->day);
+				printf("grazing: LAST DAY - %i%s%i\n", ctrl->month, "/", ctrl->day);
 			}
 
 			GRZ->mgmdGRZ += 1;
@@ -141,10 +141,12 @@ int management(control_struct* ctrl, fertilizing_struct* FRZ, grazing_struct* GR
 	if (gws->GWD_num)
 	{
 		md = gws->mgmdGWD;
+
+	
 		if (year == gws->GWyear_array[md] && ctrl->month == gws->GWmonth_array[md] && ctrl->day == gws->GWday_array[md])
 		{
 			gws->mgmdGWD += 1;
-			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("GROUNDWATER on %i%s%i\n", ctrl->month, "/", ctrl->day);
+			if (ctrl->onscreen && ctrl->spinup != 1 && ctrl->simyr == 0) printf("groundwater on %i%s%i\n", ctrl->month, "/", ctrl->day);
 		}
 	}
 

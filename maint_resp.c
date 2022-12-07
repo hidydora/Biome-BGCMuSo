@@ -3,7 +3,7 @@ maint_resp.c
 daily maintenance respiration
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -38,7 +38,7 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 	
 	From Ryan's figures and regressions equations, the maintenance respiration
 	in kgC/day per kg of tissue N is:
-	mrpern = 0.218 (kgC/kgN/d)
+	MRperN = 0.218 (kgC/kgN/d)
 	
 	Leaf maintenance respiration is calculated separately for day and
 	night, since the PSN routine needs the daylight value.
@@ -50,20 +50,20 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 	double exponent;
 	double n_area_sun, n_area_shade, dlmr_area_sun, dlmr_area_shade;
 	int layer;
-	double tsoil, frootn_layer, livecrootn_layer, q10, froot_mr,livecroot_mr,softstem_mr,livestem_mr;
+	double tsoil, frootn_layer, livecrootn_layer, q10, froot_MR,livecroot_MR,softstem_MR,livestem_MR;
 
 
-	double mrpern = epc->mrpern;
+	double MRperN = epc->MRperN;
 	double acclim_const = -0.00794; 	/* 1. calculate the tsoil exponenet regarding to froot_resp in multilayer soil */
 
-	froot_mr = livecroot_mr = softstem_mr = livestem_mr = 0;
+	froot_MR = livecroot_MR = softstem_MR = livestem_MR = 0;
 
 
 	/* ********************************************************* */
 	/* 1. possibility to use temperature dependent Q10 */ 
 
 	if (epc->q10depend_flag)
-		q10= 3.22 - 0.046 * metv->tavg;
+		q10= 3.22 - 0.046 * metv->Tavg;
 	else
 		q10 = Q10_VALUE;
 
@@ -72,11 +72,11 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 
 	if (cs->leafc && epv->sun_proj_sla && epv->shade_proj_sla)
 	{
-		t1 = ns->leafn * mrpern;
+		t1 = ns->leafn * MRperN;
 		
 		/* leaf, day */
-		exponent = (metv->tday - 20.0) / 10.0;
-		cf->leaf_day_mr = t1 * pow(q10, exponent) * metv->dayl / nSEC_IN_DAY;
+		exponent = (metv->Tday - 20.0) / 10.0;
+		cf->leaf_day_MR = t1 * pow(q10, exponent) * metv->dayl / nSEC_IN_DAY;
 
 		/* for day respiration, also determine rates of maintenance respiration
 		per unit of projected leaf area in the sunlit and shaded portions of
@@ -87,8 +87,8 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 		n_area_shade = 1.0/(epv->shade_proj_sla * epc->leaf_cn);
 		/* convert to respiration flux in kg C/m2 projected area/day, and
 		correct for temperature */
-		dlmr_area_sun   = n_area_sun * mrpern * pow(q10, exponent);
-		dlmr_area_shade = n_area_shade * mrpern * pow(q10, exponent);
+		dlmr_area_sun   = n_area_sun * MRperN * pow(q10, exponent);
+		dlmr_area_shade = n_area_shade * MRperN * pow(q10, exponent);
 		/* finally, convert from mass to molar units, and from a daily rate to 
 		a rate per second */
 		epv->dlmr_area_sun = dlmr_area_sun/(nSEC_IN_DAY * 12.011e-9);
@@ -96,14 +96,14 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 		
 		/* leaf, night */
 		exponent = (metv->tnight - 20.0) / 10.0;
-		cf->leaf_night_mr = t1 * pow(q10, exponent) * (nSEC_IN_DAY - metv->dayl) / nSEC_IN_DAY;
+		cf->leaf_night_MR = t1 * pow(q10, exponent) * (nSEC_IN_DAY - metv->dayl) / nSEC_IN_DAY;
 	}
 	else /* no leaves on */
 	{
-		cf->leaf_day_mr = 0.0;
+		cf->leaf_day_MR = 0.0;
 		epv->dlmr_area_sun = 0.0;
 		epv->dlmr_area_shade = 0.0;
-		cf->leaf_night_mr = 0.0;
+		cf->leaf_night_MR = 0.0;
 	}
 
 	/* ********************************************************* */
@@ -118,25 +118,25 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 			frootn_layer = ns->frootn * epv->rootlengthProp[layer];
 			exponent = (tsoil - 20.0) / 10.0;
 			t1 = pow(q10, exponent);
-			froot_mr += frootn_layer * mrpern * t1;
+			froot_MR += frootn_layer * MRperN * t1;
 		}
 		
 	}
-	else froot_mr = 0;/* no fine roots on */
+	else froot_MR = 0;/* no fine roots on */
 
-	cf->froot_mr = froot_mr;
+	cf->froot_MR = froot_MR;
 
 	/* ********************************************************* */
 	/* 3. yield simulation maintenance respiration when yields on */
    
-	if (cs->yield && PLT->PLT_num == 0)
+	if (cs->yieldc && PLT->PLT_num == 0)
 	{
-		exponent = (metv->tavg - 20.0) / 10.0;
+		exponent = (metv->Tavg - 20.0) / 10.0;
 		t1 = pow(q10, exponent);
-		cf->yield_mr = ns->yieldn * mrpern * t1;
+		cf->yield_MR = ns->yieldn * MRperN * t1;
 	}
 	/* no yields on */
-	else cf->yield_mr = 0.0;
+	else cf->yield_MR = 0.0;
 		
 
 	/* ********************************************************* */
@@ -144,9 +144,9 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 	
 	if (cs->softstemc)
 	{
-		exponent = (metv->tavg - 20.0) / 10.0;
+		exponent = (metv->Tavg - 20.0) / 10.0;
 		t1 = pow(q10, exponent);
-		cf->softstem_mr = ns->softstemn * mrpern * t1;
+		cf->softstem_MR = ns->softstemn * MRperN * t1;
 	}
 
 	/* ********************************************************* */
@@ -154,9 +154,9 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 	
 	if (cs->livestemc)
 	{
-		exponent = (metv->tavg - 20.0) / 10.0;
+		exponent = (metv->Tavg - 20.0) / 10.0;
 		t1 = pow(q10, exponent);
-		cf->livestem_mr = ns->livestemn * mrpern * t1;
+		cf->livestem_MR = ns->livestemn * MRperN * t1;
 	}
 	
     /* ********************************************************* */
@@ -172,12 +172,12 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 			
 			exponent = (tsoil - 20.0) / 10.0;
 			t1 = pow(q10, exponent);
-			livecroot_mr += livecrootn_layer * mrpern * t1;
+			livecroot_MR += livecrootn_layer * MRperN * t1;
 		}
 		
 	}
 	
-	cf->livecroot_mr = livecroot_mr;
+	cf->livecroot_MR = livecroot_MR;
 	
 	
 	/* ********************************************************* */
@@ -186,13 +186,13 @@ int maint_resp(const planting_struct* PLT, const cstate_struct* cs, const nstate
 	
 	if (epc->resp_acclim_flag)
 	{
-		cf->leaf_day_mr   = cf->leaf_day_mr   * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
-		cf->leaf_night_mr = cf->leaf_night_mr * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
-		cf->froot_mr      = cf->froot_mr      * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
-		cf->yield_mr      = cf->yield_mr      * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
-		cf->livestem_mr   = cf->livestem_mr   * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
-		cf->livecroot_mr  = cf->livecroot_mr  * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
-		cf->softstem_mr   = cf->softstem_mr   * pow(10,(acclim_const * (metv->tavg10_ra-20.0)));
+		cf->leaf_day_MR   = cf->leaf_day_MR   * pow(10,(acclim_const * (metv->TavgRA10-20.0)));
+		cf->leaf_night_MR = cf->leaf_night_MR * pow(10,(acclim_const * (metv->TavgRA10-20.0)));
+		cf->froot_MR      = cf->froot_MR      * pow(10,(acclim_const * (metv->TavgRA10-20.0)));
+		cf->yield_MR      = cf->yield_MR      * pow(10,(acclim_const * (metv->TavgRA10-20.0)));
+		cf->livestem_MR   = cf->livestem_MR   * pow(10,(acclim_const * (metv->TavgRA10-20.0)));
+		cf->livecroot_MR  = cf->livecroot_MR  * pow(10,(acclim_const * (metv->TavgRA10-20.0)));
+		cf->softstem_MR   = cf->softstem_MR   * pow(10,(acclim_const * (metv->TavgRA10-20.0)));
 	}
 
 

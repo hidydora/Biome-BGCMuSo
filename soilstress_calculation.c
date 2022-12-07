@@ -3,7 +3,7 @@ soilstress_calculation.c
 calculation of drought and saturation soil water content stress layer by layers 
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -41,23 +41,39 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 			{
 				m_vwcR_layer = 1;
 
-				if (epv->VWC[layer] > sprop->VWCwp[layer] && (sprop->VWCsat[layer] - epv->VWC[layer]) > CRIT_PREC)
+				if (epc->VWCratio_SScrit2 <= 1)
 				{
-					/* DROUGHT STRESS */
-					if (epv->VWC[layer] <= epv->VWC_SScrit1[layer])
+					if (epv->VWC[layer] > sprop->VWCwp[layer] && (sprop->VWCsat[layer] - epv->VWC[layer]) > CRIT_PREC)
 					{
-						m_vwcR_layer  = pow((epv->VWC[layer] - sprop->VWCwp[layer])/(epv->VWC_SScrit1[layer] - sprop->VWCwp[layer]), sprop->curvature_SS);
-					}
+						/* DROUGHT STRESS */
+						if (epv->VWC[layer] <= epv->VWC_SScrit1[layer])
+						{
+							m_vwcR_layer  = pow((epv->VWC[layer] - sprop->VWCwp[layer])/(epv->VWC_SScrit1[layer] - sprop->VWCwp[layer]), sprop->curvature_SS);
+						}
 
-					/* ANOXIC CONDITION STRESS */
-					if (epv->VWC[layer] >= epv->VWC_SScrit2[layer])
-					{
-						m_vwcR_layer  = (sprop->VWCsat[layer] - epv->VWC[layer])/(sprop->VWCsat[layer] - epv->VWC_SScrit2[layer]);	
+						/* ANOXIC CONDITION STRESS */
+						if (epv->VWC[layer] >= epv->VWC_SScrit2[layer])
+						{
+							m_vwcR_layer  = (sprop->VWCsat[layer] - epv->VWC[layer])/(sprop->VWCsat[layer] - epv->VWC_SScrit2[layer]);	
+						}
 					}
+					else
+						m_vwcR_layer  = 0;
 				}
 				else
-					m_vwcR_layer  = 0;
-
+				{
+				
+					/* only DROUGHT STRESS */
+					if (epv->VWC[layer] > sprop->VWCwp[layer])
+					{
+						if (epv->VWC[layer] <= epv->VWC_SScrit1[layer])
+						{
+							m_vwcR_layer  = pow((epv->VWC[layer] - sprop->VWCwp[layer])/(epv->VWC_SScrit1[layer] - sprop->VWCwp[layer]), sprop->curvature_SS);
+						}
+					}
+					else
+						m_vwcR_layer = 0;
+				}
 				/* lower limit for saturation: m_fullstress2 */
 				if (epv->VWC[layer] >= epv->VWC_SScrit1[layer] && m_vwcR_layer < epc->m_fullstress2) m_vwcR_layer = epc->m_fullstress2;
 
@@ -78,8 +94,8 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 			{
 				for (layer = 0; layer < epv->n_rootlayers; layer++)
 				{	
-					if (wf->soilwTranspDemand[layer])
-						epv->m_SWCstress_layer[layer] = wf->soilwTransp[layer] / wf->soilwTranspDemand[layer];
+					if (wf->soilwTRPdemand[layer])
+						epv->m_SWCstress_layer[layer] = wf->soilwTRP[layer] / wf->soilwTRPdemand[layer];
 					else
 						epv->m_SWCstress_layer[layer] = 1;
 

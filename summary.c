@@ -3,7 +3,7 @@ summary.c
 summary variables for potential output
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -28,12 +28,11 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 {
 	int errorCode=0;
 	int layer;
-	double gpp,mr,gr,hr,tr, fire;
-	double N2O_Ceq, CH4_Ceq;
-	double sr; /* calculating soil respiration */
-	double npp,nep,nee, nbp, disturb_loss, disturb_gain, BD_top30, BD_act, g_per_cm3_to_kg_per_m3, prop_to_percent;
+	double GPP,MR,GR,HR,TR, AR, fire;
+	double SR; /* calculating soil respiration */
+	double NPP,NEP,NEE, NBP, disturb_loss, disturb_gain, BD_top30, BD_act, g_per_cm3_to_kg_per_m3, prop_to_percent;
 	double Closs_THN_w, Closs_THN_nw, Closs_MOW, Closs_HRV, yieldC_HRV, Closs_PLG, Closs_PLT, Closs_GRZ, Cplus_PLT, Cplus_FRZ, Cplus_GRZ, Nplus_GRZ, Nplus_FRZ;
-	double Closs_SNSC, daily_STDB_to_litr, daily_CTDB_to_litr;
+	double Closs_SNSC, STDB_to_litr, CTDB_to_litr;
 
 	summary->leafCN = summary->frootCN = summary->yieldN = summary->softstemCN =0;
 
@@ -43,30 +42,30 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 
 	summary->annprcp += metv->prcp;
-	summary->anntavg += metv->tavg / nDAYS_OF_YEAR;
+	summary->anntavg += metv->Tavg / nDAYS_OF_YEAR;
 
 		
-	summary->cum_runoff += wf->prcp_to_runoff + wf->pondw_to_runoff;
-	summary->cum_WleachRZ += wf->soilwLeach_RZ;	
-	summary->cum_NleachRZ += nf->sminN_leachRZ;
+	summary->cumRunoff += wf->prcp_to_runoff + wf->pondw_to_runoff;
+	summary->cumWleachRZ += wf->soilwLeach_RZ;	
+	summary->cumNleachRZ += nf->sminN_leachRZ;
 
 	/*******************************************************************************/
 	/* 2. summarize carbon and nitrogen stocks */
 
 
-	/*  biomass (live+dead) without NSC */
-	summary->LDaboveC_nw      = cs->leafc + cs->yield + cs->softstemc + 
+	/*  biomass C (live+dead) without NSC */
+	summary->LDaboveC_nw      = cs->leafc + cs->yieldc + cs->softstemc + 
 		                        cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem;
 	summary->LDaboveC_w       = cs->livestemc + cs->deadstemc;
 
 	summary->LDbelowC_nw      = cs->frootc + cs->STDBc_froot;
 	summary->LDbelowC_w       = cs->livecrootc + cs->deadcrootc;
 
-	/* biomass (live+dead) with NSC */
-	summary->LDaboveCnsc_nw = cs->leafc + cs->yield + cs->softstemc + 
+	/* biomass C (live+dead) with NSC */
+	summary->LDaboveCnsc_nw = cs->leafc + cs->yieldc + cs->softstemc + 
 		                      cs->STDBc_above + 
 		                      cs->leafc_transfer + cs->leafc_storage  + cs->frootc_storage    + cs->frootc_transfer +
-						      cs->yield_storage  + cs->yield_transfer + cs->softstemc_storage + cs->softstemc_transfer +
+						      cs->yieldc_storage  + cs->yieldc_transfer + cs->softstemc_storage + cs->softstemc_transfer +
 		                      cs->gresp_storage  + cs->gresp_transfer;
 	summary->LDaboveCnsc_w = cs->livestemc + cs->deadstemc +
 		                     cs->livestemc_storage + cs->livestemc_transfer +
@@ -81,17 +80,17 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 		                     cs->deadcrootc_storage + cs->deadcrootc_transfer;
 
 
-	/* living biomass  */
-	summary->LaboveC_nw = cs->leafc+cs->yield+cs->softstemc;
+	/* living biomass C  */
+	summary->LaboveC_nw = cs->leafc+cs->yieldc+cs->softstemc;
 	summary->LaboveC_w  = cs->livestemc;
 
 	summary->LbelowC_nw = cs->frootc;
 	summary->LbelowC_w  = cs->deadcrootc;
 
-	/* living biomass with NSC */
-	summary->LaboveCnsc_nw = cs->leafc + cs->yield + cs->softstemc + 
+	/* living biomass C with NSC */
+	summary->LaboveCnsc_nw = cs->leafc + cs->yieldc + cs->softstemc + 
 		                     cs->leafc_transfer + cs->leafc_storage   + 
-						     cs->yield_storage + cs->yield_transfer +  cs->softstemc_storage + cs->softstemc_transfer +
+						     cs->yieldc_storage + cs->yieldc_transfer +  cs->softstemc_storage + cs->softstemc_transfer +
 		                     cs->gresp_storage + cs->gresp_transfer;
 	summary->LaboveCnsc_w = cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer;
 
@@ -99,29 +98,52 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 	summary->LbelowCnsc_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
 	
 
-	/* dead biomass  */
+	/* dead biomass C */
 	summary->DaboveC_nw = cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem;
 	summary->DaboveC_w = cs->deadstemc;
 
 	summary->DbelowC_nw = cs->STDBc_froot;
 	summary->DbelowC_w = cs->deadcrootc;
 
-	/* dead biomass with NSC  */
+	/* dead biomass C with NSC  */
 	summary->DaboveCnsc_nw = cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem;
 	summary->DaboveCnsc_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
 
 	summary->DbelowCnsc_nw = cs->STDBc_froot;
 	summary->DbelowCnsc_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
 
-	if (summary->LaboveCnsc_nw + summary->LaboveCnsc_w > summary->annmaxLaboveC)    summary->annmaxLaboveC  = summary->LaboveCnsc_nw + summary->LaboveCnsc_w;
-	if (summary->LbelowCnsc_nw + summary->LbelowCnsc_w > summary->annmaxLbelowC)    summary->annmaxLbelowC  = summary->LbelowCnsc_nw + summary->LbelowCnsc_w;
-	if (summary->LDaboveCnsc_nw + summary->LDaboveCnsc_w > summary->annmaxLDaboveC) summary->annmaxLDaboveC = summary->LDaboveCnsc_nw + summary->LDaboveCnsc_w;
-	if (summary->LDbelowCnsc_nw + summary->LDbelowCnsc_w > summary->annmaxLDbelowC) summary->annmaxLDbelowC = summary->LDbelowCnsc_nw + summary->LDbelowCnsc_w;
+	/* living and total, above- and belowground biomass (C+N) */
+	summary->livingBIOMabove  = cs->leafc + cs->leafc_storage + cs->leafc_transfer + 
+		                        cs->gresp_storage + cs->gresp_transfer + 
+		                        cs->yieldc + cs->yieldc_storage + cs->yieldc_transfer +
+		                        cs->softstemc + cs->softstemc_storage + cs->softstemc_transfer + 
+								cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer +
+								cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer +
+								ns->leafn + ns->leafn_storage + ns->leafn_transfer + 
+		                        ns->retransn + 
+		                        ns->yieldn + ns->yieldn_storage + ns->yieldn_transfer +
+		                        ns->softstemn + ns->softstemn_storage + ns->softstemn_transfer + 
+								ns->livestemn + ns->livestemn_storage + ns->livestemn_transfer +
+								ns->deadstemn + ns->deadstemn_storage + ns->deadstemn_transfer;
+	summary->livingBIOMbelow  = cs->frootc + cs->frootc_storage + cs->frootc_transfer +
+	                            cs->livecrootc + cs->livecrootc_storage + cs->livecrootc_transfer +
+							    cs->deadcrootc + cs->deadcrootc_storage + cs->deadcrootc_transfer +
+							    ns->frootn + ns->frootn_storage + ns->frootn_transfer +
+	                            ns->livecrootn + ns->livecrootn_storage + ns->livecrootn_transfer +
+							    ns->deadcrootn + ns->deadcrootn_storage + ns->deadcrootn_transfer;
+	summary->totalBIOMabove = summary->livingBIOMabove + cs->STDBc_above + ns->STDBn_above; 
+		                      
+	summary->totalBIOMbelow = summary->livingBIOMbelow + cs->STDBc_below + ns->STDBn_below; 
 
+		
+	if (summary->livingBIOMabove > summary->annmax_livingBIOMabove) summary->annmax_livingBIOMabove  = summary->livingBIOMabove;
+	if (summary->livingBIOMbelow > summary->annmax_livingBIOMbelow) summary->annmax_livingBIOMbelow  = summary->livingBIOMbelow;
+	if (summary->totalBIOMabove  > summary->annmax_totalBIOMabove)  summary->annmax_totalBIOMabove   = summary->totalBIOMabove;
+	if (summary->totalBIOMbelow  > summary->annmax_totalBIOMbelow)  summary->annmax_totalBIOMbelow   = summary->totalBIOMbelow;
 
 	summary->vegC = cs->leafc + cs->leafc_storage + cs->leafc_transfer + 
 		            cs->frootc + cs->frootc_storage + cs->frootc_transfer +
-					cs->yield + cs->yield_storage + cs->yield_transfer +
+					cs->yieldc + cs->yieldc_storage + cs->yieldc_transfer +
 		            cs->softstemc + cs->softstemc_storage + cs->softstemc_transfer +
 		            cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer +
 		            cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer +
@@ -134,7 +156,7 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 	summary->leafc_LandD     = cs->leafc     + cs->STDBc_leaf;
 	summary->frootc_LandD    = cs->frootc    + cs->STDBc_froot;
-	summary->yield_LandD    = cs->yield    + cs->STDBc_yield;
+	summary->yield_LandD    = cs->yieldc    + cs->STDBc_yield;
 	summary->softstemc_LandD = cs->softstemc + cs->STDBc_softstem;
 
 	summary->leafDM     =  summary->leafc_LandD / epc->leafC_DM;
@@ -145,10 +167,10 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 	if (ns->leafn + ns->STDBn_leaf != 0)         summary->leafCN     = (cs->leafc + cs->STDBc_leaf) / (ns->leafn + ns->STDBn_leaf);
 	if (ns->frootn + ns->STDBn_froot != 0)       summary->frootCN    = (cs->frootc + cs->STDBc_froot) / (ns->frootn + ns->STDBn_froot);
-	if (ns->yieldn + ns->STDBn_yield != 0)       summary->yieldN    = (cs->yield + cs->STDBc_yield) / (ns->yieldn + ns->STDBn_yield);
+	if (ns->yieldn + ns->STDBn_yield != 0)       summary->yieldN    = (cs->yieldc + cs->STDBc_yield) / (ns->yieldn + ns->STDBn_yield);
 	if (ns->softstemn + ns->STDBn_softstem != 0) summary->softstemCN = (cs->softstemc + cs->STDBc_softstem) / (ns->softstemn + ns->STDBn_softstem);
 
-	summary->yieldDM_HRV = cs->yield_HRV / epc->yield_DM;
+	summary->yieldDM_HRV = cs->yieldC_HRV / epc->yield_DM;
 
 	summary->leaflitrDM = (cs->litr1c_total + cs->litr2c_total + cs->litr3c_total + cs->litr4c_total) / epc->leaflitrC_DM;
     summary->livewoodDM = (cs->livestemc + cs->livecrootc) / epc->livewoodC_DM;
@@ -239,37 +261,38 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 	summary->sminN_top30avail = summary->NO3_top30avail + summary->NH4_top30avail;
 
-	summary->daily_n2o = nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
+	summary->N2Oflux    = nf->N2O_flux_NITRIF_total + nf->N2O_flux_DENITR_total + nf->N2O_flux_GRZ + nf->N2O_flux_FRZ;
+	summary->N2OfluxCeq = summary->N2Oflux * 298 * (12./44.);
 
-	summary->CH4_fluxTOTAL = cf->CH4_flux_ANIMAL + cf->CH4_flux_MANURE + cf->CH4_flux_soil;
+	summary->CH4flux_total = cf->CH4flux_animal + cf->CH4flux_manure + cf->CH4flux_soil;
 
 	/*******************************************************************************/
-	/* 3. calculate daily fluxes (GPP, NPP, NEP, MR, GR, HR) positive for net growth: NPP = Gross PSN - Maintenance Resp - Growth Resp */
+	/* 3. calculate daily fluxes (GPP, NPP, NEP, MR, GR, HR) positive for net growth: NPP = gross PSN - Maintenance Resp - growth Resp */
 
-	gpp = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
+	GPP = cf->psnsun_to_cpool + cf->psnshade_to_cpool;
 	
-	mr = cf->leaf_day_mr + cf->leaf_night_mr + 
-		 cf->froot_mr + cf->livestem_mr + cf->livecroot_mr +
+	MR = cf->leaf_day_MR + cf->leaf_night_MR + 
+		 cf->froot_MR + cf->livestem_MR + cf->livecroot_MR +
 		 /* yield simulation */
-		 cf->yield_mr +
+		 cf->yield_MR +
 		 /* softstem simulation */
-		 cf->softstem_mr;
+		 cf->softstem_MR;
 
-	gr = cf->cpool_leaf_gr + cf->cpool_leaf_storage_gr + cf->transfer_leaf_gr +
-		cf->cpool_froot_gr + cf->cpool_froot_storage_gr + cf->transfer_froot_gr + 
-		cf->cpool_livestem_gr + cf->cpool_livestem_storage_gr + cf->transfer_livestem_gr +
-		cf->cpool_deadstem_gr + cf->cpool_deadstem_storage_gr + cf->transfer_deadstem_gr + 
-		cf->cpool_livecroot_gr + cf->cpool_livecroot_storage_gr + cf->transfer_livecroot_gr + 
-		cf->cpool_deadcroot_gr + cf->cpool_deadcroot_storage_gr + cf->transfer_deadcroot_gr +
+	GR = cf->cpool_leaf_GR + cf->cpool_leaf_storage_GR + cf->transfer_leaf_GR +
+		cf->cpool_froot_GR + cf->cpool_froot_storage_GR + cf->transfer_froot_GR + 
+		cf->cpool_livestem_GR + cf->cpool_livestem_storage_GR + cf->transfer_livestem_GR +
+		cf->cpool_deadstem_GR + cf->cpool_deadstem_storage_GR + cf->transfer_deadstem_GR + 
+		cf->cpool_livecroot_GR + cf->cpool_livecroot_storage_GR + cf->transfer_livecroot_GR + 
+		cf->cpool_deadcroot_GR + cf->cpool_deadcroot_storage_GR + cf->transfer_deadcroot_GR +
 		/* yield simulation */
-		cf->cpool_yield_gr + cf->cpool_yield_storage_gr + cf->transfer_yield_gr +
+		cf->cpool_yield_GR + cf->cpool_yieldc_storage_GR + cf->transfer_yield_GR +
 		/* softstem simulation */
-		cf->cpool_softstem_gr + cf->cpool_softstem_storage_gr + cf->transfer_softstem_gr;
+		cf->cpool_softstem_GR + cf->cpool_softstem_storage_GR + cf->transfer_softstem_GR;
 
-	npp = gpp - mr - gr;
+	NPP = GPP - MR - GR;
 
 	/* heterotrophic respiration  */
-	hr=0;
+	HR=0;
 	summary->litr1HR_total=0;
 	summary->litr2HR_total=0;
 	summary->litr4HR_total=0;
@@ -288,20 +311,22 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 		summary->soil3HR_total += cf->soil3_hr[layer];
 		summary->soil4HR_total += cf->soil4_hr[layer];
 
-		hr += cf->litr1_hr[layer] + cf->litr2_hr[layer] + cf->litr4_hr[layer] + 
+		HR += cf->litr1_hr[layer] + cf->litr2_hr[layer] + cf->litr4_hr[layer] + 
 			  cf->soil1_hr[layer] + cf->soil2_hr[layer] + cf->soil3_hr[layer] + cf->soil4_hr[layer];
 	}
 
-	tr = mr + gr + hr;
+	TR = MR + GR + HR;
+
+	AR = MR + GR;
 	
-	nep = npp - hr;
+	NEP = NPP - HR;
 	
 	/* soil respiration */
-	sr = cf->froot_mr + cf->livecroot_mr +
-		 cf->cpool_froot_gr + cf->cpool_froot_storage_gr + cf->transfer_froot_gr + 
-		 cf->cpool_livecroot_gr + cf->cpool_livecroot_storage_gr + cf->transfer_livecroot_gr + 
-		 cf->cpool_deadcroot_gr + cf->cpool_deadcroot_storage_gr + cf->transfer_deadcroot_gr +
-		 hr;
+	SR = cf->froot_MR + cf->livecroot_MR +
+		 cf->cpool_froot_GR + cf->cpool_froot_storage_GR + cf->transfer_froot_GR + 
+		 cf->cpool_livecroot_GR + cf->cpool_livecroot_storage_GR + cf->transfer_livecroot_GR + 
+		 cf->cpool_deadcroot_GR + cf->cpool_deadcroot_storage_GR + cf->transfer_deadcroot_GR +
+		 HR;
 		
 	
 	/* calculate daily NEE, positive for net sink: NEE = NEP - fire losses */
@@ -315,65 +340,67 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 			cf->m_litr1c_to_fire_total + cf->m_litr2c_to_fire_total + cf->m_litr3c_to_fire_total + cf->m_litr4c_to_fire_total +
 			cf->m_cwdc_to_fire_total +
 			/* yield simulation */
-			cf->m_yield_to_fire +  cf->m_yield_storage_to_fire + cf->m_yield_transfer_to_fire +
+			cf->m_yieldc_to_fire +  cf->m_yieldc_storage_to_fire + cf->m_yieldc_transfer_to_fire +
 			/* softstem simulation */
 			cf->m_softstemc_to_fire +  cf->m_softstemc_storage_to_fire + cf->m_softstemc_transfer_to_fire;
 	/* NEE is positive if ecosystem is net source and negative if it is net sink */
-	nee = -1* (nep - fire);
+	NEE = -1* (NEP - fire);
 	
 
-	summary->daily_nep = nep;
-	summary->daily_npp = npp;
-	summary->daily_nee = nee;	
-	summary->daily_gpp = gpp;
-	summary->daily_mr = mr;
-	summary->daily_gr = gr;
-	summary->daily_hr = hr;
-	summary->daily_sr = sr;
-	summary->daily_tr = tr;
-	summary->daily_fire = fire;
-	summary->cum_npp += npp;
-	summary->cum_nep += nep;
-	summary->cum_nee += nee;
-	summary->cum_gpp += gpp;
-	summary->cum_mr += mr;
-	summary->cum_gr += gr;
-	summary->cum_hr += hr;
-	summary->cum_tr += (mr+gr+hr);
-	summary->cum_sr += sr;
+	summary->NEP = NEP;
+	summary->NPP = NPP;
+	summary->NEE = NEE;	
+	summary->GPP = GPP;
+	summary->MR = MR;
+	summary->GR = GR;
+	summary->HR = HR;
+	summary->SR = SR;
+	summary->TR = TR;
+	summary->fire = fire;
+	summary->cumNPP += NPP;
+	summary->cumNEP += NEP;
+	summary->cumNEE += NEE;
+	summary->cumGPP += GPP;
+	summary->cumMR += MR;
+	summary->cumGR += GR;
+	summary->cumHR += HR;
+	summary->cumAR += AR;
+	summary->cumTR += (MR+GR+HR);
+	summary->cumSR += SR;
 
 
-	summary->cum_n2o += summary->daily_n2o;
-	summary->cum_ch4 += summary->CH4_fluxTOTAL;
-	summary->cum_evap   += (wf->canopyw_evap + wf->soilwEvap);
-	summary->cum_transp += wf->soilwTransp_SUM;
-	summary->cum_ET += wf->evapotransp;
+	summary->cumN2Oflux    += summary->N2Oflux;
+	summary->cumN2OfluxCeq += summary->N2OfluxCeq;
+	summary->cumCH4flux    += summary->CH4flux_total;
+	summary->cumEVP       += (wf->canopywEVP + wf->soilwEVP);
+	summary->cumTRP     += wf->soilwTRP_SUM;
+	summary->cumET         += wf->ET;
 	
 	/*******************************************************************************/
 	/* 4. calculation litter fluxes and pools */
 
-	summary->daily_litter = cs->litr1c_total + cs->litr2c_total + cs->litr3c_total + cs->litr4c_total;
+	summary->litter = cs->litr1c_total + cs->litr2c_total + cs->litr3c_total + cs->litr4c_total;
 	
-	summary->daily_litdecomp = 0;
+	summary->litdecomp = 0;
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
-		summary->daily_litdecomp += cf->litr1c_to_soil1c[layer] + cf->litr2c_to_soil2c[layer]  + cf->litr4c_to_soil3c[layer];
+		summary->litdecomp += cf->litr1c_to_soil1c[layer] + cf->litr2c_to_soil2c[layer]  + cf->litr4c_to_soil3c[layer];
 	}
 
-	summary->daily_litfire = cf->m_litr1c_to_fire_total + cf->m_litr2c_to_fire_total + cf->m_litr3c_to_fire_total + cf->m_litr4c_to_fire_total;
+	summary->litfire = cf->m_litr1c_to_fire_total + cf->m_litr2c_to_fire_total + cf->m_litr3c_to_fire_total + cf->m_litr4c_to_fire_total;
 	
 	/* aboveground litter */
-	summary->daily_litfallc_above = 
+	summary->litfallc_above = 
 		cf->m_leafc_to_litr1c + cf->m_leafc_to_litr2c + cf->m_leafc_to_litr3c + cf->m_leafc_to_litr4c + 
 		cf->m_livestemc_to_cwdc + cf->m_deadstemc_to_cwdc + cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc +
 		cf->leafc_to_litr1c + cf->leafc_to_litr2c + cf->leafc_to_litr3c + cf->leafc_to_litr4c + 
 		cf->softstemc_to_litr1c + cf->softstemc_to_litr2c + cf->softstemc_to_litr3c + cf->softstemc_to_litr4c + 
 		cf->m_softstemc_to_litr1c + cf->m_softstemc_to_litr2c + cf->m_softstemc_to_litr3c + cf->m_softstemc_to_litr4c + 
-		cf->yield_to_litr1c + cf->yield_to_litr2c + cf->yield_to_litr3c + cf->yield_to_litr4c + 
-		cf->m_yield_to_litr1c + cf->m_yield_to_litr2c + cf->m_yield_to_litr3c + cf->m_yield_to_litr4c;
+		cf->yieldc_to_litr1c + cf->yieldc_to_litr2c + cf->yieldc_to_litr3c + cf->yieldc_to_litr4c + 
+		cf->m_yieldc_to_litr1c + cf->m_yieldc_to_litr2c + cf->m_yieldc_to_litr3c + cf->m_yieldc_to_litr4c;
 	
 	/* belowground */
-	summary->daily_litfallc_below = 
+	summary->litfallc_below = 
 		cf->m_frootc_to_litr1c + cf->m_frootc_to_litr2c + cf->m_frootc_to_litr3c + cf->m_frootc_to_litr4c +
 		cf->m_leafc_storage_to_litr1c + cf->m_frootc_storage_to_litr1c +
 		cf->m_leafc_transfer_to_litr1c + cf->m_frootc_transfer_to_litr1c +		
@@ -384,20 +411,20 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 		cf->m_gresp_storage_to_litr1c + cf->m_gresp_transfer_to_litr1c +
 		cf->frootc_to_litr1c + cf->frootc_to_litr2c + cf->frootc_to_litr3c + cf->frootc_to_litr4c +
 		cf->m_softstemc_storage_to_litr1c + cf->m_softstemc_transfer_to_litr1c + 
-		cf->m_yield_storage_to_litr1c + cf->m_yield_transfer_to_litr1c;
+		cf->m_yieldc_storage_to_litr1c + cf->m_yieldc_transfer_to_litr1c;
 
 
-	summary->daily_litfallc = summary->daily_litfallc_above + summary->daily_litfallc_below;
+	summary->litfallc = summary->litfallc_above + summary->litfallc_below;
 
 	/*******************************************************************************/
 	/* 5. calculation of disturbance and senescence effect  */
 
 	/* 5.1 cut-down biomass and standing dead biome */
-	daily_STDB_to_litr = cf->STDBc_to_litr;
-	daily_CTDB_to_litr = cf->CTDBc_to_litr;
+	STDB_to_litr = cf->STDBc_to_litr;
+	CTDB_to_litr = cf->CTDBc_to_litr;
 
-	summary->cum_Cplus_STDB += daily_STDB_to_litr;
-	summary->cum_Cplus_CTDB += daily_CTDB_to_litr;
+	summary->cumCplus_STDB += STDB_to_litr;
+	summary->cumCplus_CTDB += CTDB_to_litr;
 
 	/* 5.2 management */
 	Closs_THN_w = cf->livestemc_storage_to_THN + cf->livestemc_transfer_to_THN + cf->livestemc_to_THN +
@@ -407,33 +434,33 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 	Closs_THN_nw = cf->leafc_storage_to_THN + cf->leafc_transfer_to_THN + cf->leafc_to_THN +
 		           cf->frootc_storage_to_THN + cf->frootc_transfer_to_THN + cf->frootc_to_THN +
-				   cf->yield_storage_to_THN + cf->yield_transfer_to_THN + cf->yield_to_THN +
+				   cf->yieldc_storage_to_THN + cf->yieldc_transfer_to_THN + cf->yieldc_to_THN +
 				   cf->gresp_transfer_to_THN + cf->gresp_storage_to_THN;
 
 
 	Closs_MOW = cf->leafc_storage_to_MOW + cf->leafc_transfer_to_MOW + cf->leafc_to_MOW +
-				cf->yield_storage_to_MOW + cf->yield_transfer_to_MOW + cf->yield_to_MOW +
+				cf->yieldc_storage_to_MOW + cf->yieldc_transfer_to_MOW + cf->yieldc_to_MOW +
 				cf->softstemc_storage_to_MOW + cf->softstemc_transfer_to_MOW + cf->softstemc_to_MOW +
 				cf->gresp_transfer_to_MOW + cf->gresp_storage_to_MOW;
 
 
 	Closs_HRV = cf->leafc_storage_to_HRV + cf->leafc_transfer_to_HRV + cf->leafc_to_HRV +
-				cf->yield_storage_to_HRV + cf->yield_transfer_to_HRV + cf->yield_to_HRV +
+				cf->yieldc_storage_to_HRV + cf->yieldc_transfer_to_HRV + cf->yieldc_to_HRV +
 				cf->softstemc_storage_to_HRV + cf->softstemc_transfer_to_HRV + cf->softstemc_to_HRV +
 		        cf->gresp_transfer_to_HRV + cf->gresp_storage_to_HRV;
 
-	yieldC_HRV = cf->yield_to_HRV;
+	yieldC_HRV = cf->yieldc_to_HRV;
 
 
 	Closs_PLG = cf->leafc_storage_to_PLG - cf->leafc_transfer_to_PLG +  cf->leafc_to_PLG +
-				cf->yield_storage_to_PLG + cf->yield_transfer_to_PLG + cf->yield_to_PLG + 
+				cf->yieldc_storage_to_PLG + cf->yieldc_transfer_to_PLG + cf->yieldc_to_PLG + 
 				cf->softstemc_storage_to_PLG - cf->softstemc_transfer_to_PLG - cf->softstemc_to_PLG +
 				cf->frootc_storage_to_PLG + cf->frootc_transfer_to_PLG + cf->frootc_to_PLG + 
 				cf->gresp_transfer_to_PLG + cf->gresp_storage_to_PLG;
 
 
 	Closs_GRZ = cf->leafc_storage_to_GRZ + cf->leafc_transfer_to_GRZ + cf->leafc_to_GRZ +
-				cf->yield_storage_to_GRZ + cf->yield_transfer_to_GRZ + cf->yield_to_GRZ + 
+				cf->yieldc_storage_to_GRZ + cf->yieldc_transfer_to_GRZ + cf->yieldc_to_GRZ + 
 				cf->softstemc_storage_to_GRZ + cf->softstemc_transfer_to_GRZ + cf->softstemc_to_GRZ + 
 				cf->gresp_transfer_to_GRZ + cf->gresp_storage_to_GRZ;
 
@@ -442,7 +469,7 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 	Cplus_FRZ = cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
 
 	Cplus_PLT = cf->leafc_transfer_from_PLT + cf->frootc_transfer_from_PLT + 
-							cf->yield_transfer_from_PLT +
+							cf->yieldc_transfer_from_PLT +
 							cf->softstemc_transfer_from_PLT;
 
 	Closs_PLT = cf->STDBc_leaf_to_PLT + cf->STDBc_froot_to_PLT + cf->STDBc_yield_to_PLT + cf->STDBc_softstem_to_PLT;	
@@ -453,23 +480,23 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 
 
-	summary->cum_Closs_THN_w  += Closs_THN_w;
-	summary->cum_Closs_THN_nw += Closs_THN_nw;
-	summary->cum_Closs_MOW    += Closs_MOW;
-	summary->cum_Closs_HRV    += Closs_HRV;
-	summary->cum_yieldC_HRV   += yieldC_HRV;
-	summary->cum_Closs_PLG    += Closs_PLG;
-	summary->cum_Closs_GRZ    += Closs_GRZ;
-	summary->cum_Cplus_GRZ    += Cplus_GRZ;
-	summary->cum_Cplus_PLT    += Cplus_PLT;
-	summary->cum_Closs_PLT    += Closs_PLT;
-	summary->cum_Cplus_FRZ    += Cplus_FRZ;	
-	summary->cum_Nplus_GRZ    += Nplus_GRZ;  
-	summary->cum_Nplus_FRZ    += Nplus_FRZ;  
+	summary->cumCloss_THN_w  += Closs_THN_w;
+	summary->cumCloss_THN_nw += Closs_THN_nw;
+	summary->cumCloss_MOW    += Closs_MOW;
+	summary->cumCloss_HRV    += Closs_HRV;
+	summary->cumYieldC_HRV   += yieldC_HRV;
+	summary->cumCloss_PLG    += Closs_PLG;
+	summary->cumCloss_GRZ    += Closs_GRZ;
+	summary->cumCplus_GRZ    += Cplus_GRZ;
+	summary->cumCplus_PLT    += Cplus_PLT;
+	summary->cumCloss_PLT    += Closs_PLT;
+	summary->cumCplus_FRZ    += Cplus_FRZ;	
+	summary->cumNplus_GRZ    += Nplus_GRZ;  
+	summary->cumNplus_FRZ    += Nplus_FRZ;  
 
 	if (cs->vegC_HRV)
 	{
-		summary->harvestIndex = cs->yield_HRV/cs->vegC_HRV;
+		summary->harvestIndex = cs->yieldC_HRV/cs->vegC_HRV;
 		summary->rootIndex    = cs->frootC_HRV/(cs->frootC_HRV+cs->vegC_HRV);
 
 	}
@@ -496,33 +523,32 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 	/* senescence effect  */
 	Closs_SNSC = cf->m_leafc_storage_to_SNSC + cf->m_leafc_transfer_to_SNSC + cf->m_leafc_to_SNSC +
-				 cf->m_yield_storage_to_SNSC + cf->m_yield_transfer_to_SNSC + cf->m_yield_to_SNSC +
+				 cf->m_yieldc_storage_to_SNSC + cf->m_yieldc_transfer_to_SNSC + cf->m_yieldc_to_SNSC +
 				 cf->m_softstemc_storage_to_SNSC + cf->m_softstemc_transfer_to_SNSC + cf->m_softstemc_to_SNSC +
 				 cf->m_frootc_storage_to_SNSC + cf->m_frootc_transfer_to_SNSC + cf->m_frootc_to_SNSC +
 				 cf->m_gresp_transfer_to_SNSC + cf->m_gresp_storage_to_SNSC +
 				 cf->HRV_frootc_to_SNSC + cf->HRV_softstemc_to_SNSC + cf->HRV_frootc_storage_to_SNSC +cf->HRV_frootc_transfer_to_SNSC +
 				 cf->HRV_softstemc_storage_to_SNSC + cf->HRV_softstemc_transfer_to_SNSC + cf->HRV_gresp_storage_to_SNSC + cf->HRV_gresp_transfer_to_SNSC;
 
-	summary->cum_Closs_SNSC += Closs_SNSC ;
+	summary->cumCloss_SNSC += Closs_SNSC ;
 
 	/* NBP calculation: positive - mean net carbon gain to the system and negative - mean net carbon loss */
 	disturb_loss = Closs_THN_w + Closs_THN_nw + Closs_MOW + Closs_HRV + Closs_PLG  + Closs_GRZ;		
 	disturb_gain = Cplus_FRZ + Cplus_GRZ + Cplus_PLT;
 
-	nbp = nep + disturb_gain - disturb_loss;
-	summary->daily_nbp = nbp;
-	summary->cum_nbp += summary->daily_nbp;
+	NBP = NEP + disturb_gain - disturb_loss;
+	summary->NBP = NBP;
+	summary->cumNBP += summary->NBP;
 
 	/* lateral flux calculation */
-	summary->cum_Closs_MGM += disturb_loss;
-	summary->cum_Cplus_MGM += disturb_gain;
-	summary->lateral_Cflux = disturb_loss - disturb_gain;
+	summary->cumCloss_MGM += disturb_loss;
+	summary->cumCplus_MGM += disturb_gain;
+	summary->Cflux_lateral = disturb_loss - disturb_gain;
+	summary->cumCflux_lateral += summary->Cflux_lateral;
 
 	/* NGB calculation: net greenhouse gas balance - NBP - N2O(Ceq) -CH(Ceq) */
-	N2O_Ceq= summary->daily_n2o * (44./28.) * 298 * (12./44.);
-	CH4_Ceq= summary->CH4_fluxTOTAL * (18./14.) * 34 * (12./44.);
-	summary->daily_ngb = summary->daily_nbp - N2O_Ceq - CH4_Ceq;
-	summary->cum_ngb += summary->daily_ngb;
+	summary->NGB = summary->NBP - summary->N2OfluxCeq - summary->CH4flux_total;
+	summary->cumNGB += summary->NGB;
 	
 
 	return(errorCode);

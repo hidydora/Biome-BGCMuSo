@@ -3,7 +3,7 @@ ploughing.c
 do ploughing  - decrease the plant material (leafc, leafn, canopy water)
 
  *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -182,9 +182,9 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 
 		if (epc->yield_cn)
 		{
-			cf->yield_to_PLG				= cs->yield * PLGcoeff;
-			cf->yield_storage_to_PLG		= cs->yield_storage * PLGcoeff;
-			cf->yield_transfer_to_PLG		= cs->yield_transfer * PLGcoeff;
+			cf->yieldc_to_PLG				= cs->yieldc * PLGcoeff;
+			cf->yieldc_storage_to_PLG		= cs->yieldc_storage * PLGcoeff;
+			cf->yieldc_transfer_to_PLG		= cs->yieldc_transfer * PLGcoeff;
 
 			nf->yieldn_to_PLG			    = ns->yieldn * PLGcoeff;
 			nf->yieldn_storage_to_PLG		= ns->yieldn_storage * PLGcoeff;
@@ -202,7 +202,7 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 			nf->softstemn_transfer_to_PLG		= ns->softstemn_transfer * PLGcoeff;
 		}
 
-		cf->gresp_storage_to_PLG		= cs->gresp_storage * PLGcoeff;
+		cf->gresp_storage_to_PLG		= cs->gresp_storage  * PLGcoeff;
 		cf->gresp_transfer_to_PLG		= cs->gresp_transfer * PLGcoeff;
 
 		nf->retransn_to_PLG              = ns->retransn * PLGcoeff;
@@ -246,9 +246,9 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		cs->frootc				-= cf->frootc_to_PLG;
 		cs->frootc_transfer		-= cf->frootc_transfer_to_PLG;
 		cs->frootc_storage		-= cf->frootc_storage_to_PLG;
-		cs->yield				-= cf->yield_to_PLG;
-		cs->yield_transfer		-= cf->yield_transfer_to_PLG;
-		cs->yield_storage		-= cf->yield_storage_to_PLG;
+		cs->yieldc				-= cf->yieldc_to_PLG;
+		cs->yieldc_transfer		-= cf->yieldc_transfer_to_PLG;
+		cs->yieldc_storage		-= cf->yieldc_storage_to_PLG;
 		cs->softstemc			-= cf->softstemc_to_PLG;
 		cs->softstemc_transfer  -= cf->softstemc_transfer_to_PLG;
 		cs->softstemc_storage   -= cf->softstemc_storage_to_PLG;
@@ -296,9 +296,10 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		/* 2. IN: fluxes to belowground cut-down biomass */
 	 
 		cs->CTDBc_froot += cf->leafc_to_PLG     + cf->leafc_storage_to_PLG     + cf->leafc_transfer_to_PLG  + 
-						   cf->yield_to_PLG     + cf->yield_storage_to_PLG     + cf->yield_transfer_to_PLG + 
+						   cf->yieldc_to_PLG     + cf->yieldc_storage_to_PLG     + cf->yieldc_transfer_to_PLG + 
 						   cf->softstemc_to_PLG + cf->softstemc_storage_to_PLG + cf->softstemc_transfer_to_PLG + 
 						   cf->frootc_to_PLG    + cf->frootc_storage_to_PLG    + cf->frootc_transfer_to_PLG +
+						   cf->gresp_storage_to_PLG + cf->gresp_transfer_to_PLG +
 						   cf->STDBc_leaf_to_PLG     + cf->CTDBc_leaf_to_PLG +  
 						   cf->STDBc_yield_to_PLG    + cf->CTDBc_yield_to_PLG + 
 						   cf->STDBc_softstem_to_PLG + cf->CTDBc_softstem_to_PLG +
@@ -308,6 +309,7 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 							nf->yieldn_to_PLG     + nf->yieldn_storage_to_PLG     + nf->yieldn_transfer_to_PLG + 
 							nf->softstemn_to_PLG + nf->softstemn_storage_to_PLG + nf->softstemn_transfer_to_PLG + 
 							nf->frootn_to_PLG    + nf->frootn_storage_to_PLG    + nf->frootn_transfer_to_PLG +
+							nf->retransn_to_PLG +
 							nf->STDBn_leaf_to_PLG     + nf->CTDBn_leaf_to_PLG +  
 							nf->STDBn_yield_to_PLG    + nf->CTDBn_yield_to_PLG + 
 							nf->STDBn_softstem_to_PLG + nf->CTDBn_softstem_to_PLG +

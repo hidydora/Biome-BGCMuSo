@@ -3,7 +3,7 @@ scc_init.c
 Initialize the scalar climate change parameters for bgc simulation
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group (NTSG)
 School of Forestry, University of Montana
@@ -47,14 +47,14 @@ int scc_init(file init, climchange_struct* scc)
 	}
 
 	/* begin reading climate change data */
-	if (!errorCode && scan_value(init, &scc->s_tmax, 'd'))
+	if (!errorCode && scan_value(init, &scc->s_Tmax, 'd'))
 	{
-		printf("ERROR reading scalar for tmax, scc_init()\n");
+		printf("ERROR reading scalar for Tmax, scc_init()\n");
 		errorCode=21401;
 	}
-	if (!errorCode && scan_value(init, &scc->s_tmin, 'd'))
+	if (!errorCode && scan_value(init, &scc->s_Tmin, 'd'))
 	{
-		printf("ERROR reading scalar for tmin, scc_init()\n");
+		printf("ERROR reading scalar for Tmin, scc_init()\n");
 		errorCode=21401;
 	}
 	if (!errorCode && scan_value(init, &scc->s_prcp, 'd'))

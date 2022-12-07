@@ -2,7 +2,7 @@
 conduct_limit_factors.c
 calculate the limitation factors of conductance
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -55,7 +55,7 @@ int conduct_limit_factors(file logfile, const control_struct* ctrl, const soilpr
 		{
 			printf("\n");
 			printf("ERROR: VWC_SScrit2 data is greater than saturation value in layer:%i\n", layer);
-			errorCode=1;
+			errorCode=1; 
 		}
 
 		if (!errorCode && VWC_SScrit2 < VWC_SScrit1)

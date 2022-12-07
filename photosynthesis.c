@@ -3,7 +3,7 @@ farquhar.c
 C3/C4 photosynthesis model
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -46,7 +46,7 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 	if (epc->phtsyn_acclim_flag == 1)
 		psn_sun->t      = metv->tACCLIM;
 	else
-		psn_sun->t		= metv->tday;
+		psn_sun->t		= metv->Tday;
 
 	if (epv->sun_proj_sla)
 		psn_sun->lnc	= 1.0 / (epv->sun_proj_sla * epc->leaf_cn);
@@ -56,13 +56,13 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 	psn_sun->flnp	= epc->flnp;
 	psn_sun->ppfd	= metv->ppfd_per_plaisun;
 	/* convert conductance from m/s --> umol/m2/s/Pa, and correct for CO2 vs. water vapor */
-	psn_sun->g		= epv->gl_t_wv_sun * 1e6/(1.6*R*(metv->tday+273.15));
+	psn_sun->g		= epv->gl_t_wv_sun * 1e6/(1.6*R*(metv->Tday+273.15));
 	psn_sun->dlmr	= epv->dlmr_area_sun;
 
 	psn_shade->c3	= epc->c3_flag;
 	psn_shade->co2	= metv->co2;
 	psn_shade->pa	= metv->pa;
-	psn_shade->t	= metv->tday;
+	psn_shade->t	= metv->Tday;
 	if (epv->shade_proj_sla)
 		psn_shade->lnc	= 1.0 / (epv->shade_proj_sla * epc->leaf_cn);
 	else 
@@ -71,7 +71,7 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 	psn_shade->flnp	= epc->flnp;
 	psn_shade->ppfd	= metv->ppfd_per_plaishade;
 	/* convert conductance from m/s --> umol/m2/s/Pa, and correct for CO2 vs. water vapor */
-	psn_shade->g	= epv->gl_t_wv_shade * 1e6/(1.6*R*(metv->tday+273.15));
+	psn_shade->g	= epv->gl_t_wv_shade * 1e6/(1.6*R*(metv->Tday+273.15));
 	psn_shade->dlmr	= epv->dlmr_area_shade;
 
 	/* do photosynthesis only when it is part of the current growth season, as defined by the remdays_curgrowth flag.  
@@ -90,19 +90,19 @@ int photosynthesis(const epconst_struct* epc, const metvar_struct* metv, const c
 		if (epc->assim_minT != DATA_GAP)
 		{
 			/* if less than min or greater than max -> 0 */
-			if (metv->tmax < epc->assim_minT || metv->tmax >= epc->assim_maxT)
+			if (metv->Tmax < epc->assim_minT || metv->Tmax >= epc->assim_maxT)
 				epv->assim_Tcoeff = 0;
 			else
 			{
 				/*  between optimal temperature -> 1, below/above linearly decreasing */
-				if (metv->tmax < epc->assim_opt1T)
-					epv->assim_Tcoeff = (metv->tmax - epc->assim_minT) / (epc->assim_opt1T - epc->assim_minT);
+				if (metv->Tmax < epc->assim_opt1T)
+					epv->assim_Tcoeff = (metv->Tmax - epc->assim_minT) / (epc->assim_opt1T - epc->assim_minT);
 				else
 				{
-					if (metv->tmax < epc->assim_opt2T)
+					if (metv->Tmax < epc->assim_opt2T)
 						epv->assim_Tcoeff = 1;
 					else
-						epv->assim_Tcoeff = (epc->assim_maxT - metv->tmax) / (epc->assim_maxT - epc->assim_opt2T);
+						epv->assim_Tcoeff = (epc->assim_maxT - metv->Tmax) / (epc->assim_maxT - epc->assim_opt2T);
 				}
 			
 			}
@@ -264,7 +264,7 @@ int farquhar(const epconst_struct* epc, const metvar_struct* metv, psn_struct* p
 	static double q10Kc = 2.1;    /* (dimless) Q_10 for Kc */
 	static double Ko25 = 248.0;   /* (mbar) MM const oxygenase, 25 deg C */
 	static double q10Ko = 1.2;    /* (dimless) Q_10 for Ko */
-	static double act25 = 3.6;    /* (umol/mgRubisco/min) Rubisco activity */
+	static double act25 = 3.6;    /* (umol/mg Rubisco/min) Rubisco activity */
 	static double q10act = 2.4;   /* (dimless) Q_10 for Rubisco activity */
 
 	static double pabs = 0.85;    /* (dimless) fPAR effectively absorbed by PSII */
@@ -293,7 +293,7 @@ int farquhar(const epconst_struct* epc, const metvar_struct* metv, psn_struct* p
 	double t;      /* (deg C) temperature */
 	double Kc;     /* (Pa) MM constant for carboxylase reaction */
 	double Ko;     /* (Pa) MM constant for oxygenase reaction */
-	double act;    /* (umol CO2/kgRubisco/s) Rubisco activity */
+	double act;    /* (umol CO2/kg Rubisco/s) Rubisco activity */
 	double Jmax;   /* (umol/m2/s) max rate electron transport */
 	
 	double Vmax, J, gamma, Ca, Rd, O2, g;
@@ -360,7 +360,7 @@ int farquhar(const epconst_struct* epc, const metvar_struct* metv, psn_struct* p
 	psn->Jmax = Jmax = 1.97*Vmax;
 	if (epc->phtsyn_acclim_flag == 2)
 	{
-		acclim_rVJ = acclim_a + acclim_b * metv->tavg30_ra;
+		acclim_rVJ = acclim_a + acclim_b * metv->TavgRA30;
 		psn->Jmax  = acclim_rVJ * Vmax;
 
 	}

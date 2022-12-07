@@ -3,7 +3,7 @@ dayphen.c
 transfer one day of phenological data from phenarr struct to phen struct
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Original code: Copyright 2000, Peter E. Thornton
 Numerical Terradynamic Simulation Group, The University of Montana, USA
 Modified code: Copyright 2022, D. Hidy [dori.hidy@gmail.com]
@@ -43,7 +43,7 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 
 	if (ctrl->GSI_flag)
 	{
-		phen->tmin_index        = phenarr->tmin_index[ctrl->simyr][ctrl->yday];
+		phen->Tmin_index        = phenarr->Tmin_index[ctrl->simyr][ctrl->yday];
 		phen->vpd_index         = phenarr->vpd_index[ctrl->simyr][ctrl->yday];
 		phen->dayl_index        = phenarr->dayl_index[ctrl->simyr][ctrl->yday];
 		phen->gsi_indexAVG      = phenarr->gsi_indexAVG[ctrl->simyr][ctrl->yday];
@@ -52,7 +52,7 @@ int dayphen(control_struct* ctrl, const epconst_struct* epc, const phenarray_str
 	}
 	else
 	{
-		phen->tmin_index        = DATA_GAP;
+		phen->Tmin_index        = DATA_GAP;
 		phen->vpd_index         = DATA_GAP;
 		phen->dayl_index        = DATA_GAP;
 		phen->gsi_indexAVG      = DATA_GAP;

@@ -4,7 +4,7 @@ calcultion of soil water potential, hydr. conductivity and hydr. diffusivity as 
 constants related to texture
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-Biome-BGCMuSo v6.4.
+Biome-BGCMuSo v7.0.
 Copyright 2022, D. Hidy [dori.hidy@gmail.com]
 Hungarian Academy of Sciences, Hungary
 See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentation, model executable and example input files.
@@ -27,7 +27,7 @@ int multilayer_hydrolparams(const siteconst_struct* sitec, const soilprop_struct
 	this function returns the soil water potential (MPa)
 	inputs:
 	ws.soilw				     (kg/m2) water mass per unit area
-	sprop.max_rootzone_depth     (m)     maximum depth of rooting zone               
+	sprop.rootzoneDepth_max     (m)     maximum depth of rooting zone               
 	sprop.soilB				 (dimless)   slope of log(PSI) vs log(rwc)
 	sprop.VWCsat				 (m3/m3)   volumetric water content at saturation
 	sprop.PSIsat			   	(MPa)   soil matric potential at saturation

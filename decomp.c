@@ -129,6 +129,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 		minVWC = sprop->VWChw[layer];
 		maxVWC = sprop->VWCsat[layer];
+
 		opt1VWC = sprop->VWChw[layer] + sprop->VWCratio_DCcrit1 * (sprop->VWCfc[layer]  - sprop->VWChw[layer]); 
 		opt2VWC = sprop->VWCfc[layer] + sprop->VWCratio_DCcrit2 * (sprop->VWCsat[layer] - sprop->VWCfc[layer]); 
 

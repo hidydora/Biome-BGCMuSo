@@ -32,6 +32,7 @@ int Elimit_and_PET(const epconst_struct* epc, const soilprop_struct* sprop, cons
 	double EEQ;			        /* internal variable of DSSAT model */
 	double wisp = 3;			/* wind speed (no input data - constans value = 3m/s) */
 	double potETS = 0; 
+	double aerodyn_resist_default = 107;
 
 	/*---------------------------------------------------------------*/
 	/* 0. ENERGETIC CONTROL - maximum energy */
@@ -57,8 +58,8 @@ int Elimit_and_PET(const epconst_struct* epc, const soilprop_struct* sprop, cons
 		taken from observations over bare soil in tiger-bush in south-west Niger: rbl = 107 s m-1 (Wallace and Holwill, 1997). */
 		rbl = rcorr * sprop->aerodyn_resist;
 	
-		/* normal run: aerodyn_resist is set to a measured value (test run: -9999 -> no evaporation) */
-		if (rbl > 0)
+		/* normal run: aerodyn_resist is set to a measured value (test run: -9999 -> no evaporation, transpiration is calculated using a default value: 107m/s) */
+		if (sprop->aerodyn_resist > 0)
 		{
 			/*---------------------------------------------------------------*/
 			/* 1. Limit of Surface evaporation with transmitted radiation */
@@ -94,7 +95,22 @@ int Elimit_and_PET(const epconst_struct* epc, const soilprop_struct* sprop, cons
 		else
 		{
 			potEVPandSUBLsurface = 0;
-			potETcanopy          = 0;
+			rbl = rcorr * aerodyn_resist_default; 
+				
+			/*---------------------------------------------------------------*/
+			/* 2. Limit of canopy evaporation with absorbed radiation */
+			/*---------------------------------------------------------------*/
+
+			/* fill the pmet_in structure */
+			pmet_in.ta = metv->Tday;
+			pmet_in.pa = metv->pa;
+			pmet_in.vpd = metv->vpd;
+			pmet_in.irad = metv->swabs;
+			pmet_in.rv = rbl;
+			pmet_in.rh = rbl;
+
+			/* calculate potEVP in kg/m2/s */
+			penmon(&pmet_in, 0, &potETcanopy);
 		}
 
 	
@@ -182,15 +198,9 @@ int Elimit_and_PET(const epconst_struct* epc, const soilprop_struct* sprop, cons
 
 	
 	
-	/* test possibility */
-	if (sprop->aerodyn_resist == DATA_GAP)
-	{
-		wf->potEVPsurface=0;
-		wf->potETcanopy=0;
-	}
 
 
 	
-		return(errorCode);
+	return(errorCode);
 }
 

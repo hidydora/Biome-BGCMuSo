@@ -47,7 +47,7 @@ int harvesting(file econout, control_struct* ctrl, phenology_struct* phen, const
 		{ 
 			remained_prop = (100 - HRV->transportHRV_array[md])/100.; /* remained prop. of plant mat.is calculated from transport coeff. */
 	
-			epv->rootdepth  = CRIT_PREC;
+			epv->rootDepth  = CRIT_PREC;
 			epv->rootlength = CRIT_PREC;
 	
 			/* if harvest: plant material decreases as the rate of "harvest effect", which is th ratio of LAI before harvest and LAI snag */

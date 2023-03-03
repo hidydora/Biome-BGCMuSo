@@ -377,7 +377,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		ns->livecrootn -=  nf->m_livecrootn_to_cwdn;
 		ns->deadcrootn -=  nf->m_deadcrootn_to_cwdn;
 
-		if (epv->rootdepth > CRIT_PREC)
+		if (epv->rootDepth > CRIT_PREC)
 		{
 			for (layer = 0; layer < N_SOILLAYERS; layer++)
 			{
@@ -411,12 +411,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 				ns->cwdn[layer]    += (nf->m_livecrootn_to_cwdn + nf->m_deadcrootn_to_cwdn) * epv->rootlengthProp[layer];	
 			}
 		}
-		
-		/* estimating aboveground litter and cwdc */
-		cs->cwdc_above += cf->m_livestemc_to_cwdc + cf->m_deadstemc_to_cwdc;
-		cs->litrc_above += cf->m_leafc_to_litr1c            + cf->m_yieldc_to_litr1c           + cf->m_softstemc_to_litr1c +
-		                   cf->m_leafc_storage_to_litr1c    + cf->m_yieldc_storage_to_litr1c   + cf->m_softstemc_storage_to_litr1c +
-						   cf->m_leafc_transfer_to_litr1c   + cf->m_yieldc_transfer_to_litr1c  + cf->m_softstemc_transfer_to_litr1c;
+	
 
 	}
 
@@ -748,14 +743,6 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 	
 		}
 
-		/* +: estimating aboveground cwdc: calculation of cwdc_total2 (after mortality decreased value) -> ratio */
-		for (layer = 0; layer < N_SOILLAYERS; layer++) 
-		{
-			cwdc_total2 += cs->cwdc[layer];
-			litrc_total2 += cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
-		}
-		if (cwdc_total1 > 0) cs->cwdc_above *= cwdc_total2/cwdc_total1;
-		if (litrc_total1 > 0) cs->litrc_above *= litrc_total2/litrc_total1;
 	}
 	
 	return (errorCode);

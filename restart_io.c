@@ -39,9 +39,11 @@ int restart_input(const control_struct* ctrl, const epconst_struct* epc, const s
 			soilw_sat = sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
 			if (soilw_sat < ws->soilw[layer]) ws->soilw[layer] = soilw_sat;
 		}
+		ws->snoww                             = restart->snoww;
 	}
 
-	ws->snoww                             = restart->snoww;
+
+
 	ws->canopyw                           = restart->canopyw;
 
 	/* 2. carbon and nitrogen plant pools */

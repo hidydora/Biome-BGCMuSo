@@ -258,6 +258,7 @@ typedef struct
     double IRGsrc_W;			     /* SUM of water from irrigating */
 	double condIRGsrc;				 /* sum of conditional irrigatied water amount in a year*/	
 	double FRZsrc_W;				 /* SUM of water from fertilization */
+	double FLDsrc;					 /* SUM of water from flooding */
 	double cumEVPsoil1;              /* cumulated soil evaporation in first evaporation phase (no limit) */
 	double cumEVPsoil2;              /* cumulated soil evaporation in second evaporation phase (DSR limit) */
 	double soilw_avail[N_SOILLAYERS];/* transpiration lack in a given layer */
@@ -300,12 +301,14 @@ typedef struct
 	double pondw_to_soilw;                          /* water flux from pond to soil */
 	double soilw_to_pondw;                          /* water flux from soil to pond */
 	double infilt_to_soilw;                         /* infiltration flux from prcp to soilw */
-	double prcp_to_pondw;                         /* infiltration flux from prcp to pondw */ 
+	double prcp_to_pondw;                          /* infiltration flux from prcp to pondw */ 
 	double GW_to_pondw;                             /* water flux from groundwater to pondw */
 	double soilwFlux[N_SOILLAYERS];			        /* net sum of percolation+diffusion flux between the soil layers */
 	double GWdischarge[N_SOILLAYERS];				/* soil water plus from groundwater */
 	double GWrecharge[N_SOILLAYERS];			    /* recharge: soil water to groundwater */
 	double GWmovchange[N_SOILLAYERS];			    /* soil water change due to the movement of GW */
+	double FLD_to_soilw;                            /* water flux from flooding to pondw */
+	double FLD_to_pondw;                            /* water flux from flooding to soilw */
 	double soilwLeach_RZ;				         	/* soil water leached from rootzone (percol+diffus) in gH2O/m2/d */
 	double canopyw_to_THN;							/* water stored on canopy is disappered because of thinning */
 	double canopyw_to_MOW;							/* water stored on canopy is disappered because of mowing */
@@ -381,7 +384,6 @@ typedef struct
 	double cwdc_total;              			/* coarse woody debris C */
 	double cwdc_above;              			/* aboveground coarse woody debris C */
 	double litrc_above;              			/* aboveground litter C */
-	double mulch;								/* mulch: aboveground litter+CWD */
 	double STDBc_leaf;							/*  wilted leaf biomass  */
 	double STDBc_froot;							/*  wilted froot biomass  */
 	double STDBc_yield;							/*  wilted yield biomass  */
@@ -441,6 +443,8 @@ typedef struct
 	double FIREsnk_C;					/* SUM of fire losses */
 	double SNSCsnk_C;					/* SUM of senescence losses */
     double PLTsrc_C;					/* SUM of C content of planted plant material */
+	double MULsrc_C;					/* SUM of C content of mulched material */
+	double CWEsnk_C;                    /* SUM of C content of CWD-extract */
 	double Cdeepleach_snk;				/* SUM of C deep leaching */
 	double THN_transportC;				/* SUM of C content of thinned and transported plant material*/
 	double HRV_transportC;				/* SUM of C content of harvested and transported plant material*/
@@ -571,6 +575,10 @@ typedef struct
 	double HRV_softstemc_transfer_to_SNSC;       
 	double HRV_gresp_storage_to_SNSC;
 	double HRV_gresp_transfer_to_SNSC;
+	/* group: CWD-extract */
+	double cwdc0_to_CWE;
+	double cwdc1_to_CWE;
+	double cwdc2_to_CWE;
 	/* group: flowering heat stress  */
 	double yieldc_to_flowHS;
 	/* group: standing dead biomass to litter fluxes */
@@ -874,6 +882,9 @@ typedef struct
 	double FRZ_to_litr2c;				 
 	double FRZ_to_litr3c;				 
 	double FRZ_to_litr4c;	
+	/* group: mulching struct */
+	double litrc_from_MUL;
+	double cwdc_from_MUL;
 	/* group: CH4 flux based on empirical estimation */
 	double CH4flux_soil;			
 	double CH4flux_manure;			
@@ -969,7 +980,9 @@ typedef struct
 	double SNSCsnk_N;					/* SUM of senescence losses */
 	double FRZsrc_N;					/* SUM of N fertilization inputs */	
     double PLTsrc_N;					/* SUM of planted leaf N */
+	double MULsrc_N;					/* SUM of C content of mulched material */
 	double THN_transportN; 				/* SUM of thinned and transported plant material (N content)  */
+	double CWEsnk_N;                    /* SUM of N content of CWD-extract */
 	double HRV_transportN; 				/* SUM of harvested and transported plant material (N content)  */
 	double MOW_transportN;              /* SUM of mowed and transported plant material (N content)  */
 	double GRZsnk_N;					/* SUM of grazed leaf N */
@@ -1378,6 +1391,10 @@ typedef struct
 	double STDBn_leaf_to_HRV;				 	 
 	double STDBn_yield_to_HRV;	
 	double STDBn_softstem_to_HRV;	  
+	/* group: CWD-extract */
+	double cwdn0_to_CWE;
+	double cwdn1_to_CWE;
+	double cwdn2_to_CWE;
 	/* group: ploughing fluxes  */
 	double leafn_to_PLG;					 
 	double leafn_storage_to_PLG;			
@@ -1424,6 +1441,9 @@ typedef struct
 	double FRZ_to_litr2n;				 
 	double FRZ_to_litr3n;				 
 	double FRZ_to_litr4n;
+	/* group: mulching struct */
+	double litrn_from_MUL;
+	double cwdn_from_MUL;
 	/* group: management N2O flux based on empirical estimation */
 	double N2O_flux_GRZ;
 	double N2O_flux_FRZ;
@@ -1463,7 +1483,7 @@ typedef struct
 	int n_rootlayers;							/* (n) actual number of soil layers in which root can be found  */
 	int n_maxrootlayers;						/* (n) maximum number of soil layers in which root can be found  */
 	int germ_layer;								/* (n) number of germination layer */
-	double germ_depth;                          /* (m) actual germination depth*/
+	double germDepth;                          /* (m) actual germination depth*/
 	double cpool_to_leafcARRAY[nDAYS_OF_YEAR*2];   /* (kgC/m2/day) array of carbon from cpool to leafC */                 
 	double npool_to_leafnARRAY[nDAYS_OF_YEAR*2];   /* (kgN/m2/day) array of nitrogen from npool to leafN */
 	double thermal_timeARRAY[nDAYS_OF_YEAR*2];	   /* (Celsius) actual thermal_timeSUM */
@@ -1497,7 +1517,7 @@ typedef struct
     double plaishade;							/* (m2/m2) shaded projected leaf area index */
     double sun_proj_sla;						/* (m2/kgC) sunlit projected SLA */
     double shade_proj_sla;						/* (m2/kgC) shaded projected SLA */
-	double plant_height;                        /* (m) height of plant (based on stemw and LAI)*/
+	double plantHeight;                        /* (m) height of plant (based on stemw and LAI)*/
 	double NDVI;                                /* (ratio) normalized difference vegetation index */
 	double rootlengthProp[N_SOILLAYERS];		    /* (prop) proportion of root lenght in the given soil layer  */
 	double rootlengthLandD_prop[N_SOILLAYERS];		/* (prop) proportion of dead+live root lenght in the given soil layer  */
@@ -1511,6 +1531,8 @@ typedef struct
 	double VWCwp_RZ;								/* (m3/m3) average value of VWC wilting point (max.soil.depth) */
 	double VWChw_RZ;								/* (m3/m3) average value of VWC wilting point (max.soil.depth) */
     double VWC[N_SOILLAYERS];						/* (m3/m3) volumetric water content  */
+	double relVWCsat_fc[N_SOILLAYERS];				/* (m3/m3) relative volumetric water content (SAT-FC) */
+	double relVWCfc_wp[N_SOILLAYERS];				/* (m3/m3) relative volumetric water content (FC-WP)  */
     double VWC_SScrit1[N_SOILLAYERS];				/* (m3/m3) volumetric water content at start of soil stress */
 	double VWC_SScrit2[N_SOILLAYERS];				/* (m3/m3) volumetric water content at full soil stress */
 	double WFPS[N_SOILLAYERS];						/* (prop) water filled pore space */
@@ -1518,7 +1540,7 @@ typedef struct
 	double VWC_maxRZ;									/* (m3/m3) average volumetric water content in max.rootzone (max.soil.depth) */
 	double VWC_RZ;									/* (m3/m3) average volumetric water content in rootzone (act.soil.depth) */
 	double PSI_RZ;									/* (MPa) average water potential of soil and leaves */
-	double rootdepth;			     				/* (m) actual depth of the root and rooting zone */
+	double rootDepth;			     				/* (m) actual depth of the root and rooting zone */
 	double rootlength;			     				/* (m) actual length of the root and rooting zone (rootdpeth - germination depth */
 	double dlmr_area_sun;							/* (umolC/m2projected leaf area/s) sunlit leaf MR */
     double dlmr_area_shade;				  			/* (umolC/m2projected leaf area/s) shaded leaf MR */
@@ -1582,13 +1604,13 @@ typedef struct
 	double MRdeficit_w;								/* (flag) of maint.resp.calculation deficit for nw-biomass */
 	double albedo_LAI;                              /* (dimless) LAI dependent albedo */
 	double phenphase_date[N_PHENPHASES];			/* (DOY) date of phenphase's start */
-	double rootdepth_phen[N_PHENPHASES];			/* (m) depth of the rootzone at the end of the given phenphase */
+	double rootDepth_phen[N_PHENPHASES];			/* (m) depth of the rootzone at the end of the given phenphase */
 	double flower_date;								/* (DOY) date of flowering phenphase's start */
 	double winterEnd_date;							/* (DOY) date of end of wintering */
 	double WPM;                                     /* (1/day) daily whole plant mortality value */
 	double FM ;                                     /* (1/day) daily fire mortality value */
-	double mulch_coverage;                          /* (%) percent of mulch coverage */
-	double mulch_EVPred;                            /* (prop) evaporation reduction effect of mulch (soil cover) */
+	double SCpercent;                               /* (%) percent of soil coverage */
+	double SC_EVPred;                               /* (prop) evaporation reduction effect of soil cover) */
 	double plantNdemand;							/* (kgN/m2/d) N demand of plant */ 
 } epvar_struct;
 /* endOUT */
@@ -1801,12 +1823,12 @@ typedef struct
 	double Tp3_decomp;              /* (dimless) parameter 3 for Tsoil response function of decomposition */
 	double Tp4_decomp;              /* (dimless) parameter 4 for Tsoil response function of decomposition */
 	double Tmin_decomp;             /* (Celsius) minimum T for decomposition (below which no decomposition is assumed) */
-	double pLAYER_mulch;            /* (dimless) mulch parameter: layer effect */
-	double p1_mulch;                /* (dimless) parameter 1 for mulch function  */
-	double p2_mulch;                /* (dimless) parameter 2 for mulch function  */
-	double p3_mulch;                /* (dimless) parameter 3 for mulch function  */
-	double pRED_mulch;              /* (dimless) mulch parameter: evaporation reduction */
-	double pCRIT_mulch;             /* (dimless) mulch parameter: critical amount */
+	double pLAY_soilCover;            /* (dimless) soil cover parameter: layer effect */
+	double p1_soilCover;            /* (dimless) parameter 1 for soil cover function  */
+	double p2_soilCover;            /* (dimless) parameter 2 for soil cover function  */
+	double p3_soilCover;            /* (dimless) parameter 3 for soil cover function  */
+	double pRED_soilCover;              /* (dimless) soil cover parameter: evaporation reduction */
+	double pCRIT_soilCover;             /* (dimless) soil cover parameter: critical amount */
 	double p1diffus_tipping;        /* (dimless) parameter 1 for diffusion calculation */
 	double p2diffus_tipping;        /* (dimless) parameter 2 for diffusion calculation */
 	double p3diffus_tipping;        /* (dimless) parameter 3 for diffusion calculation */
@@ -1883,6 +1905,7 @@ typedef struct
 	double hydrCONDUCTfc[N_SOILLAYERS];					/* (m/s) hidraulic conductivity at field capacity  */
 	double hydrDIFFUSfc[N_SOILLAYERS];					/* (m2/s) hidraulic diffusivity at field capacity  */
 	double GWeff[N_SOILLAYERS];					        /* (dimless) coefficient of groundwater effect  */
+	double CFeff[N_SOILLAYERS];					        /* (dimless) coefficient of capillary effect  */
 	double coeff_EVPlim;								/* (ratio) coefficient of soil evaporation calculations by Joe Ritchie */
 	double coeff_EVPcum;								/* (dimless) coefficient of soil evaporation calculations by Joe Ritchie */
 	double coeff_DSRmax;								/* (dimless) coefficient of maximal DRS in soil evaporation limitation */
@@ -1936,7 +1959,7 @@ typedef struct
 	int* PLTyear_array;							/* (int) ARRAY of contains the planting year */
 	int* PLTmonth_array;						/* (int) ARRAY of contains the planting month */
     int* PLTday_array;							/* (int) ARRAY of contains the planting day */
-	double* germ_depth_array;			        /* (m) ARRAY of germination_depth */
+	double* germDepth_array;			        /* (m) ARRAY of germination_depth */
 	double* n_seedlings_array;				    /* (n/m2) ARRAY of number of seedlings */
 	double* weight_1000seed_array;				/* (g/1000n) ARRAY of specific weight of seed */
 	double* seed_carbon_array;					/* (%) ARRAY of carbon content of seed*/
@@ -2071,6 +2094,48 @@ typedef struct
 	double maxAMOUNT_condIRG;                   /* (kgH2O/m2) maximum amount of irrigated water */
 	
 } irrigating_struct;
+/* endVAR */
+
+/* VAR MUL: strucure for mulching paramteres */
+typedef struct
+{
+	int mgmdMUL;								/* (int) number of the management action (-1: no management) */
+	int MUL_num;								/* (int) number of mulching in a simulation */	
+	int* MULyear_array;							/* (int) ARRAY of contains the mulching year */
+	int* MULmonth_array;						/* (int) ARRAY of contains the mulching month */
+    int* MULday_array;							/* (int) ARRAY of contains the mulching day */
+	double* litrCabove_MUL;			            /* (kgC/m2) ARRAY of non-woody mulch carbon content */
+	double* cwdCabove_MUL;				        /* (kgC/m2) ARRAY of woody mulch carbon content  */
+	double* litrCNabove_MUL;				    /* (prop) ARRAY of CN ratio of non-woody mulch */
+	double* cwdCNabove_MUL;				      	/* (prop) ARRAY of CN ratio of woody mulch*/
+} mulching_struct;
+/* endVAR */
+
+/* VAR CWE: strucure for CWDextract paramteres */
+typedef struct
+{
+	int mgmdCWE;								/* (int) number of the management action (-1: no management) */
+	int CWE_num;								/* (int) number of CWD-extract in a siCWEation */	
+	int* CWEyear_array;							/* (int) ARRAY of contains the CWD-extract year */
+	int* CWEmonth_array;						/* (int) ARRAY of contains the CWD-extract month */
+    int* CWEday_array;							/* (int) ARRAY of contains the CWD-extract day */
+	double* removePROP_CWE;			            /* (prop) ARRAY of proportion of remove */
+} CWDextract_struct;
+/* endVAR */
+
+/* VAR FLD: strucure for flooding paramteres */
+typedef struct
+{
+	int mgmdFLD;								/* (int) number of the management action (-1: no management) */
+	int FLD_num;								/* (int) number of flooding in a siFLDation */	
+	int* FLDstart_year_array;					/* (int) ARRAY of contains the flooding year */
+	int* FLDstart_month_array;					/* (int) ARRAY of contains the flooding month */
+    int* FLDstart_day_array;					/* (int) ARRAY of contains the flooding day */
+	int* FLDend_year_array;						/* (int) ARRAY of contains the flooding year */
+	int* FLDend_month_array;					/* (int) ARRAY of contains the flooding month */
+    int* FLDend_day_array;						/* (int) ARRAY of contains the flooding day */
+	double* FLDheight;						/* (m) depth of saturation */
+} flooding_struct;
 /* endVAR */
 
 /* OUT psn: structure for the photosynthesis routine */

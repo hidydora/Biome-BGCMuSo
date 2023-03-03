@@ -1,5 +1,5 @@
 /* 
-multilayer_rootdepth.c
+multilayer_rootDepth.c
 calculation of changing rooting depth based on empirical function 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Biome-BGCMuSo v7.0.
@@ -19,7 +19,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop, const cstate_struct* cs, siteconst_struct* sitec,  epvar_struct* epv)
+int multilayer_rootDepth(const epconst_struct* epc, const soilprop_struct* sprop, const cstate_struct* cs, siteconst_struct* sitec,  epvar_struct* epv)
 {
 
 	int errorCode=0;
@@ -48,7 +48,7 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 		if (!errorCode) 
 		{
 			printf("\n");
-			printf("ERROR: calc_nrootlayers() for multilayer_rootdepth.c\n");
+			printf("ERROR: calc_nrootlayers() for multilayer_rootDepth.c\n");
 		}
 		errorCode=1;
 	}
@@ -64,21 +64,21 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 		if (frootc < epc->rootlength_par1)
 		{
 			/* par1: root weight corresponding to max root depth, par2: root depth function shape parameter */
-			epv->rootdepth = epv->germ_depth + (maxRD-epv->germ_depth) * pow(frootc / epc->rootlength_par1, epc->rootlength_par2);
+			epv->rootDepth = epv->germDepth + (maxRD-epv->germDepth) * pow(frootc / epc->rootlength_par1, epc->rootlength_par2);
 		}
 		else
-			epv->rootdepth = maxRD;
+			epv->rootDepth = maxRD;
 
 	}
 	else
-		epv->rootdepth = 0;
+		epv->rootDepth = 0;
 
-	if (epc->woody) epv->rootdepth = maxRD;
+	if (epc->woody) epv->rootDepth = maxRD;
 
-	if (epv->germ_layer && epv->rootdepth)
-		epv->rootlength = epv->rootdepth - sitec->soillayer_depth[epv->germ_layer-1];
+	if (epv->germ_layer && epv->rootDepth)
+		epv->rootlength = epv->rootDepth - sitec->soillayer_depth[epv->germ_layer-1];
 	else
-		epv->rootlength = epv->rootdepth;
+		epv->rootlength = epv->rootDepth;
 
 	/* ***************************************************************************************************** */	
 	/* 3. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
@@ -88,7 +88,7 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 		if (!errorCode) 
 		{
 			printf("\n");
-			printf("ERROR: calc_nrootlayers() for multilayer_rootdepth.c\n");
+			printf("ERROR: calc_nrootlayers() for multilayer_rootDepth.c\n");
 		}
 		errorCode=1;
 	}
@@ -133,16 +133,16 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 	if ((epv->n_maxrootlayers && fabs(1-RLprop_sum0) > CRIT_PREC) || (!epv->n_maxrootlayers && RLprop_sum0 != 0)) 
 	{
 		printf("\n");
-		printf("ERROR in multilayer_rootdepth: sum of soillayer_RZportion is 0.0\n");
+		printf("ERROR in multilayer_rootDepth: sum of soillayer_RZportion is 0.0\n");
 		errorCode=1;
 	}
 
 	if (RLprop_sum1 == 0) 
 	{
-		if (epv->rootdepth)
+		if (epv->rootDepth)
 		{
 			printf("\n");
-			printf("ERROR in multilayer_rootdepth: sum of soillayer_RZportion is 0.0\n");
+			printf("ERROR in multilayer_rootDepth: sum of soillayer_RZportion is 0.0\n");
 			errorCode=1;
 		}
 	}
@@ -159,7 +159,7 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 		if (fabs(1. - RLprop_sum2) > 1e-8)
 		{
 			printf("\n");
-			printf("ERROR in multilayer_rootdepth: sum of soillayer_RZportion is not equal to 1.0\n");
+			printf("ERROR in multilayer_rootDepth: sum of soillayer_RZportion is not equal to 1.0\n");
 			errorCode=1;
 		}
 	}
@@ -175,15 +175,15 @@ int multilayer_rootdepth(const epconst_struct* epc, const soilprop_struct* sprop
 	/* par1: stem weight corresponding to max plant height, par2: plant height function shape parameter */
 	if (epc->woody)
 	{
-		epv->plant_height = epc->plantHeight_max*(1-exp((-5/epc->plantHeight_par1)*(cs->livestemc+cs->deadstemc)));
+		epv->plantHeight = epc->plantHeight_max*(1-exp((-5/epc->plantHeight_par1)*(cs->livestemc+cs->deadstemc)));
 	}
 	else
 	{
 		
-		epv->plant_height = epc->plantHeight_max * pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantHeight_par1),epc->plantHeight_par2);
+		epv->plantHeight = epc->plantHeight_max * pow(((cs->softstemc+cs->STDBc_softstem)/epc->plantHeight_par1),epc->plantHeight_par2);
 		
 	}
-	if (epv->plant_height > epc->plantHeight_max) epv->plant_height = epc->plantHeight_max;
+	if (epv->plantHeight > epc->plantHeight_max) epv->plantHeight = epc->plantHeight_max;
 
 	
 

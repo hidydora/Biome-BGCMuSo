@@ -205,8 +205,7 @@ int fertilizing(const control_struct* ctrl, const siteconst_struct* sitec, const
 
 		} /* endif  */
 
-		/* estimating aboveground litter and cwdc */
-		cs->litrc_above += cf->FRZ_to_litr1c + cf->FRZ_to_litr2c + cf->FRZ_to_litr3c + cf->FRZ_to_litr4c;
+
 
 	}
    return (errorCode);

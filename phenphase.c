@@ -69,8 +69,6 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		epv->m_extremT = 1;
 		
 		for (pp=0; pp<N_PHENPHASES; pp++) epv->phenphase_date[pp] = -1;
-		epv->flower_date = 0;
-		epv->winterEnd_date = 0;
 	}
 
 	if (ctrl->yday == 0)
@@ -82,6 +80,8 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		epv->cumNstress       = 0;
 		epv->plantCalloc_CUM  = 0;
 		epv->plantNalloc_CUM  = 0;  
+		epv->flower_date      = 0;
+		epv->winterEnd_date   = 0;
 	}
 
 	/* 2.1 first day of vegetation period */
@@ -192,7 +192,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 			if (epv->phenphase_date[pp] < 0) 
 			{
 				epv->phenphase_date[pp]=ctrl->yday;
-				epv->rootdepth_phen[pp]=epv->rootdepth;
+				epv->rootDepth_phen[pp]=epv->rootDepth;
 			}
 
 			critVWC = sprop->VWCwp[epv->germ_layer] + epc->grmn_paramVWC *(sprop->VWCfc[epv->germ_layer] - sprop->VWCwp[epv->germ_layer]);
@@ -206,7 +206,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 					/* firstday and ndays of phenological phase */
 					pp = (int) epv->n_actphen- 1;
 					epv->phenphase_date[pp]=ctrl->yday;
-					epv->rootdepth_phen[pp]=epv->rootdepth;
+					epv->rootDepth_phen[pp]=epv->rootDepth;
 					
 					/* writing out phenphases limits into logfile */
 					if (ctrl->spinup == 0 && PLT->PLT_num) 
@@ -240,7 +240,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 				/* first day of phenological phase */
 				pp = (int) epv->n_actphen- 1;
 				epv->phenphase_date[pp]=ctrl->yday;
-				epv->rootdepth_phen[pp]=epv->rootdepth;
+				epv->rootDepth_phen[pp]=epv->rootDepth;
 				
 				/* writing out phenphases limits into logfile */
 				if (ctrl->spinup == 0 && PLT->PLT_num) 
@@ -315,7 +315,7 @@ int phenphase(file logfile, const control_struct* ctrl, const epconst_struct* ep
 		if (!lasTday) phen->remdays_litfall = 0;
 		phen->predays_litfall = 0;
 		phen->remdays_curgrowth = 0;
-		for (pp=0; pp<N_PHENPHASES; pp++) epv->rootdepth_phen[pp] = -1;
+		for (pp=0; pp<N_PHENPHASES; pp++) epv->rootDepth_phen[pp] = -1;
 
 	}
 

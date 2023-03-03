@@ -36,7 +36,7 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 	double propLAYER0, propLAYER1, propLAYER2;
 	double total_allocation = epc->alloc_leafc[epc->n_germ_phenophase-1]+epc->alloc_frootc[epc->n_germ_phenophase-1]+
 		                      epc->alloc_softstemc[epc->n_germ_phenophase-1]+epc->alloc_yield[epc->n_germ_phenophase-1];
-	
+	 
 	int errorCode=0;
 	int flag_layerIMP, layer, EPCfromINI; 
 	file epc_file;
@@ -91,7 +91,7 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 			seed_quantity = PLT->n_seedlings_array[md] * (PLT->weight_1000seed_array[md] * g_to_kg / 1000);	/* n/m2 * (g/1000n) -> kg seed/m2 */
 			seed_Ccontent = PLT->seed_carbon_array[md]/100;														/* change unit: % to number */
 
-			epv->germ_depth = PLT->germ_depth_array[md]; 
+			epv->germDepth = PLT->germDepth_array[md]; 
 
 	
 
@@ -139,13 +139,13 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 			/* 2.2 germination depth and layer */
 			while (!flag_layerIMP)
 			{
-				if (epv->germ_depth < sitec->soillayer_depth[0])
+				if (epv->germDepth < sitec->soillayer_depth[0])
 				{
 					epv->germ_layer = 0;
 					flag_layerIMP = 1;
 				}
 
-				if (epv->germ_depth >= sitec->soillayer_depth[layer-1] && epv->germ_depth < sitec->soillayer_depth[layer])
+				if (epv->germDepth >= sitec->soillayer_depth[layer-1] && epv->germDepth < sitec->soillayer_depth[layer])
 				{
 					epv->germ_layer = layer;
 					flag_layerIMP = 1;
@@ -300,7 +300,7 @@ int planting(control_struct* ctrl, const siteconst_struct* sitec, const planting
 
 		/* 9.2 	belowground biomass divided between soil layers based on their root content */ 
 	
-		if (epv->rootdepth > CRIT_PREC)
+		if (epv->rootDepth > CRIT_PREC)
 		{
 			for (layer=0; layer < N_SOILLAYERS; layer++)
 			{

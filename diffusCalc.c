@@ -22,18 +22,24 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
-int diffusCalc(const soilprop_struct* sprop, double dz0, double VWC0, double VWC0_sat, double VWC0_fc, double VWC0_wp, 
-	                                         double dz1, double VWC1, double VWC1_sat, double VWC1_fc, double VWC1_wp, double* soilwDiffus)
+int diffusCalc(const soilprop_struct* sprop, double dz0, double VWC0, double rVWC0, double VWC0_sat, double VWC0_fc, double VWC0_wp, 
+	                                         double dz1, double VWC1, double rVWC1, double VWC1_sat, double VWC1_fc, double VWC1_wp, double* soilwDiffus)
 {
 
 	int errorCode=0;
 	double ESWi0, ESWi1, THETi0, THETi1, inner, DBAR, GRAD, FLOW;
 	double dz0_cm, dz1_cm, m_to_cm, soilw0, soilw1, soilw_sat0, soilw_sat1, soilwDiffus_act;
-			
+	double rVWC_limit, VWC0_limit, VWC1_limit, soilw0_limit, soilw1_limit;	
 
 	dz0_cm = dz0 * 100;
 	dz1_cm = dz1 * 100;
 	m_to_cm = 100;
+
+	rVWC_limit=(rVWC0+rVWC1)/2;
+	VWC0_limit=rVWC_limit*(VWC0_fc-VWC0_wp)+VWC0_wp;
+	VWC1_limit=rVWC_limit*(VWC1_fc-VWC1_wp)+VWC1_wp;
+	soilw0_limit=VWC0_limit * dz0 * water_density;
+	soilw1_limit=VWC1_limit * dz1 * water_density;
 
 	soilw0 = VWC0 * dz0 * water_density;
 	soilw1 = VWC1 * dz1 * water_density;
@@ -47,9 +53,7 @@ int diffusCalc(const soilprop_struct* sprop, double dz0, double VWC0, double VWC
 	THETi0 = MIN(VWC0 - VWC0_wp, ESWi0);
 	THETi1 = MIN(VWC1 - VWC1_wp, ESWi1);
 
-	THETi0 = VWC0 - VWC0_wp;
-	THETi1 = VWC1 - VWC1_wp;
-
+	
 	THETi0 = MAX(THETi0,   0);
 	THETi1 = MAX(THETi1,   0);
 
@@ -71,6 +75,21 @@ int diffusCalc(const soilprop_struct* sprop, double dz0, double VWC0, double VWC
 	soilw_sat0 = VWC0_sat * dz0   * water_density;
 	soilw_sat1 = VWC1_sat * dz1 * water_density;
 
+	/* control to remain balance */
+	if (soilwDiffus_act != 0)
+	{
+		if (soilwDiffus_act > 0)
+		{
+			if (soilw0  - soilwDiffus_act < soilw0_limit)
+				soilwDiffus_act = soilw0 - soilw0_limit;
+		}
+		else
+		{
+			if (soilw1  + soilwDiffus_act < soilw1_limit)
+				soilwDiffus_act = soilw0_limit - soilw1_limit;
+		}
+	}
+
 	soilw0  -= soilwDiffus_act;
 			
 	/* control to avoid oversaturation*/
@@ -86,6 +105,8 @@ int diffusCalc(const soilprop_struct* sprop, double dz0, double VWC0, double VWC
 	{
 		soilwDiffus_act -= soilw1 - soilw_sat1;
 	}
+
+	
 			
 	VWC0  =  soilw0 / dz0 / water_density;
 	VWC1  =  soilw1 / dz1 / water_density;

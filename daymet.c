@@ -21,8 +21,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int daymet(const control_struct* ctrl,const metarr_struct* metarr, const epconst_struct* epc, const siteconst_struct* sitec, 
-	       metvar_struct* metv, double snoww)
+int daymet(const control_struct* ctrl,const metarr_struct* metarr, const epconst_struct* epc, metvar_struct* metv, double snoww)
 {
 	/* generates daily meteorological variables from the metarray struct */
 	double Tmax,Tmin,Tavg,TavgRA11,TavgRA30,TavgRA10,Tday,tdiff, tsoil_top;

@@ -314,9 +314,6 @@ int grazing(control_struct* ctrl, const epconst_struct* epc, const siteconst_str
 		ns->litr3n[2] += nf->GRZ_to_litr3n * propLAYER2;
 		ns->litr4n[2] += nf->GRZ_to_litr4n * propLAYER2;
 
-		/* estimating aboveground litter and cwdc */
-		cs->litrc_above += cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c;
-
 	
 		cs->GRZsrc_C += cf->GRZ_to_litr1c + cf->GRZ_to_litr2c + cf->GRZ_to_litr3c + cf->GRZ_to_litr4c;
 		ns->GRZsrc_N += nf->GRZ_to_litr1n + nf->GRZ_to_litr2n + nf->GRZ_to_litr3n + nf->GRZ_to_litr4n;

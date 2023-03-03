@@ -28,9 +28,12 @@ which gave an error.
 
 
 
-int mgm_init(file init, control_struct *ctrl,  epconst_struct* epc, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, mowing_struct* MOW, 
-	         planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN, irrigating_struct* IRG)
+int mgm_init(file init, control_struct *ctrl,  epconst_struct* epc, 
+	         fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, mowing_struct* MOW, planting_struct* PLT, ploughing_struct* PLG, 
+			 thinning_struct* THN, irrigating_struct* IRG, mulching_struct* MUL, CWDextract_struct* CWE)
 {
+
+
 	int errorCode=0;
 	int dofilecloseMANAGEMENT = 1;
 	file mgm_file;
@@ -60,6 +63,8 @@ int mgm_init(file init, control_struct *ctrl,  epconst_struct* epc, fertilizing_
 	GRZ->GRZ_num = 0;
 	FRZ->FRZ_num = 0;
 	IRG->IRG_num = 0;
+	MUL->MUL_num = 0;
+	CWE->CWE_num = 0;
 	GRZ->trampleff_act	= DATA_GAP;
 
 	
@@ -152,7 +157,7 @@ int mgm_init(file init, control_struct *ctrl,  epconst_struct* epc, fertilizing_
 		}
 
 		/* read the harvesting information */
-		if (!errorCode && harvesting_init(mgm_file, ctrl, PLT, HRV))
+		if (!errorCode && harvesting_init(mgm_file, ctrl, HRV))
 		{
 			printf("ERROR in call to harvesting_init() from mgm_init.c... Exiting\n");
 			errorCode=2105;
@@ -178,6 +183,24 @@ int mgm_init(file init, control_struct *ctrl,  epconst_struct* epc, fertilizing_
 			printf("ERROR in call to irrigating_init() from mgm_init.c... Exiting\n");
 			errorCode=2108;
 		}
+
+		/* read the mulching information */
+		if (!errorCode && mulching_init(mgm_file, ctrl, MUL))
+		{
+			printf("ERROR in call to mulching_init() from mgm_init.c... Exiting\n");
+			errorCode=2109;
+		}
+
+		/* read the CWDextract information */
+		if (!errorCode && CWDextract_init(mgm_file, ctrl, CWE))
+		{
+			printf("ERROR in call to CWDextract_init() from mgm_init.c... Exiting\n");
+			errorCode=2110;
+		}
+
+		
+
+
 
 
 		fclose(mgm_file.ptr);

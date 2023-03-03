@@ -26,7 +26,7 @@ for complete description of this change.
 #include "bgc_constants.h"
 
 
-int water_state_update(const epconst_struct* epc, const wflux_struct* wf, wstate_struct* ws)
+int water_state_update(const wflux_struct* wf, wstate_struct* ws)
 {
 	/* daily update of the water state variables */
 	 
@@ -82,6 +82,10 @@ int water_state_update(const epconst_struct* epc, const wflux_struct* wf, wstate
 	ws->groundwater_src += wf->GW_to_pondw;
 
 	ws->cumGWchange += (ws->groundwater_src - preGWsrc);
+
+	/* flooding src */
+	ws->FLDsrc += wf->FLD_to_soilw;
+	ws->FLDsrc += wf->FLD_to_pondw;
 
 	/* irrigating src*/
 	ws->IRGsrc_W += wf->IRG_to_prcp;
@@ -938,16 +942,6 @@ int CN_state_update(const siteconst_struct* sitec, const epconst_struct* epc, co
 		}
 	} /* end if allocation day */
 
-	/* +: estimating aboveground cwdc: calculation of cwdc_total2 (after mortality decreased value) -> ratio */
-	for (layer = 0; layer < N_SOILLAYERS; layer++) 
-	{
-		cwdc_total2 += cs->cwdc[layer];
-		litrc_total2 += cs->litr1c[layer] + cs->litr2c[layer] + cs->litr3c[layer] + cs->litr4c[layer];
-	}
-	if (cwdc_total1 > 0) cs->cwdc_above *= cwdc_total2/cwdc_total1;
-	if (litrc_total1 > 0) cs->litrc_above *= litrc_total2/litrc_total1;
-
-	cs->mulch = cs->cwdc_above + cs->litrc_above;
 
 
 	return (errorCode);

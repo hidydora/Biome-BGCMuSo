@@ -65,7 +65,7 @@ int multilayer_transpiration(control_struct* ctrl, const siteconst_struct* sitec
 		/* transpiration based on rootlenght proportion */
 		wf->soilwTRPdemand[layer] = wf->soilwTRP_POT * epv->rootlengthProp[layer]; 
 
-
+	
 		/* TRP_lack: control parameter to avoid negative soil water content (due to overestimated transpiration + dry soil) */
 		TRP_lack = wf->soilwTRPdemand[layer] - ws->soilw_avail[layer];
 

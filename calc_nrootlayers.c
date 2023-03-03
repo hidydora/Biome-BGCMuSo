@@ -101,7 +101,7 @@ int calc_nrootlayers(int flag, double maxRD, double frootc, siteconst_struct* si
 		{
 			epv->n_maxrootlayers = 0;
 			printf("\n");
-			printf("ERROR in multilayer_rootdepth: maximum of rooting depth is 0\n");
+			printf("ERROR in multilayer_rootDepth: maximum of rooting depth is 0\n");
 			errorCode=1;
 		}
 	
@@ -112,25 +112,25 @@ int calc_nrootlayers(int flag, double maxRD, double frootc, siteconst_struct* si
 		/* ***************************************************************************************************** */	
 		/* 3. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
 	
-		if (epv->rootdepth > 0)
+		if (epv->rootDepth > 0)
 		{
-			if (epv->rootdepth > sitec->soillayer_depth[0])
+			if (epv->rootDepth > sitec->soillayer_depth[0])
 			{
-				if (epv->rootdepth > sitec->soillayer_depth[1])
+				if (epv->rootDepth > sitec->soillayer_depth[1])
 				{	
-					if (epv->rootdepth > sitec->soillayer_depth[2])
+					if (epv->rootDepth > sitec->soillayer_depth[2])
 					{
-						if (epv->rootdepth > sitec->soillayer_depth[3])
+						if (epv->rootDepth > sitec->soillayer_depth[3])
 						{
-							if (epv->rootdepth > sitec->soillayer_depth[4])
+							if (epv->rootDepth > sitec->soillayer_depth[4])
 							{
-								if (epv->rootdepth > sitec->soillayer_depth[5])
+								if (epv->rootDepth > sitec->soillayer_depth[5])
 								{
-									if (epv->rootdepth > sitec->soillayer_depth[6])
+									if (epv->rootDepth > sitec->soillayer_depth[6])
 									{
-										if (epv->rootdepth > sitec->soillayer_depth[7])
+										if (epv->rootDepth > sitec->soillayer_depth[7])
 										{
-											if (epv->rootdepth > sitec->soillayer_depth[8])
+											if (epv->rootDepth > sitec->soillayer_depth[8])
 											{	
 												epv->n_rootlayers = 10;		
 											}
@@ -185,7 +185,7 @@ int calc_nrootlayers(int flag, double maxRD, double frootc, siteconst_struct* si
 			if (frootc > CRIT_PREC)
 			{
 				printf("\n");
-				printf("ERROR in multilayer_rootdepth: root is available but rooting depth is 0\n");
+				printf("ERROR in multilayer_rootDepth: root is available but rooting depth is 0\n");
 				errorCode=1;
 			}
 		}

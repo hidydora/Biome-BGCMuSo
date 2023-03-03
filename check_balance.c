@@ -57,7 +57,7 @@ int check_water_balance(wstate_struct* ws, int first_balance)
 	}
 	
 	/* sum of sources */
-	ws->inW = ws->prcp_src + ws->groundwater_src + ws->IRGsrc_W +  ws->FRZsrc_W;
+	ws->inW = ws->prcp_src + ws->groundwater_src + ws->IRGsrc_W +  ws->FRZsrc_W + ws->FLDsrc;
 	
 	/* sum of sinks */
 	ws->outW = ws->soilEVP_snk + ws->snowSUBL_snk + ws->groundwater_snk +
@@ -170,12 +170,15 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	cs->STDBc_above = cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem;
 	cs->STDBc_below = cs->STDBc_froot;
 
+	cs->litrc_above = cs->litr1c[0] + cs->litr2c[0] + cs->litr3c[0] + cs->litr4c[0];
+	cs->cwdc_above = cs->cwdc[0];
+
 
 
 	/* DAILY CHECK ON CARBON BALANCE */
 	
 	/* sum of sources: photosynthesis and managenet */
-	cs->inC = cs->psnsun_src + cs->psnshade_src + cs->PLTsrc_C + cs->GRZsrc_C  + cs->FRZsrc_C;
+	cs->inC = cs->psnsun_src + cs->psnshade_src + cs->PLTsrc_C + cs->GRZsrc_C  + cs->FRZsrc_C + cs->MULsrc_C;
 	
 	/* sum of sinks: respiration, fire and management */
 	cs->outC = cs->leaf_MR_snk      + cs->leaf_GR_snk      + cs->froot_MR_snk     + cs->froot_GR_snk + 
@@ -185,7 +188,7 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 			  cs->litr1_hr_snk + cs->litr2_hr_snk + cs->litr4_hr_snk + 
 			  cs->soil1_hr_snk + cs->soil2_hr_snk + cs->soil3_hr_snk + cs->soil4_hr_snk + 
 			  cs->FIREsnk_C +  cs->Cdeepleach_snk + 
-			  cs->GRZsnk_C + cs->THN_transportC + cs->MOW_transportC + cs->HRV_transportC; 
+			  cs->GRZsnk_C + cs->THN_transportC + cs->MOW_transportC + cs->HRV_transportC + cs->CWEsnk_C; 
 		
 		     
 		
@@ -319,12 +322,12 @@ int check_nitrogen_balance(nstate_struct* ns, int first_balance)
 	
 	/* sum of sources: fixation, deposition, spinup add, management */
 	ns->inN = ns->Nfix_src + ns->Ndep_src + ns->SPINUPsrc +
-			  ns->PLTsrc_N +  ns->GRZsrc_N +  ns->FRZsrc_N;
+			  ns->PLTsrc_N +  ns->GRZsrc_N +  ns->FRZsrc_N + ns->MULsrc_N;
 	
 	
 	/* sum of sinks: volatilization, fire, deep leach, management */
 	ns->outN = ns->Nvol_snk + ns->Nprec_snk + ns->FIREsnk_N + ns->Ndeepleach_snk + 
-			   ns->GRZsnk_N + ns->THN_transportN + ns->MOW_transportN+  + ns->HRV_transportN;
+			   ns->GRZsnk_N + ns->THN_transportN + ns->MOW_transportN+  + ns->HRV_transportN + ns->CWEsnk_N;
 
 		
 	/* sum of current storage */

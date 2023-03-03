@@ -24,7 +24,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 
 int groundwaterR_preproc(const control_struct* ctrl, const siteconst_struct* sitec, soilprop_struct* sprop, epvar_struct* epv, 
-	            wstate_struct* ws, wflux_struct* wf, groundwater_struct* gws, GWcalc_struct* gwc)
+	            wstate_struct* ws, wflux_struct* wf, groundwater_struct* GWS, GWcalc_struct* gwc)
 {
 	int errorCode,layer,layerGWC,n_layerGWC, md, year, GWlayer, CFlayer,  l;
 	double GWboundL,GWboundU, ratio, GWdischarge, soilw_sat0, CFact, ctrl_rootlengthProp_GWC;	
@@ -37,16 +37,16 @@ int groundwaterR_preproc(const control_struct* ctrl, const siteconst_struct* sit
 	ctrl_rootlengthProp_GWC= 0;
 
 	/* critical epv->VWC-difference */
-	md = gws->mgmdGWD-1;
+	md = GWS->mgmdGWD-1;
 	year = ctrl->simstartyear + ctrl->simyr;
 
 
 	
 	/*A. if gound water depth information is available using in multilayer calculation */
-	if (gws->GWD_num != 0)	
+	if (GWS->GWD_num != 0)	
 	{	
-		if (md >= 0 && year == gws->GWyear_array[md] && ctrl->month == gws->GWmonth_array[md] && ctrl->day == gws->GWday_array[md])
-			sprop->GWD = gws->GWdepth_array[md];
+		if (md >= 0 && year == GWS->GWyear_array[md] && ctrl->month == GWS->GWmonth_array[md] && ctrl->day == GWS->GWday_array[md])
+			sprop->GWD = GWS->GWdepth_array[md];
 		else
 			sprop->GWD = DATA_GAP;
 
@@ -344,7 +344,7 @@ int groundwaterR_preproc(const control_struct* ctrl, const siteconst_struct* sit
 
 
 	/* B. no Groundwater depth information is available using in multilayer calculation OR GW is below 100 m */
-	if (gws->GWD_num == 0 && sprop->GWD == DATA_GAP)
+	if (GWS->GWD_num == 0 && sprop->GWD == DATA_GAP)
 	{
 		sprop->GWlayer=DATA_GAP;
 		sprop->CFlayer=DATA_GAP;

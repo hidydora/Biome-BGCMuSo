@@ -85,6 +85,8 @@
     <ClCompile Include="conduct_calc.c" />
     <ClCompile Include="conduct_limit_factors.c" />
     <ClCompile Include="cutdown2litter.c" />
+    <ClCompile Include="CWDextract.c" />
+    <ClCompile Include="CWDextract_init.c" />
     <ClCompile Include="daily_allocation.c" />
     <ClCompile Include="date_to_doy.c" />
     <ClCompile Include="daymet.c" />
@@ -98,6 +100,8 @@
     <ClCompile Include="fertilizing.c" />
     <ClCompile Include="fertilizing_init.c" />
     <ClCompile Include="firstday.c" />
+    <ClCompile Include="flooding.c" />
+    <ClCompile Include="flooding_init.c" />
     <ClCompile Include="flowering_heatstress.c" />
     <ClCompile Include="grazing.c" />
     <ClCompile Include="grazing_init.c" />
@@ -124,7 +128,8 @@
     <ClCompile Include="mortality.c" />
     <ClCompile Include="mowing.c" />
     <ClCompile Include="mowing_init.c" />
-    <ClCompile Include="mulch.c" />
+    <ClCompile Include="mulching.c" />
+    <ClCompile Include="mulching_init.c" />
     <ClCompile Include="multilayer_hydrolparams.c" />
     <ClCompile Include="multilayer_hydrolprocess.c" />
     <ClCompile Include="multilayer_leaching.c" />
@@ -161,6 +166,7 @@
     <ClCompile Include="sitec_init.c" />
     <ClCompile Include="smooth.c" />
     <ClCompile Include="snowmelt.c" />
+    <ClCompile Include="soilCover.c" />
     <ClCompile Include="soilEVP_calc.c" />
     <ClCompile Include="soilstress_calculation.c" />
     <ClCompile Include="spinup_bgc.c" />

@@ -48,6 +48,7 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	ws->deeppercolation_snk = 0.0;  
 	ws->groundwater_src = 0.0;
 	ws->groundwater_snk = 0.0;
+	ws->FLDsrc = 0;
 	ws->WbalanceERR = 0.0;	
 	ws->inW = 0.0;
 	ws->outW = 0.0;
@@ -84,6 +85,8 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	cs->FIREsnk_C = 0.0;
 	cs->SNSCsnk_C = 0.0;
 	cs->PLTsrc_C = 0.0; 
+	cs->MULsrc_C = 0.0;
+	cs->CWEsnk_C = 0.0;
 	cs->THN_transportC = 0.0; 
 
 	cs->MOW_transportC = 0;
@@ -117,6 +120,8 @@ int zero_srcsnk(cstate_struct* cs, nstate_struct* ns, wstate_struct* ws, summary
 	ns->SPINUPsrc = 0.0;
 	ns->SNSCsnk_N = 0.0;
 	ns->PLTsrc_N = 0.0; 
+	ns->MULsrc_N = 0.0;
+	ns->CWEsnk_N = 0.0;
 	ns->THN_transportN = 0.0; 
 	ns->MOW_transportN = 0;
 	ns->GRZsnk_N = 0.0;  

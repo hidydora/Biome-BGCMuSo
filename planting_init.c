@@ -50,7 +50,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 	int* PLTyear_array;					
 	int* PLTmonth_array;				
     int* PLTday_array;							
-	double* germ_depth_array;			      
+	double* germDepth_array;			      
 	double* n_seedlings_array;				    
 	double* weight_1000seed_array;				
 	double* seed_carbon_array;				
@@ -96,7 +96,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 		PLTyear_array         = (int*) malloc(maxPLT_num*sizeof(int));  
 		PLTmonth_array        = (int*) malloc(maxPLT_num*sizeof(int)); 
 		PLTday_array          = (int*) malloc(maxPLT_num*sizeof(int)); 
-		germ_depth_array      = (double*) malloc(maxPLT_num*sizeof(double)); 
+		germDepth_array      = (double*) malloc(maxPLT_num*sizeof(double)); 
 		n_seedlings_array     = (double*) malloc(maxPLT_num*sizeof(double)); 
 		weight_1000seed_array = (double*) malloc(maxPLT_num*sizeof(double)); 
 		seed_carbon_array     = (double*) malloc(maxPLT_num*sizeof(double)); 
@@ -149,7 +149,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 				PLTyear_array[nmgm]         = p1;
 				PLTmonth_array[nmgm]        = p2;
 				PLTday_array[nmgm]          = p3;
-				germ_depth_array[nmgm]      = p4;
+				germDepth_array[nmgm]      = p4;
 				n_seedlings_array[nmgm]     = p5;
 				weight_1000seed_array[nmgm] = p6;
 				seed_carbon_array[nmgm]     = p7;
@@ -167,7 +167,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 		PLT->PLTyear_array         = (int*) malloc(PLT->PLT_num*sizeof(int));  
 		PLT->PLTmonth_array        = (int*) malloc(PLT->PLT_num*sizeof(int)); 
 		PLT->PLTday_array          = (int*) malloc(PLT->PLT_num*sizeof(int)); 
-		PLT->germ_depth_array      = (double*) malloc(PLT->PLT_num*sizeof(double)); 
+		PLT->germDepth_array      = (double*) malloc(PLT->PLT_num*sizeof(double)); 
 		PLT->n_seedlings_array     = (double*) malloc(PLT->PLT_num*sizeof(double)); 
 		PLT->weight_1000seed_array = (double*) malloc(PLT->PLT_num*sizeof(double)); 
 		PLT->seed_carbon_array     = (double*) malloc(PLT->PLT_num*sizeof(double)); 
@@ -179,7 +179,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 			PLT->PLTyear_array[nmgm]         = PLTyear_array[nmgm];
 			PLT->PLTmonth_array[nmgm]        = PLTmonth_array[nmgm];
 			PLT->PLTday_array[nmgm]          = PLTday_array[nmgm];
-			PLT->germ_depth_array[nmgm]      = germ_depth_array[nmgm];
+			PLT->germDepth_array[nmgm]      = germDepth_array[nmgm];
 			PLT->n_seedlings_array[nmgm]     = n_seedlings_array[nmgm] ;
 			PLT->weight_1000seed_array[nmgm] = weight_1000seed_array[nmgm];
 			PLT->seed_carbon_array[nmgm]     = seed_carbon_array[nmgm];
@@ -195,7 +195,7 @@ int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst
 		free(PLTyear_array);
 		free(PLTmonth_array);
 		free(PLTday_array);
-		free(germ_depth_array);
+		free(germDepth_array);
 		free(n_seedlings_array);
 		free(weight_1000seed_array);
 		free(seed_carbon_array);

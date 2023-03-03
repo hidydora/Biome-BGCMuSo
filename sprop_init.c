@@ -30,7 +30,7 @@ which gave an error.
 int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 {
 	int errorCode=0;
-	int layer, scanflag;
+	int layer, scanflag, ec;
 	int dofilecloseSOILPROP = 1;
 	file sprop_file;
 	char key[] = "SOIL_FILE";
@@ -67,95 +67,107 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		errorCode=20800;
 	}
 	
+	ec = 208001;
+
 	/* first scan sprop keyword to ensure proper *.sprop format */
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading header, sprop_init()\n");
-		errorCode=208001;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	/***********************************************************/
 	/* dividing line from file */ 
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 1. dividing line, sprop_init()\n");
-		errorCode=208002;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 1. block title, sprop_init()\n");
-		errorCode=208003;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
 	
-	/* new SOI file with 91 lines - no extraSOIparameters.txt */
 	 
 	/****************************/
 	/* SOIL GENERIC PARAMETERS */
 
-	/*  soil depth */
+	/*  soil depth with control*/
 	if (!errorCode && scan_value(sprop_file, &sprop->soildepth, 'd'))
 	{
 		printf("ERROR reading soildepth: sprop_init()\n");
-		errorCode=208004;
+		errorCode=ec;
 	}
 	if (!errorCode && sprop->soildepth <= 0)
 	{
 		printf("ERROR in sprop data in SOIL file: negative or zero soildepth, sprop_init()\n");
-		errorCode=2080041;
+		errorCode=ec;
 	}
+	ec=ec+1;
+
 	if (!errorCode && scan_value(sprop_file, &sprop->soil1_CN, 'd'))
 	{
 		printf("ERROR reading SOIL1_CN: sprop_init()\n");
-		errorCode=208005;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->soil2_CN, 'd'))
 	{
 		printf("ERROR reading SOIL2_CN: sprop_init()\n");
-		errorCode=208006;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->soil3_CN, 'd'))
 	{
 		printf("ERROR reading SOIL3_CN: sprop_init()\n");
-		errorCode=208007;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->soil4_CN, 'd'))
 	{
 		printf("ERROR reading SOIL4_CN: sprop_init()\n");
-		errorCode=208008;
+		errorCode=ec;
 	}
-		
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->totalSOCcrit, 'd'))
 	{
 		printf("ERROR reading totalSOCcrit: sprop_init()\n");
-		errorCode=208009;
+		errorCode=ec;
 	}
-
-	if (!errorCode && scan_value(sprop_file, &sprop->NH4_mobilen_prop, 'd'))
+	ec=ec+1;
+ 	if (!errorCode && scan_value(sprop_file, &sprop->NH4_mobilen_prop, 'd'))
 	{
 		printf("ERROR reading NH4_mobilen_prop: sprop_init()\n");
-		errorCode=208010;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	/* aerodynamic paramter (Wallace and Holwill, 1997) */
 	if (!errorCode && scan_value(sprop_file, &sprop->aerodyn_resist, 'd'))
 	{
 		printf("ERROR reading aerodyn_resist: sprop_init()\n");
-		errorCode=208011;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
+	
 	/****************************/
 	/* dividing line from file */ 
 
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 2. dividing line, sprop_init()\n");
-		errorCode=208012;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 2. block title, sprop_init()\n");
-		errorCode=208013;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	/****************************/
 	/*  DECOMPOSITION, NITRIFICATION AND DENITRIFICATION PARAMETERS  */
@@ -163,157 +175,181 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 	if (!errorCode && scan_value(sprop_file, &sprop->VWCratio_DCcrit1, 'd'))
 	{
 		printf("ERROR reading VWCratio_DCcrit1, sprop_init()\n");
-		errorCode=208014;
+		errorCode=ec;
 	}
-	
-   if (!errorCode && scan_value(sprop_file, &sprop->VWCratio_DCcrit2, 'd'))
+	ec=ec+1;
+    if (!errorCode && scan_value(sprop_file, &sprop->VWCratio_DCcrit2, 'd'))
 	{
 		printf("ERROR reading VWCratio_DCcrit1, sprop_init()\n");
-		errorCode=208015;
+		errorCode=ec;
 	}
-	
-	 if (!errorCode && scan_value(sprop_file, &sprop->curvature_DC, 'd'))
+	ec=ec+1;
+	if (!errorCode && scan_value(sprop_file, &sprop->curvature_DC, 'd'))
 	{
 		printf("ERROR reading curvature_DC, sprop_init()\n");
-		errorCode=208016;
+		errorCode=ec;
 	}
-
-		
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp1_decomp, 'd'))
 	{
 		printf("ERROR Tp1_decomp, sprop_init()\n");
-		errorCode=208017;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp2_decomp, 'd'))
 	{
 		printf("ERROR Tp2_decomp, sprop_init()\n");
-		errorCode=208018;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp3_decomp, 'd'))
 	{
 		printf("ERROR Tp3_decomp, sprop_init()\n");
-		errorCode=208019;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp4_decomp, 'd'))
 	{
 		printf("ERROR Tp4_decomp, sprop_init()\n");
-		errorCode=208020;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tmin_decomp, 'd'))
 	{
 		printf("ERROR Tp0_decomp, sprop_init()\n");
-		errorCode=208021;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->efolding_depth, 'd'))
 	{
 		printf("ERROR reading e-folding depth: sprop_init()\n");
-		errorCode=208022;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->netMiner_to_nitrif, 'd'))
 	{
 		printf("ERROR reading netMiner_to_nitrif: sprop_init()\n");
-		errorCode=208023;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->maxNitrif_rate, 'd'))
 	{
 		printf("ERROR reading maxNitrif_rate: sprop_init()\n");
-		errorCode=208024;
+		errorCode=ec;
 	}	
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->N2Ocoeff_nitrif, 'd'))
 	{
 		printf("ERROR reading N2Ocoeff_nitrif: sprop_init()\n");
-		errorCode=208025;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->pHp1_nitrif, 'd'))
 	{
 		printf("ERROR pHp1_nitrif, sprop_init()\n");
-		errorCode=208026;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->pHp2_nitrif, 'd'))
 	{
 		printf("ERROR pHp2_nitrif, sprop_init()\n");
-		errorCode=208027;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->pHp3_nitrif, 'd'))
 	{
 		printf("ERROR pHp3_nitrif, sprop_init()\n");
-		errorCode=208028;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->pHp4_nitrif, 'd'))
 	{
 		printf("ERROR pHp4_nitrif, sprop_init()\n");
-		errorCode=208029;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp1_nitrif, 'd'))
 	{
 		printf("ERROR Tp1_nitrif, sprop_init()\n");
-		errorCode=208030;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp2_nitrif, 'd'))
 	{
 		printf("ERROR Tp2_nitrif, sprop_init()\n");
-		errorCode=208031;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp3_nitrif, 'd'))
 	{
 		printf("ERROR Tp3_nitrif, sprop_init()\n");
-		errorCode=208032;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->Tp4_nitrif, 'd'))
 	{
 		printf("ERROR Tp4_nitrif, sprop_init()\n");
-		errorCode=208033;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->minWFPS_nitrif, 'd'))
 	{
 		printf("ERROR reading WFPS_min: sprop_init()\n");
-		errorCode=208034;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->opt1WFPS_nitrif, 'd'))
 	{
 		printf("ERROR reading WFPS_opt1: sprop_init()\n");
-		errorCode=208035;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->opt2WFPS_nitrif, 'd'))
 	{
 		printf("ERROR reading WFPS_opt2: sprop_init()\n");
-		errorCode=208036;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->scalarWFPSmin_nitrif, 'd'))
 	{
 		printf("ERROR reading scalarWFPSmin_nitrif: sprop_init()\n");
-		errorCode=208037;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->denitr_coeff, 'd'))
 	{
 		printf("ERROR reading denitr_coeff: sprop_init()\n");
-		errorCode=208038;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->N2Oratio_denitr, 'd'))
 	{
 		printf("ERROR reading N2Oratio_denitr: sprop_init()\n");
-		errorCode=208039;
+		errorCode=ec;
 	}
 	if (!errorCode && scan_value(sprop_file, &sprop->critWFPS_denitr, 'd'))
 	{
 		printf("ERROR reading critWFPS_denitr: sprop_init()\n");
 		errorCode=208040;
 	}
-		
+	ec=ec+1;
+	
 	/****************************/
 	/* dividing line from file */ 
 
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 3. dividing line, sprop_init()\n");
-		errorCode=208041;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 3. block title, sprop_init()\n");
-		errorCode=208042;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
+	
 	/****************************/
 	/* RATE SCALARS */
 
@@ -321,95 +357,105 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 	if (!errorCode && scan_value(sprop_file, &sprop->rfl1s1, 'd'))
 	{
 		printf("ERROR reading rfl1s1: sprop_init()\n");
-		errorCode=208043;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->rfl2s2, 'd'))
 	{
 		printf("ERROR reading rfl2s2: sprop_init()\n");
-		errorCode=208044;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->rfl4s3, 'd'))
 	{
 		printf("ERROR reading rfl4s3: sprop_init()\n");
-		errorCode=208045;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->rfs1s2, 'd'))
 	{
 		printf("ERROR reading rfs1s2: sprop_init()\n");
-		errorCode=208046;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->rfs2s3, 'd'))
 	{
 		printf("ERROR reading rfs2s3: sprop_init()\n");
-		errorCode=208047;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->rfs3s4, 'd'))
 	{
 		printf("ERROR reading rfs3s4: sprop_init()\n");
-		errorCode=208048;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
 	/* 	base values of rate constants are (1/day)   */
 	if (!errorCode && scan_value(sprop_file, &sprop->kl1_base, 'd'))
 	{
 		printf("ERROR reading kl1_base: sprop_init()\n");
-		errorCode=208049;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->kl2_base, 'd'))
 	{
 		printf("ERROR reading kl2_base: sprop_init()\n");
-		errorCode=208050;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->kl4_base, 'd'))
 	{
 		printf("ERROR reading kl4_base: sprop_init()\n");
-		errorCode=208051;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->ks1_base, 'd'))
 	{
 		printf("ERROR reading ks1_base: sprop_init()\n");
-		errorCode=208052;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->ks2_base, 'd'))
 	{
 		printf("ERROR reading ks2_base: sprop_init()\n");
-		errorCode=208053;
+		errorCode=ec;
 	}
 	if (!errorCode && scan_value(sprop_file, &sprop->ks3_base, 'd'))
 	{
 		printf("ERROR reading ks3_base: sprop_init()\n");
-		errorCode=208054;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->ks4_base, 'd'))
 	{
 		printf("ERROR reading ks4_base: sprop_init()\n");
-		errorCode=208055;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->kfrag_base, 'd'))
 	{
 		printf("ERROR reading kfrag_base: sprop_init()\n");
-		errorCode=208056;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->L1release_ratio, 'd'))
 	{
 		printf("ERROR reading L1release_ratio: sprop_init()\n");
-		errorCode=208057;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->L2release_ratio, 'd'))
 	{
 		printf("ERROR reading L2release_ratio: sprop_init()\n");
-		errorCode=208058;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->L4release_ratio, 'd'))
 	{
 		printf("ERROR reading L4release_ratio: sprop_init()\n");
-		errorCode=208059;
+		errorCode=ec;
 	}
-
+	ec=ec+1;
 
 	/****************************/
 	/* dividing line from file */ 
@@ -417,14 +463,16 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 4. dividing line, sprop_init()\n");
-		errorCode=208060;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 4. block title, sprop_init()\n");
-		errorCode=208061;
+		errorCode=ec;
 	}
-	
+	ec=ec+1;
+
 	/****************************/
 	/* SOIL MOISTURE PARAMETERS */
 
@@ -432,167 +480,193 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 	if (!errorCode && scan_value(sprop_file, &sprop->soilEVPlim, 'd'))
 	{
 		printf("ERROR reading soilEVPlim: sprop_init()\n");
-		errorCode=208062;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	/*  maximum height of pond water */
 	if (!errorCode && scan_value(sprop_file, &sprop->pondmax, 'd'))
 	{
 		printf("ERROR reading maximum height of pond water: sprop_init()\n");
-		errorCode=208063;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	/*  curvature of soilstress function */
 	if (!errorCode && scan_value(sprop_file, &sprop->curvature_SS, 'd'))
 	{
 		printf("ERROR reading curvature_SS: sprop_init()\n");
-		errorCode=208064;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	/* runoff parameter (Campbell and Diaz)  */
 	if (!errorCode && scan_value(sprop_file, &sprop->RCN_mes, 'd'))
 	{
 		printf("ERROR reading measured runoff curve number: sprop_init()\n");
-		errorCode=208065;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	/* fraction of dissolving coefficients  */
 	if (!errorCode && scan_value(sprop_file, &sprop->SOIL1_dissolv_prop, 'd'))
 	{
 		printf("ERROR reading SOIL1_dissolv_prop: sprop_init()\n");
-		errorCode=208066;
+		errorCode=ec;
 	}	
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->SOIL2_dissolv_prop, 'd'))
 	{
 		printf("ERROR reading SOIL2_dissolv_prop: sprop_init()\n");
-		errorCode=208067;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->SOIL3_dissolv_prop, 'd'))
 	{
 		printf("ERROR reading SOIL3_dissolv_prop: sprop_init()\n");
-		errorCode=208068;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->SOIL4_dissolv_prop, 'd'))
 	{
 		printf("ERROR reading SOIL4_dissolv_prop: sprop_init()\n");
-		errorCode=208069;
+		errorCode=ec;
 	}
-	/* mulch parameters  */
-	if (!errorCode && scan_value(sprop_file, &sprop->pLAYER_mulch, 'd'))
+	ec=ec+1;
+	/* soilCover parameters  */
+	if (!errorCode && scan_value(sprop_file, &sprop->pLAY_soilCover, 'd'))
 	{
-		printf("ERROR pLAYER_mulch, sprop_init()\n");
-		errorCode=208070;
+		printf("ERROR pLAY_soilCover, sprop_init()\n");
+		errorCode=ec;
 	}
-	if (!errorCode && scan_value(sprop_file, &sprop->pCRIT_mulch, 'd'))
+	ec=ec+1;
+	if (!errorCode && scan_value(sprop_file, &sprop->pCRIT_soilCover, 'd'))
 	{
-		printf("ERROR pCRIT_mulch, sprop_init()\n");
-		errorCode=208071;
+		printf("ERROR pCRIT_soilCover, sprop_init()\n");
+		errorCode=ec;
 	}
-	if (!errorCode && scan_value(sprop_file, &sprop->p1_mulch, 'd'))
+	ec=ec+1;
+	if (!errorCode && scan_value(sprop_file, &sprop->p1_soilCover, 'd'))
 	{
-		printf("ERROR p1_mulch, sprop_init()\n");
-		errorCode=208072;
+		printf("ERROR p1_soilCover, sprop_init()\n");
+		errorCode=ec;
 	}
-	if (!errorCode && scan_value(sprop_file, &sprop->p2_mulch, 'd'))
+	ec=ec+1;
+	if (!errorCode && scan_value(sprop_file, &sprop->p2_soilCover, 'd'))
 	{
-		printf("ERROR p2_mulch, sprop_init()\n");
-		errorCode=208073;
+		printf("ERROR p2_soilCover, sprop_init()\n");
+		errorCode=ec;
 	}
-	if (!errorCode && scan_value(sprop_file, &sprop->p3_mulch, 'd'))
+	ec=ec+1;
+	if (!errorCode && scan_value(sprop_file, &sprop->p3_soilCover, 'd'))
 	{
-		printf("ERROR p3_mulch, sprop_init()\n");
-		errorCode=208074;
+		printf("ERROR p3_soilCover, sprop_init()\n");
+		errorCode=ec;
 	}
-	if (!errorCode && scan_value(sprop_file, &sprop->pRED_mulch, 'd'))
+	ec=ec+1;
+	if (!errorCode && scan_value(sprop_file, &sprop->pRED_soilCover, 'd'))
 	{
-		printf("ERROR pRED_mulch, sprop_init()\n");
-		errorCode=208075;
+		printf("ERROR pRED_soilCover, sprop_init()\n");
+		errorCode=ec;
 	}
-	
+	ec=ec+1;
 	/* tipping diffusion parameters  */
 	if (!errorCode && scan_value(sprop_file, &sprop->p1diffus_tipping, 'd'))
 	{
 		printf("ERROR p1diffus_tipping, sprop_init()\n");
-		errorCode=208076;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->p2diffus_tipping, 'd'))
 	{
 		printf("ERROR p2diffus_tipping, sprop_init()\n");
-		errorCode=208077;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, &sprop->p3diffus_tipping, 'd'))
 	{
 		printf("ERROR p3diffus_tipping, sprop_init()\n");
-		errorCode=208078;
+		errorCode=ec;
 	}
-	
+	ec=ec+1;
 	
 	/****************************/
 	/* dividing line from file */ 
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 5. dividing line, sprop_init()\n");
-		errorCode=208079;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 5. block title, sprop_init()\n");
-		errorCode=208080;
+		errorCode=ec;
 	}
-		
+	ec=ec+1;
+
 	/****************************/
 	/* CH4 PARAMETERS */
 
     if (!errorCode && scan_value(sprop_file, &sprop->pBD1_CH4, 'd'))
 	{
 		printf("ERROR reading pBD1_CH4: sprop_init()\n");
-		errorCode=208081;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	if (!errorCode && scan_value(sprop_file, &sprop->pBD2_CH4, 'd'))
 	{
 		printf("ERROR reading pBD2_CH4: sprop_init()\n");
-		errorCode=208082;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	if (!errorCode && scan_value(sprop_file, &sprop->pVWC1_CH4, 'd'))
 	{
 		printf("ERROR reading pVWC1_CH4: sprop_init()\n");
-		errorCode=208083;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	if (!errorCode && scan_value(sprop_file, &sprop->pVWC2_CH4, 'd'))
 	{
 		printf("ERROR reading pVWC2_CH4: sprop_init()\n");
-		errorCode=208084;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	if (!errorCode && scan_value(sprop_file, &sprop->pVWC3_CH4, 'd'))
 	{
 		printf("ERROR reading pVWC3_CH4: sprop_init()\n");
-		errorCode=208085;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	if (!errorCode && scan_value(sprop_file, &sprop->C_pVWC4, 'd'))
 	{
 		printf("ERROR reading C_pVWC4: sprop_init()\n");
-		errorCode=208086;
+		errorCode=ec;
 	}
+	ec=ec+1;
 
 	if (!errorCode && scan_value(sprop_file, &sprop->pTS_CH4, 'd'))
 	{
 		printf("ERROR reading pTS_CH4: sprop_init()\n");
-		errorCode=208087;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	
 	/****************************/
 	/* dividing line from file */ 
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 6. dividing line, sprop_init()\n");
-		errorCode=208088;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	if (!errorCode && scan_value(sprop_file, header, 's'))
 	{
 		printf("ERROR reading 6. block title, sprop_init()\n");
-		errorCode=208089;
+		errorCode=ec;
 	}
+	ec=ec+1;
 	
 	/****************************/
 	/* SOIL COMPOSITION AND CHARACTERISTIC VALUES (-9999: no measured data) */
@@ -605,9 +679,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->sand[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading percent sand in layer %i, sprop_init()\n", layer);
-			errorCode=208090;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 
 	/* SILT array - mulilayer soil   */
 	scanflag=0; 
@@ -617,9 +692,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->silt[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading percent silt in layer %i, sprop_init()\n", layer);
-			errorCode=208091;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 
 	/* pH array - mulilayer soil */
 	scanflag=0; 
@@ -629,9 +705,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->pH[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading soil pH in layer %i, sprop_init()\n", layer);
-			errorCode=208092;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 
 	/* soilB parameter - mulilayer soil */
 	scanflag=0; 
@@ -641,9 +718,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->soilB[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading soilB in layer %i, sprop_init()\n", layer);
-			errorCode=208093;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 
 	/* measured bulk density    */
 	scanflag=0; 
@@ -653,9 +731,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->BD_mes[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading BD_mes in layer %i, sprop_init()\n", layer);
-			errorCode=20894;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 
 	/* measured critical VWC values - saturation    */
 	scanflag=0; 
@@ -665,9 +744,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->VWCsat_mes[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading VWCsat_mes in layer %i, sprop_init()\n", layer);
-			errorCode=208095;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 	
 	/* measured critical VWC values - field capacity     */
 	scanflag=0; 
@@ -677,9 +757,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->VWCfc_mes[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading VWCfc_mes in layer %i, sprop_init()\n", layer);
-			errorCode=208096;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 	
 	/* measured critical VWC values - wilting point    */
 	scanflag=0; 
@@ -689,9 +770,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->VWCwp_mes[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading VWCwp_mes in layer %i, sprop_init()\n", layer);
-			errorCode=208097;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
 
 	/* measured critical VWC values - hygr. water    */
 	scanflag=0; 
@@ -701,47 +783,10 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		if (!errorCode && scan_array(sprop_file, &(sprop->VWChw_mes[layer]), 'd', scanflag, 1))
 		{
 			printf("ERROR reading VWChw_mes in layer %i, sprop_init()\n", layer);
-			errorCode=208098;
-		}
-	}
-
-	/* measured drainage coeff */
-	scanflag=0; 
-	for (layer=0; layer<N_SOILLAYERS; layer++)
-	{
-		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (!errorCode && scan_array(sprop_file, &(sprop->drainCoeff_mes[layer]), 'd', scanflag, 1))
-		{
-			printf("ERROR reading drainCoeff_mes in layer %i, sprop_init()\n", layer);
-			errorCode=208099;
-		}
-	}
-
-	/* measured hydraulic conductivity  */
-	scanflag=0; 
-	for (layer=0; layer<N_SOILLAYERS; layer++)
-	{
-		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (!errorCode && scan_array(sprop_file, &(sprop->hydrCONTUCTsatMES_cmPERday[layer]), 'd', scanflag, 1))
-		{
-			printf("ERROR reading hydrCONTUCTsatMES_cmPERday in layer %i, sprop_init()\n", layer);
-			errorCode=208100;
-		}
-	}
-
-   /* capillary fringe */
-	scanflag=0; 
-	for (layer=0; layer<N_SOILLAYERS; layer++)
-	{
-		if (layer==N_SOILLAYERS-1) scanflag=1;
-		if (!errorCode && scan_array(sprop_file, &(sprop->CapillFringeMES_cm[layer]), 'd', scanflag, 1))
-		{
-			printf("ERROR reading CapillFringeMES_cm in layer %i, sprop_init()\n", layer);
-			errorCode=208101;
+			errorCode=ec;
 		}
 	}
 	
-
 	/* CONTROL - measured VWC values (all or none should to be set) */
 	if (sprop->VWCsat_mes[0] == DATA_GAP || sprop->VWCfc_mes[0] == DATA_GAP || sprop->VWCwp_mes[0] == DATA_GAP  || sprop->VWChw_mes[0] == DATA_GAP)
 	{	
@@ -759,9 +804,51 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 		{
 			printf("ERROR in measured soil data in SOI file\n");
 			printf("All or none critical VWC data should to be set by the user\n");
-			errorCode=20809501;
+			errorCode=ec;
 		}
 	}
+	ec=ec+1;
+
+	/* measured drainage coeff */
+	scanflag=0; 
+	for (layer=0; layer<N_SOILLAYERS; layer++)
+	{
+		if (layer==N_SOILLAYERS-1) scanflag=1;
+		if (!errorCode && scan_array(sprop_file, &(sprop->drainCoeff_mes[layer]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading drainCoeff_mes in layer %i, sprop_init()\n", layer);
+			errorCode=ec;
+		}
+	}
+	ec=ec+1;
+
+	/* measured hydraulic conductivity  */
+	scanflag=0; 
+	for (layer=0; layer<N_SOILLAYERS; layer++)
+	{
+		if (layer==N_SOILLAYERS-1) scanflag=1;
+		if (!errorCode && scan_array(sprop_file, &(sprop->hydrCONTUCTsatMES_cmPERday[layer]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading hydrCONTUCTsatMES_cmPERday in layer %i, sprop_init()\n", layer);
+			errorCode=ec;
+		}
+	}
+	ec=ec+1;
+
+   /* capillary fringe */
+	scanflag=0; 
+	for (layer=0; layer<N_SOILLAYERS; layer++)
+	{
+		if (layer==N_SOILLAYERS-1) scanflag=1;
+		if (!errorCode && scan_array(sprop_file, &(sprop->CapillFringeMES_cm[layer]), 'd', scanflag, 1))
+		{
+			printf("ERROR reading CapillFringeMES_cm in layer %i, sprop_init()\n", layer);
+			errorCode=ec;
+		}
+	}
+	ec=ec+1;
+	
+
 
 	/* MULTILAYER SOIL CALCULATION: calculation of soil properties layer by layer (soilb, BD, PSI and VWC critical values),hydr.conduct and hydr.diffus  */
 	if (!errorCode && multilayer_soilcalc(ctrl, sprop))
@@ -1013,7 +1100,6 @@ int multilayer_soilcalc(control_struct* ctrl,  soilprop_struct* sprop)
 		sprop->hydrDIFFUSsat[layer]		= hydrDIFFUSsat;
 		sprop->hydrCONDUCTfc[layer]		= hydrCONDUCTfc;
 		sprop->hydrDIFFUSfc[layer]		= hydrDIFFUSfc;
-		sprop->GWeff[layer]		        = 0;
 
 
 		if (layer == 0) 
@@ -1039,7 +1125,11 @@ int multilayer_soilcalc(control_struct* ctrl,  soilprop_struct* sprop)
 	sprop->preGWlayer   = DATA_GAP;
 	sprop->GWlayer		= DATA_GAP;					
 	sprop->CFlayer		= DATA_GAP;		
-	for (layer = 0; layer<N_SOILLAYERS; layer++) sprop->GWeff[layer] = DATA_GAP;
+	for (layer = 0; layer<N_SOILLAYERS; layer++) 
+	{
+		sprop->GWeff[layer] = DATA_GAP;
+		sprop->CFeff[layer] = DATA_GAP;
+	}
 
 	return (errorCode);
 

@@ -657,12 +657,6 @@ int bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			}
 			ec=ec+1;
 
-			if (ctrl.simyr == 1 && ctrl.yday == 277)
-			{
-				int balus=6;
-			}
-
-
 			/* initalizing annmax and cumulative variables */
 			if (yday == 0)
 			{

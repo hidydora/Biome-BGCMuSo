@@ -62,7 +62,7 @@ int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl)
 	/* open simple SOIL file  */
 	if (!errorCode && scan_open(init,&sprop_file,'r',1)) 
 	{
-		printf("ERROR opening sproponst file, sprop_init()\n");
+		printf("ERROR opening soil file, sprop_init()\n");
 		dofilecloseSOILPROP = 0;
 		errorCode=20800;
 	}

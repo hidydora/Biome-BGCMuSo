@@ -425,13 +425,9 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf, 
 	cf->soil2_hr_total = 0;		
 	cf->soil3_hr_total = 0;		
 	cf->soil4_hr_total = 0;	
-	cf->litr1c_to_soil1c_total = 0;		
-	cf->litr2c_to_soil2c_total = 0;					
-	cf->litr3c_to_litr2c_total = 0;						
-	cf->litr4c_to_soil3c_total = 0;						
-	cf->cwdc_to_litr2c_total = 0;					
-	cf->cwdc_to_litr3c_total = 0;					
-	cf->cwdc_to_litr4c_total = 0;	
+				
+	cf->litrc_to_soilc_total = 0;						
+	cf->cwdc_to_litrc_total = 0;						
 	cf->litrc_to_release_total = 0;  
 	
 
@@ -588,21 +584,9 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf, 
 	nf->ndep_to_sminn_total = 0;
 	nf->nfix_to_sminn_total = 0;
 	
-	nf->cwdn_to_litr2n_total = 0;                
-	nf->cwdn_to_litr3n_total = 0;                
-	nf->cwdn_to_litr4n_total = 0;                
-	nf->litr1n_to_soil1n_total = 0;              
-	nf->litr2n_to_soil2n_total = 0;              
-	nf->litr3n_to_litr2n_total = 0;              
-	nf->litr4n_to_soil3n_total = 0; 
-	nf->soil1n_to_soil2n_total = 0;              
-	nf->soil2n_to_soil3n_total = 0;              
-	nf->soil3n_to_soil4n_total = 0;   
-
+	nf->cwdn_to_litrn_total = 0;                               
 	nf->litrn_to_release_total = 0;  
 
-	
-	
 	nf->sminNO3_to_denitr_total = 0;
 	nf->sminNH4_to_nitrif_total = 0;
 	nf->N2_flux_DENITR_total = 0;
@@ -790,19 +774,15 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf, 
 	nf->cwdn1_to_CWE = 0;
 	nf->cwdn2_to_CWE = 0;
 
-	nf->sminn_to_soil1n_l1_total = 0;				
-	nf->sminn_to_soil2n_l2_total = 0;	
-	nf->sminn_to_soil3n_l4_total = 0;
-	nf->sminn_to_soil2n_s1_total = 0;				
-	nf->sminn_to_soil3n_s2_total = 0;	
-	nf->sminn_to_soil4n_s3_total = 0;
 	nf->soil4n_to_sminn_total = 0;
-
-	
-
     nf->sminn_to_soil_SUM_total = 0;
-	nf->sminNH4_to_soil_SUM_total = 0;
-	nf->sminNO3_to_soil_SUM_total = 0;
+
+	nf->litrn_to_sminn_total = 0;
+	nf->soiln_to_sminn_total = 0;
+	nf->sminn_to_soil_LtoS_total = 0; 
+	nf->sminn_to_soil_StoS_total = 0; 
+	nf->environment_to_sminn_total = 0;
+
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -890,8 +870,12 @@ int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf, 
 		nf->nfix_to_sminNH4[layer] = 0;
 		nf->litr1n_to_release[layer] = 0;  
 		nf->litr2n_to_release[layer] = 0;  
-		nf->litr4n_to_release[layer] = 0;  
-
+		nf->litr4n_to_release[layer] = 0; 
+		nf->soiln_to_sminn[layer] = 0;
+		nf->litrn_to_sminn[layer] = 0;
+		nf->environment_to_sminn[layer] = 0;    
+		nf->sminn_to_soil_LtoS[layer] = 0; 
+		nf->sminn_to_soil_StoS[layer] = 0; 
 	}
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)

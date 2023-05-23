@@ -66,12 +66,10 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 	rs_decomp_avg=0;
 
-	cf->cwdc_to_litr2c_total = 0;					
-	cf->cwdc_to_litr3c_total = 0;					
-	cf->cwdc_to_litr4c_total = 0;	
-
-	epv->grossMINER_total = 0;
-	epv->potIMMOB_total = 0;;
+	cf->cwdc_to_litrc_total = 0;
+	nf->cwdn_to_litrn_total = 0;
+	nf->grossMINERflux_total = 0;
+	nf->potIMMOBflux_total = 0;;
 
 	/* 1. calculate the rate constant scalar in multilayer soil: layer by layer  */
 	for (layer=0; layer < N_SOILLAYERS; layer++)
@@ -391,10 +389,10 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 
 
 		/* store the mineralization-immobilization-litter fluxes */
-		epv->grossMINER[layer] = mineralized;
-		epv->potIMMOB[layer]   = potential_immob;
-		epv->grossMINER_total += mineralized;
-		epv->potIMMOB_total	  += potential_immob;
+		nf->grossMINERflux[layer] = mineralized;
+		nf->potIMMOBflux[layer]   = potential_immob;
+		nf->grossMINERflux_total += mineralized;
+		nf->potIMMOBflux_total	  += potential_immob;
 
 		cf->cwdc_to_litr2c[layer]  = cwdc_to_litr2c;
 		cf->cwdc_to_litr3c[layer]  = cwdc_to_litr3c;
@@ -404,13 +402,13 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		nf->cwdn_to_litr3n[layer]  = cwdn_to_litr3n;
 		nf->cwdn_to_litr4n[layer]  = cwdn_to_litr4n;
 
-		cf->cwdc_to_litr2c_total += cf->cwdc_to_litr2c[layer];					
-		cf->cwdc_to_litr3c_total += cf->cwdc_to_litr3c[layer];					
-		cf->cwdc_to_litr4c_total += cf->cwdc_to_litr4c[layer];	
+		cf->cwdc_to_litrc_total += cf->cwdc_to_litr2c[layer];					
+		cf->cwdc_to_litrc_total += cf->cwdc_to_litr3c[layer];					
+		cf->cwdc_to_litrc_total += cf->cwdc_to_litr4c[layer];	
 
-		nf->cwdn_to_litr2n_total += nf->cwdn_to_litr2n[layer];                
-		nf->cwdn_to_litr3n_total += nf->cwdn_to_litr3n[layer];              
-		nf->cwdn_to_litr4n_total += nf->cwdn_to_litr4n[layer];  
+		nf->cwdn_to_litrn_total  += nf->cwdn_to_litr2n[layer];                
+		nf->cwdn_to_litrn_total  += nf->cwdn_to_litr3n[layer];              
+		nf->cwdn_to_litrn_total  += nf->cwdn_to_litr4n[layer];  
 
 		cf->litrc_to_release_total += cf->litr1c_to_release[layer];
 		cf->litrc_to_release_total += cf->litr2c_to_release[layer];

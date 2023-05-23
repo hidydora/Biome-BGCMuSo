@@ -40,9 +40,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 	double flux_from_carbon;
 	double propLAYER0, propLAYER1, propLAYER2;
 	
-	/* dead stem and coarse woody biomass combustion proportion */
-	double dscp = 0.2;
-	double cwcp = 0.3;
+
 	
 	/* estimating aboveground litter and cwdc*/
 	double cwdc_total1, cwdc_total2, litrc_total1, litrc_total2;
@@ -189,8 +187,8 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		if (epc->deadwood_cn)
 		{
 			/* deadwood */
-			cf->m_deadstemc_to_cwdc    = (epv->WPM + (1.0-dscp)* epv->FM) * cs->deadstemc;	 
-			cf->m_deadcrootc_to_cwdc   = (epv->WPM + (1.0-dscp)* epv->FM) * cs->deadcrootc;   
+			cf->m_deadstemc_to_cwdc    = (epv->WPM + (1.0-epc->dscp)* epv->FM) * cs->deadstemc;	 
+			cf->m_deadcrootc_to_cwdc   = (epv->WPM + (1.0-epc->dscp)* epv->FM) * cs->deadcrootc;   
 
 			nf->m_deadstemn_to_cwdn    = cf->m_deadstemc_to_cwdc  / epc->deadwood_cn;	
 			nf->m_deadcrootn_to_cwdn   = cf->m_deadcrootc_to_cwdc / epc->deadwood_cn;  
@@ -512,10 +510,10 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 
 		if (epc->deadwood_cn)
 		{
-			cf->m_deadstemc_to_fire           = epv->FM * cs->deadstemc * dscp;	
+			cf->m_deadstemc_to_fire           = epv->FM * cs->deadstemc * epc->dscp;	
 			cf->m_deadstemc_storage_to_fire   = epv->FM * cs->deadstemc_storage;	
 			cf->m_deadstemc_transfer_to_fire  = epv->FM * cs->deadstemc_transfer;	 
-			cf->m_deadcrootc_to_fire          = epv->FM * cs->deadcrootc * dscp;   
+			cf->m_deadcrootc_to_fire          = epv->FM * cs->deadcrootc * epc->dscp;   
 			cf->m_deadcrootc_storage_to_fire  = epv->FM * cs->deadcrootc_storage;	
 			cf->m_deadcrootc_transfer_to_fire = epv->FM * cs->deadcrootc_transfer;	 
 
@@ -527,11 +525,11 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 			nf->m_deadcrootn_transfer_to_fire = cf->m_deadcrootc_transfer_to_fire / epc->deadwood_cn;	
 
 			
-			/* nf->m_deadstemn_to_fire           = dscp * epv->FM * ns->deadstemn;
+			/* nf->m_deadstemn_to_fire           = epc->dscp * epv->FM * ns->deadstemn;
 			nf->m_deadstemn_storage_to_fire   = epv->FM * ns->deadstemn_storage;
 			nf->m_deadstemn_transfer_to_fire  = epv->FM * ns->deadstemn_transfer;
 			
-			nf->m_deadcrootn_to_fire          = dscp * epv->FM * ns->deadcrootn;
+			nf->m_deadcrootn_to_fire          = epc->dscp * epv->FM * ns->deadcrootn;
 			nf->m_deadcrootn_transfer_to_fire = epv->FM * ns->deadcrootn_transfer;
 			nf->m_deadcrootn_storage_to_fire  = epv->FM * ns->deadcrootn_storage;*/
 
@@ -561,17 +559,17 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		
 		for (layer = 0; layer < epv->n_rootlayers; layer++)
 		{
-			cf->m_litr1c_to_fire[layer] = epv->FM * cs->litr1c[layer];
-			cf->m_litr2c_to_fire[layer] = epv->FM * cs->litr2c[layer];
-			cf->m_litr3c_to_fire[layer] = epv->FM * cs->litr3c[layer];
-			cf->m_litr4c_to_fire[layer] = epv->FM * cs->litr4c[layer];
-			cf->m_cwdc_to_fire[layer]   = cwcp * epv->FM * cs->cwdc[layer];
+			cf->m_litr1c_to_fire[layer] = epv->FM   * cs->litr1c[layer];
+			cf->m_litr2c_to_fire[layer] = epv->FM   * cs->litr2c[layer];
+			cf->m_litr3c_to_fire[layer] = epv->FM   * cs->litr3c[layer];
+			cf->m_litr4c_to_fire[layer] = epv->FM   * cs->litr4c[layer];
+			cf->m_cwdc_to_fire[layer]   = epc->cwcp * epv->FM * cs->cwdc[layer];
 
-			nf->m_litr1n_to_fire[layer] =  epv->FM * ns->litr1n[layer];
-			nf->m_litr2n_to_fire[layer] =  epv->FM * ns->litr2n[layer];
-			nf->m_litr3n_to_fire[layer] =  epv->FM * ns->litr3n[layer];
-			nf->m_litr4n_to_fire[layer] =  epv->FM * ns->litr4n[layer];
-			nf->m_cwdn_to_fire[layer]   =  cwcp * epv->FM * ns->cwdn[layer];
+			nf->m_litr1n_to_fire[layer] =  epv->FM   * ns->litr1n[layer];
+			nf->m_litr2n_to_fire[layer] =  epv->FM   * ns->litr2n[layer];
+			nf->m_litr3n_to_fire[layer] =  epv->FM   * ns->litr3n[layer];
+			nf->m_litr4n_to_fire[layer] =  epv->FM   * ns->litr4n[layer];
+			nf->m_cwdn_to_fire[layer]   =  epc->cwcp * epv->FM * ns->cwdn[layer];
 
 			
 			flux_from_carbon = cf->m_litr1c_to_fire[layer] * (cs->litr1c[layer] / ns->litr1n[layer]);

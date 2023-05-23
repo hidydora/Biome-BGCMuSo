@@ -88,6 +88,8 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		
 		nf->nfix_to_sminNH4[layer] = nf->nfix_to_sminn_total * epv->rootlengthProp[layer];
 
+		nf->environment_to_sminn[layer] = nf->ndep_to_sminNH4[layer] + nf->ndep_to_sminNO3[layer] + nf->nfix_to_sminNH4[layer];
+
 		ndep_to_sminnCTRL += nf->ndep_to_sminNH4[layer] + nf->ndep_to_sminNO3[layer];
 		nfix_to_sminnCTRL += nf->nfix_to_sminNH4[layer];
 		
@@ -125,6 +127,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			printf("ERROR in nitrification() for multilayer_sminn.c \n");
 		}	
 
+
 		nf->N2O_flux_NITRIF[layer]   =  N2O_flux_NITRIF;
 		nf->sminNH4_to_nitrif[layer] = sminNH4_to_nitrif;
 	
@@ -150,8 +153,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			nf->sminNO3_to_denitr[layer] = sprop->denitr_coeff * SR_layer * sminNO3avail * (epv->VWC[layer] / sprop->VWCsat[layer]);
 		else
 			nf->sminNO3_to_denitr[layer] = 0;
-		
-		
+
 	
 		nf->N2O_flux_DENITR[layer]  = nf->sminNO3_to_denitr[layer] / (1 + ratioN2_N2O *  sprop->N2Oratio_denitr);
 		nf->N2_flux_DENITR[layer]   = nf->sminNO3_to_denitr[layer] - nf->N2O_flux_DENITR[layer];
@@ -192,13 +194,14 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		nf->N2_flux_DENITR_total		+= nf->N2_flux_DENITR[layer];
 		nf->N2O_flux_DENITR_total		+= nf->N2O_flux_DENITR[layer];
 		nf->N2O_flux_NITRIF_total		+= nf->N2O_flux_NITRIF[layer];
-         
-		nf->sminNH4_to_soil_SUM_total	+= nf->sminNH4_to_soil_SUM[layer];           
-		nf->sminNO3_to_soil_SUM_total	+= nf->sminNO3_to_soil_SUM[layer];          
+        
 		nf->sminNO3_to_denitr_total		+= nf->sminNO3_to_denitr[layer];
 		nf->sminNH4_to_nitrif_total		+= nf->sminNH4_to_nitrif[layer];
 		nf->sminNH4_to_npool_total		+= nf->sminNH4_to_npool[layer];
 		nf->sminNO3_to_npool_total		+= nf->sminNO3_to_npool[layer];
+
+		nf->environment_to_sminn_total     += nf->environment_to_sminn[layer];
+		nf->environment_to_sminn_totalCUM  += nf->environment_to_sminn[layer];
 
 		/*********************************************/
 		/* 9. CONTROL */

@@ -42,7 +42,7 @@ int infiltANDpond(siteconst_struct* sitec, soilprop_struct* sprop, epvar_struct*
 	 /*------------------------------------------*/
 	/* 2.calculation of the amount of water which can still fits into the soil */ 
 	
-	soilw_dist = (sprop->hydrCONDUCTsat[0]*sitec->soillayer_thickness[0]/sitec->soillayer_depth[1] + 
+	soilw_dist = (sprop->hydrCONDUCTsat[0]*sitec->soillayer_thickness[0]/sitec->soillayer_depth[0] + 
 		          sprop->hydrCONDUCTsat[1]*sitec->soillayer_thickness[1]/sitec->soillayer_depth[1]) * nSEC_IN_DAY;
 
 	soilwEXTRA = (sprop->VWCsat[0] - epv->VWC[0]) * sitec->soillayer_thickness[0] * water_density;

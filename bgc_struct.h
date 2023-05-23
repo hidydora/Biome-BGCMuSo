@@ -657,17 +657,14 @@ typedef struct
 	double soil1c_to_soil2c[N_SOILLAYERS];			
 	double soil2c_to_soil3c[N_SOILLAYERS];	
 	double soil3c_to_soil4c[N_SOILLAYERS];	
-	double litr1c_to_soil1c_total;								
-	double litr2c_to_soil2c_total;										
-	double litr3c_to_litr2c_total;					
-	double litr4c_to_soil3c_total;									
-	double cwdc_to_litr2c_total;					
-	double cwdc_to_litr3c_total;					
-	double cwdc_to_litr4c_total;	
+			
 	double litr1c_to_release[N_SOILLAYERS];
 	double litr2c_to_release[N_SOILLAYERS];
 	double litr4c_to_release[N_SOILLAYERS];
+	
 	double litrc_to_release_total;
+	double litrc_to_soilc_total;											
+	double cwdc_to_litrc_total;		
 	
 	/* group: SOIL components leaching*/
 	double soil1DOC_leach[N_SOILLAYERS]; 
@@ -1179,17 +1176,8 @@ typedef struct
 	double litr4n_to_soil3n[N_SOILLAYERS]; 
 	double soil1n_to_soil2n[N_SOILLAYERS];              
 	double soil2n_to_soil3n[N_SOILLAYERS];              
-	double soil3n_to_soil4n[N_SOILLAYERS];   
-	double cwdn_to_litr2n_total;                
-	double cwdn_to_litr3n_total;                
-	double cwdn_to_litr4n_total;                
-	double litr1n_to_soil1n_total;              
-	double litr2n_to_soil2n_total;              
-	double litr3n_to_litr2n_total;              
-	double litr4n_to_soil3n_total; 
-	double soil1n_to_soil2n_total;              
-	double soil2n_to_soil3n_total;              
-	double soil3n_to_soil4n_total;   
+	double soil3n_to_soil4n[N_SOILLAYERS];                
+	
 	double litr1n_to_release[N_SOILLAYERS];
 	double litr2n_to_release[N_SOILLAYERS];
 	double litr4n_to_release[N_SOILLAYERS];
@@ -1198,34 +1186,52 @@ typedef struct
 	/* group: mineralization-immobilization fluxes  */
 	double sminn_to_soil_SUM[N_SOILLAYERS];             
 	double sminNH4_to_soil_SUM[N_SOILLAYERS];           
-	double sminNO3_to_soil_SUM[N_SOILLAYERS];                       
+	double sminNO3_to_soil_SUM[N_SOILLAYERS];  
+
 	double sminn_to_soil1n_l1[N_SOILLAYERS];            
 	double sminn_to_soil2n_l2[N_SOILLAYERS];            
 	double sminn_to_soil3n_l4[N_SOILLAYERS];            
 	double sminn_to_soil2n_s1[N_SOILLAYERS];            
 	double sminn_to_soil3n_s2[N_SOILLAYERS];            
 	double sminn_to_soil4n_s3[N_SOILLAYERS]; 
+	
+
+	/* grup: summary variables */
 	double soil4n_to_sminn[N_SOILLAYERS];    
-
-	double sminn_to_soil_SUM_total; 
-	double sminNH4_to_soil_SUM_total;           
-	double sminNO3_to_soil_SUM_total; 
-	double sminn_to_soil1n_l1_total;
-	double sminn_to_soil2n_l2_total;
-	double sminn_to_soil3n_l4_total;
-	double sminn_to_soil2n_s1_total;
-	double sminn_to_soil3n_s2_total;
-	double sminn_to_soil4n_s3_total;
+	double soiln_to_sminn[N_SOILLAYERS];
+	double litrn_to_sminn[N_SOILLAYERS];
+	double environment_to_sminn[N_SOILLAYERS];
+              
+	double sminn_to_soil_LtoS[N_SOILLAYERS]; 
+	double sminn_to_soil_StoS[N_SOILLAYERS]; 
+	
+	double cwdn_to_litrn_total;  
 	double soil4n_to_sminn_total; 
+	double litrn_to_soiln_total;
+	double sminn_to_soil_SUM_total; 
 
-	double sminn_to_soil1n_l1_totalCUM;
-	double sminn_to_soil2n_l2_totalCUM;
-	double sminn_to_soil3n_l4_totalCUM;
-	double sminn_to_soil2n_s1_totalCUM;
-	double sminn_to_soil3n_s2_totalCUM;
-	double sminn_to_soil4n_s3_totalCUM;
-	double soil4n_to_sminn_totalCUM; 
-	double netMINER_totalCUM;
+	double litrn_to_sminn_total;
+	double soiln_to_sminn_total;
+	double sminn_to_soil_LtoS_total; 
+	double sminn_to_soil_StoS_total; 
+	double environment_to_sminn_total;
+	double soiln_to_sminn_totalCUM;
+	double litrn_to_sminn_totalCUM;
+	double sminn_to_soil_LtoS_totalCUM; 
+	double sminn_to_soil_StoS_totalCUM; 
+	double environment_to_sminn_totalCUM;
+	
+	double grossMINERflux[N_SOILLAYERS];			    /* (kgN/m2/d) daily gross N mineralization layer by layer */
+	double potIMMOBflux[N_SOILLAYERS];			        /* (kgN/m2/d) daily potential immobilization layer by layer */
+	double netMINERflux[N_SOILLAYERS];					/* (kgN/m2/d) daily net N mineralization layer by layer */
+	double actIMMOBflux[N_SOILLAYERS];		            /* (kgN/m2/d) daily actual N immobilization layer by layer */ 
+	double potIMMOBflux_total;							/* (kgN/m2/d) total daily potential immobilization */
+	double grossMINERflux_total;						/* (kgN/m2/d) total daily gross mineralization */
+	double netMINERflux_total;							/* (kgN/m2/d) total net N mineralization */
+	double actIMMOBflux_total;							/* (kgN/m2/d) total actual N immobilization */ 
+	double netMINERflux_totalCUM;						/* (kgN/m2/d) cumulative total net N mineralization */
+	double actIMMOBflux_totalCUM;						/* (kgN/m2/d) cumulative total actual N immobilization */ 
+
 
 	/* group: nitrification and denitrification fluxes */
 	double sminNO3_to_denitr[N_SOILLAYERS];
@@ -1557,14 +1563,7 @@ typedef struct
     double ws_decomp[N_SOILLAYERS];					/* (dimless) decomp water scalar  */
     double rs_decomp[N_SOILLAYERS];					/* (dimless) decomp combined scalar  */
 	double rs_decomp_avg;							/* (dimless) decomp combined and averaged scalar  */
-	double grossMINER[N_SOILLAYERS];			    /* (kgN/m2/d) daily gross N mineralization layer by layer */
-	double potIMMOB[N_SOILLAYERS];			        /* (kgN/m2/d) daily potential immobilization layer by layer */
-	double netMINER[N_SOILLAYERS];					/* (kgN/m2/d) daily net N mineralization layer by layer */
-	double actIMMOB[N_SOILLAYERS];		            /* (kgN/m2/d) daily actual N immobilization layer by layer */ 
-	double potIMMOB_total;							/* (kgN/m2/d) total daily potential immobilization */
-	double grossMINER_total;						/* (kgN/m2/d) total daily gross mineralization */
-	double netMINER_total;							/* (kgN/m2/d) total net N mineralization */
-	double actIMMOB_total;							/* (kgN/m2/d) total actual N immobilization */ 
+
 	double stomaCONDUCT_max;						/* (m/s) maximum stomatal conductance */
 	double m_Tmin;									/* (dimless) freezing night temperature multiplier */
 	double m_SWCstress_layer[N_SOILLAYERS];		    /* (dimless) soil water stress multiplier */

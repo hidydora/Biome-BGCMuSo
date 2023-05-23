@@ -95,15 +95,14 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, cstate_struct* cs, ws
 	epv->annmax_livestemc = 0;
 	epv->annmax_livecrootc = 0;
 
-	nf->sminn_to_soil1n_l1_totalCUM = 0;
-	nf->sminn_to_soil2n_l2_totalCUM = 0;
-	nf->sminn_to_soil3n_l4_totalCUM = 0;
-	nf->sminn_to_soil2n_s1_totalCUM = 0;
-	nf->sminn_to_soil3n_s2_totalCUM = 0;
-	nf->sminn_to_soil4n_s3_totalCUM = 0;
-	nf->soil4n_to_sminn_totalCUM    = 0;
-	nf->netMINER_totalCUM           = 0;
-	nf->sminn_to_npool_totalCUM     = 0;
+	nf->soiln_to_sminn_totalCUM       = 0;
+	nf->litrn_to_sminn_totalCUM       = 0;
+	nf->sminn_to_soil_LtoS_totalCUM   = 0; 
+	nf->sminn_to_soil_StoS_totalCUM   = 0; 
+	nf->sminn_to_npool_totalCUM       = 0;
+	nf->netMINERflux_totalCUM         = 0;
+	nf->actIMMOBflux_totalCUM         = 0;
+	nf->environment_to_sminn_totalCUM = 0;
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{

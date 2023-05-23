@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-int annVARinit(summary_struct* summary, epvar_struct* epv, phenology_struct *phen, cstate_struct* cs, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf)
+int annVARinit(summary_struct* summary, epvar_struct* epv, cstate_struct* cs, wstate_struct* ws, cflux_struct* cf, nflux_struct* nf)
 {
 
 	int layer;

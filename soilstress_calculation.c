@@ -24,68 +24,71 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 	                       epvar_struct* epv, wstate_struct* ws, wflux_struct* wf)
 {
 	int layer;
-	double m_vwcR_layer, m_SWCstress_avg, m_Nstress_avg;
+	double m_vwcR_layer, m_SWCstress_avg, m_Nstress_avg, layerSATfull;
 		
 
 	int errorCode = 0;
-	m_SWCstress_avg = m_Nstress_avg = 0;
+	m_SWCstress_avg = m_Nstress_avg = layerSATfull = 0;
 	
 	/* 1. Calculation SWC-stress (can occur only after emergence  - if root is presence) */
-	if (epv->rootdepth)
+	if (epv->rootDepth)
 	{		
 		/*--------------------------------------------*/
 		/* 1.1 SWC-stress calculation based on VWC   */
 		if (epc->soilstress_flag == 0)
 		{
+			layerSATfull = 0;
 			for (layer = 0; layer < N_SOILLAYERS; layer++)
 			{
-				m_vwcR_layer = 1;
-
-				if (epc->VWCratio_SScrit2 <= 1)
+				/* DROUGHT STRESS */
+				if (epv->VWC[layer] <= epv->VWC_SScrit1[layer])
 				{
-					if (epv->VWC[layer] > sprop->VWCwp[layer] && (sprop->VWCsat[layer] - epv->VWC[layer]) > CRIT_PREC)
+					/* if VWCratio_crit is set to -9999: no soilstress calculation -> m_SWCstress = 1 */
+					if (epc->VWCratio_SScrit1 != DATA_GAP)
 					{
-						/* DROUGHT STRESS */
-						if (epv->VWC[layer] <= epv->VWC_SScrit1[layer])
-						{
+						if (epv->VWC[layer] <= sprop->VWCwp[layer])
+							m_vwcR_layer  = 0;
+						else
 							m_vwcR_layer  = pow((epv->VWC[layer] - sprop->VWCwp[layer])/(epv->VWC_SScrit1[layer] - sprop->VWCwp[layer]), sprop->curvature_SS);
-						}
-
-						/* ANOXIC CONDITION STRESS */
-						if (epv->VWC[layer] >= epv->VWC_SScrit2[layer])
-						{
-							m_vwcR_layer  = (sprop->VWCsat[layer] - epv->VWC[layer])/(sprop->VWCsat[layer] - epv->VWC_SScrit2[layer]);	
-						}
-					}
+					}	
 					else
-						m_vwcR_layer  = 0;
+						m_vwcR_layer  = 1;
+							
 				}
 				else
 				{
-				
-					/* only DROUGHT STRESS */
-					if (epv->VWC[layer] > sprop->VWCwp[layer])
+					/* ANOXIC CONDITION STRESS */
+					if (epv->VWC[layer] >= epv->VWC_SScrit2[layer])
 					{
-						if (epv->VWC[layer] <= epv->VWC_SScrit1[layer])
+						/* if VWCratio_crit is set to -9999: no soilstress calculation -> m_SWCstress = 1 */
+						if (epc->VWCratio_SScrit2 != DATA_GAP)
 						{
-							m_vwcR_layer  = pow((epv->VWC[layer] - sprop->VWCwp[layer])/(epv->VWC_SScrit1[layer] - sprop->VWCwp[layer]), sprop->curvature_SS);
+							if (fabs(sprop->VWCsat[layer] - epv->VWC_SScrit2[layer]) > CRIT_PREC)
+								m_vwcR_layer  = (sprop->VWCsat[layer] - epv->VWC[layer])/(sprop->VWCsat[layer] - epv->VWC_SScrit2[layer]);	
+							else
+								m_vwcR_layer  = 0;
 						}
+						else
+							m_vwcR_layer  = 1;
 					}
+					/* NO STRESS */
 					else
-						m_vwcR_layer = 0;
+						m_vwcR_layer  = 1;
 				}
-				/* lower limit for saturation: m_fullstress2 */
-				if (epv->VWC[layer] >= epv->VWC_SScrit1[layer] && m_vwcR_layer < epc->m_fullstress2) m_vwcR_layer = epc->m_fullstress2;
 
-				/* if VWCratio_crit is set to -9999: no soilstress calculation -> m_SWCstress = 1 */
-				if (epc->VWCratio_SScrit1 == DATA_GAP && epv->VWC[layer] <= sprop->VWCfc[layer]) m_vwcR_layer  = 1;
-				if (epc->VWCratio_SScrit2 == DATA_GAP && epv->VWC[layer] >= sprop->VWCfc[layer]) m_vwcR_layer  = 1;
+				/* if all layers are saturated -> full stress, if not: lower limit for saturation: m_fullstress2 */
+				if (epv->VWC[layer] >= epv->VWC_SScrit2[layer] || fabs(epv->VWC[layer] - epv->VWC_SScrit2[layer]) < CRIT_PRECwater)
+				{
+					if (m_vwcR_layer < epc->m_fullstress2) m_vwcR_layer = epc->m_fullstress2;
+					layerSATfull += epv->rootlengthProp[layer];
 
+				}
+				
 				epv->m_SWCstress_layer[layer] =  m_vwcR_layer;
 				m_SWCstress_avg	 += epv->m_SWCstress_layer[layer] * epv->rootlengthProp[layer];
 			}
 	
-			epv->m_SWCstress = m_SWCstress_avg;
+
 		}
 		/* 1.2 SWC-stress calculation based on transpiration demand-possibitiy  */
 		else
@@ -128,7 +131,14 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 		m_SWCstress_avg = 1;
 	}
 
-	epv->m_SWCstress  = m_SWCstress_avg;
+	/* balus: if all layers are saturated: full limitation */
+	if (fabs(layerSATfull - 1) < CRIT_PREC)
+	{
+		epv->m_SWCstress = 0;
+		for (layer = 0; layer < N_SOILLAYERS; layer++) epv->m_SWCstress_layer[layer] =  0;
+	}
+	else
+		epv->m_SWCstress = m_SWCstress_avg;
 
 	/****************************************************************************************/
 	/* 2. calculating cumulative SWC stress and extreme temperature effect */
@@ -155,7 +165,7 @@ int soilstress_calculation(soilprop_struct* sprop, const epconst_struct* epc,
 	/****************************************************************************************/
 	/* 3. N-stress based on immobilization ratio */
 
-	if (epv->rootdepth)
+	if (epv->rootDepth)
 		for (layer = 0; layer < N_SOILLAYERS; layer++) m_Nstress_avg += epv->IMMOBratio[layer] * epv->rootlengthProp[layer];
 	else
 		m_Nstress_avg = 1;

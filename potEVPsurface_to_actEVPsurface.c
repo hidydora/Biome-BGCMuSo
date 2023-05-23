@@ -150,7 +150,7 @@ int potEVPsurface_to_actEVPsurface(control_struct* ctrl, const siteconst_struct*
 		if (fabs(EVP_lack) > CRIT_PREC && !ctrl->limitEVP_flag) ctrl->limitEVP_flag = 1;
 	}
 
-	wf->soilwEVP *= epv->mulch_EVPred;
+	wf->soilwEVP *= epv->SC_EVPred;
 
 	return (errorCode);
 }

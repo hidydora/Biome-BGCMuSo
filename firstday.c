@@ -26,7 +26,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 
 int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epconst_struct* epc, const planting_struct *PLT, 
 	         siteconst_struct* sitec, cinit_struct* cinit, phenology_struct* phen, epvar_struct* epv, 
-			 cstate_struct* cs, nstate_struct* ns, metvar_struct* metv, psn_struct* psn_sun, psn_struct* psn_shade)
+			 cstate_struct* cs, nstate_struct* ns, psn_struct* psn_sun, psn_struct* psn_shade)
 {
 	int errorCode=0;
 	int layer, day, pp;
@@ -45,8 +45,8 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	epv->leafday_lastmort = -1;
 
 	epv->n_rootlayers = 0;
-	epv->germ_layer = 0;
-	epv->germ_depth = 0.05;
+	epv->germ_layer = 1;
+	epv->germDepth = 0.05;
     epv->proj_lai = 0;
     epv->all_lai = 0;
 	epv->sla_avg = 0;
@@ -54,7 +54,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
     epv->plaishade = 0;
     epv->sun_proj_sla = 0;
     epv->shade_proj_sla = 0;
-	epv->plant_height = 0;
+	epv->plantHeight = 0;
 	epv->n_actphen = 0;
 	epv->flowHS_mort = 0;
 	epv->assim_sun = 0;
@@ -80,8 +80,8 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	epv->albedo_LAI = 0;
 	epv->assim_Tcoeff = 1;
 	epv->assim_SScoeff = 1;
-	epv->mulch_coverage = 0;
-	epv->mulch_EVPred = 1;
+	epv->SCpercent = 0;
+	epv->SC_EVPred = 1;
 
 	psn_sun->A      = 0;
 	psn_sun->Ci	    = 0;
@@ -118,7 +118,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 		if (!errorCode) 
 		{
 			printf("\n");
-			printf("ERROR: calc_nrootlayers() for multilayer_rootdepth.c\n");
+			printf("ERROR: calc_nrootlayers() for multilayer_rootDepth.c\n");
 		}
 		errorCode=1;
 	}
@@ -127,6 +127,8 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
 		epv->VWC[layer]				    = sprop->VWCfc[layer];
+		epv->relVWCsat_fc[layer]	    = 0;
+		epv->relVWCfc_wp[layer]         = 1;
 		epv->WFPS[layer]	            = epv->VWC[layer] / sprop->VWCsat[layer];	
 		epv->PSI[layer]				    = sprop->PSIfc[layer];
 		epv->hydrCONDUCTact[layer]	    = sprop->hydrCONDUCTfc[layer];
@@ -140,15 +142,15 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	}
 
     /* evergreen biome: root available also in the first day */
-	epv->rootdepth = 0;
+	epv->rootDepth = 0;
 	if (epc->evergreen) 
 	{
 		epv->rootlengthProp[0] = 1;
 		epv->n_rootlayers = 1;
 		if (epc->woody) 
-			epv->rootdepth = epc->rootzoneDepth_max;
+			epv->rootDepth = epc->rootzoneDepth_max;
 		else
-			epv->rootdepth = CRIT_PREC;
+			epv->rootDepth = CRIT_PREC;
 	}
 	/* initialize genetical senescence variables */
 
@@ -213,7 +215,7 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	{
 		cs->leafcSUM_phenphase[pp] = 0;
 		epv->phenphase_date[pp]    =-1;
-		epv->rootdepth_phen[pp]    = 0;
+		epv->rootDepth_phen[pp]    = 0;
 	}
 
 

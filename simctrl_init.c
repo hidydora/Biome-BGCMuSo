@@ -55,6 +55,7 @@ int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_
 		errorCode=211;
 	}
 
+
 	if (!errorCode && scan_value(init, &epc->phenology_flag, 'i'))
 	{
 		printf("ERROR reading phenology flag, epc_init()\n");

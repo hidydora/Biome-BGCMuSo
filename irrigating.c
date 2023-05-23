@@ -69,7 +69,7 @@ int irrigating(const control_struct* ctrl, const irrigating_struct* IRG, const s
 			/* pozitive height: compare with plant height (above or below canopy) */
 			if (IRG->IRGheight_array[md] >= 0)
 			{
-				if (IRG->IRGheight_array[md] >= epv->plant_height)
+				if (IRG->IRGheight_array[md] >= epv->plantHeight)
  					wf->IRG_to_prcp=IRG->IRGquantity_array[md];
 				else
 					wf->IRG_to_soilSurface=IRG->IRGquantity_array[md];

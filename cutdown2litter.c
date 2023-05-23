@@ -133,7 +133,7 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 	ns->cwdn[2]   += (nf->CTDBn_cstem_to_cwd) * propLAYER2;
 
 	/* 2.2 	belowground biomass divided between soil layers based on their root content */ 
-	if (epv->rootdepth > CRIT_PREC)
+	if (epv->rootDepth > CRIT_PREC)
 	{
 		for (layer=0; layer < N_SOILLAYERS; layer++)
 		{
@@ -188,13 +188,9 @@ int cutdown2litter(const siteconst_struct *sitec, const epconst_struct* epc, con
 	ns->CTDBn_cstem    -= nf->CTDBn_cstem_to_cwd;
 	ns->CTDBn_croot    -= nf->CTDBn_croot_to_cwd;
 
-	/************************************************************/
-	/* 4. estimating aboveground litter and cwdc */
-	cs->cwdc_above  += cf->CTDBc_cstem_to_cwd;
-	cs->litrc_above += cf->CTDBc_leaf_to_litr + cf->CTDBc_yield_to_litr + cf->CTDBc_softstem_to_litr;
 
 	/************************************************************/
-	/* 5. precision control */
+	/* 4. precision control */
 
 	if ((cs->CTDBc_leaf != 0 && fabs(cs->CTDBc_leaf) < CRIT_PREC) || (ns->CTDBn_leaf != 0 && fabs(ns->CTDBn_leaf) < CRIT_PREC))
 	{

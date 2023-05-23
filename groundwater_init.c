@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 
 
-int groundwater_init(groundwater_struct* gws, control_struct* ctrl)
+int groundwater_init(groundwater_struct* GWS, control_struct* ctrl)
 {
 	int errorCode=0;
 	file GWD_file;	
@@ -45,28 +45,30 @@ int groundwater_init(groundwater_struct* gws, control_struct* ctrl)
 
 	nmgm=0;
 	maxGWD_num=ctrl->simyears* nDAYS_OF_YEAR;
-	gws->GWD_num = 0;
-	/* ------------------------------------------------------ */
-	/* using varying whole plant mortality values */
-	
-	/* GWD flag: constans or varying GWD from file */
+	GWS->GWD_num = 0;
+
+	/********************************************************************
+	**                                                                 **
+	** Reading GWD data if available                                   ** 
+	**                                                                 **
+	********************************************************************/
 
 	if (!errorCode)
 	{
 		if (ctrl->spinup == 0)   /* normal run */
 		{
 			strcpy(GWD_file.name, "groundwater_normal.txt");
-			if (!file_open(&GWD_file,'j',1)) gws->GWD_num = 1;
+			if (!file_open(&GWD_file,'j',1)) GWS->GWD_num = 1;
 		}
 		else                     /* spinup and transient run */        
 		{ 	
 			strcpy(GWD_file.name, "groundwater_spinup.txt");
-			if (!file_open(&GWD_file,'j',1)) gws->GWD_num = 1;	
+			if (!file_open(&GWD_file,'j',1)) GWS->GWD_num = 1;	
 		}
 	}
 
 
-	if (!errorCode && gws->GWD_num > 0) 
+	if (!errorCode && GWS->GWD_num > 0) 
 	{		
 		
 		if (!errorCode) 
@@ -125,21 +127,21 @@ int groundwater_init(groundwater_struct* gws, control_struct* ctrl)
 			}
 		}
 
-		gws->GWD_num = nmgm;
+		GWS->GWD_num = nmgm;
 		nmgm = 0;
 	
-		gws->GWyear_array      = (int*) malloc(gws->GWD_num*sizeof(double));  
-		gws->GWmonth_array     = (int*) malloc(gws->GWD_num*sizeof(double)); 
-		gws->GWday_array       = (int*) malloc(gws->GWD_num*sizeof(double)); 
-		gws->GWdepth_array  = (double*) malloc(gws->GWD_num*sizeof(double)); 
+		GWS->GWyear_array      = (int*) malloc(GWS->GWD_num*sizeof(double));  
+		GWS->GWmonth_array     = (int*) malloc(GWS->GWD_num*sizeof(double)); 
+		GWS->GWday_array       = (int*) malloc(GWS->GWD_num*sizeof(double)); 
+		GWS->GWdepth_array  = (double*) malloc(GWS->GWD_num*sizeof(double)); 
 
-		for (nmgm = 0; nmgm < gws->GWD_num; nmgm++)
+		for (nmgm = 0; nmgm < GWS->GWD_num; nmgm++)
 		{
-			gws->GWyear_array[nmgm]      = GWyear_array[nmgm];
-			gws->GWmonth_array[nmgm]     = GWmonth_array[nmgm];
-			gws->GWday_array[nmgm]       = GWday_array[nmgm];
+			GWS->GWyear_array[nmgm]      = GWyear_array[nmgm];
+			GWS->GWmonth_array[nmgm]     = GWmonth_array[nmgm];
+			GWS->GWday_array[nmgm]       = GWday_array[nmgm];
 
-			gws->GWdepth_array[nmgm]  = GWdepth_array[nmgm];
+			GWS->GWdepth_array[nmgm]  = GWdepth_array[nmgm];
 		}
 
 		if (nmgm > maxGWD_num)
@@ -160,9 +162,9 @@ int groundwater_init(groundwater_struct* gws, control_struct* ctrl)
 
 	
 
-	gws->mgmdGWD = 0;
+	GWS->mgmdGWD = 0;
 
-	if (!errorCode && gws->GWD_num > 0) 
+	if (!errorCode && GWS->GWD_num > 0) 
 	{
 		free(enddays);
 		free(mondays);

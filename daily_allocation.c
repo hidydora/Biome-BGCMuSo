@@ -91,7 +91,7 @@ the accumulation of soil mineral N.
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int daily_allocation(const epconst_struct* epc, const siteconst_struct* sitec, const soilprop_struct* sprop, const metvar_struct* metv, const NdepControl_struct* ndep,
+int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, const metvar_struct* metv, const NdepControl_struct* ndep,
 	                 cstate_struct*cs,  nstate_struct* ns, cflux_struct* cf, nflux_struct* nf, epvar_struct* epv, ntemp_struct* nt, double naddfrac)
 {
 	int errorCode=0;

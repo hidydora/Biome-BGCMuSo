@@ -49,15 +49,25 @@ int pondANDrunoffD(control_struct* ctrl, siteconst_struct* sitec, soilprop_struc
 			wf->pondwEVP = ws->pondw;
 
 		soilw_diff   = wf->soilwEVP - (wf->potEVPsurface-wf->pondwEVP);
-		soilw_sat     = sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
-		if (ws->soilw[0] + soilw_diff > soilw_sat)
+
+		/* in case of GW in layer 0, the source of soil evaporatiaton is GWdischarge */
+		if (sprop->GWeff[0] == 1)
 		{
-			soilw_diff = soilw_sat - ws->soilw[0];
+			wf->GWdischarge[0] -= soilw_diff;
+			wf->soilwEVP       -= soilw_diff;
 		}
+		else
+		{
+			soilw_sat     = sprop->VWCsat[layer] * sitec->soillayer_thickness[layer] * water_density;
+			if (ws->soilw[0] + soilw_diff > soilw_sat)
+			{
+				soilw_diff = soilw_sat - ws->soilw[0];
+			}
 			
-		ws->soilw[0] += soilw_diff;
-		epv->VWC[0]   = ws->soilw[0] / (sitec->soillayer_thickness[0] * water_density);
-		wf->soilwEVP -= soilw_diff;
+			ws->soilw[0] += soilw_diff;
+			epv->VWC[0]   = ws->soilw[0] / (sitec->soillayer_thickness[0] * water_density);
+			wf->soilwEVP  -= soilw_diff; 
+		}
 
 		ws->pondw    -= wf->pondwEVP;
 	}

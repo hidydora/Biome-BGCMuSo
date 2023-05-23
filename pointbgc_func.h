@@ -25,8 +25,9 @@ int sitec_init(file init, siteconst_struct* sitec, control_struct *ctrl);
 int ndep_init(file init, NdepControl_struct* ndep, control_struct *ctrl);
 int epc_init(file init, epconst_struct* epc, control_struct* ctrl, int EPCfromINI);
 int sprop_init(file init, soilprop_struct* sprop, control_struct* ctrl);
-int mgm_init(file init, control_struct *ctrl, epconst_struct* epc, fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, mowing_struct* MOW, 
-	         planting_struct* PLT, ploughing_struct* PLG, thinning_struct* THN, irrigating_struct* IRG);
+int mgm_init(file init, control_struct *ctrl, epconst_struct* epc, 
+	         fertilizing_struct* FRZ, grazing_struct* GRZ, harvesting_struct* HRV, mowing_struct* MOW, planting_struct* PLT, ploughing_struct* PLG, 
+			 thinning_struct* THN, irrigating_struct* IRG, mulching_struct* MUL, CWDextract_struct* CWE);
 int simctrl_init(file init, epconst_struct* epc, control_struct* ctrl, planting_struct* PLT);
 int wstate_init(file init, const siteconst_struct* sitec, const soilprop_struct* sprop, wstate_struct* ws);
 int cnstate_init(file init, const epconst_struct* epc, const soilprop_struct* sprop, const siteconst_struct* sitec, 
@@ -56,14 +57,17 @@ int output_handling(int* mondays, int* enddays, control_struct* ctrl, double** o
 int thinning_init(file init, const control_struct* ctrl, thinning_struct* THN);
 int mowing_init(file init, const control_struct* ctrl, mowing_struct* MOW);
 int grazing_init(file init, const control_struct* ctrl, grazing_struct* GRZ);
-int harvesting_init(file init, const control_struct* ctrl, planting_struct* PLT, harvesting_struct* HRV);
+int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HRV);
 int ploughing_init(file init,  const control_struct* ctrl, ploughing_struct* PLG);
 int fertilizing_init(file init, const control_struct* ctrl, fertilizing_struct* FRZ);
 int irrigating_init(file init, const control_struct* ctrl, irrigating_struct* IRG);
 int planting_init(file init, control_struct* ctrl, planting_struct* PLT, epconst_struct* epc);
+int mulching_init(file init, control_struct* ctrl, mulching_struct* MUL);
+int CWDextract_init(file init, control_struct* ctrl, CWDextract_struct* CWE);
 int conditionalMGM_init(file init, control_struct* ctrl, irrigating_struct* IRG, mowing_struct* MOW);
 int read_mgmarray(int simyr, int varMGM, file MGM_file, double*** mgmarray);
-int groundwater_init(groundwater_struct* gws, control_struct* ctrl);
+int groundwater_init(groundwater_struct* GWS, control_struct* ctrl);
+int flooding_init(flooding_struct* FLD, control_struct* ctrl);
 
 
 

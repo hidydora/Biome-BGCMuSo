@@ -210,7 +210,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* read management file with management information */
-	errorCode = mgm_init(init, &bgcin.ctrl, &bgcin.epc, &bgcin.FRZ, &bgcin.GRZ, &bgcin.HRV, &bgcin.MOW, &bgcin.PLT, &bgcin.PLG, &bgcin.THN, &bgcin.IRG);
+	errorCode = mgm_init(init, &bgcin.ctrl, &bgcin.epc,
+		                       &bgcin.FRZ, &bgcin.GRZ, &bgcin.HRV, &bgcin.MOW, &bgcin.PLT, &bgcin.PLG, &bgcin.THN, &bgcin.IRG, &bgcin.MUL, &bgcin.CWE);
 	if (errorCode)
 	{
 		printf("ERROR in call to mgm_init() from pointbgc.c... Exiting\n");
@@ -298,10 +299,19 @@ int main(int argc, char *argv[])
 	fclose(point.metf.ptr);
 
 	/* read groundwater depth if it is available */
-	errorCode = groundwater_init(&bgcin.gws, &bgcin.ctrl);
+	errorCode = groundwater_init(&bgcin.GWS, &bgcin.ctrl);
 	if (errorCode)
 	{
 		printf("ERROR in call to groundwater_init() from pointbgc.c... Exiting\n");
+		writeErrorCode(errorCode);
+		exit(errorCode);
+	}
+
+	/* read flooding height if it is available */
+	errorCode = flooding_init(&bgcin.FLD,&bgcin.ctrl);
+	if (errorCode)
+	{
+		printf("ERROR in call to flooding_init() from pointbgc.c... Exiting\n");
 		writeErrorCode(errorCode);
 		exit(errorCode);
 	}
@@ -438,7 +448,7 @@ int main(int argc, char *argv[])
 		free(bgcin.PLT.PLTyear_array);  
 		free(bgcin.PLT.PLTmonth_array); 
 		free(bgcin.PLT.PLTday_array); 
-		free(bgcin.PLT.germ_depth_array); 
+		free(bgcin.PLT.germDepth_array); 
 		free(bgcin.PLT.n_seedlings_array); 
 		free(bgcin.PLT.weight_1000seed_array); 
 		free(bgcin.PLT.seed_carbon_array); 
@@ -531,14 +541,45 @@ int main(int argc, char *argv[])
 		free(bgcin.IRG.IRGquantity_array);
 		free(bgcin.IRG.IRGheight_array); 
 	}
-
-	if (bgcin.gws.GWD_num)
+	
+	if (bgcin.MUL.MUL_num)
 	{
-		free(bgcin.gws.GWyear_array);	
-		free(bgcin.gws.GWmonth_array);	
-		free(bgcin.gws.GWday_array);	
-        free(bgcin.gws.GWdepth_array);	
+		free(bgcin.MUL.MULyear_array);  
+		free(bgcin.MUL.MULmonth_array); 
+		free(bgcin.MUL.MULday_array); 
+		free(bgcin.MUL.litrCabove_MUL);
+		free(bgcin.MUL.litrCNabove_MUL); 
+		free(bgcin.MUL.cwdCabove_MUL);
+		free(bgcin.MUL.cwdCNabove_MUL); 
 	}
+
+	if (bgcin.CWE.CWE_num)
+	{
+		free(bgcin.CWE.CWEyear_array);  
+		free(bgcin.CWE.CWEmonth_array); 
+		free(bgcin.CWE.CWEday_array); 
+		free(bgcin.CWE.removePROP_CWE);
+	}
+
+	if (bgcin.GWS.GWD_num)
+	{
+		free(bgcin.GWS.GWyear_array);	
+		free(bgcin.GWS.GWmonth_array);	
+		free(bgcin.GWS.GWday_array);	
+        free(bgcin.GWS.GWdepth_array);	
+	}
+
+	if (bgcin.FLD.FLD_num)
+	{
+		free(bgcin.FLD.FLDstart_year_array);	
+		free(bgcin.FLD.FLDstart_month_array);	
+		free(bgcin.FLD.FLDstart_day_array);	
+		free(bgcin.FLD.FLDend_year_array);	
+		free(bgcin.FLD.FLDend_month_array);	
+		free(bgcin.FLD.FLDend_day_array);
+        free(bgcin.FLD.FLDheight);	
+	}
+
 	if (bgcin.co2.varco2) free(bgcin.co2.co2ppm_array);
 	if (bgcin.co2.varco2) free(bgcin.co2.co2yrs_array);
 	if (bgcin.ndep.varndep) free(bgcin.ndep.Ndep_array);

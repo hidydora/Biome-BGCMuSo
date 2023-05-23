@@ -29,9 +29,9 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 	int layer, ll;
 	double INFILT;
 
-	double VWC, soilw_sat1, soilw1, soilw_sat, diff_sat;
+	double VWC, soilw_sat1, soilw1;
 	double EXCESS, HOLD, DRAIN, DRMX,  conduct_sat, soilwDiffus_act;
-	double VWC0, VWC0_sat, VWC0_fc, VWC0_wp, VWC1, VWC1_sat, VWC1_fc, VWC1_wp;
+	double VWC0, VWC0_sat, VWC0_fc, VWC0_wp, VWC1, VWC1_sat, VWC1_fc, VWC1_wp, rVWC0, rVWC1;
 
 	double m_to_cm, mm_to_cm, dz0, dz1;
 
@@ -39,13 +39,14 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 	double GWR[N_SOILLAYERS]; /* groundwater recharge (cm/day) */
 	double soilwPercol[N_SOILLAYERS];
 	double soilwDiffus[N_SOILLAYERS];
-	
+	double soilw_limit = 0;
 
 
 	m_to_cm   = 100;
 	mm_to_cm  = 0.1;
 
-	for  (layer=0 ; layer<N_SOILLAYERS-1; layer++) GWR[layer]=0;
+	for  (layer=0 ; layer<N_SOILLAYERS; layer++) GWR[layer]=0;
+
 
 	/* --------------------------------------------------------------------------------------------------------------------*/
 	/* 1.PERCOLATION */
@@ -58,7 +59,7 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 	{
 
 		/* 1.1.1. BEGIN LOOP: layer */
-		for  (layer=0 ; layer<N_SOILLAYERS-1; layer++) 
+		for  (layer=0 ; layer<N_SOILLAYERS; layer++) 
 		{
 	
 			VWC = epv->VWC[layer];
@@ -81,22 +82,35 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 				/* drainage rate throug soil layer (cm/day) */
 				DRN[layer] = INFILT - HOLD + DRAIN;
 
-				/* GW-effect: no drainage only out of GW-zone or in capillary zone, GWrecharge if layer is saturated */	
-				if (sprop->GWeff[layer] > DATA_GAP)
-				{	
-					if ((sprop->VWCsat[layer] - VWC) < CRIT_PRECwater && DRN[layer])
-					{
-						GWR[layer] = DRN[layer];
-					}
-					DRN[layer] = 0;
-				}
-
+			
 				/* drainage is limited: cm/h * h/day */
 				if ((DRN[layer] - conduct_sat) > 0.0) 
 				{
 					DRN[layer] = conduct_sat;
 					DRAIN      = DRN[layer] + HOLD - INFILT;
 				}
+
+				/* Capillary zone: no drainage only out of capillary zone, only if it is saturated */	
+				if (sprop->CFeff[layer] > 0 && sprop->GWeff[layer] < 0 && DRN[layer] > 0)
+				{	
+					soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density;
+					if (soilw_limit > 0)
+						DRN[layer] = MIN(DRN[layer], soilw_limit);
+					else
+						DRN[layer] = 0;
+
+				}
+				
+				/* GW-zone: no drainage only out of groundwater zone, only if it is saturated (GW-recharge) */	
+				if (sprop->GWeff[layer] > 0 && DRN[layer] > 0)
+				{
+					soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density;
+				
+					if (soilw_limit > 0) GWR[layer] = MIN(DRN[layer], soilw_limit);
+					
+					DRN[layer] = 0;
+				}
+
 			
 				/* state update temporal varialbe */
 				VWC = VWC + (INFILT - DRN[layer] - GWR[layer])/dz0;
@@ -145,18 +159,6 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 			
 				   	/* drainage rate throug soil layer (cm/day) */
 				   DRN[layer] = DRAIN;
-
-				  	/* GW-effect: drainage only out of capillary zone if layer is saturated */
-					if (sprop->GWeff[layer] == 0 && DRN[layer] > 0)
-					{
-						if ((sprop->VWCsat[layer] - VWC) > CRIT_PRECwater) DRN[layer] = 0;  
-					}
-					/* GW-effect: drainage is GW-recharge, but only out of GW-zone if layer is saturated */
-					if (sprop->GWeff[layer] > 0 && DRN[layer] > 0)
-					{
-						if ((sprop->VWCsat[layer] - VWC) < CRIT_PRECwater && DRN[layer]) GWR[layer] = DRN[layer];
-						DRN[layer] = 0; 
-					}
 				
 				   /* drainage is limited */
 				   if ((DRN[layer] - conduct_sat) > 0.0) 
@@ -164,6 +166,35 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 					  DRN[layer] = conduct_sat;
 					  DRAIN = DRN[layer];
 				   }
+
+				  	/* Capillary zone: no drainage only out of capillary zone, only if it is saturated */	
+					if (sprop->CFeff[layer] > 0 && DRN[layer] > 0)
+					{	
+						if (layer == 0)
+							soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + INFILT;
+						else
+							soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + DRN[layer-1];
+
+
+						if (soilw_limit > 0)
+							DRN[layer] = MIN(DRN[layer], soilw_limit);
+						else
+							DRN[layer] = 0;
+
+					}
+				
+					/* GW-zone: no drainage only out of groundwater zone, only if it is saturated (GW-recharge) */	
+					if (sprop->GWeff[layer] > 0 && DRN[layer] > 0)
+					{
+						if (layer == 0)
+							soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + INFILT;
+						else
+							soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + DRN[layer-1];
+				
+						if (soilw_limit > 0) GWR[layer] = MIN(DRN[layer], soilw_limit);
+					
+						DRN[layer] = 0;
+					}
 			
              
 				   VWC  = VWC - DRN[layer] / dz0 - GWR[layer]/dz0;
@@ -197,7 +228,7 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 	{
 		
 		/* BEGIN LOOP: VWCsat flow */
-		for (layer=0; layer<N_SOILLAYERS-1; layer++)   
+		for (layer=0; layer<N_SOILLAYERS; layer++)   
 		{
 
 			VWC = epv->VWC[layer];
@@ -235,18 +266,38 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 			
 		
 			} 	/* BEGIN IF-ELSE: layer == 0 */
+
+			if (DRN[layer] < CRIT_PRECwater) DRN[layer]=0;
 			
 
-			/* GW-effect: drainage only out of capillary zone if layer is saturated */
-			if (sprop->GWeff[layer] == 0 && DRN[layer] > 0)
-			{
-				if ((sprop->VWCsat[layer] - VWC) > CRIT_PRECwater) DRN[layer] = 0; 
+			/* Capillary zone: no drainage only out of capillary zone, only if it is saturated */	
+			if (sprop->CFeff[layer] > 0 && DRN[layer] > 0)
+			{	
+				if (layer == 0)
+					soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + INFILT;
+				else
+					soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + DRN[layer-1];
+
+				
+				if (soilw_limit > 0)
+					DRN[layer] = MIN(DRN[layer], soilw_limit);
+				else
+					DRN[layer] = 0;
+
 			}
-			/* GW-effect: drainage is GW-recharge, but only out of GW-zone if layer is saturated */
+				
+			/* GW-zone: no drainage only out of groundwater zone, only if it is saturated (GW-recharge) */	
 			if (sprop->GWeff[layer] > 0 && DRN[layer] > 0)
 			{
-				if ((sprop->VWCsat[layer] - VWC) < CRIT_PRECwater && DRN[layer]) GWR[layer] = DRN[layer];
-				DRN[layer] = 0; 
+				if (layer == 0)
+					soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + INFILT;
+				else
+					soilw_limit = (epv->VWC[layer]- sprop->VWCfc[layer]) * sitec->soillayer_thickness[layer] * water_density + DRN[layer-1];
+
+				
+				if (soilw_limit > 0) GWR[layer] = MIN(DRN[layer], soilw_limit);
+					
+				DRN[layer] = 0;
 			}
 
 			/* limitation of drainage: saturation conductivity */
@@ -256,7 +307,7 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
  
 		} /* END LOOP: VWCsat flow */
 
-		for (layer=N_SOILLAYERS-2; layer >= 0; layer--)
+		for (layer=N_SOILLAYERS-1; layer >= 0; layer--)
 		{
 			
 				VWC = epv->VWC[layer];
@@ -265,21 +316,23 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 
 				if (layer > 0)
 				{
-					VWC = epv->VWC[layer] + (DRN[layer-1]-DRN[layer]-wf->GWrecharge[layer])/ dz0 ;
+					VWC = epv->VWC[layer] + (DRN[layer-1]-DRN[layer]-GWR[layer])/ dz0 ;
 					if (VWC > sprop->VWCsat[layer])
 					{
-						DRN[layer-1] = (sprop->VWCsat[layer] - epv->VWC[layer])*dz0 +DRN[layer];
+						DRN[layer-1] = (sprop->VWCsat[layer] - epv->VWC[layer])*dz0 + DRN[layer] + GWR[layer];
 						VWC          = sprop->VWCsat[layer];
 					}
 				}
 				else
 				{
-					VWC = epv->VWC[layer] - (DRN[layer]/ dz0);
+					VWC = epv->VWC[layer] - ((DRN[layer] + GWR[layer])/ dz0);
 				}
 
+				if (DRN[layer] < CRIT_PRECwater) DRN[layer]=0;
 			
                  /* water flux: cm/day to kg/(m2*day) */
 			    soilwPercol[layer] = (DRN[layer] / m_to_cm) * water_density;
+				wf->GWrecharge[layer] = (GWR[layer] / m_to_cm) * water_density;
 
 				/* state update: with new VWC calcualte soilw */
 				epv->VWC[layer]  = VWC;
@@ -295,34 +348,39 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 
 	if (epc->SHCM_flag == 0)
 	{
-		for (layer=0; layer<N_SOILLAYERS-1; layer++)
+		for (layer=N_SOILLAYERS-2; layer>=0; layer--)
 		{
 			dz0      = sitec->soillayer_thickness[layer];
 			VWC0     = epv->VWC[layer];
+			rVWC0    = epv->relVWCfc_wp[layer];
 			VWC0_sat = sprop->VWCsat[layer];
-
-			if (layer == (int)sprop->CFlayer )
-				VWC0_fc  = sprop->VWCsat[layer];
-			else
-				VWC0_fc  = sprop->VWCfc[layer];
-
+			VWC0_fc  = sprop->VWCfc[layer];
 			VWC0_wp  = sprop->VWCwp[layer];
-			if (layer+1 < N_SOILLAYERS)
+	
+			dz1      = sitec->soillayer_thickness[layer+1];
+			VWC1     = epv->VWC[layer+1];
+			rVWC1    = epv->relVWCfc_wp[layer+1];
+			VWC1_sat = sprop->VWCsat[layer+1];
+			VWC1_fc  = sprop->VWCfc[layer+1];
+			VWC1_wp  = sprop->VWCwp[layer+1];
+
+			/* capillary layer has higher FC only relative to lower layers  */
+			if (sprop->CFeff[layer] < 0)
 			{
-				dz1      = sitec->soillayer_thickness[layer+1];
-				VWC1     = epv->VWC[layer+1];
-				VWC1_sat = sprop->VWCsat[layer+1];
-				VWC1_fc  = sprop->VWCfc[layer+1];
-				VWC1_wp  = sprop->VWCwp[layer+1];
+				rVWC1    = (epv->VWC[layer+1] - sprop->VWCwp[layer+1]) / (sprop->VWCfc_base[layer+1] - sprop->VWCwp[layer+1]);
+				VWC1_fc  = sprop->VWCfc_base[layer+1];
 			}
 
 
-			if (!errorCode && diffusCalc(sprop, dz0, VWC0, VWC0_sat, VWC0_fc, VWC0_wp, dz1, VWC1, VWC1_sat, VWC1_fc, VWC1_wp, &soilwDiffus_act))
+
+			if (!errorCode && diffusCalc(sprop, dz0, VWC0, rVWC0, VWC0_sat, VWC0_fc, VWC0_wp, dz1, VWC1, rVWC1, VWC1_sat, VWC1_fc, VWC1_wp, &soilwDiffus_act))
 			{
 				printf("\n");
 				printf("ERROR: diffusion() in tipping.c\n");
 				errorCode = 1;
 			}
+
+			if (fabs(soilwDiffus_act) < CRIT_PRECwater) soilwDiffus_act=0;
 
 			soilwDiffus[layer]   = soilwDiffus_act;
 
@@ -350,7 +408,7 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 		for (layer=0; layer<N_SOILLAYERS-1; layer++) soilwDiffus[layer] = 0;
 	}
 
-	
+
 	
 	/* ********************************/
 	/* 6. BOTTOM LAYER IS SPECIAL 	*/
@@ -358,39 +416,23 @@ int tipping(siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struc
 	/* if no GW, water from above flows through the layer */
 	if (sprop->GWeff[N_SOILLAYERS-1] == DATA_GAP)
 	{
-		soilwPercol[N_SOILLAYERS-1] = soilwPercol[N_SOILLAYERS-2];
 		soilwDiffus[N_SOILLAYERS-1] = soilwDiffus[N_SOILLAYERS-2];
 	}
 	else
 	{
-		/* if GW: no percolation, but is layer is saturated: GWrecharge */
+		/* if GW: no percolation, but if layer is saturated: GWrecharge */
 		if (fabs(epv->VWC[N_SOILLAYERS-1]-sprop->VWCsat[N_SOILLAYERS-1]) < CRIT_PRECwater)
 		{
-			wf->GWrecharge[N_SOILLAYERS-2] = soilwPercol[N_SOILLAYERS-2];
-		
 			if (soilwDiffus[N_SOILLAYERS-2] > 0)
 				wf->GWrecharge[N_SOILLAYERS-2] += soilwDiffus[N_SOILLAYERS-2];
 		}
-		else
-		{
-			soilw_sat = sprop->VWCsat[N_SOILLAYERS-1] * sitec->soillayer_thickness[N_SOILLAYERS-1] * water_density;
-			diff_sat  = soilw_sat - (ws->soilw[N_SOILLAYERS-1] + soilwPercol[N_SOILLAYERS-2]);
-			if (diff_sat < 0)
-			{
-				soilwPercol[N_SOILLAYERS-2]   += diff_sat;
-				wf->GWrecharge[N_SOILLAYERS-1]-= diff_sat;
-			}				
 
-			ws->soilw[N_SOILLAYERS-1] += soilwPercol[N_SOILLAYERS-2];
-		}
-		
-		soilwPercol[N_SOILLAYERS-1] = 0;
 		soilwDiffus[N_SOILLAYERS-1] = 0;
 	}
 
 	ws->soilw[N_SOILLAYERS-1]   -= soilwDiffus[N_SOILLAYERS-1];
 	epv->VWC[N_SOILLAYERS-1]     = ws->soilw[N_SOILLAYERS-1]   / sitec->soillayer_thickness[N_SOILLAYERS-1]   / water_density;
-
+	
 	/* ********************************/
 	/* calculation of net water transport */
 	for (layer=0; layer<N_SOILLAYERS; layer++) wf->soilwFlux[layer]=soilwPercol[layer]+soilwDiffus[layer];

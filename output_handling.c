@@ -205,188 +205,173 @@ int output_handling(int* mondays, int* enddays, control_struct* ctrl, double** o
 			}
 			
 			/* reset monthly average variables for next month */
-			for (outv=0 ; outv<ctrl->ndayout ; outv++)
-			{
-				monavgarr[outv] = 0.0;
-			}
-			
-		
-#ifdef DEBUG
-				printf("%d\t%d\tdone monavg output\n",simyr,yday);
-#endif
-			
-			}
+			for (outv=0 ; outv<ctrl->ndayout ; outv++) monavgarr[outv] = 0.0;		
 		}
+	}
 		
 	
-		/* ANNUAL AVERAGE OF DAILY OUTPUT VARIABLES */
-		if (ctrl->doannavg)
+	/* ANNUAL AVERAGE OF DAILY OUTPUT VARIABLES */
+	if (ctrl->doannavg)
+	{
+		/* update the annual average array */
+		for (outv=0 ; outv<ctrl->ndayout ; outv++)
 		{
-			/* update the annual average array */
+			annavgarr[outv] += dayarr[outv];
+		}
+
+		/* header of annavg file (only in case of ASCII) */
+		if (yday == 0 && simyr == 0 && ctrl->doannavg == 2)
+		{
+			fprintf(annavgout.ptr, "%5s", " year");
+			for (i=0; i< ctrl->ndayout; i++)
+			{
+				fprintf(annavgout.ptr, "%30s", ctrl->daynames[i]);
+			}
+			fprintf(annavgout.ptr, "\n");
+
+
+		}
+			
+		/* if this is the last day of the year, output... */
+		if (yday == nDAYS_OF_YEAR-1)
+		{
+
+			/* finish averages */
 			for (outv=0 ; outv<ctrl->ndayout ; outv++)
 			{
-				annavgarr[outv] += dayarr[outv];
+				annavgarr[outv] /= nDAYS_OF_YEAR;
 			}
-
-			/* header of annavg file (only in case of ASCII) */
-			if (yday == 0 && simyr == 0 && ctrl->doannavg == 2)
+				
+			/* write to file */
+			if (ctrl->doannavg == 2)
 			{
-				fprintf(annavgout.ptr, "%5s", " year");
+				/* write ASCII the annual output array to annual output file */
+				fprintf(annavgout.ptr, "%5i", yearOUT);
+					
 				for (i=0; i< ctrl->ndayout; i++)
 				{
-					fprintf(annavgout.ptr, "%30s", ctrl->daynames[i]);
+					fprintf(annavgout.ptr, "%14.8f ", annavgarr[i]);
+
 				}
 				fprintf(annavgout.ptr, "\n");
 
-
-			}
-			
-			/* if this is the last day of the year, output... */
-			if (yday == nDAYS_OF_YEAR-1)
-			{
-
-				/* finish averages */
-				for (outv=0 ; outv<ctrl->ndayout ; outv++)
-				{
-					annavgarr[outv] /= nDAYS_OF_YEAR;
-				}
-				
-				/* write to file */
-				if (ctrl->doannavg == 2)
-				{
-					/* write ASCII the annual output array to annual output file */
-					fprintf(annavgout.ptr, "%5i", yearOUT);
-					
-					for (i=0; i< ctrl->ndayout; i++)
-					{
-						fprintf(annavgout.ptr, "%14.8f ", annavgarr[i]);
-
-					}
-					fprintf(annavgout.ptr, "\n");
-
-				}
-				else
-				{
-					/* write BINARY the annual output array to annual output file */
-					if (ctrl->doannavg == 1)
-					{
-						if (fwrite(annavgarr, sizeof(double), ctrl->ndayout, annavgout.ptr)!= (size_t)ctrl->ndayout)
-						{
-							printf("\n");
-							printf("ERROR writing to %s: simyear = %d, simday = %d\n", annavgout.name,simyr,yday);
-							errorCode=1;
-						}
-					}
-					else
-					/* printing on the screen */
-					{
-						for (i=0; i< ctrl->ndayout; i++)
-						{
-							printf("%14.8f ", annavgarr[i]);
-						}
-						printf("\n");
-					}
-				}
-
-				/* reset annual average variables for next month */
-				for (outv=0 ; outv<ctrl->ndayout ; outv++)
-				{
-					annavgarr[outv] = 0.0;
-				}
-				
-#ifdef DEBUG
-				printf("%d\t%d\tdone annavg output\n",simyr,yday);
-#endif
-			
-			}
-			
-		}
-		/* ANNUAL OUTPUT HANDLING */
-		/* only write annual outputs if requested */
-		if (!errorCode && ctrl->doannual)
-		{
-			/* header of monavg file (only in case of ASCII) */
-			if (yday == 0 && simyr == 0 && ctrl->doannual == 2)
-			{
-				fprintf(annout.ptr, "%5s", " year");
-				for (i=0; i< ctrl->nannout; i++)
-				{
-					fprintf(annout.ptr, "%30s", ctrl->annnames[i]);
-				}
-				fprintf(annout.ptr, "\n");
-			}
-
-			if (yday == nDAYS_OF_YEAR-1)
-			{
-				/* fill the annual output array */
-				for (outv=0 ; outv<ctrl->nannout ; outv++)
-				{
-					
-					annarr[outv] = (double) *output_map[ctrl->anncodes[outv]];
-				}
-					
-				/* write the annual output array to annual output file */
-				if (ctrl->doannual == 2)
-				{
-					/* write ASCII the annual output array to annual output file */
-					fprintf(annout.ptr, "%5i", yearOUT);
-				
-					for (i=0; i< ctrl->nannout; i++)
-					{
-						fprintf(annout.ptr, "%12.6f ", annarr[i]);
-					}
-					fprintf(annout.ptr, "\n");
-				}
-				else
-				{
-					/* write BINARY the annual output array to annual output file */
-					if (ctrl->doannual == 1)
-					{	
-						if (fwrite(annarr, sizeof(double), ctrl->nannout, annout.ptr)!= (size_t)ctrl->nannout)
-						{
-							printf("\n");
-							printf("ERROR writing to %s: simyear = %d, simday = %d\n",annout.name,simyr,yday);
-							errorCode=1;
-						}
-					}
-					else
-					/* printing on the screen */
-					{
-						for (i=0; i< ctrl->ndayout; i++)
-						{
-							printf("%12.6f ", annarr[i]);
-						}
-						printf("\n");
-					}
-				}
-			}
-				
-#ifdef DEBUG
-			printf("%d\t%d\tdone annual output\n",simyr,yday);
-#endif
-		}
-
-	
-
-		/* calculate month and day variables at the end of a month */
-		if (yday == enddays[ctrl->curmonth])
-		{
-			/* if this is the last day of the year, output... */
-			if (yday == nDAYS_OF_YEAR-1)
-			{
-				ctrl->month = 1;
-				ctrl->day   = 1;
 			}
 			else
 			{
-				ctrl->month += 1;
-				ctrl->day   = 1;
+				/* write BINARY the annual output array to annual output file */
+				if (ctrl->doannavg == 1)
+				{
+					if (fwrite(annavgarr, sizeof(double), ctrl->ndayout, annavgout.ptr)!= (size_t)ctrl->ndayout)
+					{
+						printf("\n");
+						printf("ERROR writing to %s: simyear = %d, simday = %d\n", annavgout.name,simyr,yday);
+						errorCode=1;
+					}
+				}
+				else
+				/* printing on the screen */
+				{
+					for (i=0; i< ctrl->ndayout; i++)
+					{
+						printf("%14.8f ", annavgarr[i]);
+					}
+					printf("\n");
+				}
 			}
+
+			/* reset annual average variables for next month */
+			for (outv=0 ; outv<ctrl->ndayout ; outv++)
+			{
+				annavgarr[outv] = 0.0;
+			}
+				
+
+			
+		}
+			
+	}
+	/* ANNUAL OUTPUT HANDLING */
+	/* only write annual outputs if requested */
+	if (!errorCode && ctrl->doannual)
+	{
+		/* header of monavg file (only in case of ASCII) */
+		if (yday == 0 && simyr == 0 && ctrl->doannual == 2)
+		{
+			fprintf(annout.ptr, "%5s", " year");
+			for (i=0; i< ctrl->nannout; i++)
+			{
+				fprintf(annout.ptr, "%30s", ctrl->annnames[i]);
+			}
+			fprintf(annout.ptr, "\n");
+		}
+
+		if (yday == nDAYS_OF_YEAR-1)
+		{
+			/* fill the annual output array */
+			for (outv=0 ; outv<ctrl->nannout ; outv++)
+			{
+					
+				annarr[outv] = (double) *output_map[ctrl->anncodes[outv]];
+			}
+					
+			/* write the annual output array to annual output file */
+			if (ctrl->doannual == 2)
+			{
+				/* write ASCII the annual output array to annual output file */
+				fprintf(annout.ptr, "%5i", yearOUT);
+				
+				for (i=0; i< ctrl->nannout; i++)
+				{
+					fprintf(annout.ptr, "%12.6f ", annarr[i]);
+				}
+				fprintf(annout.ptr, "\n");
+			}
+			else
+			{
+				/* write BINARY the annual output array to annual output file */
+				if (ctrl->doannual == 1)
+				{	
+					if (fwrite(annarr, sizeof(double), ctrl->nannout, annout.ptr)!= (size_t)ctrl->nannout)
+					{
+						printf("\n");
+						printf("ERROR writing to %s: simyear = %d, simday = %d\n",annout.name,simyr,yday);
+						errorCode=1;
+					}
+				}
+				else
+				/* printing on the screen */
+				{
+					for (i=0; i< ctrl->ndayout; i++)
+					{
+						printf("%12.6f ", annarr[i]);
+					}
+					printf("\n");
+				}
+			}
+		}
+	}
+
+	
+
+	/* calculate month and day variables at the end of a month */
+	if (yday == enddays[ctrl->curmonth])
+	{
+		/* if this is the last day of the year, output... */
+		if (yday == nDAYS_OF_YEAR-1)
+		{
+			ctrl->month = 1;
+			ctrl->day   = 1;
 		}
 		else
 		{
-			ctrl->day   += 1;
+			ctrl->month += 1;
+			ctrl->day   = 1;
 		}
+	}
+	else
+	{
+		ctrl->day   += 1;
+	}
 
 
 return (errorCode);

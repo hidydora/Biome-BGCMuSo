@@ -69,7 +69,7 @@ int multilayer_hydrolparams(const siteconst_struct* sitec, const soilprop_struct
 		
 		/* convert kg/m2 --> m3/m2 --> m3/m3 */
 		epv->VWC[layer] = ws->soilw[layer] / (water_density * sitec->soillayer_thickness[layer]);
-		
+
 		epv->WFPS[layer]	            = epv->VWC[layer] / sprop->VWCsat[layer];	
    
 		/* PSI, hydrCONDUCT and hydrDIFFUS ( Cosby et al.) from VWC ([1MPa=100m] [m/s] [m2/s] */

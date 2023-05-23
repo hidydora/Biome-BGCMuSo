@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 
 
-int harvesting_init(file init, const control_struct* ctrl, planting_struct* PLT, harvesting_struct* HRV)
+int harvesting_init(file init, const control_struct* ctrl, harvesting_struct* HRV)
 {
 	char header[STRINGSIZE];
 	char HRV_filename[STRINGSIZE];

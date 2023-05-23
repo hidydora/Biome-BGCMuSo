@@ -21,8 +21,8 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_constants.h"
 #include "bgc_func.h"    
 
-int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struct* epc, 
-	                         epvar_struct* epv, wstate_struct* ws, wflux_struct* wf, groundwater_struct* gws, GWcalc_struct* gwc)
+int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soilprop_struct* sprop, const epconst_struct* epc, epvar_struct* epv, 
+	                         wstate_struct* ws, wflux_struct* wf, groundwater_struct* GWS, GWcalc_struct* gwc, flooding_struct* FLD, int* mondays)
 {
 	/* given a list of site constants and the soil water mass (kg/m2),
 	this function returns the soil water potential (MPa)
@@ -55,15 +55,11 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 	{
 		/* *****************************/
 		/* 0. GROUNDWATER PREPROCESS: 10 layers to 12 layers */
-		if (!errorCode && groundwaterR_preproc(ctrl, sitec, sprop, epv, ws, wf, gws, gwc))
+		if (!errorCode && groundwaterR_preproc(ctrl, sitec, sprop, epv, ws, wf, GWS, gwc))
 		{
 			printf("ERROR in groundwater() from bgc.c\n");
 			errorCode=1;
 		}
-
-		#ifdef DEBUG
-					printf("%d\t%d\tdone groundwater\n",simyr,yday);
-		#endif	
 
 		/* *****************************/
 		/* 1. HYDROLOGICAL CALCULATION BASED ON RICHARDS-METHOD: infiltration, percolation, diffusion, evaporation, transpiration */
@@ -73,9 +69,7 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 			printf("ERROR in richards() from multilayer_hydrolprocess.c()\n");
 			errorCode=1; 
 		} 
-		#ifdef DEBUG
-					printf("%d\t%d\tdone richards\n",simyr,yday);
-		#endif	
+	
 
 		/* *****************************/
 		/* 2. GROUNDWATER POSTPROCESS: 12 layers to 10 layers  */
@@ -107,15 +101,11 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 		/* ********************************************/
 		/* 0. GROUNDWATER preprocess: calculation depth of GW and CF, GW-movchange */
 	
-		if (!errorCode && groundwaterT_preproc(ctrl, sitec, sprop, epv, ws, wf, gws))
+		if (!errorCode && groundwaterT_preproc(ctrl, epc, sitec, sprop, epv, ws, wf, GWS))
 		{
 			printf("ERROR in groundwaterT_preproc() from bgc.c\n");
 			errorCode=1;
 		}
-
-	#ifdef DEBUG
-				printf("%d\t%d\tdone groundwater\n",simyr,yday);
-	#endif	
 
 
 		/* *****************************/
@@ -137,10 +127,7 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 			printf("ERROR in tipping() from multilayer_hydrolprocess.c()\n");
 			errorCode=1;
 		} 
-		#ifdef DEBUG
-					printf("%d\t%d\tdone tipping\n",simyr,yday);
-		#endif	
-
+	
 		/* ********************************************/
 		/* 4. SOIL EVAPORATION */
 
@@ -150,9 +137,7 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 			printf("ERROR in soilEVP_calc() from multilayer_hydrolprocess.c()\n");
 			errorCode=1;
 		}
-		#ifdef DEBUG
-			printf("%d\t%d\tdone soilEVP_calc\n",simyr,yday);
-		#endif
+	
 		
 		/* ********************************************/
 		/* 5. TRANSPIRATION */
@@ -162,10 +147,7 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 			printf("ERROR in multilayer_transpiration() from multilayer_hydrolprocess.c()\n");
 			errorCode=1;
 		}
-		#ifdef DEBUG
-			printf("%d\t%d\tdone multilayer_transpiration\n",simyr,yday);
-		#endif
-
+	
 		/* *****************************/
 		/* 6. POND AND RUNOFF */
 	
@@ -179,13 +161,18 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 		/* **********************************/
 		/* 7. GROUNDWATER CF-charge: diffusion between GW and CF */
 	
-		if (!errorCode && groundwaterT_CFcharge(ctrl, sitec, sprop, epv, ws, wf, gws))
+		if (!errorCode && groundwaterT_CFcharge(sitec, sprop, epv, ws, wf, GWS))
 		{
 			printf("ERROR in groundwaterT_CFcharge() from multilayer_hydrolprocess.cc\n");
 			errorCode=1;
 		}
 
-	
+		/* FLOODING */
+		if (!errorCode && flooding(ctrl, sitec, FLD, sprop, epv, ws, wf, mondays))
+		{
+			printf("ERROR in flooding() from bgc.c\n");
+			errorCode=1;
+		}
 	
 	}
 
@@ -312,7 +299,7 @@ int multilayer_hydrolprocess(file logfile, control_struct* ctrl, siteconst_struc
 	
 	}
 
-	if (epv->rootdepth && fabs(1-weight_SUM) > CRIT_PREC)
+	if (epv->rootDepth && fabs(1-weight_SUM) > CRIT_PREC)
 	{
 		printf("ERROR in calculation of rootzone variables (multilayer_hydrolprocess.c) \n");
 		errorCode=1;

@@ -147,11 +147,6 @@ int ploughing(const control_struct* ctrl, const epconst_struct* epc, siteconst_s
 		metv->tsoil_surface     = metv->tsoil[0];
 
 
-		/* estimating aboveground litter and cwdc */
-		cs->litrc_above = 0;
-
-
-
 		/**********************************************************************************************/
 		/* III. CALCULATING FLUXES */
 	

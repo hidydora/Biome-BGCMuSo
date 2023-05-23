@@ -53,6 +53,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ws->deeppercolation_snk = 0;
 	ws->groundwater_src = 0;
 	ws->groundwater_snk = 0;
+	ws->FLDsrc = 0;
 	ws->canopyw_THNsnk = 0;
 	ws->canopyw_MOWsnk = 0;
 	ws->canopyw_HRVsnk = 0;
@@ -152,6 +153,7 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	cs->FIREsnk_C = 0;
 	cs->SNSCsnk_C = 0;
 	cs->PLTsrc_C = 0;
+	cs->MULsrc_C = 0;
 	cs->THN_transportC = 0;
 	cs->HRV_transportC = 0;
 	cs->MOW_transportC = 0;
@@ -227,6 +229,8 @@ int presim_state_init(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns, c
 	ns->SNSCsnk_N = 0;
 	ns->FRZsrc_N = 0;
 	ns->PLTsrc_N = 0;
+	ns->MULsrc_N = 0;
+	ns->CWEsnk_N = 0;
 	ns->THN_transportN = 0;
 	ns->MOW_transportN = 0;
 	ns->HRV_transportN = 0;

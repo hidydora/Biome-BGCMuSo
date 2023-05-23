@@ -23,7 +23,7 @@ See the website of Biome-BGCMuSo at http://nimbus.elte.hu/bbgc/ for documentatio
 #include "bgc_func.h"
 #include "bgc_constants.h"
 
-int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_struct* cf, nflux_struct* nf, GWcalc_struct* gwc)
+int make_zero_flux_struct(wflux_struct* wf, cflux_struct* cf, nflux_struct* nf, GWcalc_struct* gwc)
 {
 	int errorCode=0;
 	int layer;
@@ -55,6 +55,8 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	wf->infilt_to_soilw = 0;
 	wf->prcp_to_pondw = 0;
 	wf->GW_to_pondw = 0;
+	wf->FLD_to_pondw = 0;
+	wf->FLD_to_soilw = 0;
 	wf->soilwLeach_RZ = 0;
 	wf->canopyw_to_THN = 0;
 	wf->canopyw_to_MOW = 0;
@@ -408,6 +410,11 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	cf->FRZ_to_litr2c = 0;
 	cf->FRZ_to_litr3c = 0;
 	cf->FRZ_to_litr4c = 0;
+	cf->litrc_from_MUL = 0;
+	cf->cwdc_from_MUL = 0;
+	cf->cwdc0_to_CWE = 0;
+	cf->cwdc1_to_CWE = 0;
+	cf->cwdc2_to_CWE = 0;
 	cf->CH4flux_soil = 0;
 	cf->CH4flux_manure = 0;
 	cf->CH4flux_animal = 0;
@@ -776,6 +783,12 @@ int make_zero_flux_struct(const control_struct* ctrl, wflux_struct* wf, cflux_st
 	nf->FRZ_to_litr4n = 0;
 	nf->N2O_flux_GRZ = 0;
 	nf->N2O_flux_FRZ = 0;
+
+	nf->litrn_from_MUL = 0;
+	nf->cwdn_from_MUL = 0;
+	nf->cwdn0_to_CWE = 0;
+	nf->cwdn1_to_CWE = 0;
+	nf->cwdn2_to_CWE = 0;
 
 	nf->sminn_to_soil1n_l1_total = 0;				
 	nf->sminn_to_soil2n_l2_total = 0;	

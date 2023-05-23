@@ -409,7 +409,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 
 	/* 9.2 	belowground biomass divided between soil layers based on their root content */ 
 	
-	if (epv->rootdepth > CRIT_PREC)
+	if (epv->rootDepth > CRIT_PREC)
 	{
 		for (layer=0; layer < N_SOILLAYERS; layer++)
 		{
@@ -440,8 +440,7 @@ int senescence(const siteconst_struct *sitec, const epconst_struct* epc, const g
 		}
 	}
 	
-	/* estimating aboveground litter and cwdc */
-	cs->litrc_above +=  cf->STDBc_leaf_to_litr + cf->STDBc_yield_to_litr + cf->STDBc_softstem_to_litr;
+	
 
 	/****************************************************************************************/
 	/* 10. decreasing of temporary pool */

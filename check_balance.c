@@ -184,14 +184,14 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	cs->inC = cs->psnsun_src + cs->psnshade_src + cs->PLTsrc_C + cs->GRZsrc_C  + cs->FRZsrc_C + cs->MULsrc_C;
 	
 	/* sum of sinks: respiration, fire and management */
-	cs->outC = cs->leaf_MR_snk      + cs->leaf_GR_snk      + cs->froot_MR_snk     + cs->froot_GR_snk + 
-			  cs->yield_MR_snk     + cs->yield_GR_snk     + cs->softstem_MR_snk  + cs->softstem_GR_snk + 
-			  cs->livestem_MR_snk  + cs->livestem_GR_snk  + cs->deadstem_GR_snk  + 
-			  cs->livecroot_MR_snk + cs->livecroot_GR_snk + cs->deadcroot_GR_snk + 
-			  cs->litr1_hr_snk + cs->litr2_hr_snk + cs->litr4_hr_snk + 
-			  cs->soil1_hr_snk + cs->soil2_hr_snk + cs->soil3_hr_snk + cs->soil4_hr_snk + 
-			  cs->FIREsnk_C +  cs->Cdeepleach_snk + 
-			  cs->GRZsnk_C + cs->THN_transportC + cs->MOW_transportC + cs->HRV_transportC + cs->CWEsnk_C; 
+	cs->outC = cs->MRleaf_snk      + cs->GRleaf_snk      + cs->MRfroot_snk     + cs->GRfroot_snk + 
+			   cs->MRyield_snk     + cs->GRyield_snk     + cs->MRsoftstem_snk  + cs->GRsoftstem_snk + 
+			   cs->MRlivestem_snk  + cs->GRlivestem_snk  + cs->GRdeadstem_snk  + 
+			   cs->MRlivecroot_snk + cs->GRlivecroot_snk + cs->GRdeadcroot_snk + 
+			   cs->HRlitr1_snk + cs->HRlitr2_snk + cs->HRlitr4_snk + 
+			   cs->HRsoil1_snk + cs->HRsoil2_snk + cs->HRsoil3_snk + cs->HRsoil4_snk + 
+			   cs->FIREsnk_C +  cs->Cdeepleach_snk + 
+			   cs->GRZsnk_C + cs->THN_transportC + cs->MOW_transportC + cs->HRV_transportC + cs->CWEsnk_C; 
 		
 		     
 		

@@ -21,8 +21,7 @@ D. Hidy (2022)
 int writeErrorCode(int errorCode)
 {
 
-    fprintf(stderr,"%d",errorCode);
-
+    fprintf(stderr,"%d\n",errorCode);
 	return(0);
 
 } 

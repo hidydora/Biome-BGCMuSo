@@ -1,5 +1,5 @@
 /* leap_control.c
-deciding wetherleap year of not
+deciding wether leap year of not
 
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 Biome-BGCMuSo v7.0.

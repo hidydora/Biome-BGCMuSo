@@ -125,6 +125,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		{
 			printf("\n");
 			printf("ERROR in nitrification() for multilayer_sminn.c \n");
+			errorCode=1;
 		}	
 
 
@@ -146,6 +147,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		{
 			printf("\n");
 			printf("ERROR in denitrification() for multilayer_sminn.c \n");
+			errorCode=1;
 		}
 		
 		
@@ -205,12 +207,12 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 
 		/*********************************************/
 		/* 9. CONTROL */
-		if (ns->sminNH4[layer] < 0.0)       
+		if (!errorCode && ns->sminNH4[layer] < 0.0)       
 		{	
 			if (fabs(ns->sminNH4[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative NH4 pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative NH4 pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -220,12 +222,12 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			}
 		}
 
-		if (ns->sminNO3[layer] < 0.0)       
+		if (!errorCode && ns->sminNO3[layer] < 0.0)       
 		{	
 			if (fabs(ns->sminNO3[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative NO3 pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative NO3 pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -235,12 +237,12 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			}
 		}
 
-		if ((ns->soil1n[layer] < 0))
+		if (!errorCode && ns->soil1n[layer] < 0)
 		{
 			if (fabs (ns->soil1n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -250,12 +252,12 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			}
 		}
 
-		if ((ns->soil2n[layer] < 0))
+		if (!errorCode && ns->soil2n[layer] < 0)
 		{
 			if (fabs (ns->soil2n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -265,12 +267,12 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			}
 		}
 
-		if ((ns->soil3n[layer] < 0))
+		if (!errorCode && ns->soil3n[layer] < 0)
 		{
 			if (fabs (ns->soil3n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -280,12 +282,12 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 			}
 		}
 
-		if ((ns->soil4n[layer] < 0))
+		if (!errorCode && ns->soil4n[layer] < 0)
 		{
 			if (fabs (ns->soil4n[layer]) > CRIT_PREC)
 			{
 				printf("\n");
-				if (!errorCode) printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
+				printf("ERROR: negative soil N pool (multilayer_sminn.c)\n");
 				errorCode=1;
 			}
 			else
@@ -296,15 +298,15 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		}
 	}
 
-	if (fabs(sminn_to_soilCTRL - nf->sminn_to_soil_SUM_total) > CRIT_PREC || fabs(sminn_to_npoolCTRL - nf->sminn_to_npool_total) > CRIT_PREC ||
-		fabs(ndep_to_sminnCTRL - nf->ndep_to_sminn_total) > CRIT_PREC || fabs(nfix_to_sminnCTRL - nf->nfix_to_sminn_total) > CRIT_PREC)
+	if (!errorCode && (fabs(sminn_to_soilCTRL - nf->sminn_to_soil_SUM_total) > CRIT_PREC || fabs(sminn_to_npoolCTRL - nf->sminn_to_npool_total) > CRIT_PREC ||
+		fabs(ndep_to_sminnCTRL - nf->ndep_to_sminn_total) > CRIT_PREC || fabs(nfix_to_sminnCTRL - nf->nfix_to_sminn_total) > CRIT_PREC))
 	{
 		printf("\n");
 		printf("ERROR: in calculation of nitrogen state update (multilayer_sminn.c)\n");
 		errorCode=1;
 	}
 
-
+	nf->sminNO3_to_denitr_totalCUM += nf->sminNO3_to_denitr_total;
 
 	return (errorCode);
 }
@@ -320,7 +322,7 @@ int nitrification(int layer, const soilprop_struct* sprop, double net_miner, dou
 	epv->ps_nitrif[layer] = sprop->pHp2_nitrif + (sprop->pHp1_nitrif-sprop->pHp2_nitrif)/(1 + exp((pH-sprop->pHp3_nitrif)/sprop->pHp4_nitrif));	
 
 				
-	if (sprop->Tp1_decomp == DATA_GAP)
+	if (sprop->Tp1_nitrif == DATA_GAP)
 	{
 		/* no decomp processes for tsoil < -10.0 C */
 		if (tsoil < sprop->Tmin_decomp)	
@@ -331,7 +333,7 @@ int nitrification(int layer, const soilprop_struct* sprop, double net_miner, dou
 	else
 	{
 		/* no decomp processes for tsoil < -10.0 C */
-		if (tsoil < sprop->Tmin_decomp)	
+		if (tsoil < sprop->Tp1_nitrif)	
 				epv->ts_nitrif[layer] = 0.0;
 		else
 			epv->ts_nitrif[layer] = sprop->Tp1_nitrif/(1+pow(fabs((tsoil-sprop->Tp4_nitrif)/sprop->Tp2_nitrif),sprop->Tp3_nitrif));
@@ -374,7 +376,12 @@ int nitrification(int layer, const soilprop_struct* sprop, double net_miner, dou
 	N2O_flux_NIT   = sminNH4_to_nit * sprop->N2Ocoeff_nitrif;
 
 
-
+	if (sminNH4_to_nit < 0)
+	{
+		printf("\n");
+		printf("ERROR: in nitrification calulation (multilayer_sminn.c)\n");
+		errorCode=1;
+	}
 	
 	*sminNH4_to_nitrif = sminNH4_to_nit;
 	*N2O_flux_NITRIF   =  N2O_flux_NIT;

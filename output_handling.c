@@ -122,6 +122,7 @@ int output_handling(int* mondays, int* enddays, control_struct* ctrl, double** o
 				{
 					printf("\n");
 					printf("ERROR writing to %s: simyear = %d, simday = %d\n",dayout.name, yearOUT, ydayOUT);
+					errorCode=1;
 				}
 			}
 			else

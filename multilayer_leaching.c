@@ -183,6 +183,7 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 		{
 			nf->sminNH4_leach[layer]  = soilwater_NH4conc_upward * wf->soilwFlux[layer];
 			nf->sminNO3_leach[layer]  = soilwater_NO3conc_upward * wf->soilwFlux[layer];
+	
 			
 			cf->soil1DOC_leach[layer]  = soilwater_DOC1conc_upward * wf->soilwFlux[layer];
 			cf->soil2DOC_leach[layer]  = soilwater_DOC2conc_upward * wf->soilwFlux[layer];
@@ -196,14 +197,6 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 		}
 
 
-	
-	
-
-
-	
-	
-
-
 	}
 
 	/* rootzone leaching variables: kg to g */
@@ -214,6 +207,8 @@ int multilayer_leaching(const soilprop_struct* sprop, const epvar_struct* epv,
 		                 nf->soil3DON_leach[epv->n_maxrootlayers-1] + nf->soil4DON_leach[epv->n_maxrootlayers-1]);
 
 	nf->sminN_leachRZ  = (nf->sminNH4_leach[epv->n_maxrootlayers-1]   + nf->sminNO3_leach[epv->n_maxrootlayers-1]);
+
+
 		
 	wf->soilwLeach_RZ  = wf->soilwFlux[epv->n_maxrootlayers-1];
 	

@@ -39,7 +39,7 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 	
 	/* variable declarations */
 	int errorCode=0;
-	int nyears, leap, ec;
+	int nyears, leap;
     
 
 	/* iofiles and program control variables */
@@ -413,8 +413,6 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 		for (yday=0 ; !errorCode && yday<nDAYS_OF_YEAR ; yday++)
 		{
 
-			/* set the initial value of errorCode */
-			ec = 5010;
 
 			/* set the day index for meteorological and phenological arrays */
 			ctrl.yday   = yday;
@@ -424,9 +422,9 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && make_zero_flux_struct(&wf, &cf, &nf, &gwc))
 			{
 				printf("ERROR in call to make_zero_flux_struct() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5010;
 			}
-			ec=ec+10;
+			
 
 			/* initalizing annmax and cumulative variables */
 			if (yday == 0)
@@ -434,10 +432,10 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				if (!errorCode && annVARinit(&summary, &epv, &cs, &ws, &cf, &nf))
 				{
 					printf("ERROR in call to annVARinit() from bgc.c\n");
-					errorCode=ec;
+					errorCode=5020;
 				}
 			}
-			ec=ec+10;
+			
 
 		    /* nitrogen deposition and fixation */
 			nf.ndep_to_sminn_total = dailyNdep;
@@ -448,76 +446,76 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && dayphen(&ctrl, &epc, &phenarr, &PLT, &phen))
 			{
 				printf("ERROR in dayphen from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5030;
 			}
-			ec=ec+10;
+			
 
 			/* setting MANAGEMENT DAYS based on input data */
 			if (!errorCode && management(&ctrl, &FRZ, &GRZ, &HRV, &MOW, &PLT, &PLG, &THN, &IRG, &MUL, &CWE, &FLD, &GWS, mondays))
 			{
 				printf("ERROR in management days() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5040;
 			}
-			ec=ec+10;
+			
 
 			/* determining soil hydrological parameters */
  			if (!errorCode && multilayer_hydrolparams(&sitec, &sprop, &ws, &epv))
 			{
 				printf("ERROR in multilayer_hydrolparams() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5050;
 			}
-			ec=ec+10;
+			
 
 
 			/* daily meteorological variables from metarrays */
 			if (!errorCode && daymet(&ctrl, &metarr, &epc, &metv, ws.snoww))
 			{
 				printf("ERROR in daymet() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5060;
 			}
-			ec=ec+10;
+			
 			
 			/* phenophases calculation */
 			if (!errorCode && phenphase(bgcout->log_file, &ctrl, &epc, &sprop, &PLT, &phen, &metv, &epv, &cs))
 			{
 				printf("ERROR in phenphase() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5070;
 			}
-			ec=ec+10;
+			
 
 
 			/* soil temperature calculations */
 			if (!errorCode && multilayer_tsoil(&epc, &sitec, &sprop, &epv, yday, ws.snoww, &metv))
 			{
 				printf("ERROR in multilayer_tsoil() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5080;
 			}
-			ec=ec+10;
+			
 
 			/* soilCover calculations */
 			if (!errorCode && soilCover(&sitec, &sprop, &metv, &epv, &cs))
 			{
 				printf("ERROR in soilCover() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5090;
 			}
-			ec=ec+10;
+			
 
 
 			/* phenology calculation */
 			if (!errorCode && phenology(&epc, &cs, &ns, &phen, &metv, &epv, &cf, &nf))
 			{
 				printf("ERROR in phenology() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5100;
 			}
-			ec=ec+10;
+			
 		
 			/* calculate leaf area index, sun and shade fractions, and specific leaf area for sun and shade canopy fractions, then calculate canopy radiation interception and transmission */          
 			if (!errorCode && radtrans(&ctrl, &phen, &cs, &epc, &sitec, &metv, &epv))
 			{
 				printf("ERROR in radtrans() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5110;
 			}
-			ec=ec+10;
+			
 			
 			/* update the ann max LAI for annual diagnostic output */
 			if (epv.proj_lai > epv.annmax_lai)             epv.annmax_lai = epv.proj_lai;
@@ -530,42 +528,42 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && irrigating(&ctrl, &IRG, &sitec, &sprop, &epv, &ws, &wf))
 			{
 				printf("ERROR in irrigating() from bgc.c\n");
-				errorCode=ec;
+				errorCode=5120;
 			}
-			ec=ec+10;
+			
 
 
 			/* precip routing (when there is precip) */
 			if (!errorCode && metv.prcp && prcpANDrunoffH(&metv, &sprop, &epc, &epv, &wf))
 			{
 				printf("ERROR in prcpANDrunoffH() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5130;
 			}
-			ec=ec+10;
+			
 	
 			/* snowmelt (when there is a snowpack) */
 			if (!errorCode && ws.snoww && snowmelt(&metv, &wf, ws.snoww))
 			{
 				printf("ERROR in snowmelt() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5140;
 			}
-			ec=ec+10;
+			
 
 			/* potential evaporation and transpiration */
 			if (!errorCode && Elimit_and_PET(&epc, &sprop, &metv, &epv, &wf))
 			{
 				printf("ERROR in Elimit_and_PET() from bgc.c\n");
-				errorCode=ec;
+				errorCode=5150;
 			}
-			ec=ec+10;
+			
 
 		  	/* conductance calculation */
 			if (!errorCode && conduct_calc(&ctrl, &metv, &epc, &epv, simyr))
 			{
 				printf("ERROR in conduct_calc() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5160;
 			}
-			ec=ec+10;
+			
 			
 
 			/* begin canopy bio-physical process simulation */
@@ -576,34 +574,34 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				if (!errorCode && cs.leafc && canopy_et(&epc, &metv, &epv, &wf))
 				{
 					printf("ERROR in canopy_et() from transient_bgc.c\n");
-					errorCode=ec;
+					errorCode=5170;
 				}
 			}
-			ec=ec+10;
+			
 
 			/* daily maintenance respiration */
 			if (!errorCode && maint_resp(&PLT, &cs, &ns, &epc, &metv, &epv, &cf))
 			{
 				printf("ERROR in m_resp() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5180;
 			}
-			ec=ec+10;
+			
 
 			/* do photosynthesis calculation */
 			if (!errorCode && cs.leafc && photosynthesis(&epc, &metv, &cs, &ws, &phen, &epv, &psn_sun, &psn_shade, &cf))
 			{
 				printf("ERROR in photosynthesis() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5190;
 			}
-			ec=ec+10;
+			
 				
 			/* daily litter and soil decomp and nitrogen fluxes */
 			if (!errorCode && decomp(&metv,&epc,&sprop,&sitec,&cs,&ns,&epv,&cf,&nf,&nt))
 			{
 				printf("ERROR in decomp() from bgc.c\n");
-				errorCode=ec;
+				errorCode=5200;
 			}
-			ec=ec+10;
+			
 
 
 	        /* Daily allocation gets called whether or not this is a current growth day, because the competition between decomp immobilization fluxes 
@@ -612,9 +610,9 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && daily_allocation(&epc,&sprop,&metv,&ndep,&cs,&ns,&cf,&nf,&epv,&nt,0))
 			{
 				printf("ERROR in daily_allocation() from bgc.c\n");
-				errorCode=ec;
+				errorCode=5210;
 			}
-			ec=ec+10;
+			
 
             /* heat stress during flowering can affect daily allocation of yield */
 			if (epc.n_flowHS_phenophase != DATA_GAP)
@@ -622,10 +620,10 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				if (!errorCode && flowering_heatstress(&epc, &metv, &cs, &epv, &cf, &nf))
 				{
 					printf("ERROR in flowering_heatstress() from transient_bgc.c\n");
-					errorCode=ec;
+					errorCode=5220;
 				}
 			}
-			ec=ec+10;
+			
 			/* reassess the annual turnover rates for livewood --> deadwood, and for evergreen leaf and fine root litterfall. 
 			This happens once each year, on the annual_alloc day (the last litterfall day - test for annual allocation day) */
 			
@@ -637,19 +635,19 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 				if (!errorCode && annual_rates(&epc,&epv))
 				{
 					printf("ERROR in annual_rates() from transient_bgc.c\n");
-					errorCode=ec;
+					errorCode=5230;
 				}
 			} 
-			ec=ec+10;
+			
 
 
 			/* daily growth respiration */
 			if (!errorCode && growth_resp(&epc, &cf))
 			{
 				printf("ERROR in growth_resp() from bgc.c\n");
-				errorCode=ec;
+				errorCode=5240;
 			}
-			ec=ec+10;
+			
 			
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 			/* 3. WATER CALCULATIONS WITH STATE UPDATE */
@@ -659,17 +657,17 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && potEVPsurface_to_actEVPsurface(&ctrl, &sitec, &sprop, &epv, &ws, &wf))
 			{
 				printf("ERROR in potEVPsurface_to_actEVPsurface() from bgc.c()\n");
-				errorCode=ec;
+				errorCode=5250;;
 			}
-			ec=ec+10;
+			
          
 			/* multilayer soil hydrology: percolation calculation based on PRCP, RUNOFF, EVP, TRANS */
 			if (!errorCode && multilayer_hydrolprocess(&ctrl,  &sitec, &sprop, &epc, &epv, &ws, &wf, &GWS, &gwc, &FLD, mondays))
 			{
 				printf("ERROR in multilayer_hydrolprocess() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5260;
 			}
-			ec=ec+10;
+			
 
            
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -679,17 +677,17 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && water_state_update(&wf, &ws))
 			{
 				printf("ERROR in water_state_update() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5270;
 			}
-			ec=ec+10;
+			
 		
 	        /* daily update of carbon and nitrogen state variables */
 			if (!errorCode && CN_state_update(&sitec, &epc, &ctrl, &epv, &cf, &nf, &cs, &ns, annual_alloc, epc.evergreen))
 			{
 				printf("ERROR in CN_state_update() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5280;
 			}
-			ec=ec+10;
+			
 
        
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -700,33 +698,33 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && senescence(&sitec, &epc, &GRZ, &metv, &ctrl, &cs, &cf, &ns, &nf, &epv))
 			{
 				printf("ERROR in senescence() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5290;
 			}
-			ec=ec+10;
+			
 			
 		     /* calculate daily mortality fluxes  and update state variables */
 			if (!errorCode && mortality(&ctrl, &sitec, &epc, &epv, &cs, &cf, &ns, &nf, simyr))
 			{
 				printf("ERROR in mortality() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5300;
 			}
-			ec=ec+10;
+			
 	
 			/* calculate the change of soil mineralized N in multilayer soil */ 
 			if (!errorCode && multilayer_sminn(&ctrl, &metv, &sprop, &sitec, &cf, &ndep, &epv, &ns, &nf))
 			{
 				printf("ERROR in multilayer_sminn() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5310;
 			}
-			ec=ec+10;
+			
 
 			/* calculate the leaching of N, DOC and DON from multilayer soil */
 			if (!errorCode && multilayer_leaching(&sprop, &epv, &ctrl, &cs, &cf, &ns, &nf, &ws, &wf))
 			{
 				printf("ERROR in multilayer_leaching() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5320;
 			}
-			ec=ec+10;
+			
 	
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
 			/* 6. MANAGEMENT FLUXES */
@@ -735,89 +733,89 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && planting(&ctrl, &sitec, &PLT, &epc, &epv, &phen, &cs, &ns, &cf, &nf))
 			{
 				printf("ERROR in planting() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5330;
 			}
-			ec=ec+10;
+			
 
 		   	/* THINNIG  */
 			if (!errorCode && thinning(&ctrl, &epc, &THN, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in thinning() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5340;
 			}
-			ec=ec+10;
+			
 
 			/* MOWING  */
 			if (!errorCode && mowing(&ctrl, &epc, &MOW, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in mowing() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5350;
 			}
-			ec=ec+10;
+			
 
 			/* grazing  */
 			if (!errorCode && grazing(&ctrl, &epc, &sitec, &GRZ, &epv, &cs, &ns, &ws, &cf, &nf, &wf, mondays))
 			{
 				printf("ERROR in grazing() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5360;
 			}
 	
 		   	/* HARVESTING  */
 			if (!errorCode && harvesting(bgcout->econout_file, &ctrl, &phen, &epc, &HRV, &IRG, &epv, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in harvesting() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5370;
 			}
-			ec=ec+10;
+			
  
 			/* PLOUGHING */
  			if (!errorCode && ploughing(&ctrl, &epc, &sitec, &sprop, &metv, &epv, &PLG, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in ploughing() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5380;
 			}
-			ec=ec+10;
+			
 		 
 			/* FERTILIZING  */
 	    	if (!errorCode && fertilizing(&ctrl, &sitec, &sprop, &FRZ, &cs, &ns, &ws, &cf, &nf, &wf))
 			{
 				printf("ERROR in fertilizing() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5390;
 			}	
-			ec=ec+10;
+			
 			
 			/* MULCHING */
 			if (!errorCode && mulching(&ctrl, &MUL, &cs, &ns, &cf, &nf))
 			{
 				printf("ERROR in mulching() from bgc.c\n");
-				errorCode=ec;
+				errorCode=5400;
 			}
-			ec=ec+10;
+			
 
 			/* CWD-extract */
 			if (!errorCode && CWDextract(&ctrl, &CWE, &cs, &ns, &cf, &nf))
 			{
 				printf("ERROR in CWDextract() from bgc.c\n");
-				errorCode=ec;
+				errorCode=5410;
 			}
-			ec=ec+10;
+			
 
 				
 			/* cut-down plant material (due to management) */
 			if (!errorCode && cutdown2litter(&sitec, &epc, &epv, &cs, &cf, &ns, &nf))
 			{
 				printf("ERROR in cutdown2litter() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5420;
 			}
-			ec=ec+10;
+			
 
 			/* calculating rooting depth, n_rootlayers, n_maxrootlayers, rootlengthProp */
  			 if (!errorCode && multilayer_rootDepth(&epc, &sprop, &cs, &sitec, &epv))
 			 {
 				printf("ERROR in multilayer_rootDepth() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5430;
 			 }
-			 ec=ec+10;
+			 
 
 			
 			/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! */
@@ -827,53 +825,53 @@ int transient_bgc(bgcin_struct* bgcin, bgcout_struct* bgcout)
 			if (!errorCode && precision_control(&ws, &cs, &ns))
 			{
 				printf("ERROR in call to precision_control() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5440;
 			} 
-			ec=ec+10;
+			
 				
 			/* test for water balance*/
 			if (!errorCode && check_water_balance(&ws, first_balance))
 			{
 				printf("ERROR in check_water_balance() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5450;
 			}
-			ec=ec+10;
+			
 			 
 
             /* test for carbon balance */
 			if (!errorCode  && check_carbon_balance(&cs, first_balance))
 			{
 				printf("ERROR in check_carbon_balance() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5460;
 			}
-			ec=ec+10;
+			
 			
 
 			/* test for nitrogen balance */
 			if (!errorCode && check_nitrogen_balance(&ns, first_balance))
 			{
 				printf("ERROR in check_nitrogen_balance() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5470;
 			}
-			ec=ec+10;
+			
 			
 
 			/* calculate summary variables */
 			if (!errorCode && cnw_summary(&epc, &sitec, &sprop, &metv, &cs, &cf, &ns, &nf, &wf, &epv, &summary))
 			{
 				printf("ERROR in cnw_summary() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5480;
 			}
-	        ec=ec+10;
+	        
 	
 	        /* output handling */
 			if (!errorCode && output_handling(mondays, enddays, &ctrl, output_map, dayarr, monavgarr, annavgarr, annarr, 
 				                            bgcout->dayoutT, bgcout->monavgoutT, bgcout->annavgoutT, bgcout->annoutT))
 			{
 				printf("ERROR in output_handling() from transient_bgc.c\n");
-				errorCode=ec;
+				errorCode=5490;
 			}
-			ec=ec+10;
+			
 
 			/* at the end of first day of simulation, turn off the first_balance switch */
 			if (first_balance) first_balance = 0;

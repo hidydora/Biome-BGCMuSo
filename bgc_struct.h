@@ -367,10 +367,10 @@ typedef struct
     double deadcrootc_transfer; 				/* dead coarse root C transfer */
 	double gresp_storage;       				/* growth respiration storage */
 	double gresp_transfer;      				/* growth respiration transfer */
-	double nsc_w;                               /* non-stuctured woody carbohydrate pool */
-	double nsc_nw;                              /* non-stuctured non-woody carbohydrate pool */
-	double sc_w;                                /* stuctured woody carbohydrate pool */
-	double sc_nw;                               /* stuctured non-woody carbohydrate pool */
+	double NSCw;                               /* non-stuctured woody carbohydrate pool */
+	double NSCnw;                              /* non-stuctured non-woody carbohydrate pool */
+	double SCw;                                /* stuctured woody carbohydrate pool */
+	double SCnw;                               /* stuctured non-woody carbohydrate pool */
     double cwdc[N_SOILLAYERS];					/* coarse woody debris N */
     double litr1c[N_SOILLAYERS];				/* litter labile C */
     double litr2c[N_SOILLAYERS];				/* litter unshielded cellulose C */
@@ -415,29 +415,29 @@ typedef struct
 	double cpool;						/* temporary photosynthate C pool */
     double psnsun_src;					/* SUM of gross PSN from sulit canopy */
     double psnshade_src;				/* SUM of gross PSN from shaded canopy */
-	double NSC_MR_snk;                  /* SUM of non-structured carobhydrate MR loss */
-	double actC_MR_snk;                 /* SUM of actual pool's MR loss */
-    double leaf_MR_snk;					/* SUM of leaf maint resp */
-    double froot_MR_snk;				/* SUM of fine root maint resp */
-	double yield_MR_snk;				/* SUM of yield maint resp.*/
-	double softstem_MR_snk;				/* SUM of softstem maint resp.*/
-	double livestem_MR_snk;				/* SUM of live stem maint resp */
-	double livecroot_MR_snk;			/* SUM of live coarse root maint resp */
-	double leaf_GR_snk;					/* SUM of leaf growth resp */
-    double froot_GR_snk;				/* SUM of fine root growth resp */
-	double yield_GR_snk;				/* SUM of yield growth resp. */
-	double softstem_GR_snk;				/* SUM of softstem growth resp. */
-    double livestem_GR_snk;				/* SUM of live stem growth resp */
-	double livecroot_GR_snk;			/* SUM of live coarse root growth resp */
-    double deadstem_GR_snk;				/* SUM of dead stem growth resp */ 
-    double deadcroot_GR_snk;			/* SUM of dead coarse root growth resp */
-    double litr1_hr_snk;				/* SUM of labile litr microbial resp */
-    double litr2_hr_snk;				/* SUM of cellulose litr microbial resp */
-    double litr4_hr_snk;				/* SUM of lignin litr microbial resp */
-    double soil1_hr_snk;				/* SUM of labile SOM respiration */
-    double soil2_hr_snk;				/* SUM of fast SOM respiration */
-    double soil3_hr_snk;				/* SUM of slow SOM respiration */
-    double soil4_hr_snk;				/* SUM of stable SOM respiration */
+	double MRdeficitNSC_snk;                  /* SUM of non-structured carobhydrate MR loss */
+	double MRdeficitSC_snk;                 /* SUM of actual pool's MR loss */
+    double MRleaf_snk;					/* SUM of leaf maint resp */
+    double MRfroot_snk;				/* SUM of fine root maint resp */
+	double MRyield_snk;				/* SUM of yield maint resp.*/
+	double MRsoftstem_snk;				/* SUM of softstem maint resp.*/
+	double MRlivestem_snk;				/* SUM of live stem maint resp */
+	double MRlivecroot_snk;			/* SUM of live coarse root maint resp */
+	double GRleaf_snk;					/* SUM of leaf growth resp */
+    double GRfroot_snk;				/* SUM of fine root growth resp */
+	double GRyield_snk;				/* SUM of yield growth resp. */
+	double GRsoftstem_snk;				/* SUM of softstem growth resp. */
+    double GRlivestem_snk;				/* SUM of live stem growth resp */
+	double GRlivecroot_snk;			/* SUM of live coarse root growth resp */
+    double GRdeadstem_snk;				/* SUM of dead stem growth resp */ 
+    double GRdeadcroot_snk;			/* SUM of dead coarse root growth resp */
+    double HRlitr1_snk;				/* SUM of labile litr microbial resp */
+    double HRlitr2_snk;				/* SUM of cellulose litr microbial resp */
+    double HRlitr4_snk;				/* SUM of lignin litr microbial resp */
+    double HRsoil1_snk;				/* SUM of labile SOM respiration */
+    double HRsoil2_snk;				/* SUM of fast SOM respiration */
+    double HRsoil3_snk;				/* SUM of slow SOM respiration */
+    double HRsoil4_snk;				/* SUM of stable SOM respiration */
 	double calc_flowHS;                 /* SUM of C loss due to flower heat stress to calc.flowHS */
 	double flowHSsnk_C;                 /* SUM of C loss due to flower heat stress (sink/annout variable) */
 	double FIREsnk_C;					/* SUM of fire losses */
@@ -724,32 +724,32 @@ typedef struct
 	double cpool_deadcroot_storage_GR;   
 	double transfer_deadcroot_GR;   
 	/* group: daily maintanance respiration ensuring fluxes */
-	double leafc_storage_to_maintresp;
-	double frootc_storage_to_maintresp;
-	double yieldc_storage_to_maintresp;
-	double softstemc_storage_to_maintresp;
-	double livestemc_storage_to_maintresp;
-	double livecrootc_storage_to_maintresp;
-	double deadstemc_storage_to_maintresp;
-	double deadcrootc_storage_to_maintresp;
-	double leafc_transfer_to_maintresp;
-	double frootc_transfer_to_maintresp;
-	double yieldc_transfer_to_maintresp;
-	double softstemc_transfer_to_maintresp;
-	double livestemc_transfer_to_maintresp;
-	double livecrootc_transfer_to_maintresp;
-	double deadstemc_transfer_to_maintresp;
-	double deadcrootc_transfer_to_maintresp;
-	double leafc_to_maintresp;
-	double frootc_to_maintresp;
-	double yieldc_to_maintresp;
-	double softstemc_to_maintresp;
-	double livestemc_to_maintresp;
-	double livecrootc_to_maintresp;
-	double NSC_nw_to_maintresp;
-	double actC_nw_to_maintresp;
-	double NSC_w_to_maintresp;
-	double actC_w_to_maintresp;
+	double leafc_storage_to_MR;
+	double frootc_storage_to_MR;
+	double yieldc_storage_to_MR;
+	double softstemc_storage_to_MR;
+	double livestemc_storage_to_MR;
+	double livecrootc_storage_to_MR;
+	double deadstemc_storage_to_MR;
+	double deadcrootc_storage_to_MR;
+	double leafc_transfer_to_MR;
+	double frootc_transfer_to_MR;
+	double yieldc_transfer_to_MR;
+	double softstemc_transfer_to_MR;
+	double livestemc_transfer_to_MR;
+	double livecrootc_transfer_to_MR;
+	double deadstemc_transfer_to_MR;
+	double deadcrootc_transfer_to_MR;
+	double leafc_to_MR;
+	double frootc_to_MR;
+	double yieldc_to_MR;
+	double softstemc_to_MR;
+	double livestemc_to_MR;
+	double livecrootc_to_MR;
+	double NSCnw_to_MR;
+	double SCnw_to_MR;
+	double NSCw_to_MR;
+	double SCw_to_MR;
 	/* group: annual turnover of storage to transfer pools */
 	double leafc_storage_to_leafc_transfer;           
 	double frootc_storage_to_frootc_transfer;     
@@ -972,9 +972,6 @@ typedef struct
 	double sminNO3_total;               /* SUM of the soil mineral N in the total soil */
 	double sminNH4avail[N_SOILLAYERS];	/* Available soil mineral N in multilayer soil */
 	double sminNO3avail[N_SOILLAYERS];	/* Available soil mineral N in multilayer soil */
-	double sminNH4avail_total;          /* SUM of the available soil mineral N in the total soil */
-	double sminNO3avail_total;          /* SUM of the available soil mineral N in the total soil */
-	double sminNavail_RZ;
     double Nfix_src;					/* SUM of biological N fixation */
     double Ndep_src;					/* SUM of N deposition inputs */
     double Ndeepleach_snk;				/* SUM of N deep leaching */
@@ -1222,6 +1219,7 @@ typedef struct
 
 	double cwdn_to_litrn_total;  
 	double minerFlux_S4_total; 
+	double minerFlux_S4_totalCUM; 
 	double litrn_to_soiln_total;
 	double sminn_to_soil_SUM_total; 
 	double sminn_to_soil1n_l1_total; 
@@ -1230,7 +1228,6 @@ typedef struct
     double sminn_to_soil2n_s1_total; 
     double sminn_to_soil3n_s2_total; 
     double sminn_to_soil4n_s3_total; 
-	
 
 	double minerFlux_LtoS_total;
 	double minerFlux_StoS_total;
@@ -1262,7 +1259,8 @@ typedef struct
 	double N2O_flux_NITRIF[N_SOILLAYERS];				
 	double N2O_flux_DENITR[N_SOILLAYERS];
 	double sminNO3_to_denitr_total;
-	double sminNH4_to_nitrif_total;			
+	double sminNH4_to_nitrif_total;		
+	double sminNO3_to_denitr_totalCUM;
 	double N2_flux_DENITR_total;				
 	double N2O_flux_NITRIF_total;				
 	double N2O_flux_DENITR_total;	
@@ -1306,32 +1304,32 @@ typedef struct
 	double npool_to_deadcrootn;           
 	double npool_to_deadcrootn_storage;  
 	/* group: daily maintanance respiration ensuring fluxes - retranslocation */
-	double leafn_storage_to_maintresp;
-	double frootn_storage_to_maintresp;
-	double yieldn_storage_to_maintresp;
-	double softstemn_storage_to_maintresp;
-	double livestemn_storage_to_maintresp;
-	double livecrootn_storage_to_maintresp;
-	double deadstemn_storage_to_maintresp;
-	double deadcrootn_storage_to_maintresp;
-	double leafn_transfer_to_maintresp;
-	double frootn_transfer_to_maintresp;
-	double yieldn_transfer_to_maintresp;
-	double softstemn_transfer_to_maintresp;
-	double livestemn_transfer_to_maintresp;
-	double livecrootn_transfer_to_maintresp;
-	double deadstemn_transfer_to_maintresp;
-	double deadcrootn_transfer_to_maintresp;
-	double leafn_to_maintresp;
-	double frootn_to_maintresp;
-	double yieldn_to_maintresp;
-	double softstemn_to_maintresp;
-	double livestemn_to_maintresp;
-	double livecrootn_to_maintresp;
-	double NSN_nw_to_maintresp;
-	double actN_nw_to_maintresp;
-	double NSN_w_to_maintresp;
-	double actN_w_to_maintresp;
+	double leafn_storage_to_MR;
+	double frootn_storage_to_MR;
+	double yieldn_storage_to_MR;
+	double softstemn_storage_to_MR;
+	double livestemn_storage_to_MR;
+	double livecrootn_storage_to_MR;
+	double deadstemn_storage_to_MR;
+	double deadcrootn_storage_to_MR;
+	double leafn_transfer_to_MR;
+	double frootn_transfer_to_MR;
+	double yieldn_transfer_to_MR;
+	double softstemn_transfer_to_MR;
+	double livestemn_transfer_to_MR;
+	double livecrootn_transfer_to_MR;
+	double deadstemn_transfer_to_MR;
+	double deadcrootn_transfer_to_MR;
+	double leafn_to_MR;
+	double frootn_to_MR;
+	double yieldn_to_MR;
+	double softstemn_to_MR;
+	double livestemn_to_MR;
+	double livecrootn_to_MR;
+	double NSNnw_to_MR;
+	double actNnw_to_MR;
+	double NSNw_to_MR;
+	double actNw_to_MR;
 	/* group: annual turnover of storage to transfer */
 	double leafn_storage_to_leafn_transfer;           
 	double frootn_storage_to_frootn_transfer;         
@@ -1565,7 +1563,9 @@ typedef struct
 	double VWC_SScrit2[N_SOILLAYERS];				/* (m3/m3) volumetric water content at full soil stress */
 	double WFPS[N_SOILLAYERS];						/* (prop) water filled pore space */
     double VWC_avg;									/* (m3/m3) average volumetric water content in active layers */
-	double VWC_maxRZ;									/* (m3/m3) average volumetric water content in max.rootzone (max.soil.depth) */
+	double VWC_maxRZ;								/* (m3/m3) average volumetric water content in max.rootzone (max.soil.depth) */
+	double relVWCfc_wp_maxRZ;						/* (m3/m3) average relative volumetric water content in max.rootzone (max.soil.depth) */
+	double relVWCsat_fc_maxRZ;						/* (m3/m3) average relative volumetric water content in max.rootzone (max.soil.depth) */
 	double VWC_RZ;									/* (m3/m3) average volumetric water content in rootzone (act.soil.depth) */
 	double PSI_RZ;									/* (MPa) average water potential of soil and leaves */
 	double rootDepth;			     				/* (m) actual depth of the root and rooting zone */
@@ -2224,12 +2224,15 @@ typedef struct
 	double HR;					/* (kgC/m2/day)  heterotrophic respiration */
 	double SR;					/* (kgC/m2/day)  soil respiration */
 	double TR;					/* (kgC/m2/day)  total respiration */
-	double fire;					/* (kgC/m2/day)  fire losses */
-	double litfallc;				/* (kgC/m2/day)  total litterfall */
+	double fire;				/* (kgC/m2/day)  fire losses */
+	double litfallc;			/* (kgC/m2/day)  total litterfall */
 	double litfallc_above;		/* (kgC/m2/day)  total litterfall aboveground */
 	double litfallc_below;		/* (kgC/m2/day)  total litterfall belowground */
-	double litdecomp;				/* (kgC/m2/day)  total litter decomposition */
-	double litfire;               /* (kgC/m2/day)  total litter fire mortality */
+	double mortc;				/* (kgC/m2/day)  total litterfall */
+	double mortc_above;			/* (kgC/m2/day)  total litterfall aboveground */
+	double mortc_below;			/* (kgC/m2/day)  total litterfall belowground */
+	double litdecomp;			/* (kgC/m2/day)  total litter decomposition */
+	double litfire;              /* (kgC/m2/day)  total litter fire mortality */
 	double litter;				/* (kgC/m2)  total amount of litter */
 	double cumNPP;						/* (kgC/m2)  cumulative SUM of NPP */
 	double cumNEP;						/* (kgC/m2)  cumulative SUM of NEP */
@@ -2282,28 +2285,30 @@ typedef struct
 	double vegC;						/* (kgC/m2)  total vegetation C */
 	double LDaboveC_nw;					/* (kgC/m2)  living+dead aboveground non-woody biomass C */
 	double LDaboveC_w;					/* (kgC/m2)  living+dead aboveground woody biomass C */
-	double LDaboveCnsc_nw;				/* (kgC/m2)  living+dead aboveground non-woody biomass C with non-structured carbohydrate */
-	double LDaboveCnsc_w;				/* (kgC/m2)  living+dead aboveground woody biomass C with non-structured carbohydrate  */
+	double LDaboveCwithNSC_nw;				/* (kgC/m2)  living+dead aboveground non-woody biomass C with non-structured carbohydrate */
+	double LDaboveCwithNSC_w;				/* (kgC/m2)  living+dead aboveground woody biomass C with non-structured carbohydrate  */
 	double LaboveC_nw;					/* (kgC/m2)  living aboveground non-woody biomass C */
 	double LaboveC_w;					/* (kgC/m2)  living aboveground woody biomass C */
-	double LaboveCnsc_nw;				/* (kgC/m2)  living aboveground non-woody biomass C with non-structured carbohydrate */
-	double LaboveCnsc_w;				/* (kgC/m2)  living aboveground woody biomass C with non-structured carbohydrate  */
+	double LaboveCwithNSC_nw;				/* (kgC/m2)  living aboveground non-woody biomass C with non-structured carbohydrate */
+	double LaboveCwithNSC_w;				/* (kgC/m2)  living aboveground woody biomass C with non-structured carbohydrate  */
 	double DaboveC_nw;					/* (kgC/m2)  dead aboveground non-woody biomass C */
 	double DaboveC_w;					/* (kgC/m2)  dead aboveground woody biomass C */
-	double DaboveCnsc_nw;				/* (kgC/m2)  dead aboveground non-woody biomass C with non-structured carbohydrate */
-	double DaboveCnsc_w;				/* (kgC/m2)  dead aboveground woody biomass C with non-structured carbohydrate  */
+	double DaboveCwithNSC_nw;				/* (kgC/m2)  dead aboveground non-woody biomass C with non-structured carbohydrate */
+	double DaboveCwithNSC_w;				/* (kgC/m2)  dead aboveground woody biomass C with non-structured carbohydrate  */
 	double LDbelowC_nw;					/* (kgC/m2)  living+dead belowground non-woody biomass C */
 	double LDbelowC_w;					/* (kgC/m2)  living+dead belowground woody biomass C */
-	double LDbelowCnsc_nw;				/* (kgC/m2)  living+dead belowground non-woody biomass C with non-structured carbohydrate */
-	double LDbelowCnsc_w;				/* (kgC/m2)  living+dead belowground woody biomass C with non-structured carbohydrate  */
+	double LDbelowCwithNSC_nw;				/* (kgC/m2)  living+dead belowground non-woody biomass C with non-structured carbohydrate */
+	double LDbelowCwithNSC_w;				/* (kgC/m2)  living+dead belowground woody biomass C with non-structured carbohydrate  */
 	double LbelowC_nw;					/* (kgC/m2)  living belowground non-woody biomass C */
 	double LbelowC_w;					/* (kgC/m2)  living belowground woody biomass C */
-	double LbelowCnsc_nw;				/* (kgC/m2)  living belowground non-woody biomass C with non-structured carbohydrate */
-	double LbelowCnsc_w;				/* (kgC/m2)  living belowground woody biomass C with non-structured carbohydrate  */
+	double LbelowCwithNSC_nw;				/* (kgC/m2)  living belowground non-woody biomass C with non-structured carbohydrate */
+	double LbelowCwithNSC_w;				/* (kgC/m2)  living belowground woody biomass C with non-structured carbohydrate  */
 	double DbelowC_nw;					/* (kgC/m2)  dead belowground non-woody biomass C */
 	double DbelowC_w;					/* (kgC/m2)  dead belowground woody biomass C */
-	double DbelowCnsc_nw;				/* (kgC/m2)  dead belowground non-woody biomass C with non-structured carbohydrate */
-	double DbelowCnsc_w;				/* (kgC/m2)  dead belowground woody biomass C with non-structured carbohydrate  */
+	double DbelowCwithNSC_nw;				/* (kgC/m2)  dead belowground non-woody biomass C with non-structured carbohydrate */
+	double DbelowCwithNSC_w;				/* (kgC/m2)  dead belowground woody biomass C with non-structured carbohydrate  */
+	double livingSC;					/* (kg/m2)  living structural carbohydrate */
+	double livingNSC;					/* (kg/m2)  living non-structural carbohydrate*/
 	double livingBIOMabove;				/* (kg/m2)  living aboveground biomass */
 	double livingBIOMbelow;				/* (kg/m2)  living belowground biomass */
 	double totalBIOMabove;				/* (kg/m2)  living aboveground biomass */

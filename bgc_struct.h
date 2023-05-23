@@ -664,7 +664,14 @@ typedef struct
 	
 	double litrc_to_release_total;
 	double litrc_to_soilc_total;											
-	double cwdc_to_litrc_total;		
+	double cwdc_to_litrc_total;	
+	double litr1c_to_soil1c_total;              
+	double litr2c_to_soil2c_total;              
+	double litr3c_to_litr2c_total;              
+	double litr4c_to_soil3c_total; 
+	double soil1c_to_soil2c_total;              
+	double soil2c_to_soil3c_total;              
+	double soil3c_to_soil4c_total;   
 	
 	/* group: SOIL components leaching*/
 	double soil1DOC_leach[N_SOILLAYERS]; 
@@ -1197,28 +1204,43 @@ typedef struct
 	
 
 	/* grup: summary variables */
-	double soil4n_to_sminn[N_SOILLAYERS];    
-	double soiln_to_sminn[N_SOILLAYERS];
-	double litrn_to_sminn[N_SOILLAYERS];
+	double minerFlux_S4[N_SOILLAYERS];    
+	double minerFlux_StoS[N_SOILLAYERS];
+	double minerFlux_LtoS[N_SOILLAYERS];
 	double environment_to_sminn[N_SOILLAYERS];
               
-	double sminn_to_soil_LtoS[N_SOILLAYERS]; 
-	double sminn_to_soil_StoS[N_SOILLAYERS]; 
+	double immobFlux_LtoS[N_SOILLAYERS]; 
+	double immobFlux_StoS[N_SOILLAYERS]; 
 	
+	double litr1n_to_soil1n_total;              
+	double litr2n_to_soil2n_total;              
+	double litr3n_to_litr2n_total;              
+	double litr4n_to_soil3n_total; 
+	double soil1n_to_soil2n_total;              
+	double soil2n_to_soil3n_total;              
+	double soil3n_to_soil4n_total;   
+
 	double cwdn_to_litrn_total;  
-	double soil4n_to_sminn_total; 
+	double minerFlux_S4_total; 
 	double litrn_to_soiln_total;
 	double sminn_to_soil_SUM_total; 
+	double sminn_to_soil1n_l1_total; 
+    double sminn_to_soil2n_l2_total; 
+    double sminn_to_soil3n_l4_total; 
+    double sminn_to_soil2n_s1_total; 
+    double sminn_to_soil3n_s2_total; 
+    double sminn_to_soil4n_s3_total; 
+	
 
-	double litrn_to_sminn_total;
-	double soiln_to_sminn_total;
-	double sminn_to_soil_LtoS_total; 
-	double sminn_to_soil_StoS_total; 
+	double minerFlux_LtoS_total;
+	double minerFlux_StoS_total;
+	double immobFlux_LtoS_total; 
+	double immobFlux_StoS_total; 
 	double environment_to_sminn_total;
-	double soiln_to_sminn_totalCUM;
-	double litrn_to_sminn_totalCUM;
-	double sminn_to_soil_LtoS_totalCUM; 
-	double sminn_to_soil_StoS_totalCUM; 
+	double minerFlux_StoS_totalCUM;
+	double minerFlux_LtoS_totalCUM;
+	double immobFlux_LtoS_totalCUM; 
+	double immobFlux_StoS_totalCUM; 
 	double environment_to_sminn_totalCUM;
 	
 	double grossMINERflux[N_SOILLAYERS];			    /* (kgN/m2/d) daily gross N mineralization layer by layer */
@@ -1563,7 +1585,10 @@ typedef struct
     double ws_decomp[N_SOILLAYERS];					/* (dimless) decomp water scalar  */
     double rs_decomp[N_SOILLAYERS];					/* (dimless) decomp combined scalar  */
 	double rs_decomp_avg;							/* (dimless) decomp combined and averaged scalar  */
-
+	double litr1_CNratio;							/* CN ratio of labile litter pool */
+	double litr2_CNratio;							/* CN ratio of u. cellusose litter pool */
+	double litr3_CNratio;							/* CN ratio of s. cellulose litter pool */
+	double litr4_CNratio;							/* CN ratio of lignin litter pool */
 	double stomaCONDUCT_max;						/* (m/s) maximum stomatal conductance */
 	double m_Tmin;									/* (dimless) freezing night temperature multiplier */
 	double m_SWCstress_layer[N_SOILLAYERS];		    /* (dimless) soil water stress multiplier */

@@ -95,10 +95,10 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, cstate_struct* cs, ws
 	epv->annmax_livestemc = 0;
 	epv->annmax_livecrootc = 0;
 
-	nf->soiln_to_sminn_totalCUM       = 0;
-	nf->litrn_to_sminn_totalCUM       = 0;
-	nf->sminn_to_soil_LtoS_totalCUM   = 0; 
-	nf->sminn_to_soil_StoS_totalCUM   = 0; 
+	nf->minerFlux_StoS_totalCUM       = 0;
+	nf->minerFlux_LtoS_totalCUM       = 0;
+	nf->immobFlux_LtoS_totalCUM   = 0; 
+	nf->immobFlux_StoS_totalCUM   = 0; 
 	nf->sminn_to_npool_totalCUM       = 0;
 	nf->netMINERflux_totalCUM         = 0;
 	nf->actIMMOBflux_totalCUM         = 0;

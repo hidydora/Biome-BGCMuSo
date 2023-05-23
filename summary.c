@@ -550,6 +550,28 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 	summary->NGB = summary->NBP - summary->N2OfluxCeq - summary->CH4flux_total;
 	summary->cumNGB += summary->NGB;
 	
+	/* calculation of CN ratios */
+	if (ns->litr1n_total > 0)
+		epv->litr1_CNratio = cs->litr1c_total/ns->litr1n_total;
+	else
+		epv->litr1_CNratio = 0;
+
+	if (ns->litr2n_total > 0)
+		epv->litr2_CNratio = cs->litr2c_total/ns->litr2n_total;
+	else
+		epv->litr2_CNratio = 0;
+
+	if (ns->litr3n_total > 0)
+		epv->litr3_CNratio = cs->litr3c_total/ns->litr3n_total;
+	else
+		epv->litr3_CNratio = 0;
+
+	if (ns->litr4n_total > 0)
+		epv->litr4_CNratio = cs->litr4c_total/ns->litr4n_total;
+	else
+		epv->litr4_CNratio = 0;
+	
+	
 
 	return(errorCode);
 }

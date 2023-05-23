@@ -391,7 +391,7 @@ int decomp(const metvar_struct* metv,const epconst_struct* epc, const soilprop_s
 		/* store the mineralization-immobilization-litter fluxes */
 		nf->grossMINERflux[layer] = mineralized;
 		nf->potIMMOBflux[layer]   = potential_immob;
-		nf->grossMINERflux_total += mineralized;
+		nf->grossMINERflux_total  += mineralized;
 		nf->potIMMOBflux_total	  += potential_immob;
 
 		cf->cwdc_to_litr2c[layer]  = cwdc_to_litr2c;

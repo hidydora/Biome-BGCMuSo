@@ -82,7 +82,11 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	epv->assim_SScoeff = 1;
 	epv->SCpercent = 0;
 	epv->SC_EVPred = 1;
-
+	epv->litr1_CNratio = 0;
+	epv->litr2_CNratio = 0;
+	epv->litr3_CNratio = 0;
+	epv->litr4_CNratio = 0;
+					
 	psn_sun->A      = 0;
 	psn_sun->Ci	    = 0;
 	psn_sun->O2	    = 0;

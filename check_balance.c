@@ -163,6 +163,9 @@ int check_carbon_balance(cstate_struct* cs, int first_balance)
 	}
 
 
+
+	
+
 	/* summarizing cut-down and standing dead biomass */
 	cs->CTDBc_above = cs->CTDBc_leaf  + cs->CTDBc_yield  + cs->CTDBc_softstem + cs->CTDBc_cstem;
 	cs->CTDBc_below = cs->CTDBc_froot + cs->CTDBc_croot;

@@ -129,8 +129,40 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 
 	cn_l1=cn_l2=cn_l4=cn_s1=cn_s2=cn_s3=cn_s4=0;
 
+	/* summarizing variables */
 	nf->netMINERflux_total = 0;
 	nf->actIMMOBflux_total = 0;
+	nf->litr1n_to_soil1n_total = 0;              
+	nf->litr2n_to_soil2n_total = 0;              
+	nf->litr3n_to_litr2n_total = 0;              
+	nf->litr4n_to_soil3n_total = 0; 
+	nf->soil1n_to_soil2n_total = 0;              
+	nf->soil2n_to_soil3n_total = 0;              
+	nf->soil3n_to_soil4n_total = 0;   
+	cf->litr1c_to_soil1c_total = 0;              
+	cf->litr2c_to_soil2c_total = 0;              
+	cf->litr3c_to_litr2c_total = 0;              
+	cf->litr4c_to_soil3c_total = 0; 
+	cf->soil1c_to_soil2c_total = 0;              
+	cf->soil2c_to_soil3c_total = 0;              
+	cf->soil3c_to_soil4c_total = 0; 
+
+	nf->minerFlux_S4_total       = 0;
+	nf->minerFlux_StoS_total        = 0;
+	nf->minerFlux_LtoS_total        = 0;
+	nf->immobFlux_LtoS_total    = 0;
+	nf->immobFlux_StoS_total    = 0;
+	nf->sminn_to_soil_SUM_total		= 0;  
+	nf->litrn_to_soiln_total        = 0;
+	cf->litrc_to_soilc_total        = 0;
+	nf->sminn_to_soil1n_l1_total    = 0; 
+    nf->sminn_to_soil2n_l2_total    = 0; 
+    nf->sminn_to_soil3n_l4_total    = 0; 
+    nf->sminn_to_soil2n_s1_total    = 0; 
+    nf->sminn_to_soil3n_s2_total    = 0; 
+    nf->sminn_to_soil4n_s3_total    = 0; 
+	
+
 
 	/* respiration fractions for fluxes between compartments */
 	rfl1s1 = sprop->rfl1s1; //0.39;
@@ -473,14 +505,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	From MuSo7: direct decomposition of litter pools - carbon fluxes to heterotroph respiration, nitrogen fluxes to mineralization pools */
 
 
-	nf->soil4n_to_sminn_total       = 0;
-	nf->soiln_to_sminn_total        = 0;
-	nf->litrn_to_sminn_total        = 0;
-	nf->sminn_to_soil_LtoS_total    = 0;
-	nf->sminn_to_soil_StoS_total    = 0;
-	nf->sminn_to_soil_SUM_total		= 0;  
-	nf->litrn_to_soiln_total        = 0;
-	cf->litrc_to_soilc_total        = 0;
+	
 
 	for (layer = 0; layer < N_SOILLAYERS; layer++)
 	{
@@ -628,85 +653,85 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 			cf->soil4_hr[layer]           = nt->psoil4c_loss[layer];
 			if (ns->soil4n[layer] > 0)
 			{
-				nf->soil4n_to_sminn[layer]  = -nt->pmnf_s4[layer];
+				nf->minerFlux_S4[layer]  = -nt->pmnf_s4[layer];
 			}
 		}
 		
 		/* summarizing immobilization-mineralization fluxes */
 		if (nt->pmnf_l1s1[layer] > 0.0) 
 		{
-			net_immob                     += nt->pmnf_l1s1[layer];
-			nf->sminn_to_soil_LtoS[layer] += nt->pmnf_l1s1[layer]; 
+			net_immob                 += nt->pmnf_l1s1[layer];
+			nf->immobFlux_LtoS[layer] += nt->pmnf_l1s1[layer]; 
 		}
 		else 
 		{
 			net_nmin                  += -nt->pmnf_l1s1[layer];
-			nf->litrn_to_sminn[layer] += -nt->pmnf_l1s1[layer];
+			nf->minerFlux_LtoS[layer] += -nt->pmnf_l1s1[layer];
 		}
 
 		if (nt->pmnf_l2s2[layer] > 0.0) 
 		{
-			net_immob                     += nt->pmnf_l2s2[layer];
-			nf->sminn_to_soil_LtoS[layer] += nt->pmnf_l2s2[layer]; 
+			net_immob                 += nt->pmnf_l2s2[layer];
+			nf->immobFlux_LtoS[layer] += nt->pmnf_l2s2[layer]; 
 		}
 		else 
 		{
 			net_nmin                  += -nt->pmnf_l2s2[layer];
-			nf->litrn_to_sminn[layer] += -nt->pmnf_l2s2[layer];
+			nf->minerFlux_LtoS[layer] += -nt->pmnf_l2s2[layer];
 		}
 		if (nt->pmnf_l4s3[layer] > 0.0) 
 		{
-			net_immob                     += nt->pmnf_l4s3[layer];
-			nf->sminn_to_soil_LtoS[layer] += nt->pmnf_l4s3[layer]; 
+			net_immob                 += nt->pmnf_l4s3[layer];
+			nf->immobFlux_LtoS[layer] += nt->pmnf_l4s3[layer]; 
 		}
 		else 
 		{
 			net_nmin                  += -nt->pmnf_l4s3[layer];
-			nf->litrn_to_sminn[layer] += -nt->pmnf_l4s3[layer];
+			nf->minerFlux_LtoS[layer] += -nt->pmnf_l4s3[layer];
 		}
 
 		if (nt->pmnf_s1s2[layer] > 0.0) 
 		{
-			net_immob                     += nt->pmnf_s1s2[layer];
-			nf->sminn_to_soil_StoS[layer] += nt->pmnf_s1s2[layer]; 
+			net_immob                 += nt->pmnf_s1s2[layer];
+			nf->immobFlux_StoS[layer] += nt->pmnf_s1s2[layer]; 
 		}
 		else 
 		{
 			net_nmin                  += -nt->pmnf_s1s2[layer];
-			nf->soiln_to_sminn[layer] += -nt->pmnf_s1s2[layer];
+			nf->minerFlux_StoS[layer] += -nt->pmnf_s1s2[layer];
 		}
 		
 		if (nt->pmnf_s2s3[layer] > 0.0) 
 		{
-			net_immob                     += nt->pmnf_s2s3[layer];
-			nf->sminn_to_soil_StoS[layer] += nt->pmnf_s2s3[layer]; 
+			net_immob                 += nt->pmnf_s2s3[layer];
+			nf->immobFlux_StoS[layer] += nt->pmnf_s2s3[layer]; 
 		}
 		else 
 		{
 			net_nmin                  += -nt->pmnf_s2s3[layer];
-			nf->soiln_to_sminn[layer] += -nt->pmnf_s2s3[layer];
+			nf->minerFlux_StoS[layer] += -nt->pmnf_s2s3[layer];
 		}
 
 		if (nt->pmnf_s3s4[layer] > 0.0) 
 		{
-			net_immob                     += nt->pmnf_s3s4[layer];
-			nf->sminn_to_soil_StoS[layer] += nt->pmnf_s3s4[layer]; 
+			net_immob                 += nt->pmnf_s3s4[layer];
+			nf->immobFlux_StoS[layer] += nt->pmnf_s3s4[layer]; 
 		}
 		else 
 		{
 			net_nmin                  += -nt->pmnf_s3s4[layer];
-			nf->soiln_to_sminn[layer] += -nt->pmnf_s3s4[layer];
+			nf->minerFlux_StoS[layer] += -nt->pmnf_s3s4[layer];
 		}
 
 		if (nt->pmnf_s4[layer] > 0.0) 
 		{
-			net_immob                     += nt->pmnf_s4[layer];
-			nf->sminn_to_soil_StoS[layer] += nt->pmnf_s4[layer]; 
+			net_immob                 += nt->pmnf_s4[layer];
+			nf->immobFlux_StoS[layer] += nt->pmnf_s4[layer]; 
 		}
 		else 
 		{
 			net_nmin                  += -nt->pmnf_s4[layer];
-			nf->soiln_to_sminn[layer] += -nt->pmnf_s4[layer];
+			nf->minerFlux_StoS[layer] += -nt->pmnf_s4[layer];
 		}
 
 
@@ -714,12 +739,33 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 			                           nf->sminn_to_soil2n_s1[layer]+nf->sminn_to_soil3n_s2[layer]+nf->sminn_to_soil4n_s3[layer];
 
 	 
-		nf->soil4n_to_sminn_total       += nf->soil4n_to_sminn[layer];
-		nf->soiln_to_sminn_total        += nf->soiln_to_sminn[layer];
-		nf->litrn_to_sminn_total        += nf->litrn_to_sminn[layer];
-		nf->sminn_to_soil_LtoS_total    += nf->sminn_to_soil_LtoS[layer]; 
-		nf->sminn_to_soil_StoS_total    += nf->sminn_to_soil_StoS[layer];
+		nf->sminn_to_soil1n_l1_total    += nf->sminn_to_soil1n_l1[layer];
+		nf->sminn_to_soil2n_l2_total    += nf->sminn_to_soil2n_l2[layer]; 
+		nf->sminn_to_soil3n_l4_total    += nf->sminn_to_soil3n_l4[layer];
+		nf->sminn_to_soil2n_s1_total    += nf->sminn_to_soil2n_s1[layer]; 
+		nf->sminn_to_soil3n_s2_total    += nf->sminn_to_soil3n_s2[layer]; 
+		nf->sminn_to_soil4n_s3_total    += nf->sminn_to_soil4n_s3[layer];
+		nf->minerFlux_S4_total       += nf->minerFlux_S4[layer];
+		nf->minerFlux_StoS_total        += nf->minerFlux_StoS[layer];
+		nf->minerFlux_LtoS_total        += nf->minerFlux_LtoS[layer];
+		nf->immobFlux_LtoS_total    += nf->immobFlux_LtoS[layer]; 
+		nf->immobFlux_StoS_total    += nf->immobFlux_StoS[layer];
 		nf->sminn_to_soil_SUM_total     += nf->sminn_to_soil_SUM[layer];
+
+		nf->litr1n_to_soil1n_total       += nf->litr1n_to_soil1n[layer];              
+		nf->litr2n_to_soil2n_total       += nf->litr2n_to_soil2n[layer];              
+		nf->litr3n_to_litr2n_total       += nf->litr3n_to_litr2n[layer];              
+		nf->litr4n_to_soil3n_total       += nf->litr4n_to_soil3n[layer]; 
+		nf->soil1n_to_soil2n_total       += nf->soil1n_to_soil2n[layer];              
+		nf->soil2n_to_soil3n_total       += nf->soil2n_to_soil3n[layer];              
+		nf->soil3n_to_soil4n_total       += nf->soil3n_to_soil4n[layer];   
+		cf->litr1c_to_soil1c_total       += cf->litr1c_to_soil1c[layer];              
+		cf->litr2c_to_soil2c_total       += cf->litr2c_to_soil2c[layer];              
+		cf->litr3c_to_litr2c_total       += cf->litr3c_to_litr2c[layer];              
+		cf->litr4c_to_soil3c_total       += cf->litr4c_to_soil3c[layer]; 
+		cf->soil1c_to_soil2c_total       += cf->soil1c_to_soil2c[layer];              
+		cf->soil2c_to_soil3c_total       += cf->soil2c_to_soil3c[layer];              
+		cf->soil3c_to_soil4c_total       += cf->soil3c_to_soil4c[layer];  
 
 		cf->litrc_to_soilc_total        += cf->litr1c_to_soil1c[layer];
 		cf->litrc_to_soilc_total        += cf->litr2c_to_soil2c[layer];
@@ -728,6 +774,8 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 		nf->litrn_to_soiln_total        += nf->litr1n_to_soil1n[layer];
 		nf->litrn_to_soiln_total        += nf->litr2n_to_soil2n[layer];
 		nf->litrn_to_soiln_total        += nf->litr4n_to_soil3n[layer];
+
+
 
 		/* store the day's net N mineralization */
 		nf->netMINERflux[layer]   = net_nmin;
@@ -739,12 +787,15 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	}
 
 	nf->sminn_to_npool_totalCUM     += nf->sminn_to_npool_total;
-	nf->soiln_to_sminn_totalCUM     += nf->soiln_to_sminn_total;
-	nf->litrn_to_sminn_totalCUM     += nf->litrn_to_sminn_total;
-	nf->sminn_to_soil_LtoS_totalCUM += nf->sminn_to_soil_LtoS_total; 
-	nf->sminn_to_soil_StoS_totalCUM += nf->sminn_to_soil_StoS_total; 
+	nf->minerFlux_StoS_totalCUM     += nf->minerFlux_StoS_total;
+	nf->minerFlux_LtoS_totalCUM     += nf->minerFlux_LtoS_total;
+	nf->immobFlux_LtoS_totalCUM += nf->immobFlux_LtoS_total; 
+	nf->immobFlux_StoS_totalCUM += nf->immobFlux_StoS_total; 
 	nf->netMINERflux_totalCUM       += nf->netMINERflux_total;
 	nf->actIMMOBflux_totalCUM       += nf->actIMMOBflux_total;
+
+	 
+
 		
 	return (errorCode);
 }

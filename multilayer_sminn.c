@@ -112,9 +112,9 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		/* 4. Nitrification */
 		
 		if (nf->sminNH4_to_soil_SUM[layer] > 0)
-			net_miner    = nf->soil4n_to_sminn[layer];
+			net_miner    = nf->minerFlux_S4[layer];
 		else
-			net_miner    = nf->soil4n_to_sminn[layer] - nf->sminNH4_to_soil_SUM[layer];
+			net_miner    = nf->minerFlux_S4[layer] - nf->sminNH4_to_soil_SUM[layer];
 		
 	 	WFPS         = epv->WFPS[layer];
 		sminNH4avail = ns->sminNH4avail[layer];
@@ -163,7 +163,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		/*********************************************/
 		/* 7. STATE UPDATE */
 
-		sminNH4_change[layer] = (nf->nfix_to_sminNH4[layer] + nf->ndep_to_sminNH4[layer] + nf->soil4n_to_sminn[layer] + 
+		sminNH4_change[layer] = (nf->nfix_to_sminNH4[layer] + nf->ndep_to_sminNH4[layer] + nf->minerFlux_S4[layer] + 
 			                    (nf->litr1n_to_release[layer] + nf->litr2n_to_release[layer] + nf->litr4n_to_release[layer]) * 0.5  - 
 			                     nf->sminNH4_to_soil_SUM[layer] - nf->sminNH4_to_npool[layer] - nf->sminNH4_to_nitrif[layer]);
 		sminNO3_change[layer] = (nf->ndep_to_sminNO3[layer] + (nf->sminNH4_to_nitrif[layer]- nf->N2O_flux_NITRIF[layer]) +
@@ -179,7 +179,7 @@ int multilayer_sminn(const control_struct* ctrl, const metvar_struct* metv,const
 		ns->soil1n[layer] += nf->sminn_to_soil1n_l1[layer];
 		ns->soil2n[layer] += nf->sminn_to_soil2n_l2[layer] + nf->sminn_to_soil2n_s1[layer];
 		ns->soil3n[layer] += nf->sminn_to_soil3n_l4[layer] + nf->sminn_to_soil3n_s2[layer];
-		ns->soil4n[layer] += nf->sminn_to_soil4n_s3[layer] - nf->soil4n_to_sminn[layer];
+		ns->soil4n[layer] += nf->sminn_to_soil4n_s3[layer] - nf->minerFlux_S4[layer];
 		
 		ns->npool         += (nf->sminNH4_to_npool[layer] + nf->sminNO3_to_npool[layer]);
 		ns->Nfix_src      += nf->nfix_to_sminNH4[layer];

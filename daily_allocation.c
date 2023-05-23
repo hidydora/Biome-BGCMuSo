@@ -264,7 +264,7 @@ int daily_allocation(const epconst_struct* epc, const soilprop_struct* sprop, co
 	/*-----------------------------------------------------------------------------------------------------------------*/
 	/* 4. calculation of spinup N-add and sminnAVAIL and potIMMOB */
 
-	ns->sminNavail_RZ = nf->sminn_to_npool_total = nf->retransn_to_npool_total = plantNalloc = plantCalloc = 0;
+	nf->sminn_to_npool_total = nf->retransn_to_npool_total = plantNalloc = plantCalloc = 0;
 	for (layer=0; layer < N_SOILLAYERS; layer++)
 	{
 		ns->sminNH4avail[layer] = ns->sminNH4[layer] * sprop->NH4_mobilen_prop;

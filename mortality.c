@@ -220,6 +220,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		cs->livestemc	-= cf->m_livestemc_to_cwdc;
 		cs->deadstemc	-= cf->m_deadstemc_to_cwdc;
 
+
 		/* new feature: litter turns into the first AND the second soil layer */
 		propLAYER0 = sitec->soillayer_thickness[0]/sitec->soillayer_depth[2];
 		propLAYER1 = sitec->soillayer_thickness[1]/sitec->soillayer_depth[2];
@@ -343,6 +344,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		cs->gresp_storage       -= cf->m_gresp_storage_to_litr1c;
 		cs->gresp_transfer      -= cf->m_gresp_transfer_to_litr1c;
 
+		
 		ns->leafn_storage       -= nf->m_leafn_storage_to_litr1n;
 		ns->frootn_storage      -= nf->m_frootn_storage_to_litr1n;
 		ns->yieldn_storage      -= nf->m_yieldn_storage_to_litr1n;
@@ -370,7 +372,7 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 		cs->frootc      -= (cf->m_frootc_to_litr1c    + cf->m_frootc_to_litr2c    + cf->m_frootc_to_litr3c    + cf->m_frootc_to_litr4c);
 		cs->livecrootc	-=  cf->m_livecrootc_to_cwdc;
 		cs->deadcrootc	-=  cf->m_deadcrootc_to_cwdc;
-		
+
 		ns->frootn     -= (nf->m_frootn_to_litr1n    + nf->m_frootn_to_litr2n    + nf->m_frootn_to_litr3n    + nf->m_frootn_to_litr4n);
 		ns->livecrootn -=  nf->m_livecrootn_to_cwdn;
 		ns->deadcrootn -=  nf->m_deadcrootn_to_cwdn;
@@ -412,7 +414,6 @@ int mortality(const control_struct* ctrl, const siteconst_struct* sitec, const e
 	
 
 	}
-
 
 	
 	/************************************************************/

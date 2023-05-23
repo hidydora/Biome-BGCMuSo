@@ -192,6 +192,8 @@ int firstday(const control_struct* ctrl, const soilprop_struct* sprop, const epc
 	epv->VWC_avg		    = sprop->VWCfc[0];
 	epv->VWC_RZ 		    = sprop->VWCfc[0];  
 	epv->VWC_maxRZ          = sprop->VWCfc[0]; 
+	epv->relVWCfc_wp_maxRZ  = 1;
+	epv->relVWCsat_fc_maxRZ = 0;
 	epv->hydrCONDUCTsat_avg = sprop->hydrCONDUCTsat[0];
 	epv->VWCsat_RZ 		    = sprop->VWCsat[0];  
 	epv->VWCfc_RZ 		    = sprop->VWCfc[0];  

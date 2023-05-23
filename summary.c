@@ -62,20 +62,20 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 	summary->LDbelowC_w       = cs->livecrootc + cs->deadcrootc;
 
 	/* biomass C (live+dead) with NSC */
-	summary->LDaboveCnsc_nw = cs->leafc + cs->yieldc + cs->softstemc + 
+	summary->LDaboveCwithNSC_nw = cs->leafc + cs->yieldc + cs->softstemc + 
 		                      cs->STDBc_above + 
 		                      cs->leafc_transfer + cs->leafc_storage  + cs->frootc_storage    + cs->frootc_transfer +
 						      cs->yieldc_storage  + cs->yieldc_transfer + cs->softstemc_storage + cs->softstemc_transfer +
 		                      cs->gresp_storage  + cs->gresp_transfer;
-	summary->LDaboveCnsc_w = cs->livestemc + cs->deadstemc +
+	summary->LDaboveCwithNSC_w = cs->livestemc + cs->deadstemc +
 		                     cs->livestemc_storage + cs->livestemc_transfer +
 		                     cs->deadstemc_storage + cs->deadstemc_transfer;
 
-	summary->LDbelowCnsc_nw = cs->frootc      + 
+	summary->LDbelowCwithNSC_nw = cs->frootc      + 
 		                      cs->STDBc_below + 
 		                      cs->frootc_storage + cs->frootc_transfer;
 
-	summary->LDbelowCnsc_w = cs->livecrootc + cs->deadcrootc +
+	summary->LDbelowCwithNSC_w = cs->livecrootc + cs->deadcrootc +
 		                     cs->livecrootc_storage + cs->livecrootc_transfer +
 		                     cs->deadcrootc_storage + cs->deadcrootc_transfer;
 
@@ -88,14 +88,14 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 	summary->LbelowC_w  = cs->deadcrootc;
 
 	/* living biomass C with NSC */
-	summary->LaboveCnsc_nw = cs->leafc + cs->yieldc + cs->softstemc + 
+	summary->LaboveCwithNSC_nw = cs->leafc + cs->yieldc + cs->softstemc + 
 		                     cs->leafc_transfer + cs->leafc_storage   + 
 						     cs->yieldc_storage + cs->yieldc_transfer +  cs->softstemc_storage + cs->softstemc_transfer +
 		                     cs->gresp_storage + cs->gresp_transfer;
-	summary->LaboveCnsc_w = cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer;
+	summary->LaboveCwithNSC_w = cs->livestemc + cs->livestemc_storage + cs->livestemc_transfer;
 
-	summary->LbelowCnsc_nw = cs->frootc  + cs->frootc_storage + cs->frootc_transfer;
-	summary->LbelowCnsc_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
+	summary->LbelowCwithNSC_nw = cs->frootc  + cs->frootc_storage + cs->frootc_transfer;
+	summary->LbelowCwithNSC_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
 	
 
 	/* dead biomass C */
@@ -106,11 +106,23 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 	summary->DbelowC_w = cs->deadcrootc;
 
 	/* dead biomass C with NSC  */
-	summary->DaboveCnsc_nw = cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem;
-	summary->DaboveCnsc_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
+	summary->DaboveCwithNSC_nw = cs->STDBc_leaf  + cs->STDBc_yield + cs->STDBc_softstem;
+	summary->DaboveCwithNSC_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
 
-	summary->DbelowCnsc_nw = cs->STDBc_froot;
-	summary->DbelowCnsc_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
+	summary->DbelowCwithNSC_nw = cs->STDBc_froot;
+	summary->DbelowCwithNSC_w = cs->deadstemc + cs->deadstemc_storage + cs->deadstemc_transfer;
+
+	/* living SC and NSC */
+	summary->livingSC  = cs->leafc + cs->yieldc + cs->softstemc + cs->frootc + cs->livestemc + cs->deadstemc;
+	summary->livingNSC  = cs->leafc_storage + cs->leafc_transfer + 
+		                        cs->gresp_storage + cs->gresp_transfer + 
+		                        cs->yieldc_storage + cs->yieldc_transfer +
+		                        cs->softstemc_storage + cs->softstemc_transfer + 
+								cs->livestemc_storage + cs->livestemc_transfer +
+								cs->deadstemc_storage + cs->deadstemc_transfer +
+								cs->frootc_storage + cs->frootc_transfer +
+	                            cs->livecrootc_storage + cs->livecrootc_transfer +
+							    cs->deadcrootc_storage + cs->deadcrootc_transfer;;
 
 	/* living and total, above- and belowground biomass (C+N) */
 	summary->livingBIOMabove  = cs->leafc + cs->leafc_storage + cs->leafc_transfer + 
@@ -389,17 +401,13 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 	summary->litfire = cf->m_litr1c_to_fire_total + cf->m_litr2c_to_fire_total + cf->m_litr3c_to_fire_total + cf->m_litr4c_to_fire_total;
 	
-	/* aboveground litter */
+	/* aboveground littefall */
 	summary->litfallc_above = 
-		cf->m_leafc_to_litr1c + cf->m_leafc_to_litr2c + cf->m_leafc_to_litr3c + cf->m_leafc_to_litr4c + 
-		cf->m_livestemc_to_cwdc + cf->m_deadstemc_to_cwdc + cf->m_livecrootc_to_cwdc + cf->m_deadcrootc_to_cwdc +
 		cf->leafc_to_litr1c + cf->leafc_to_litr2c + cf->leafc_to_litr3c + cf->leafc_to_litr4c + 
 		cf->softstemc_to_litr1c + cf->softstemc_to_litr2c + cf->softstemc_to_litr3c + cf->softstemc_to_litr4c + 
-		cf->m_softstemc_to_litr1c + cf->m_softstemc_to_litr2c + cf->m_softstemc_to_litr3c + cf->m_softstemc_to_litr4c + 
-		cf->yieldc_to_litr1c + cf->yieldc_to_litr2c + cf->yieldc_to_litr3c + cf->yieldc_to_litr4c + 
-		cf->m_yieldc_to_litr1c + cf->m_yieldc_to_litr2c + cf->m_yieldc_to_litr3c + cf->m_yieldc_to_litr4c;
+		cf->yieldc_to_litr1c + cf->yieldc_to_litr2c + cf->yieldc_to_litr3c + cf->yieldc_to_litr4c ;
 	
-	/* belowground */
+	/* belowground littefall*/
 	summary->litfallc_below = 
 		cf->m_frootc_to_litr1c + cf->m_frootc_to_litr2c + cf->m_frootc_to_litr3c + cf->m_frootc_to_litr4c +
 		cf->m_leafc_storage_to_litr1c + cf->m_frootc_storage_to_litr1c +
@@ -415,6 +423,7 @@ int cnw_summary(const epconst_struct* epc, const siteconst_struct* sitec, const 
 
 
 	summary->litfallc = summary->litfallc_above + summary->litfallc_below;
+
 
 	/*******************************************************************************/
 	/* 5. calculation of disturbance and senescence effect  */

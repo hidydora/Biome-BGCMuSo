@@ -40,13 +40,13 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 	
 
 	/* internal variables */
-	double VWC_avg, VWC_maxRZ, VWC_RZ, PSI_RZ, soilw_RZ, weight, weight_SUM, ratio, hydrCONDUCTsat_avg;
+	double VWC_avg, VWC_maxRZ, relVWCsat_fc_maxRZ, relVWCfc_wp_maxRZ, VWC_RZ, PSI_RZ, soilw_RZ, weight, weight_SUM, ratio, hydrCONDUCTsat_avg;
 	double soilw_hw, soilw_wp, TRP_diff, TRP_diff_SUM, soilw_trans_ctrl, soilw_before;
 	double VWCsat_RZ, VWCfc_RZ, VWCwp_RZ, VWChw_RZ, soilw_RZ_avail;
 	int layer;
 	int errorCode=0;
 	soilw_before=soilw_hw=TRP_diff=TRP_diff_SUM=soilw_trans_ctrl=VWC_avg=VWC_RZ=PSI_RZ=soilw_RZ=weight=weight_SUM=ratio=soilw_wp=soilw_RZ_avail=0;
-	VWC_RZ=VWC_maxRZ=VWCsat_RZ=VWCfc_RZ=VWCwp_RZ=VWChw_RZ=hydrCONDUCTsat_avg=0.0;
+	VWC_RZ=VWC_maxRZ=VWCsat_RZ=VWCfc_RZ=VWCwp_RZ=VWChw_RZ=hydrCONDUCTsat_avg=relVWCsat_fc_maxRZ=relVWCfc_wp_maxRZ=0.0;
 	
 	/* ---------------------------------------------------------------------------------------- */
 	/* 1. Richards-method */
@@ -266,10 +266,12 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 		
 		/* calculation of rootzone variables - weight of the last layer depends on the depth of the root */
 		if (epv->n_maxrootlayers && layer < epv->n_maxrootlayers)
-			VWC_maxRZ += epv->VWC[layer]      * sitec->soillayer_thickness[layer]/sitec->soillayer_depth[epv->n_maxrootlayers-1];
-		else
-			VWC_maxRZ += 0;
-
+		{
+			VWC_maxRZ          += epv->VWC[layer]          * sitec->soillayer_thickness[layer]/sitec->soillayer_depth[epv->n_maxrootlayers-1];
+			relVWCsat_fc_maxRZ += epv->relVWCsat_fc[layer] * sitec->soillayer_thickness[layer]/sitec->soillayer_depth[epv->n_maxrootlayers-1];
+			relVWCfc_wp_maxRZ  += epv->relVWCfc_wp[layer]  * sitec->soillayer_thickness[layer]/sitec->soillayer_depth[epv->n_maxrootlayers-1];
+		}
+	
 		if (epv->n_rootlayers) 
 		{
 			weight_SUM += epv->rootlengthProp[layer];
@@ -309,7 +311,8 @@ int multilayer_hydrolprocess(control_struct* ctrl, siteconst_struct* sitec, soil
 	epv->VWCwp_RZ  = VWCwp_RZ;
 	epv->VWChw_RZ  = VWChw_RZ;
 	epv->VWC_maxRZ = VWC_maxRZ;
-
+	epv->relVWCsat_fc_maxRZ = relVWCsat_fc_maxRZ;
+	epv->relVWCfc_wp_maxRZ  = relVWCfc_wp_maxRZ;
 	
 	epv->hydrCONDUCTsat_avg = hydrCONDUCTsat_avg;
 	epv->VWC_avg = VWC_avg;

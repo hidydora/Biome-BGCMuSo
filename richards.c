@@ -525,6 +525,7 @@ int richards(const epconst_struct* epc, soilprop_struct* sprop, wstate_struct* w
 			{
 				printf("\n");
 				printf("ERROR: in pondw water calculation (richards.c)\n");
+				errorCode=1;
 			}
 			pondw_act       = 0;
 			diff           -= (diff1+diff2);

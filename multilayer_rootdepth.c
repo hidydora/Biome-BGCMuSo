@@ -43,13 +43,10 @@ int multilayer_rootDepth(const epconst_struct* epc, const soilprop_struct* sprop
 	/* ***************************************************************************************************** */	
 	/* 1. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (only on first day) */
 	
-	if (calc_nrootlayers(0, maxRD, frootc, sitec, epv))
+	if (!errorCode && calc_nrootlayers(0, maxRD, frootc, sitec, epv))
 	{
-		if (!errorCode) 
-		{
-			printf("\n");
-			printf("ERROR: calc_nrootlayers() for multilayer_rootDepth.c\n");
-		}
+		printf("\n");
+		printf("ERROR: calc_nrootlayers() for multilayer_rootDepth.c\n");
 		errorCode=1;
 	}
 
@@ -83,13 +80,10 @@ int multilayer_rootDepth(const epconst_struct* epc, const soilprop_struct* sprop
 	/* ***************************************************************************************************** */	
 	/* 3. Calculating the number of the soil layers in which root can be found. It determines the rootzone depth (epv->n_rootlayers) */
 	
-	if (calc_nrootlayers(1, maxRD, frootc, sitec, epv))
+	if (!errorCode && calc_nrootlayers(1, maxRD, frootc, sitec, epv))
 	{
-		if (!errorCode) 
-		{
-			printf("\n");
-			printf("ERROR: calc_nrootlayers() for multilayer_rootDepth.c\n");
-		}
+		printf("\n");
+		printf("ERROR: calc_nrootlayers() for multilayer_rootDepth.c\n");
 		errorCode=1;
 	}
 	

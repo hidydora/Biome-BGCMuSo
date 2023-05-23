@@ -321,7 +321,10 @@ int groundwaterT_preproc(const control_struct* ctrl, const epconst_struct* epc, 
 		if (sprop->VWCfc[layer] - sprop->VWCwp[layer] > CRIT_PRECwater)
 			epv->relVWCfc_wp[layer] = (epv->VWC[layer] - sprop->VWCwp[layer]) / (sprop->VWCfc[layer] - sprop->VWCwp[layer]);
 		else
+		{
 			printf("ERROR with relative VWC calculation, groundwaterT_preproc()\n");
+			errorCode = 1;
+		}
 		if (fabs(epv->relVWCfc_wp[layer]) < CRIT_PRECwater) epv->relVWCfc_wp[layer] = 0;
 
 		

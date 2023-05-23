@@ -97,9 +97,11 @@ int annVARinit(summary_struct* summary, epvar_struct* epv, cstate_struct* cs, ws
 
 	nf->minerFlux_StoS_totalCUM       = 0;
 	nf->minerFlux_LtoS_totalCUM       = 0;
-	nf->immobFlux_LtoS_totalCUM   = 0; 
-	nf->immobFlux_StoS_totalCUM   = 0; 
+	nf->immobFlux_LtoS_totalCUM       = 0; 
+	nf->immobFlux_StoS_totalCUM       = 0; 
+
 	nf->sminn_to_npool_totalCUM       = 0;
+	nf->sminNO3_to_denitr_totalCUM    = 0;
 	nf->netMINERflux_totalCUM         = 0;
 	nf->actIMMOBflux_totalCUM         = 0;
 	nf->environment_to_sminn_totalCUM = 0;

@@ -253,31 +253,31 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 	}
 
-	if (fabs(cs->nsc_nw) < CRIT_PREC && cs->nsc_nw != 0)
+	if (fabs(cs->NSCnw) < CRIT_PREC && cs->NSCnw != 0)
 	{
- 		cs->litr1c[0] += cs->nsc_nw;
-		cs->nsc_nw = 0.0;
+ 		cs->litr1c[0] += cs->NSCnw;
+		cs->NSCnw = 0.0;
 
 	}
 
-	if (fabs(cs->nsc_w) < CRIT_PREC && cs->nsc_w != 0)
+	if (fabs(cs->NSCw) < CRIT_PREC && cs->NSCw != 0)
 	{
- 		cs->litr1c[0] += cs->nsc_w;
-		cs->nsc_w = 0.0;
+ 		cs->litr1c[0] += cs->NSCw;
+		cs->NSCw = 0.0;
 
 	}
 
-	if (fabs(cs->sc_nw) < CRIT_PREC && cs->sc_nw != 0)
+	if (fabs(cs->SCnw) < CRIT_PREC && cs->SCnw != 0)
 	{
- 		cs->litr1c[0] += cs->sc_nw;
-		cs->sc_nw = 0.0;
+ 		cs->litr1c[0] += cs->SCnw;
+		cs->SCnw = 0.0;
 
 	}
 
-	if (fabs(cs->sc_w) < CRIT_PREC && cs->sc_w != 0)
+	if (fabs(cs->SCw) < CRIT_PREC && cs->SCw != 0)
 	{
- 		cs->litr1c[0] += cs->sc_w;
-		cs->sc_w = 0.0;
+ 		cs->litr1c[0] += cs->SCw;
+		cs->SCw = 0.0;
 
 	}
 
@@ -359,28 +359,28 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 	{
 		if ((cs->soil1c[layer] != 0 && fabs(cs->soil1c[layer]) < CRIT_PREC) || (ns->soil1n[layer] != 0 && fabs(ns->soil1n[layer])  < CRIT_PREC))
 		{
-			cs->soil1_hr_snk  += cs->soil1c[layer];
+			cs->HRsoil1_snk  += cs->soil1c[layer];
 			ns->Nprec_snk      += ns->soil1n[layer];
 			cs->soil1c[layer] = 0.0;
 			ns->soil1n[layer] = 0.0;
 		}
 		if ((cs->soil2c[layer] != 0 && fabs(cs->soil2c[layer]) < CRIT_PREC) || (ns->soil2n[layer] != 0 && fabs(ns->soil2n[layer])  < CRIT_PREC))
 		{
-			cs->soil2_hr_snk  += cs->soil2c[layer];
+			cs->HRsoil2_snk  += cs->soil2c[layer];
 			ns->Nprec_snk      += ns->soil2n[layer];
 			cs->soil2c[layer] = 0.0;
 			ns->soil2n[layer] = 0.0;
 		}
 		if ((cs->soil3c[layer] != 0 && fabs(cs->soil3c[layer]) < CRIT_PREC) || (ns->soil3n[layer] != 0 && fabs(ns->soil3n[layer])  < CRIT_PREC))
 		{
-			cs->soil3_hr_snk  += cs->soil3c[layer];
+			cs->HRsoil3_snk  += cs->soil3c[layer];
 			ns->Nprec_snk      += ns->soil3n[layer];
 			cs->soil3c[layer] = 0.0;
 			ns->soil3n[layer] = 0.0;
 		}
 		if ((cs->soil4c[layer] != 0 && fabs(cs->soil4c[layer]) < CRIT_PREC) || (ns->soil4n[layer] != 0 && fabs(ns->soil4n[layer])  < CRIT_PREC))
 		{
-			cs->soil4_hr_snk  += cs->soil4c[layer];
+			cs->HRsoil4_snk  += cs->soil4c[layer];
 			ns->Nprec_snk      += ns->soil4n[layer];
 			cs->soil4c[layer] = 0.0;
 			ns->soil4n[layer] = 0.0;
@@ -389,28 +389,28 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 		if ((cs->litr1c[layer] != 0 && fabs(cs->litr1c[layer]) < CRIT_PREC) || (ns->litr1n[layer] != 0 && fabs(ns->litr1n[layer])  < CRIT_PREC))
 		{
-			cs->litr1_hr_snk += cs->litr1c[layer];
+			cs->HRlitr1_snk += cs->litr1c[layer];
 			ns->Nprec_snk += ns->litr1n[layer];
 			cs->litr1c[layer] = 0.0;
 			ns->litr1n[layer] = 0.0;
 		}
 		if ((cs->litr2c[layer] != 0 && fabs(cs->litr2c[layer]) < CRIT_PREC) || (ns->litr2n[layer] != 0 && fabs(ns->litr2n[layer])  < CRIT_PREC))
 		{
-			cs->litr2_hr_snk += cs->litr2c[layer];
+			cs->HRlitr2_snk += cs->litr2c[layer];
 			ns->Nprec_snk += ns->litr2n[layer];
 			cs->litr2c[layer] = 0.0;
 			ns->litr2n[layer] = 0.0;
 		}
 		if ((cs->litr3c[layer] != 0 && fabs(cs->litr3c[layer]) < CRIT_PREC) || (ns->litr3n[layer] != 0 && ns->litr3n[layer] < 0 && fabs(ns->litr3n[layer])  < CRIT_PREC))
 		{
-			cs->litr4_hr_snk += cs->litr3c[layer]; /* NO LITR3C HR SINK */
+			cs->HRlitr4_snk += cs->litr3c[layer]; /* NO LITR3C HR SINK */
 			ns->Nprec_snk += ns->litr3n[layer];
 			cs->litr3c[layer] = 0.0;
 			ns->litr3n[layer] = 0.0;
 		}
 		if ((cs->litr4c[layer] != 0 && fabs(cs->litr4c[layer]) < CRIT_PREC) || (ns->litr4n[layer] != 0 && fabs(ns->litr4n[layer])  < CRIT_PREC))
 		{
-			cs->litr4_hr_snk += cs->litr4c[layer];
+			cs->HRlitr4_snk += cs->litr4c[layer];
 			ns->Nprec_snk += ns->litr4n[layer];
 			cs->litr4c[layer] = 0.0;
 			ns->litr4n[layer] = 0.0;
@@ -418,7 +418,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 		if ((cs->cwdc[layer] != 0 && fabs(cs->cwdc[layer]) < CRIT_PREC) || (ns->cwdn[layer] != 0 && fabs(ns->cwdn[layer])  < CRIT_PREC))
 		{
-			cs->litr4_hr_snk += cs->cwdc[layer];
+			cs->HRlitr4_snk += cs->cwdc[layer];
 			ns->Nprec_snk += ns->cwdn[layer];
 			cs->cwdc[layer] = 0.0;
 			ns->cwdn[layer] = 0.0;
@@ -426,7 +426,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 		if ((cs->soil1DOC[layer] != 0 && fabs(cs->soil1DOC[layer]) < CRIT_PREC) || (ns->soil1DON[layer] != 0 && fabs(ns->soil1DON[layer])  < CRIT_PREC))
 		{
-			cs->soil1_hr_snk += cs->soil1DOC[layer];
+			cs->HRsoil1_snk += cs->soil1DOC[layer];
 			ns->Nprec_snk += ns->soil1DON[layer];
 			cs->soil1DOC[layer] = 0.0;
 			ns->soil1DON[layer] = 0.0;
@@ -434,7 +434,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 		if ((cs->soil2DOC[layer] != 0 && fabs(cs->soil2DOC[layer]) < CRIT_PREC) || (ns->soil2DON[layer] != 0 && fabs(ns->soil2DON[layer])  < CRIT_PREC))
 		{
-			cs->soil2_hr_snk += cs->soil2DOC[layer];
+			cs->HRsoil2_snk += cs->soil2DOC[layer];
 			ns->Nprec_snk += ns->soil2DON[layer];
 			cs->soil2DOC[layer] = 0.0;
 			ns->soil2DON[layer] = 0.0;
@@ -442,7 +442,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 		if ((cs->soil3DOC[layer] != 0 && fabs(cs->soil3DOC[layer]) < CRIT_PREC) || (ns->soil3DON[layer] != 0 && fabs(ns->soil3DON[layer])  < CRIT_PREC))
 		{
-			cs->soil3_hr_snk += cs->soil3DOC[layer];
+			cs->HRsoil3_snk += cs->soil3DOC[layer];
 			ns->Nprec_snk += ns->soil3DON[layer];
 			cs->soil3DOC[layer] = 0.0;
 			ns->soil3DON[layer] = 0.0;
@@ -450,7 +450,7 @@ int precision_control(wstate_struct* ws, cstate_struct* cs, nstate_struct* ns)
 
 		if ((cs->soil4DOC[layer] != 0 && fabs(cs->soil4DOC[layer]) < CRIT_PREC) || (ns->soil4DON[layer] != 0 && fabs(ns->soil4DON[layer])  < CRIT_PREC))
 		{
-			cs->soil4_hr_snk += cs->soil4DOC[layer];
+			cs->HRsoil4_snk += cs->soil4DOC[layer];
 			ns->Nprec_snk += ns->soil4DON[layer];
 			cs->soil4DOC[layer] = 0.0;
 			ns->soil4DON[layer] = 0.0;
